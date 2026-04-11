@@ -45,7 +45,7 @@ export default function Home() {
 
   return (
     <div className="bg-[#fcfcfc] min-h-screen">
-      {/* Full-Screen Hero Slider */}
+      {/* Full-Screens Hero Slider */}
       <section className="relative h-screen w-full overflow-hidden bg-black">
         <AnimatePresence mode="wait">
           <motion.div
@@ -57,23 +57,23 @@ export default function Home() {
             className="absolute inset-0 w-full h-full"
           >
             {slides[currentSlide].type === 'image' ? (
-              <img 
-                src={slides[currentSlide].url} 
+              <img
+                src={slides[currentSlide].url}
                 alt={slides[currentSlide].title}
                 className="w-full h-full object-cover"
               />
             ) : (
-              <video 
-                autoPlay 
-                muted 
-                loop 
+              <video
+                autoPlay
+                muted
+                loop
                 playsInline
                 className="w-full h-full object-cover opacity-80"
               >
                 <source src={slides[currentSlide].url} type="video/mp4" />
               </video>
             )}
-            
+
             {/* Overlay */}
             <div className="absolute inset-0 bg-gradient-to-t from-black/40 via-transparent to-black/20" />
 
@@ -94,8 +94,8 @@ export default function Home() {
                 <p className="text-white/70 text-sm md:text-lg max-w-lg mx-auto font-fashion tracking-wider mb-12 italic">
                   {slides[currentSlide].subtitle}
                 </p>
-                <Link 
-                  to="/shop" 
+                <Link
+                  to="/shop"
                   className="inline-block border border-white/30 text-white px-12 py-4 rounded-none hover:bg-white hover:text-black transition-all duration-500 uppercase text-[10px] tracking-[0.3em] font-medium backdrop-blur-sm"
                 >
                   {slides[currentSlide].cta}
@@ -111,9 +111,8 @@ export default function Home() {
             <button
               key={idx}
               onClick={() => setCurrentSlide(idx)}
-              className={`w-2 h-2 rounded-full transition-all duration-300 ${
-                currentSlide === idx ? 'bg-white w-8' : 'bg-white/30'
-              }`}
+              className={`w-2 h-2 rounded-full transition-all duration-300 ${currentSlide === idx ? 'bg-white w-8' : 'bg-white/30'
+                }`}
             />
           ))}
         </div>
@@ -122,13 +121,13 @@ export default function Home() {
       {/* Rest of the page... */}
       <section className="py-24 max-w-[1440px] mx-auto px-6">
         <div className="flex justify-between items-end mb-16 border-b border-gray-100 pb-8">
-            <div>
-                <h2 className="text-4xl font-fashion tracking-wider uppercase text-gray-900">Curated Selections</h2>
-                <p className="text-gray-500 font-serif italic mt-2">Discover the essence of Indian craftsmanship.</p>
-            </div>
-            <Link to="/shop" className="text-[10px] uppercase font-bold tracking-[0.3em] text-gray-400 hover:text-gray-900 transition-colors">
-                View All
-            </Link>
+          <div>
+            <h2 className="text-4xl font-fashion tracking-wider uppercase text-gray-900">Curated Selections</h2>
+            <p className="text-gray-500 font-serif italic mt-2">Discover the essence of Indian craftsmanship.</p>
+          </div>
+          <Link to="/shop" className="text-[10px] uppercase font-bold tracking-[0.3em] text-gray-400 hover:text-gray-900 transition-colors">
+            View All
+          </Link>
         </div>
 
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-x-8 gap-y-16">
@@ -182,14 +181,14 @@ export default function Home() {
               Our Artisan Story
             </Link>
           </motion.div>
-          
+
           <div className="grid grid-cols-2 gap-4">
-             <div className="aspect-[3/4] overflow-hidden rounded-2xl">
-                <img src="https://images.unsplash.com/photo-1610116303244-62391054274c?ixlib=rb-1.2.1&auto=format&fit=crop&w=800&q=80" alt="Weaving Detail" className="w-full h-full object-cover grayscale hover:grayscale-0 transition-all duration-700" />
-             </div>
-             <div className="aspect-[3/4] overflow-hidden rounded-2xl mt-12">
-                <img src="https://images.unsplash.com/photo-1544441893-675973e31d35?ixlib=rb-1.2.1&auto=format&fit=crop&w=800&q=80" alt="Fabric Detail" className="w-full h-full object-cover" />
-             </div>
+            <div className="aspect-[3/4] overflow-hidden rounded-2xl">
+              <img src="https://images.unsplash.com/photo-1610116303244-62391054274c?ixlib=rb-1.2.1&auto=format&fit=crop&w=800&q=80" alt="Weaving Detail" className="w-full h-full object-cover grayscale hover:grayscale-0 transition-all duration-700" />
+            </div>
+            <div className="aspect-[3/4] overflow-hidden rounded-2xl mt-12">
+              <img src="https://images.unsplash.com/photo-1544441893-675973e31d35?ixlib=rb-1.2.1&auto=format&fit=crop&w=800&q=80" alt="Fabric Detail" className="w-full h-full object-cover" />
+            </div>
           </div>
         </div>
       </section>
