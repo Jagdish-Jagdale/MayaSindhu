@@ -45,7 +45,7 @@ export default function Home() {
 
   return (
     <div className="bg-[#fcfcfc] min-h-screen">
-      {/* Full-Screens Hero Slider */}
+      {/* Full-Screen Hero Slider */}
       <section className="relative h-screen w-full overflow-hidden bg-black">
         <AnimatePresence mode="wait">
           <motion.div
