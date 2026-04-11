@@ -1,0 +1,49 @@
+@import "tailwindcss";
+
+@theme {
+  --font-sans: "Manrope", ui-sans-serif, system-ui, sans-serif;
+  --font-serif: "Noto Serif", ui-serif, Georgia, serif;
+
+  --color-brand-cream: #fefccf;
+  --color-brand-burgundy: #600000;
+  --color-brand-burgundy-dark: #390000;
+  --color-brand-gold: #D4AF37;
+  --color-brand-gold-dark: #735c00;
+  --color-brand-blue: #0056D2;
+  --color-brand-ochre: #8c5a00;
+
+  --radius-none: 0px;
+}
+
+@layer base {
+  body {
+    @apply bg-brand-cream text-brand-burgundy-dark font-sans;
+  }
+
+  h1,
+  h2,
+  h3,
+  h4,
+  h5,
+  h6 {
+    @apply font-serif font-bold text-brand-burgundy;
+  }
+}
+
+@layer components {
+  .btn {
+    @apply px-8 py-3 transition-all duration-300 font-medium;
+  }
+
+  .btn-primary {
+    @apply bg-brand-burgundy text-white hover:bg-brand-burgundy-dark;
+  }
+
+  .btn-outline {
+    @apply border border-brand-burgundy text-brand-burgundy hover:bg-brand-burgundy hover:text-white;
+  }
+
+  .glass-header {
+    @apply sticky top-0 z-50 bg-brand-cream/70 backdrop-blur-md border-b border-brand-burgundy/10;
+  }
+}
