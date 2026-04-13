@@ -23,10 +23,10 @@ export default function Dashboard() {
         <p className="text-sm text-gray-400 font-sans tracking-wide mt-1">Detailed performance of MayaSindhuu Artisan Shop</p>
       </div>
 
-      {/* Stats Grid */}
+      {/* Stats Grids*/}
       <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
         {STATS.map((stat, i) => (
-          <motion.div 
+          <motion.div
             key={stat.name}
             initial={{ opacity: 0, y: 20 }}
             animate={{ opacity: 1, y: 0 }}
@@ -69,10 +69,9 @@ export default function Dashboard() {
                       <p className="text-xs text-gray-500">{order.product}</p>
                     </td>
                     <td className="px-6 py-4">
-                      <span className={`px-3 py-1 rounded-full text-[10px] font-bold uppercase tracking-widest ${
-                        order.status === 'Delivered' ? 'bg-green-100 text-green-700' : 
-                        order.status === 'Processing' ? 'bg-amber-100 text-amber-700' : 'bg-blue-100 text-blue-700'
-                      }`}>
+                      <span className={`px-3 py-1 rounded-full text-[10px] font-bold uppercase tracking-widest ${order.status === 'Delivered' ? 'bg-green-100 text-green-700' :
+                          order.status === 'Processing' ? 'bg-amber-100 text-amber-700' : 'bg-blue-100 text-blue-700'
+                        }`}>
                         {order.status}
                       </span>
                     </td>
@@ -86,23 +85,23 @@ export default function Dashboard() {
 
         {/* Small Stats Widget/Activity */}
         <div className="bg-brand-burgundy-dark rounded-2xl p-8 text-brand-cream">
-            <h3 className="font-serif font-bold text-lg text-brand-gold mb-6">Artisan Spotlight</h3>
-            <div className="space-y-6">
-                <div className="flex items-center space-x-4">
-                    <div className="w-12 h-12 bg-white/10 rounded-full flex items-center justify-center text-brand-gold text-lg font-bold">RM</div>
-                    <div>
-                        <p className="text-sm font-bold">Ramesh Mittal</p>
-                        <p className="text-xs text-brand-cream/50 uppercase tracking-widest">Master Weaver - Silk</p>
-                    </div>
-                </div>
-                <div className="w-full h-px bg-white/10" />
-                <p className="text-sm leading-relaxed text-brand-cream/70 italic">
-                    "This month, we completed three custom bridal Banarasi orders. The intricate gold hand-work required 20 days of focused precision per piece."
-                </p>
-                <div className="pt-4">
-                    <button className="text-[10px] font-bold text-brand-gold uppercase tracking-widest border-b border-brand-gold pb-1 hover:text-brand-cream hover:border-brand-cream transition-colors">View Artisan Report</button>
-                </div>
+          <h3 className="font-serif font-bold text-lg text-brand-gold mb-6">Artisan Spotlight</h3>
+          <div className="space-y-6">
+            <div className="flex items-center space-x-4">
+              <div className="w-12 h-12 bg-white/10 rounded-full flex items-center justify-center text-brand-gold text-lg font-bold">RM</div>
+              <div>
+                <p className="text-sm font-bold">Ramesh Mittal</p>
+                <p className="text-xs text-brand-cream/50 uppercase tracking-widest">Master Weaver - Silk</p>
+              </div>
             </div>
+            <div className="w-full h-px bg-white/10" />
+            <p className="text-sm leading-relaxed text-brand-cream/70 italic">
+              "This month, we completed three custom bridal Banarasi orders. The intricate gold hand-work required 20 days of focused precision per piece."
+            </p>
+            <div className="pt-4">
+              <button className="text-[10px] font-bold text-brand-gold uppercase tracking-widest border-b border-brand-gold pb-1 hover:text-brand-cream hover:border-brand-cream transition-colors">View Artisan Report</button>
+            </div>
+          </div>
         </div>
       </div>
     </div>
