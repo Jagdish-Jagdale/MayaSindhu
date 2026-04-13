@@ -1,49 +1,55 @@
 @import "tailwindcss";
 
 @theme {
-  --font-sans: "Manrope", ui-sans-serif, system-ui, sans-serif;
-  --font-serif: "Noto Serif", ui-serif, Georgia, serif;
+  --font-sans: "Inter", ui-sans-serif, system-ui, sans-serif;
+  --font-serif: "Playfair Display", ui-serif, Georgia, serif;
+  --font-fashion: "Outfit", sans-serif;
 
-  --color-brand-cream: #fefccf;
-  --color-brand-burgundy: #600000;
-  --color-brand-burgundy-dark: #390000;
-  --color-brand-gold: #D4AF37;
-  --color-brand-gold-dark: #735c00;
-  --color-brand-blue: #0056D2;
-  --color-brand-ochre: #8c5a00;
-
-  --radius-none: 0px;
+  --color-brand-orange: #FF6B00;
+  --color-brand-orange-dark: #E66000;
+  --color-brand-orange-light: #FFF5EB;
+  --color-brand-white: #FFFFFF;
+  --color-brand-black: #1A1A1A;
+  --color-brand-gray: #F5F5F7;
 }
 
 @layer base {
   body {
-    @apply bg-brand-cream text-brand-burgundy-dark font-sans;
+    @apply bg-white text-brand-black font-sans;
   }
 
-  h1,
-  h2,
-  h3,
-  h4,
-  h5,
-  h6 {
-    @apply font-serif font-bold text-brand-burgundy;
+  h1, h2, h3, h4, h5, h6 {
+    @apply font-fashion font-semibold;
+  }
+
+  button, 
+  a,
+  [role="button"] {
+    @apply cursor-pointer;
   }
 }
 
+
 @layer components {
   .btn {
-    @apply px-8 py-3 transition-all duration-300 font-medium;
+    @apply px-10 py-4 transition-all duration-500 font-medium rounded-full uppercase text-[12px] tracking-widest text-center cursor-pointer;
   }
 
+
   .btn-primary {
-    @apply bg-brand-burgundy text-white hover:bg-brand-burgundy-dark;
+    @apply bg-brand-orange text-white hover:bg-brand-orange-dark shadow-lg shadow-brand-orange/20;
   }
 
   .btn-outline {
-    @apply border border-brand-burgundy text-brand-burgundy hover:bg-brand-burgundy hover:text-white;
+    @apply border border-brand-black/10 text-brand-black hover:bg-brand-black hover:text-white backdrop-blur-sm;
   }
 
-  .glass-header {
-    @apply sticky top-0 z-50 bg-brand-cream/70 backdrop-blur-md border-b border-brand-burgundy/10;
+  /* Utility to hide scrollbar */
+  .no-scrollbar::-webkit-scrollbar {
+    display: none;
+  }
+  .no-scrollbar {
+    -ms-overflow-style: none;
+    scrollbar-width: none;
   }
 }
