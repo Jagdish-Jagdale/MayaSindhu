@@ -1,55 +1,76 @@
-import { Search, User, ShoppingBag, Menu } from 'lucide-react';
+import { Search, User, ShoppingBag, Menu, Heart } from 'lucide-react';
 import { Link, useLocation } from 'react-router-dom';
-import logo from '../../assets/MayaSindhulogo.png';
 
 export default function Navbar() {
   const location = useLocation();
 
   return (
-    <header className="bg-white sticky top-0 z-50 border-b border-gray-100 py-4">
-      <div className="max-w-[1536px] mx-auto px-6 lg:px-12 relative flex items-center justify-between">
+    <header className="bg-white sticky top-0 z-50 border-b border-gray-100 py-4 h-20 flex items-center">
+      <div className="max-w-[1536px] mx-auto px-6 lg:px-12 w-full flex items-center justify-between">
         
-        {/* Left Links - Single Row */}
-        <div className="hidden lg:flex items-center space-x-8">
-          <Link to="/" className="text-[11px] font-fashion tracking-[0.2em] font-medium text-gray-900 uppercase hover:text-gray-500 transition-colors">Home</Link>
-          <Link to="/shop" className="text-[11px] font-fashion tracking-[0.2em] font-medium text-gray-900 uppercase hover:text-gray-500 transition-colors">Shaadi Ready</Link>
-          <Link to="/shop" className="text-[11px] font-fashion tracking-[0.2em] font-medium text-gray-900 uppercase hover:text-gray-500 transition-colors">Shop Full Collection</Link>
-          <Link to="/shop" className="text-[11px] font-fashion tracking-[0.2em] font-medium text-gray-900 uppercase hover:text-gray-500 transition-colors">Store Credit and Exchange</Link>
-        </div>
-
-        {/* Center Logo */}
-        <div className="absolute left-1/2 top-1/2 -translate-x-1/2 -translate-y-1/2">
+        {/* Left: Logo */}
+        <div className="flex-shrink-0">
           <Link to="/" className="flex items-center">
-            <h1 className="text-2xl font-fashion tracking-[0.3em] font-medium text-gray-900 uppercase">
-              MayaSindhu
+            <h1 className="text-2xl font-fashion font-semibold tracking-tighter text-[#1A1A1A]">
+              Maya<span className="text-[#FF6B00]">Sindhu</span>
             </h1>
-            {/* If user strictly wants the IMAGE logo, we can use it here too: */}
-            {/* <img src={logo} alt="MayaSindhu" className="h-10 w-auto object-contain" /> */}
           </Link>
         </div>
 
-        {/* Right Icons */}
-        <div className="flex items-center space-x-6 lg:space-x-8">
-          <button className="text-gray-900 hover:text-gray-500 transition-colors">
-            <User size={18} strokeWidth={1.5} />
-          </button>
-          <button className="text-gray-900 hover:text-gray-500 transition-colors">
-            <Search size={18} strokeWidth={1.5} />
-          </button>
-          <Link to="/cart" className="text-gray-900 hover:text-gray-500 transition-colors relative">
-            <ShoppingBag size={18} strokeWidth={1.5} />
-            <span className="absolute -top-1 -right-1 bg-gray-900 text-white text-[8px] w-3.5 h-3.5 flex items-center justify-center rounded-full">
-              0
-            </span>
+        {/* Center: Nav Links */}
+        <nav className="hidden lg:flex items-center space-x-10">
+          <Link to="/curation" className="text-[14px] font-medium text-gray-600 hover:text-[#FF6B00] transition-colors relative group">
+            Curation
+            <span className="absolute -bottom-1 left-0 w-0 h-0.5 bg-[#FF6B00] transition-all duration-300 group-hover:w-full"></span>
           </Link>
-          
-          {/* Mobile Menu Icon */}
-          <button className="lg:hidden text-gray-900">
-            <Menu size={22} />
-          </button>
+          <Link to="/shop" className="text-[14px] font-medium text-gray-600 hover:text-[#FF6B00] transition-colors relative group">
+            Collections
+            <span className="absolute -bottom-1 left-0 w-0 h-0.5 bg-[#FF6B00] transition-all duration-300 group-hover:w-full"></span>
+          </Link>
+          <Link to="/artisans" className="text-[14px] font-medium text-gray-600 hover:text-[#FF6B00] transition-colors relative group">
+            Artisans
+            <span className="absolute -bottom-1 left-0 w-0 h-0.5 bg-[#FF6B00] transition-all duration-300 group-hover:w-full"></span>
+          </Link>
+          <Link to="/journal" className="text-[14px] font-medium text-gray-600 hover:text-[#FF6B00] transition-colors relative group">
+            Journal
+            <span className="absolute -bottom-1 left-0 w-0 h-0.5 bg-[#FF6B00] transition-all duration-300 group-hover:w-full"></span>
+          </Link>
+        </nav>
+
+        {/* Right: Search & Icons */}
+        <div className="flex items-center space-x-6">
+          {/* Search Bar */}
+          <div className="hidden md:flex items-center bg-gray-50 border border-gray-100 rounded-full px-4 py-2 w-64 group focus-within:border-[#FF6B00]/30 transition-all">
+            <input 
+              type="text" 
+              placeholder="Search curated art..." 
+              className="bg-transparent border-none outline-none text-xs w-full text-gray-600 placeholder:text-gray-400"
+            />
+            <Search size={16} className="text-gray-400 group-focus-within:text-[#FF6B00] transition-colors" />
+          </div>
+
+          <div className="flex items-center space-x-5">
+            <button className="text-gray-700 hover:text-[#FF6B00] transition-colors">
+              <Heart size={20} strokeWidth={1.5} />
+            </button>
+            <Link to="/cart" className="text-gray-700 hover:text-[#FF6B00] transition-colors relative">
+              <ShoppingBag size={20} strokeWidth={1.5} />
+              <span className="absolute -top-1.5 -right-1.5 bg-[#FF6B00] text-white text-[8px] font-bold w-4 h-4 flex items-center justify-center rounded-full">
+                0
+              </span>
+            </Link>
+            <button className="text-gray-700 hover:text-[#FF6B00] transition-colors">
+              <User size={20} strokeWidth={1.5} />
+            </button>
+            {/* Mobile Menu Icon */}
+            <button className="lg:hidden text-gray-900 border border-gray-100 p-2 rounded-lg">
+              <Menu size={20} />
+            </button>
+          </div>
         </div>
 
       </div>
     </header>
   );
 }
+
