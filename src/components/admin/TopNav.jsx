@@ -1,37 +1,75 @@
-import { Search, Bell, Settings } from 'lucide-react';
+import { Search, Bell, PanelLeft } from 'lucide-react';
+import { useLocation } from 'react-router-dom';
 
-export default function TopNav() {
+const PAGE_TITLES = {
+  '/admin': { title: 'Dashboard', sub: 'Welcome back — here\'s what\'s happening today.' },
+  '/admin/users': { title: 'Users', sub: 'Manage your registered clients and accounts.' },
+  '/admin/products': { title: 'Product Inventory', sub: 'Manage the curated archive of handcrafted textiles.' },
+  '/admin/categories': { title: 'Categories', sub: 'Organise your product catalogue by technique & fabric.' },
+  '/admin/orders': { title: 'Orders', sub: 'Track and manage all customer acquisitions.' },
+  '/admin/inventory-logs': { title: 'Inventory Logs', sub: 'Full audit trail of stock movements and adjustments.' },
+  '/admin/settings': { title: 'Settings', sub: 'Configure your MayaSindhu digital experience.' },
+};
+
+import mstitle from '../../assets/mstitle.png';
+
+export default function TopNav({ sidebarOpen, onToggleSidebar }) {
+  const location = useLocation();
+  const page = PAGE_TITLES[location.pathname] || { title: 'Admin', sub: '' };
+
   return (
-    <header className="h-20 bg-white border-b border-gray-200 flex items-center justify-between px-8">
-      <div className="flex-1 max-w-md">
-        <div className="relative">
-          <Search size={18} className="absolute left-3 top-1/2 -translate-y-1/2 text-gray-400" />
-          <input 
-            type="text" 
-            placeholder="Search orders, inventory..." 
-            className="w-full bg-gray-100 border-none rounded-full py-2 pl-10 pr-4 text-sm focus:ring-2 focus:ring-brand-gold outline-none"
-          />
-        </div>
-      </div>
-      
-      <div className="flex items-center space-x-6">
-        <button className="relative p-2 text-gray-500 hover:text-brand-burgundy transition-colors">
-          <Bell size={20} />
-          <span className="absolute top-2 right-2 w-2 h-2 bg-red-500 rounded-full border-2 border-white" />
+    <header
+      className="flex items-center gap-4 px-6 shrink-0"
+      style={{
+        height: '60px',
+        borderBottom: '1px solid #f0f0f0',
+        background: 'rgba(251, 251, 251, 0.8)', // Semi-transparent based on user's color
+        backdropFilter: 'blur(8px)',
+      }}
+    >
+      {/* Sidebar toggle (only shown when sidebar is collapsed) */}
+      {!sidebarOpen && (
+        <button
+          onClick={onToggleSidebar}
+          className="w-8 h-8 flex items-center justify-center rounded-lg text-gray-500 hover:bg-black/5 hover:text-gray-800 transition-colors shrink-0"
+          title="Expand Sidebar"
+        >
+          <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+            <rect x="3" y="3" width="18" height="18" rx="2" ry="2" />
+            <line x1="9" y1="3" x2="9" y2="21" />
+          </svg>
         </button>
-        <button className="p-2 text-gray-500 hover:text-brand-burgundy transition-colors">
-          <Settings size={20} />
-        </button>
-        <div className="flex items-center space-x-3 ml-4 pl-4 border-l border-gray-200">
-          <div className="text-right">
-            <p className="text-sm font-bold text-brand-burgundy font-serif">Admin</p>
-            <p className="text-[10px] text-gray-400 uppercase tracking-widest font-sans">Store Manager</p>
-          </div>
-          <div className="w-10 h-10 bg-brand-gold/10 rounded-full flex items-center justify-center text-brand-gold font-bold">
-            A
-          </div>
-        </div>
+      )}
+
+      {/* MayaSindhu brand logo */}
+      <div className="shrink-0 flex items-center">
+        <img
+          src={mstitle}
+          alt="MayaSindhu"
+          className="h-8 w-auto object-contain"
+          style={{ maxHeight: '32px' }}
+        />
       </div>
+
+      {/* Spacer */}
+      <div className="flex-1" />
+
+      {/* Glassy Search */}
+      <div className="relative w-full max-w-xs shrink-0">
+        <Search size={14} className="absolute left-3 top-1/2 -translate-y-1/2 text-gray-800 opacity-60" />
+        <input
+          type="text"
+          placeholder="Search Masterpieces..."
+          className="w-full bg-white/40 border border-white/60 rounded-full text-[12px] text-gray-800 placeholder:text-gray-400 outline-none transition-all focus:bg-white/60 backdrop-blur-md shadow-sm"
+          style={{ padding: '6px 12px 6px 32px' }}
+        />
+      </div>
+
+      {/* Glassy Bell */}
+      <button className="relative w-8 h-8 flex items-center justify-center rounded-full bg-white/40 border border-white/60 hover:bg-white/60 text-gray-600 transition-colors shrink-0 backdrop-blur-md shadow-sm mr-2">
+        <Bell size={16} />
+        <span className="absolute top-1 right-1 w-2 h-2 bg-yellow-400 rounded-full border-2 border-white/80" />
+      </button>
     </header>
   );
 }
