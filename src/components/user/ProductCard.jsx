@@ -14,7 +14,7 @@ export default function ProductCard({ id, name, price, image, rating = 4.8 }) {
   };
 
   return (
-    <motion.div 
+    <motion.div
       initial={{ opacity: 0, y: 20 }}
       whileInView={{ opacity: 1, y: 0 }}
       viewport={{ once: true }}
@@ -22,13 +22,13 @@ export default function ProductCard({ id, name, price, image, rating = 4.8 }) {
     >
       <div className="relative aspect-[1/1.1] overflow-hidden bg-[#F5F5F7] rounded-[3rem]">
         <Link to={`/product/${id}`}>
-          <img 
-            src={image} 
-            alt={name} 
+          <img
+            src={image}
+            alt={name}
             className="w-full h-full object-cover transition-transform duration-1000 group-hover:scale-105"
           />
         </Link>
-        
+
         {/* Wishlist Icon */}
         <button className="absolute top-6 right-6 p-2.5 bg-white text-gray-900 rounded-full shadow-md hover:bg-[#FF6B00] hover:text-white transition-all duration-300 z-20">
           <Heart size={18} strokeWidth={2} />
@@ -36,7 +36,7 @@ export default function ProductCard({ id, name, price, image, rating = 4.8 }) {
 
         {/* Add to Cart - Orange Pill (Hover only) */}
         <div className="absolute bottom-8 left-1/2 -translate-x-1/2 translate-y-12 opacity-0 group-hover:translate-y-0 group-hover:opacity-100 transition-all duration-500 z-10 w-full px-8">
-          <button 
+          <button
             onClick={handleAddToCart}
             className="w-full flex items-center justify-center space-x-3 bg-[#FF6B00] text-white py-4 rounded-full shadow-xl hover:bg-[#E66000] active:scale-95 transition-all duration-300"
           >
@@ -48,7 +48,7 @@ export default function ProductCard({ id, name, price, image, rating = 4.8 }) {
         {/* Success Animation Overlay */}
         <AnimatePresence>
           {isAdded && (
-            <motion.div 
+            <motion.div
               initial={{ opacity: 0 }}
               animate={{ opacity: 1 }}
               exit={{ opacity: 0 }}
@@ -61,7 +61,7 @@ export default function ProductCard({ id, name, price, image, rating = 4.8 }) {
               >
                 <CheckCircle2 size={60} className="text-[#FF6B00] mb-4" />
               </motion.div>
-              <motion.h4 
+              <motion.h4
                 initial={{ y: 10, opacity: 0 }}
                 animate={{ y: 0, opacity: 1 }}
                 transition={{ delay: 0.2 }}
@@ -69,7 +69,7 @@ export default function ProductCard({ id, name, price, image, rating = 4.8 }) {
               >
                 Added to Cart!
               </motion.h4>
-              <motion.p 
+              <motion.p
                 initial={{ y: 10, opacity: 0 }}
                 animate={{ y: 0, opacity: 1 }}
                 transition={{ delay: 0.3 }}
