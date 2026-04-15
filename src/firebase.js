@@ -13,9 +13,24 @@ const firebaseConfig = {
 };
 
 // Initialize Firebase
-const app = initializeApp(firebaseConfig);
-const auth = getAuth(app);
-const db = getFirestore(app);
+let app;
+let auth = null;
+let db = null;
+
+try {
+  // Only initialize if API key exists and isn't a placeholder
+  const isInvalidKey = !firebaseConfig.apiKey || firebaseConfig.apiKey.includes('your_api_key');
+  
+  if (isInvalidKey) {
+    console.warn("Firebase: Invalid or missing API key. App will run in fallback mode.");
+  } else {
+    app = initializeApp(firebaseConfig);
+    auth = getAuth(app);
+    db = getFirestore(app);
+  }
+} catch (error) {
+  console.error("Firebase initialization error:", error);
+}
 
 export { auth, db };
 export default app;
