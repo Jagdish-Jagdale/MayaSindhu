@@ -1,109 +1,104 @@
-import { 
-  LayoutDashboard, 
-  Users, 
-  Package, 
-  Grid2X2, 
-  ShoppingBag, 
-  ShoppingCart, 
-  History, 
+import {
+  LayoutDashboard,
+  Users,
+  Package,
+  Grid2X2,
+  ShoppingBag,
+  History,
   Settings,
   LogOut,
-  ChevronRight,
-  User
+  User,
+  ChevronDown
 } from 'lucide-react';
 import { Link, useLocation, useNavigate } from 'react-router-dom';
 import { auth } from '../../firebase';
-import { signOut } from 'firebase/auth';
+import { signOut, onAuthStateChanged } from 'firebase/auth';
+import { useState, useEffect } from 'react';
+
+const menuItems = [
+  { title: 'Dashboard', icon: LayoutDashboard, path: '/admin' },
+  { title: 'Users', icon: Users, path: '/admin/users' },
+  { title: 'Products', icon: Package, path: '/admin/products' },
+  { title: 'Categories', icon: Grid2X2, path: '/admin/categories' },
+  { title: 'Orders', icon: ShoppingBag, path: '/admin/orders' },
+  { title: 'Inventory Logs', icon: History, path: '/admin/inventory-logs' },
+  { title: 'Settings', icon: Settings, path: '/admin/settings' },
+];
 
 export default function Sidebar() {
   const location = useLocation();
   const navigate = useNavigate();
-  
-  const menuItems = [
-    { title: 'Dashboard', icon: LayoutDashboard, path: '/admin' },
-    { title: 'Users', icon: Users, path: '/admin/users' },
-    { title: 'Products', icon: Package, path: '/admin/products' },
-    { title: 'Categories', icon: Grid2X2, path: '/admin/categories' },
-    { title: 'Orders', icon: ShoppingBag, path: '/admin/orders' },
-    { title: 'Cart', icon: ShoppingCart, path: '/admin/cart', optional: true },
-    { title: 'Inventory Logs', icon: History, path: '/admin/inventory-logs' },
-    { title: 'Settings', icon: Settings, path: '/admin/settings' },
-  ];
+  const [userEmail, setUserEmail] = useState('');
+
+  useEffect(() => {
+    const unsub = onAuthStateChanged(auth, (u) => {
+      if (u) setUserEmail(u.email || '');
+    });
+    return () => unsub();
+  }, []);
 
   const handleLogout = async () => {
     try {
       await signOut(auth);
       navigate('/admin/login');
-    } catch (error) {
-      console.error('Logout error:', error);
+    } catch (err) {
+      console.error('Logout error:', err);
     }
   };
 
+  const isActive = (path) =>
+    path === '/admin' ? location.pathname === '/admin' : location.pathname.startsWith(path);
+
+  // Short display name from email
+  const displayName = userEmail
+    ? userEmail.split('@')[0].replace(/[._]/g, ' ').replace(/\b\w/g, c => c.toUpperCase())
+    : 'Administrator';
+
   return (
-    <aside className="w-72 flex flex-col h-full bg-white shadow-[0_10px_40px_rgba(0,0,0,0.03)] border border-black/5 overflow-hidden transition-all duration-500">
-      <div className="p-8 border-b border-black/[0.03]">
-        <div className="flex items-center gap-3">
-          <div className="w-10 h-10 bg-[#600000] flex items-center justify-center text-white font-serif text-xl font-bold">
-            M
-          </div>
-          <div>
-            <h2 className="text-[12px] font-bold tracking-[0.2em] text-[#600000] uppercase">Atelier Admin</h2>
-            <p className="text-[9px] text-black/40 font-bold uppercase tracking-widest mt-0.5 whitespace-nowrap">MayaSindhu Boutique</p>
-          </div>
-        </div>
+    /* This div fills the sidebar card (below the 3-dots chrome rendered in AdminLayout) */
+    <div className="flex flex-col flex-1 min-h-0 overflow-hidden">
+
+      {/* Brand header — Centered Admin Panel text with Rainbow Gradient */}
+      <div className="px-4 py-6 border-b border-gray-100 min-h-[56px] flex items-center justify-center">
+        <span className="text-[13px] font-black uppercase tracking-[0.2em] text-center bg-gradient-to-r from-red-500 via-orange-500 via-yellow-500 via-green-500 via-blue-500 via-indigo-500 to-purple-500 bg-clip-text text-transparent animate-gradient-x">
+          Admin Panel
+        </span>
       </div>
 
-      <nav className="flex-1 px-4 py-8 space-y-1 overflow-y-auto no-scrollbar">
-        {menuItems.map((item) => (
-          <Link
-            key={item.title}
-            to={item.path}
-            className={`flex items-center justify-between group px-4 py-3.5 transition-all duration-500 ${
-              location.pathname === item.path 
-                ? 'bg-[#fefccf] text-[#600000]' 
-                : 'text-black/50 hover:text-[#600000] hover:bg-black/[0.02]'
-            }`}
-          >
-            <div className="flex items-center gap-4">
-              <item.icon size={18} strokeWidth={location.pathname === item.path ? 2.5 : 2} />
-              <span className={`text-[13px] font-bold tracking-wide ${location.pathname === item.path ? 'opacity-100' : 'opacity-80'}`}>
-                {item.title}
-              </span>
-            </div>
-            {location.pathname === item.path && (
-              <ChevronRight size={14} className="text-[#D4AF37]" />
-            )}
-          </Link>
-        ))}
+      {/* Nav links */}
+      <nav className="flex-1 px-2 py-3 space-y-0.5 overflow-y-auto min-h-0">
+        {menuItems.map((item) => {
+          const active = isActive(item.path);
+          return (
+            <Link
+              key={item.title}
+              to={item.path}
+              className={`flex items-center gap-3 px-3 py-2 rounded-lg transition-all duration-150 group text-[13px] ${active
+                ? 'bg-[#eaf6f6] text-[#1BAFAF] font-semibold'
+                : 'text-gray-500 hover:bg-gray-50 hover:text-gray-800 font-medium'
+                }`}
+            >
+              <item.icon
+                size={16}
+                strokeWidth={active ? 2.5 : 1.8}
+                className={active ? 'text-[#1BAFAF]' : 'text-gray-400 group-hover:text-gray-600'}
+              />
+              {item.title}
+            </Link>
+          );
+        })}
       </nav>
 
-      <div className="p-6 border-t border-black/[0.03]">
-        <div className="bg-[#f5f5f7] p-4 flex items-center justify-between group mb-4">
-          <div className="flex items-center gap-3">
-            <div className="w-8 h-8 rounded-full bg-[#600000]/10 flex items-center justify-center text-[#600000]">
-              <User size={16} />
-            </div>
-            <div>
-              <p className="text-[11px] font-bold text-[#390000] tracking-wide">Administrator</p>
-              <p className="text-[9px] text-black/40 font-bold uppercase tracking-tighter">Master Curator</p>
-            </div>
-          </div>
-        </div>
-
-        <button 
+      {/* Logout button */}
+      <div className="px-3 py-3 border-t border-gray-100 shrink-0">
+        <button
           onClick={handleLogout}
-          className="w-full flex items-center gap-3 px-4 py-3 text-black/40 hover:text-[#600000] transition-colors text-[11px] font-bold uppercase tracking-[0.2em]"
+          className="w-full flex items-center gap-2.5 px-3 py-3 rounded-xl text-[13px] font-bold text-red-500 bg-red-50/60 hover:bg-red-500 hover:text-white transition-all duration-200 shadow-sm shadow-red-500/5 group"
         >
-          <LogOut size={16} />
-          <span>Sign Out</span>
+          <LogOut size={16} className="text-red-500 group-hover:text-white transition-colors" />
+          Log out
         </button>
       </div>
-
-      <style jsx>{`
-        .no-scrollbar::-webkit-scrollbar { display: none; }
-        .no-scrollbar { -ms-overflow-style: none; scrollbar-width: none; }
-      `}</style>
-    </aside>
+    </div>
   );
 }
-
