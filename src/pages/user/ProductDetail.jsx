@@ -1,6 +1,7 @@
-import { useParams } from 'react-router-dom';
+import { useParams, useNavigate, useLocation } from 'react-router-dom';
 import { motion } from 'framer-motion';
 import { ShoppingBag, ChevronRight, Star } from 'lucide-react';
+import { useAuth } from '../../context/AuthContext';
 
 const PRODUCTS = [
   {
@@ -59,7 +60,7 @@ export default function ProductDetail() {
             className="flex flex-col justify-center"
           >
             <p className="text-xs font-bold tracking-[0.3em] uppercase text-brand-gold mb-4">{product.collection}</p>
-            <h1 className="text-4xl md:text-5xl font-serif text-brand-burgundy-dark mb-6 leading-tight">{product.name}</h1>
+            <h1 className="text-4xl md:text-5xl font-fashion text-brand-burgundy-dark mb-6 leading-tight">{product.name}</h1>
 
             <div className="flex items-center space-x-4 mb-8">
               <span className="text-2xl text-brand-burgundy tracking-wide">₹{product.price.toLocaleString()}</span>
@@ -82,7 +83,10 @@ export default function ProductDetail() {
               ))}
             </ul>
 
-            <button className="btn btn-primary bg-brand-burgundy text-brand-cream w-full md:w-auto px-16 py-4 flex items-center justify-center space-x-4 hover:bg-brand-burgundy-dark transition-all shadow-xl">
+            <button 
+              onClick={handleAddToCart}
+              className="btn btn-primary bg-brand-burgundy text-brand-cream w-full md:w-auto px-16 py-4 flex items-center justify-center space-x-4 hover:bg-brand-burgundy-dark transition-all shadow-xl"
+            >
               <ShoppingBag size={20} />
               <span className="tracking-widest uppercase font-bold text-sm">Add to Bag</span>
             </button>

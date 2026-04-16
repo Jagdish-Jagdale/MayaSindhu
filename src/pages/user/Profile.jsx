@@ -1,9 +1,30 @@
-import React from 'react';
+import React, { useEffect } from 'react';
 import { motion } from 'framer-motion';
 import { Package, User, Heart, Settings, LogOut, ChevronRight } from 'lucide-react';
-import { Link } from 'react-router-dom';
+import { Link, useNavigate } from 'react-router-dom';
+import { useAuth } from '../../context/AuthContext';
 
 export default function Profile() {
+  const { user, logout } = useAuth();
+  const navigate = useNavigate();
+
+  useEffect(() => {
+    if (!user) {
+      navigate('/login');
+    }
+  }, [user, navigate]);
+
+  if (!user) return null;
+
+  const handleLogout = async () => {
+    try {
+      await logout();
+      navigate('/login');
+    } catch (error) {
+      console.error("Logout failed:", error);
+    }
+  };
+
   const recentOrders = [
     { id: 'MS-8291', date: 'Oct 12, 2025', status: 'Delivered', total: 12500, image: '/src/assets/p3.jpeg' },
     { id: 'MS-7102', date: 'Sep 28, 2025', status: 'In Transit', total: 8500, image: '/src/assets/p1.jpeg' }
@@ -17,11 +38,17 @@ export default function Profile() {
           {/* Sidebar Navigation */}
           <div className="lg:col-span-1 space-y-4">
             <div className="bg-white p-8 rounded-[3rem] mb-6 text-center">
-              <div className="w-24 h-24 bg-brand-orange/10 mx-auto rounded-full flex items-center justify-center mb-4">
-                <span className="text-3xl font-fashion font-bold text-brand-orange">AS</span>
+              <div className="w-24 h-24 bg-brand-orange/10 mx-auto rounded-full flex items-center justify-center mb-4 overflow-hidden">
+                {user.photoURL ? (
+                  <img src={user.photoURL} alt="Profile" className="w-full h-full object-cover" />
+                ) : (
+                  <span className="text-3xl font-fashion font-bold text-brand-orange">
+                    {user.displayName?.charAt(0) || user.email?.charAt(0).toUpperCase()}
+                  </span>
+                )}
               </div>
-              <h2 className="text-xl font-fashion font-bold text-[#1A1A1A]">Ananya Sharma</h2>
-              <p className="text-gray-400 text-sm">ananya.s@example.com</p>
+              <h2 className="text-xl font-fashion font-bold text-[#1A1A1A]">{user.displayName || 'Guest User'}</h2>
+              <p className="text-gray-400 text-sm">{user.email}</p>
             </div>
 
             <nav className="bg-white rounded-[3rem] overflow-hidden p-4">
@@ -30,7 +57,12 @@ export default function Profile() {
               <ProfileNavLink icon={<Heart size={20} />} label="My Wishlist" />
               <ProfileNavLink icon={<Settings size={20} />} label="Settings" />
               <div className="border-t border-gray-50 mt-4 pt-4">
-                <ProfileNavLink icon={<LogOut size={20} />} label="Logout" danger />
+                <ProfileNavLink 
+                  icon={<LogOut size={20} />} 
+                  label="Logout" 
+                  danger 
+                  onClick={handleLogout}
+                />
               </div>
             </nav>
           </div>
@@ -94,11 +126,14 @@ export default function Profile() {
   );
 }
 
-function ProfileNavLink({ icon, label, active, danger }) {
+function ProfileNavLink({ icon, label, active, danger, onClick }) {
   return (
-    <button className={`w-full flex items-center justify-between p-5 rounded-2xl transition-all ${active ? 'bg-brand-orange/5 text-brand-orange font-bold' :
+    <button 
+      onClick={onClick}
+      className={`w-full flex items-center justify-between p-5 rounded-2xl transition-all ${active ? 'bg-brand-orange/5 text-brand-orange font-bold' :
         danger ? 'text-red-400 hover:bg-red-50' : 'text-gray-500 hover:bg-gray-50'
-      }`}>
+      }`}
+    >
       <div className="flex items-center gap-4">
         {icon}
         <span className="text-[14px]">{label}</span>

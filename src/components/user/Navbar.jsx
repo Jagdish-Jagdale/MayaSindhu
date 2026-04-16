@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { Link, useLocation } from 'react-router-dom';
+import { Link, useLocation, useNavigate } from 'react-router-dom';
 import { motion, AnimatePresence } from 'framer-motion';
 import {
   Search,
@@ -12,10 +12,12 @@ import {
   Plus,
   Minus
 } from 'lucide-react';
+import { useAuth } from '../../context/AuthContext';
 import useCategories from '../../hooks/useCategories';
 
 export default function Navbar() {
-  const { categories, loading } = useCategories();
+  const { categories } = useCategories();
+  const { user } = useAuth();
   const [isScrolled, setIsScrolled] = useState(false);
   const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false);
   const location = useLocation();
@@ -56,9 +58,13 @@ export default function Navbar() {
 
           {/* Right: Icon Group */}
           <div className="flex items-center gap-2 lg:gap-5">
-            <button className="p-2 text-[#004D4D] hover:text-[#D4AF37] transition-colors relative">
+            <Link 
+              to={user ? "/profile" : "/login"} 
+              className="p-2 text-[#004D4D] hover:text-[#D4AF37] transition-colors relative"
+            >
               <User size={22} strokeWidth={1.5} />
-            </button>
+              {user && <span className="absolute bottom-1 right-1 w-2 h-2 bg-green-500 rounded-full border border-white"></span>}
+            </Link>
             <Link to="/wishlist" className="p-2 text-[#004D4D] hover:text-[#D4AF37] transition-colors relative">
               <Heart size={22} strokeWidth={1.5} />
               <span className="absolute top-1 right-1 bg-[#D4AF37] text-white text-[9px] font-bold w-4 h-4 flex items-center justify-center rounded-full">0</span>
@@ -210,6 +216,18 @@ function NavItem({ category, location }) {
 }
 
 function MobileMenu({ categories, onClose }) {
+  const { user } = useAuth();
+  const navigate = useNavigate();
+
+  const handleUserAction = () => {
+    onClose();
+    if (user) {
+      navigate('/profile');
+    } else {
+      navigate('/login');
+    }
+  };
+
   return (
     <>
       <motion.div
@@ -250,8 +268,11 @@ function MobileMenu({ categories, onClose }) {
         </div>
 
         <div className="p-6 border-t bg-[#FFF9F0]">
-          <button className="w-full bg-[#004D4D] text-white font-bold py-4 rounded-xl shadow-lg shadow-[#004D4D]/20 hover:bg-[#003333] transition-all">
-            Login / Signup
+          <button 
+            onClick={handleUserAction}
+            className="w-full bg-[#004D4D] text-white font-bold py-4 rounded-xl shadow-lg shadow-[#004D4D]/20 hover:bg-[#003333] transition-all"
+          >
+            {user ? 'View My Profile' : 'Login / Signup'}
           </button>
         </div>
       </motion.div>

@@ -1,16 +1,37 @@
 import { motion, AnimatePresence } from 'framer-motion';
 import { ShoppingBag, Heart, Star, CheckCircle2 } from 'lucide-react';
-import { Link } from 'react-router-dom';
+import { Link, useNavigate, useLocation } from 'react-router-dom';
 import { useState } from 'react';
+import { useAuth } from '../../context/AuthContext';
 
 export default function ProductCard({ id, name, price, image, rating = 4.8 }) {
   const [isAdded, setIsAdded] = useState(false);
+  const { user } = useAuth();
+  const navigate = useNavigate();
+  const location = useLocation();
 
   const handleAddToCart = (e) => {
     e.preventDefault();
     e.stopPropagation();
+    
+    if (!user) {
+      navigate('/login', { state: { from: location } });
+      return;
+    }
+
     setIsAdded(true);
     setTimeout(() => setIsAdded(false), 2000);
+  };
+
+  const handleWishlist = (e) => {
+    e.preventDefault();
+    e.stopPropagation();
+
+    if (!user) {
+      navigate('/login', { state: { from: location } });
+      return;
+    }
+    // Wishlist logic would go here
   };
 
   return (
@@ -30,7 +51,10 @@ export default function ProductCard({ id, name, price, image, rating = 4.8 }) {
         </Link>
 
         {/* Wishlist Icon */}
-        <button className="absolute top-6 right-6 p-2.5 bg-white text-gray-900 rounded-full shadow-md hover:bg-[#FF6B00] hover:text-white transition-all duration-300 z-20">
+        <button 
+          onClick={handleWishlist}
+          className="absolute top-6 right-6 p-2.5 bg-white text-gray-900 rounded-full shadow-md hover:bg-[#FF6B00] hover:text-white transition-all duration-300 z-20"
+        >
           <Heart size={18} strokeWidth={2} />
         </button>
 
