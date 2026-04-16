@@ -16,7 +16,7 @@ import { signOut, onAuthStateChanged } from 'firebase/auth';
 import { useState, useEffect } from 'react';
 
 const menuItems = [
-  { title: 'Dashboard', icon: LayoutDashboard, path: '/admin' },
+  { title: 'Dashboard', icon: LayoutDashboard, path: '/admin/dashboard' },
   { title: 'Users', icon: Users, path: '/admin/users' },
   { title: 'Products', icon: Package, path: '/admin/products' },
   { title: 'Categories', icon: Grid2X2, path: '/admin/categories' },
@@ -46,8 +46,7 @@ export default function Sidebar() {
     }
   };
 
-  const isActive = (path) =>
-    path === '/admin' ? location.pathname === '/admin' : location.pathname.startsWith(path);
+  const isActive = (path) => location.pathname === path || (path !== '/admin/dashboard' && location.pathname.startsWith(path));
 
   // Short display name from email
   const displayName = userEmail

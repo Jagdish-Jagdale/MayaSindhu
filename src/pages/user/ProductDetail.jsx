@@ -3,30 +3,28 @@ import { motion } from 'framer-motion';
 import { ShoppingBag, ChevronRight, Star } from 'lucide-react';
 import { useAuth } from '../../context/AuthContext';
 
-const PRODUCTS = [
-  {
-    id: 1,
-    name: "Red Banarasi Silk Saree",
-    price: 45000,
-    image: "/assets/products/banarasi.png",
-    collection: "Heritage Silk",
-    description: "An exquisite Banarasi Silk saree, hand-woven in the sacred city of Varanasi. Featuring intricate gold zari work and a rich crimson hue, this piece represents the pinnacle of Indian textile heritage.",
-    details: ["Pure Katan Silk", "Hand-woven (12-15 days)", "6.5 Meters with blouse piece", "Dry clean only"]
-  },
-  {
-    id: 2,
-    name: "Royal Blue Kanjeevaram",
-    price: 52000,
-    image: "/assets/products/kanjeevaram.png",
-    collection: "Silk Route",
-    description: "A majestic Kanjeevaram masterpiece from the looms of Tamil Nadu. This royal blue saree is characterized by its heavy, contrast orange border and ornate temple jewelry motifs.",
-    details: ["Mulberry Silk", "Hand-woven (18 days)", "6.5 Meters with blouse piece", "Dry clean only"]
-  }
-];
+import { Navigate } from 'react-router-dom';
+import { PRODUCTS } from '../../data/products';
 
 export default function ProductDetail() {
-  const { id } = useParams();
-  const product = PRODUCTS.find(p => p.id === parseInt(id)) || PRODUCTS[0];
+  const { slug } = useParams();
+
+  // 1. Try to find by slug
+  let product = PRODUCTS.find(p => p.slug === slug);
+
+  // 2. If not found, try to find by ID (in case of legacy links)
+  if (!product && !isNaN(slug)) {
+    const legacyProduct = PRODUCTS.find(p => p.id === parseInt(slug));
+    if (legacyProduct) {
+      // If found by ID, redirect to the slug-based URL immediately
+      return <Navigate to={`/product/${legacyProduct.slug}`} replace />;
+    }
+  }
+
+  // 3. Fallback to first product or 404 if absolutely nothing matches
+  // Using PRODUCTS[0] as final fallback to avoid crash, but redirection is preferred
+  if (!product) product = PRODUCTS[0];
+
 
   return (
     <div className="bg-brand-cream min-h-screen pt-32 pb-24">

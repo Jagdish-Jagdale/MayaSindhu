@@ -1,6 +1,7 @@
-import { BrowserRouter as Router, Routes, Route } from 'react-router-dom';
+import { BrowserRouter as Router, Routes, Route, Navigate } from 'react-router-dom';
 import UserLayout from './layouts/UserLayout';
 import AdminLayout from './layouts/AdminLayout';
+import TitleUpdater from './components/common/TitleUpdater';
 
 // User Pages
 import Home from './pages/user/Home';
@@ -23,6 +24,10 @@ import Categories from './pages/admin/Categories';
 import Orders from './pages/admin/Orders';
 import AdminCart from './pages/admin/Cart';
 import InventoryLogs from './pages/admin/InventoryLogs';
+import useOnlineStatus from './hooks/useOnlineStatus';
+import OfflineStatus from './components/common/OfflineStatus';
+import NotFound from './components/common/NotFound';
+import AdminProtectedRoute from './components/admin/AdminProtectedRoute';
 import Settings from './pages/admin/Settings';
 import './App.css';
 
@@ -30,6 +35,8 @@ import { AuthProvider } from './context/AuthContext';
 import Login from './pages/user/Login';
 
 function App() {
+  const isOnline = useOnlineStatus();
+
   return (
     <Router>
       <AuthProvider>

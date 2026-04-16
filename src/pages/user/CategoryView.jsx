@@ -5,21 +5,8 @@ import { ChevronRight, ChevronDown, SlidersHorizontal, X } from 'lucide-react';
 import ProductCard from '../../components/user/ProductCard';
 import useCategories from '../../hooks/useCategories';
 
-// Comprehensive Product Database with high-quality local assets
-const categoryProducts = [
-  { id: 1, name: "Artisanal Earring Collection", price: 8500, image: "/src/assets/p1.jpeg", rating: 4.9, categoryId: 'jewel-type' }, 
-  { id: 2, name: "Madhubani Heritage Gift Set", price: 4200, image: "/src/assets/p2.jpeg", rating: 4.8, categoryId: 'fest' }, 
-  { id: 3, name: "Lavender Daisy Cotton Saree", price: 12500, image: "/src/assets/p3.jpeg", rating: 5.0, categoryId: 'app-fab-1' }, 
-  { id: 4, name: "Indigo Block Print Saree", price: 9800, image: "/src/assets/p4.jpeg", rating: 4.7, categoryId: 'app-fab-1' },
-  { id: 5, name: "Ivory Flamingo Saree", price: 18500, image: "/src/assets/p5.jpeg", rating: 4.9, categoryId: 'app-fab-2' },
-  { id: 6, name: "Deep Blue Batik Silk Saree", price: 11200, image: "/src/assets/p6.jpeg", rating: 4.6, categoryId: 'app-fab-2' },
-  { id: 7, name: "Multicolored Floral Saree", price: 15400, image: "/src/assets/p7.png", rating: 4.8, categoryId: 'app' },
-  { id: 8, name: "Vibrant Elephant Print Saree", price: 10500, image: "/src/assets/p8.png", rating: 4.9, categoryId: 'app' },
-  { id: 9, name: "Pastel Pink Linen Saree", price: 8900, image: "/src/assets/p9.png", rating: 4.5, categoryId: 'app' },
-  { id: 10, name: "Tribal Silver Necklace", price: 3200, image: "/src/assets/p1.jpeg", rating: 4.9, categoryId: 'j-3' },
-  { id: 11, name: "Antique Silk Clutch", price: 2100, image: "/src/assets/p2.jpeg", rating: 4.7, categoryId: 'bags' },
-  { id: 12, name: "Heritage Unstitched Suit", price: 5400, image: "/src/assets/p6.jpeg", rating: 4.8, categoryId: 'app' },
-];
+import { PRODUCTS } from '../../data/products';
+
 
 export default function CategoryView() {
   const { id } = useParams();
@@ -44,20 +31,9 @@ export default function CategoryView() {
     }
   }, [id, categories]);
 
-  // Product filtering logic including sub-categories
-  const getFilterableIds = (cat) => {
-    let ids = [cat.id];
-    if (cat.children) {
-      cat.children.forEach(child => {
-        ids = [...ids, ...getFilterableIds(child)];
-      });
-    }
-    return ids;
-  };
-
-  const allowedIds = currentCategory ? getFilterableIds(currentCategory) : [id];
-  
-  const filteredProducts = categoryProducts.filter(p => allowedIds.includes(p.categoryId));
+  const filteredProducts = PRODUCTS.filter(p =>
+    p.categoryId === id || (currentCategory && p.categoryId === currentCategory.name) || p.collection === id
+  );
 
   if (loading) return (
     <div className="min-h-screen flex items-center justify-center bg-[#FFF9F0]">

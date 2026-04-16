@@ -1,4 +1,4 @@
-import React from 'react';
+import React, { useEffect } from 'react';
 import { History, ArrowDownLeft, ArrowUpRight, RotateCcw } from 'lucide-react';
 
 const InventoryLogs = () => {

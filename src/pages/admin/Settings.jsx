@@ -1,4 +1,4 @@
-import React from 'react';
+import React, { useEffect } from 'react';
 import { Settings as SettingsIcon, Shield, Bell, Palette, Globe } from 'lucide-react';
 
 const Settings = () => {

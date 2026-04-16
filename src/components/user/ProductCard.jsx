@@ -4,7 +4,7 @@ import { Link, useNavigate, useLocation } from 'react-router-dom';
 import { useState } from 'react';
 import { useAuth } from '../../context/AuthContext';
 
-export default function ProductCard({ id, name, price, image, rating = 4.8 }) {
+export default function ProductCard({ id, slug, name, price, image, rating = 4.8 }) {
   const [isAdded, setIsAdded] = useState(false);
   const { user } = useAuth();
   const navigate = useNavigate();
@@ -42,7 +42,7 @@ export default function ProductCard({ id, name, price, image, rating = 4.8 }) {
       className="group relative"
     >
       <div className="relative aspect-[1/1.1] overflow-hidden bg-[#F5F5F7] rounded-[3rem]">
-        <Link to={`/product/${id}`}>
+        <Link to={`/product/${slug}`}>
           <img
             src={image}
             alt={name}
@@ -107,7 +107,7 @@ export default function ProductCard({ id, name, price, image, rating = 4.8 }) {
       </div>
 
       <div className="mt-6 px-2">
-        <Link to={`/product/${id}`}>
+        <Link to={`/product/${slug}`}>
           <h3 className="text-base font-fashion font-semibold text-[#1A1A1A] hover:text-[#FF6B00] transition-colors line-clamp-1 mb-2">{name}</h3>
         </Link>
         <div className="flex items-center justify-between">

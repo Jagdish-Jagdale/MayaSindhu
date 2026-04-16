@@ -13,20 +13,6 @@ const AdminLogin = () => {
   const [error, setError] = useState('');
   const [loading, setLoading] = useState(false);
   const [shake, setShake] = useState(false);
-  const [checkingSession, setCheckingSession] = useState(true);
-  const navigate = useNavigate();
-
-  // Redirect if already authenticated
-  useEffect(() => {
-    const unsubscribe = onAuthStateChanged(auth, (user) => {
-      if (user) {
-        navigate('/admin', { replace: true });
-      } else {
-        setCheckingSession(false);
-      }
-    });
-    return () => unsubscribe();
-  }, [navigate]);
 
   const triggerError = (msg) => {
     setError(msg);
@@ -52,7 +38,7 @@ const AdminLogin = () => {
 
     try {
       await signInWithEmailAndPassword(auth, email.trim(), password);
-      navigate('/admin', { replace: true });
+      // AdminProtectedRoute will handle the redirect upon auth state change
     } catch (err) {
       console.error('Login error:', err.code, err.message);
       const code = err?.code;
@@ -75,14 +61,6 @@ const AdminLogin = () => {
       setLoading(false);
     }
   };
-
-  if (checkingSession) {
-    return (
-      <div className="min-h-screen w-full flex items-center justify-center bg-[#000]">
-        <Loader2 className="w-8 h-8 animate-spin text-[#1BAFAF]" />
-      </div>
-    );
-  }
 
   return (
     <div
@@ -149,7 +127,9 @@ const AdminLogin = () => {
           <form onSubmit={handleLogin} noValidate className="space-y-6">
             {/* Email Field */}
             <div className="space-y-2">
-              <label className="text-[11px] font-bold text-white/90 uppercase tracking-widest ml-1">Email Address</label>
+              <div className="flex justify-between items-center ml-1">
+                <label className="text-[11px] font-bold text-white/90 uppercase tracking-widest">Email Address</label>
+              </div>
               <div className="relative group">
                 <input
                   type="email"
