@@ -1,5 +1,6 @@
 import { BrowserRouter as Router, Routes, Route, Navigate } from 'react-router-dom';
 import UserLayout from './layouts/UserLayout';
+import { Toaster } from 'react-hot-toast';
 import AdminLayout from './layouts/AdminLayout';
 import TitleUpdater from './components/common/TitleUpdater';
 
@@ -40,6 +41,28 @@ function App() {
   return (
     <Router>
       <AuthProvider>
+        <Toaster 
+          position="top-right" 
+          reverseOrder={false}
+          toastOptions={{
+            style: {
+              background: '#fff',
+              color: '#333',
+              fontFamily: "'Inter', 'SF Pro Display', -apple-system, sans-serif",
+              fontSize: '13px',
+              fontWeight: '600',
+              borderRadius: '16px',
+              padding: '12px 20px',
+              boxShadow: '0 10px 25px -5px rgba(0, 0, 0, 0.1), 0 8px 10px -6px rgba(0, 0, 0, 0.1)',
+            },
+            success: {
+              iconTheme: {
+                primary: '#1BAFAF',
+                secondary: '#fff',
+              },
+            },
+          }}
+        />
         <Routes>
           {/* User Routes */}
           <Route path="/" element={<UserLayout />}>
@@ -57,11 +80,20 @@ function App() {
           </Route>
 
           {/* Admin Login Route (Standalone) */}
-          <Route path="/admin/login" element={<AdminLogin />} />
+          <Route path="/admin/login" element={
+            <AdminProtectedRoute requireAuth={false}>
+              <AdminLogin />
+            </AdminProtectedRoute>
+          } />
 
           {/* Admin Route */}
-          <Route path="/admin" element={<AdminLayout />}>
-            <Route index element={<Dashboard />} />
+          <Route path="/admin" element={
+            <AdminProtectedRoute>
+              <AdminLayout />
+            </AdminProtectedRoute>
+          }>
+            <Route index element={<Navigate to="/admin/dashboard" replace />} />
+            <Route path="dashboard" element={<Dashboard />} />
             <Route path="users" element={<Users />} />
             <Route path="products" element={<ProductManagement />} />
             <Route path="categories" element={<Categories />} />
@@ -70,6 +102,9 @@ function App() {
             <Route path="inventory-logs" element={<InventoryLogs />} />
             <Route path="settings" element={<Settings />} />
           </Route>
+
+          {/* Catch-all Route for 404 - Page Not Found */}
+          <Route path="*" element={<NotFound />} />
         </Routes>
       </AuthProvider>
     </Router>
