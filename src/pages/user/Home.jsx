@@ -98,7 +98,7 @@ export default function Home() {
   return (
     <div className="bg-white min-h-screen">
       {/* Hero Section - Inspired by Reference Image */}
-      <section className="relative h-[90vh] w-full flex items-center overflow-hidden">
+      <section className="relative h-[85vh] md:h-[90vh] w-full flex items-center overflow-hidden pt-12 md:pt-20">
         {/* Background Image */}
         <div className="absolute inset-0 w-full h-full">
           <img
