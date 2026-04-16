@@ -3,24 +3,47 @@ import { db } from '../firebase';
 import { collection, onSnapshot, query, orderBy } from 'firebase/firestore';
 
 const FALLBACK_CATEGORIES = [
-  { id: 'cat1', name: 'Apparels', parentId: null, level: 0 },
-  { id: 'cat1-1', name: 'Sarees', parentId: 'cat1', level: 1 },
-  { id: 'cat1-2', name: 'Dress Materials', parentId: 'cat1', level: 1 },
-  { id: 'cat2', name: 'Jewellery', parentId: null, level: 0 },
-  { id: 'cat2-1', name: 'Fabric Jewellery', parentId: 'cat2', level: 1 },
-  { id: 'cat2-2', name: 'Clay Jewellery', parentId: 'cat2', level: 1 },
-  { id: 'cat2-3', name: 'Tribal Jewellery', parentId: 'cat2', level: 1 },
-  { id: 'cat3', name: 'Festive', parentId: null, level: 0 },
-  { id: 'cat3-1', name: 'Torans', parentId: 'cat3', level: 1 },
-  { id: 'cat3-2', name: 'Rakhis', parentId: 'cat3', level: 1 },
-  { id: 'cat3-3', name: 'Diyas', parentId: 'cat3', level: 1 },
-  { id: 'cat4', name: 'Bags', parentId: null, level: 0 },
-  { id: 'cat4-1', name: 'Wallets', parentId: 'cat4', level: 1 },
-  { id: 'cat4-2', name: 'Slings', parentId: 'cat4', level: 1 },
-  { id: 'cat4-3', name: 'Tote Bags', parentId: 'cat4', level: 1 },
-  { id: 'cat5', name: 'Others', parentId: null, level: 0 },
-  { id: 'cat5-1', name: 'Keychains', parentId: 'cat5', level: 1 },
-  { id: 'cat5-2', name: 'Diaries', parentId: 'cat5', level: 1 },
+  // Level 0: Main Nav
+  { id: 'app', name: 'Apparels', parentId: null, level: 0 },
+  { id: 'jewel', name: 'Jewellery', parentId: null, level: 0 },
+  { id: 'fest', name: 'Festive', parentId: null, level: 0 },
+  { id: 'bags', name: 'Bags', parentId: null, level: 0 },
+  { id: 'oth', name: 'Others', parentId: null, level: 0 },
+
+  // Level 1: Apparels
+  { id: 'app-sar', name: 'Sarees', parentId: 'app', level: 1 },
+  { id: 'app-dress', name: 'Dress Materials', parentId: 'app', level: 1 },
+
+  // Level 2: Apparels -> Sarees
+  { id: 'app-sar-1', name: 'Handmade Sarees', parentId: 'app-sar', level: 2 },
+  { id: 'app-sar-2', name: 'Printed Sarees', parentId: 'app-sar', level: 2 },
+  { id: 'app-sar-3', name: 'Silk Sarees', parentId: 'app-sar', level: 2 },
+  { id: 'app-sar-4', name: 'Cotton Sarees', parentId: 'app-sar', level: 2 },
+
+  // Level 1: Jewellery
+  { id: 'jewel-ear', name: 'Earrings', parentId: 'jewel', level: 1 },
+  { id: 'jewel-neck', name: 'Necklaces', parentId: 'jewel', level: 1 },
+  { id: 'jewel-bang', name: 'Bangles', parentId: 'jewel', level: 1 },
+
+  // Level 1: Festive
+  { id: 'fest-tor', name: 'Torans', parentId: 'fest', level: 1 },
+  { id: 'fest-rak', name: 'Rakhis', parentId: 'fest', level: 1 },
+  { id: 'fest-diy', name: 'Diyas', parentId: 'fest', level: 1 },
+  { id: 'fest-leaf', name: 'Banana Leaf for Naivedya', parentId: 'fest', level: 1 },
+
+  // Level 1: Bags
+  { id: 'bags-wal', name: 'Wallets', parentId: 'bags', level: 1 },
+  { id: 'bags-sling', name: 'Slings', parentId: 'bags', level: 1 },
+  { id: 'bags-tote', name: 'Tote Bags', parentId: 'bags', level: 1 },
+  { id: 'bags-pock', name: 'Saree Pockets', parentId: 'bags', level: 1 },
+  { id: 'bags-boho', name: 'Boho Bags', parentId: 'bags', level: 1 },
+
+  // Level 1: Others
+  { id: 'oth-key', name: 'Keychains', parentId: 'oth', level: 1 },
+  { id: 'oth-dia', name: 'Diaries', parentId: 'oth', level: 1 },
+  { id: 'oth-pou', name: 'Pouches', parentId: 'oth', level: 1 },
+  { id: 'oth-coa', name: 'Coasters', parentId: 'oth', level: 1 },
+  { id: 'oth-slv', name: 'Laptop Sleeves', parentId: 'oth', level: 1 },
 ];
 
 const useCategories = () => {
@@ -28,7 +51,6 @@ const useCategories = () => {
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
-    // Helper to build hierarchy
     const buildHierarchy = (items, parentId = null) => {
       return items
         .filter(item => item.parentId === parentId)
@@ -39,15 +61,21 @@ const useCategories = () => {
     };
 
     if (!db) {
-      console.log("Using fallback categories (Firebase not configured)");
       setCategories(buildHierarchy(FALLBACK_CATEGORIES));
       setLoading(false);
       return;
     }
 
     const q = query(collection(db, 'categories'), orderBy('name', 'asc'));
-    
+
     const unsubscribe = onSnapshot(q, (snapshot) => {
+      if (snapshot.empty) {
+        console.log("Firestore categories collection is empty. Using fallback data.");
+        setCategories(buildHierarchy(FALLBACK_CATEGORIES));
+        setLoading(false);
+        return;
+      }
+
       const flatCategories = snapshot.docs.map(doc => ({
         id: doc.id,
         ...doc.data()
@@ -57,7 +85,6 @@ const useCategories = () => {
       setLoading(false);
     }, (error) => {
       console.error("Error fetching categories: ", error);
-      // On error, use fallback
       setCategories(buildHierarchy(FALLBACK_CATEGORIES));
       setLoading(false);
     });

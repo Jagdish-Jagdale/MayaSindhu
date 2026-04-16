@@ -41,7 +41,7 @@ export default function ProductDetail() {
 
         <div className="grid grid-cols-1 lg:grid-cols-2 gap-16">
           {/* Gallery */}
-          <motion.div 
+          <motion.div
             initial={{ opacity: 0, x: -20 }}
             animate={{ opacity: 1, x: 0 }}
             className="space-y-4"
@@ -52,7 +52,7 @@ export default function ProductDetail() {
           </motion.div>
 
           {/* Info */}
-          <motion.div 
+          <motion.div
             initial={{ opacity: 0, x: 20 }}
             animate={{ opacity: 1, x: 0 }}
             transition={{ delay: 0.2 }}
@@ -60,7 +60,7 @@ export default function ProductDetail() {
           >
             <p className="text-xs font-bold tracking-[0.3em] uppercase text-brand-gold mb-4">{product.collection}</p>
             <h1 className="text-4xl md:text-5xl font-serif text-brand-burgundy-dark mb-6 leading-tight">{product.name}</h1>
-            
+
             <div className="flex items-center space-x-4 mb-8">
               <span className="text-2xl text-brand-burgundy tracking-wide">₹{product.price.toLocaleString()}</span>
               <div className="flex text-brand-gold">
