@@ -1,85 +1,11 @@
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import ProductCard from '../../components/user/ProductCard';
 
-// Local Assets Import
-import p1 from '../../assets/p1.jpeg';
-import p2 from '../../assets/p2.jpeg';
-import p3 from '../../assets/p3.jpeg';
-import p4 from '../../assets/p4.jpeg';
-import p5 from '../../assets/p5.jpeg';
-import p6 from '../../assets/p6.jpeg';
-import p7 from '../../assets/p7.png';
-import p8 from '../../assets/p8.png';
-import p9 from '../../assets/p9.png';
-
-const PRODUCTS = [
-  {
-    id: 1,
-    name: "Artisanal Earring Collection",
-    price: 8500,
-    image: p1,
-    collection: "Jewellery"
-  },
-  {
-    id: 2,
-    name: "Madhubani Heritage Gift Set",
-    price: 4200,
-    image: p2,
-    collection: "Jewellery"
-  },
-  {
-    id: 3,
-    name: "Lavender Daisy Cotton Saree",
-    price: 12500,
-    image: p3,
-    collection: "Heritage Silk"
-  },
-  {
-    id: 4,
-    name: "Indigo Block Print Saree",
-    price: 9800,
-    image: p4,
-    collection: "Fine Cotton"
-  },
-  {
-    id: 5,
-    name: "Ivory Flamingo Saree",
-    price: 18500,
-    image: p5,
-    collection: "Fine Cotton"
-  },
-  {
-    id: 6,
-    name: "Deep Blue Batik Silk Saree",
-    price: 11200,
-    image: p6,
-    collection: "Heritage Silk"
-  },
-  {
-    id: 7,
-    name: "Multicolored Floral Saree",
-    price: 15400,
-    image: p7,
-    collection: "Summer Breezes"
-  },
-  {
-    id: 8,
-    name: "Vibrant Elephant Print Saree",
-    price: 10500,
-    image: p8,
-    collection: "Artisan Series"
-  },
-  {
-    id: 9,
-    name: "Pastel Pink Linen Saree",
-    price: 8900,
-    image: p9,
-    collection: "Summer Breezes"
-  }
-];
+import { PRODUCTS } from '../../data/products';
 
 export default function Shop() {
   const [filter, setFilter] = useState('All');
+
 
   return (
     <div className="bg-brand-cream min-h-screen pt-32 pb-24">

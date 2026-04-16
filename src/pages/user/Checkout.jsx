@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { Check, ChevronRight, Lock, CreditCard, Truck, ShoppingBag } from 'lucide-react';
 import { Link } from 'react-router-dom';
@@ -7,6 +7,7 @@ const steps = ['Shipping', 'Payment', 'Confirmation'];
 
 export default function Checkout() {
   const [activeStep, setActiveStep] = useState(0);
+
 
   const nextStep = () => setActiveStep((prev) => Math.min(prev + 1, steps.length - 1));
   const prevStep = () => setActiveStep((prev) => Math.max(prev - 1, 0));

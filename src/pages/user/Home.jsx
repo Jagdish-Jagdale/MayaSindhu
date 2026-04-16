@@ -5,16 +5,12 @@ import ProductCard from '../../components/user/ProductCard';
 import VideoCard from '../../components/user/VideoCard';
 import VideoModal from '../../components/user/VideoModal';
 
-// Featured Product Assets
 import p1 from '../../assets/p1.jpeg';
-import p2 from '../../assets/p2.jpeg';
 import p3 from '../../assets/p3.jpeg';
 import p4 from '../../assets/p4.jpeg';
 import p5 from '../../assets/p5.jpeg';
-import p6 from '../../assets/p6.jpeg';
-import p7 from '../../assets/p7.png';
-import p8 from '../../assets/p8.png';
-import p9 from '../../assets/p9.png';
+
+import { PRODUCTS } from '../../data/products';
 
 const videos = [
   {
@@ -178,7 +174,7 @@ export default function Home() {
             className="md:col-span-1 md:row-span-2 relative group overflow-hidden rounded-[2.5rem] shadow-lg"
           >
             <img
-              src={p7}
+              src={PRODUCTS.find(p => p.id === 7).image}
               alt="Sarees"
               className="w-full h-full object-cover transition-transform duration-1000 group-hover:scale-105"
             />
@@ -196,7 +192,7 @@ export default function Home() {
             className="md:col-span-1 md:row-span-1 relative group overflow-hidden rounded-[2.5rem] shadow-lg h-[280px] md:h-full"
           >
             <img
-              src={p1}
+              src={PRODUCTS.find(p => p.id === 1).image}
               alt="Jewellery"
               className="w-full h-full object-cover transition-transform duration-1000 group-hover:scale-105"
             />
@@ -213,7 +209,7 @@ export default function Home() {
             className="md:col-span-1 md:row-span-1 relative group overflow-hidden rounded-[2.5rem] shadow-lg h-[280px] md:h-full"
           >
             <img
-              src={p6}
+              src={PRODUCTS.find(p => p.id === 6).image}
               alt="Heritage Silk"
               className="w-full h-full object-cover transition-transform duration-1000 group-hover:scale-105"
             />
@@ -230,7 +226,7 @@ export default function Home() {
             className="md:col-span-2 md:row-span-1 relative group overflow-hidden rounded-[2.5rem] shadow-lg h-[280px] md:h-full"
           >
             <img
-              src={p2}
+              src={PRODUCTS.find(p => p.id === 2).image}
               alt="Handmade Show Pieces"
               className="w-full h-full object-cover transition-transform duration-1000 group-hover:scale-105"
             />
@@ -253,34 +249,10 @@ export default function Home() {
         </div>
 
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-x-10 gap-y-20">
-          <ProductCard
-            id={1}
-            name="Artisanal Earring Collection"
-            price={8500}
-            image={p1}
-            rating={4.9}
-          />
-          <ProductCard
-            id={3}
-            name="Lavender Daisy Cotton Saree"
-            price={12500}
-            image={p3}
-            rating={4.8}
-          />
-          <ProductCard
-            id={4}
-            name="Indigo Block Print Saree"
-            price={9800}
-            image={p4}
-            rating={5.0}
-          />
-          <ProductCard
-            id={8}
-            name="Vibrant Elephant Print Saree"
-            price={10500}
-            image={p8}
-            rating={4.7}
-          />
+          {[1, 3, 4, 8].map(id => {
+            const product = PRODUCTS.find(p => p.id === id);
+            return <ProductCard key={id} {...product} />;
+          })}
         </div>
       </section>
 
@@ -306,7 +278,7 @@ export default function Home() {
             {/* Card 1 */}
             <div className="flex-shrink-0 w-[450px] bg-white rounded-[3rem] p-10 flex items-center space-x-8 shadow-sm">
               <div className="w-40 h-40 rounded-full overflow-hidden flex-shrink-0 bg-gray-50">
-                <img src={p1} alt="Artisanal Earrings" className="w-full h-full object-cover" />
+                <img src={PRODUCTS.find(p => p.id === 1).image} alt="Artisanal Earrings" className="w-full h-full object-cover" />
               </div>
               <div>
                 <span className="text-[10px] uppercase font-bold tracking-[0.2em] text-[#B08968] mb-3 block">Boutique Selection</span>
@@ -321,7 +293,7 @@ export default function Home() {
             {/* Card 2 */}
             <div className="flex-shrink-0 w-[450px] bg-white rounded-[3rem] p-10 flex items-center space-x-8 shadow-sm">
               <div className="w-40 h-40 rounded-full overflow-hidden flex-shrink-0 bg-gray-50">
-                <img src={p2} alt="Madhubani Set" className="w-full h-full object-cover" />
+                <img src={PRODUCTS.find(p => p.id === 2).image} alt="Madhubani Set" className="w-full h-full object-cover" />
               </div>
               <div>
                 <span className="text-[10px] uppercase font-bold tracking-[0.2em] text-[#B08968] mb-3 block">Hand-painted</span>
@@ -336,7 +308,7 @@ export default function Home() {
             {/* Card 3 */}
             <div className="flex-shrink-0 w-[450px] bg-white rounded-[3rem] p-10 flex items-center space-x-8 shadow-sm">
               <div className="w-40 h-40 rounded-full overflow-hidden flex-shrink-0 bg-gray-50">
-                <img src={p9} alt="Linen Saree" className="w-full h-full object-cover" />
+                <img src={PRODUCTS.find(p => p.id === 9).image} alt="Linen Saree" className="w-full h-full object-cover" />
               </div>
               <div>
                 <span className="text-[10px] uppercase font-bold tracking-[0.2em] text-[#B08968] mb-3 block">Fine Textiles</span>

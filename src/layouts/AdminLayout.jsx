@@ -1,38 +1,10 @@
 import { useEffect, useState } from 'react';
-import { Outlet, useNavigate } from 'react-router-dom';
-import { onAuthStateChanged } from 'firebase/auth';
-import { auth } from '../firebase';
+import { Outlet } from 'react-router-dom';
 import Sidebar from '../components/admin/Sidebar';
 import TopNav from '../components/admin/TopNav';
-import { Loader2 } from 'lucide-react';
 
 export default function AdminLayout() {
-  const [loading, setLoading] = useState(true);
-  const [authenticated, setAuthenticated] = useState(false);
   const [sidebarOpen, setSidebarOpen] = useState(true);
-  const navigate = useNavigate();
-
-  useEffect(() => {
-    const unsubscribe = onAuthStateChanged(auth, (user) => {
-      if (user) {
-        setAuthenticated(true);
-      } else {
-        navigate('/admin/login');
-      }
-      setLoading(false);
-    });
-    return () => unsubscribe();
-  }, [navigate]);
-
-  if (loading) {
-    return (
-      <div className="h-screen w-full flex items-center justify-center" style={{ background: '#e8e8ec' }}>
-        <Loader2 className="w-8 h-8 animate-spin text-[#1BAFAF]" />
-      </div>
-    );
-  }
-
-  if (!authenticated) return null;
 
   return (
     /* Outer gray background — fills viewport */

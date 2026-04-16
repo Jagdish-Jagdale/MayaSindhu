@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { Trash2, Plus, Minus, ShoppingBag, ArrowRight } from 'lucide-react';
 import { Link } from 'react-router-dom';
@@ -23,6 +23,7 @@ const initialCart = [
 
 export default function Cart() {
   const [items, setItems] = useState(initialCart);
+
 
   const updateQty = (id, delta) => {
     setItems(items.map(item =>

@@ -5,13 +5,8 @@ import { Filter, ChevronRight, SlidersHorizontal } from 'lucide-react';
 import ProductCard from '../../components/user/ProductCard';
 import useCategories from '../../hooks/useCategories';
 
-// Placeholder products for specific categories
-const categoryProducts = [
-  { id: 1, name: "Artisanal Earring Collection", price: 8500, image: "/src/assets/p1.jpeg", rating: 4.9, categoryId: 'Jewellery' },
-  { id: 3, name: "Lavender Daisy Cotton Saree", price: 12500, image: "/src/assets/p3.jpeg", rating: 4.8, categoryId: 'Apparels' },
-  { id: 4, name: "Indigo Block Print Saree", price: 9800, image: "/src/assets/p4.jpeg", rating: 5.0, categoryId: 'Apparels' },
-  { id: 8, name: "Vibrant Elephant Print Saree", price: 10500, image: "/src/assets/p8.jpeg", rating: 4.7, categoryId: 'Apparels' },
-];
+import { PRODUCTS } from '../../data/products';
+
 
 export default function CategoryView() {
   const { id } = useParams();
@@ -36,8 +31,8 @@ export default function CategoryView() {
     }
   }, [id, categories]);
 
-  const filteredProducts = categoryProducts.filter(p =>
-    p.categoryId === id || (currentCategory && p.categoryId === currentCategory.name)
+  const filteredProducts = PRODUCTS.filter(p =>
+    p.categoryId === id || (currentCategory && p.categoryId === currentCategory.name) || p.collection === id
   );
 
   if (loading) return (
