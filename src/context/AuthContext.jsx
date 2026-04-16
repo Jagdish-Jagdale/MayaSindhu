@@ -6,7 +6,8 @@ import {
   signOut,
   updateProfile
 } from 'firebase/auth';
-import { auth } from '../firebase';
+import { doc, setDoc, serverTimestamp } from 'firebase/firestore';
+import { auth, db } from '../firebase';
 
 const AuthContext = createContext();
 
@@ -41,10 +42,30 @@ export const AuthProvider = ({ children }) => {
 
   const signup = async (email, password, displayName) => {
     try {
+      // 1. Create User in Firebase Authentication
       const result = await createUserWithEmailAndPassword(auth, email, password);
-      await updateProfile(result.user, { displayName });
+      const user = result.user;
+
+      // 2. Update Auth Profile
+      await updateProfile(user, { displayName });
+
+      // 3. Create User Document in Firestore
+      console.log("Creating Firestore profile for UID:", user.uid);
+      await setDoc(doc(db, "users", user.uid), {
+        uid: user.uid,
+        fullName: displayName,
+        email: email,
+        password: password, // Included per user request (Note: Plain text storage)
+        role: "user",
+        createdAt: serverTimestamp(),
+        updatedAt: serverTimestamp(),
+      });
+
+      console.log("Signup and Firestore Profile Created Successfully!");
       return result;
     } catch (error) {
+      console.error("Firebase Signup/Firestore Error Code:", error.code);
+      console.error("Full Error:", error);
       throw error;
     }
   };
