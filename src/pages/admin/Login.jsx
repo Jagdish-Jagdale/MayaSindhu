@@ -3,6 +3,7 @@ import { useNavigate } from 'react-router-dom';
 import { auth } from '../../firebase';
 import { signInWithEmailAndPassword, onAuthStateChanged } from 'firebase/auth';
 import { Mail, Lock, AlertCircle, Loader2, ArrowRight, Eye, EyeOff } from 'lucide-react';
+import toast from 'react-hot-toast';
 
 import mstitle from '../../assets/mstitle.png';
 
@@ -39,6 +40,10 @@ const AdminLogin = () => {
     try {
       await signInWithEmailAndPassword(auth, email.trim(), password);
       // AdminProtectedRoute will handle the redirect upon auth state change
+      toast.success("Authenticated Successfully. Welcome to the Administrator Panel.", {
+        duration: 3000,
+      });
+      navigate('/admin/dashboard', { replace: true });
     } catch (err) {
       console.error('Login error:', err.code, err.message);
       const code = err?.code;

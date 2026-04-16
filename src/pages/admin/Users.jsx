@@ -1,15 +1,62 @@
 import React, { useState, useRef, useEffect } from 'react';
-import { Plus, Search, Filter, Pencil, Trash2, ArrowUpRight, X, ChevronDown } from 'lucide-react';
+import { 
+  Plus, 
+  Search, 
+  Filter, 
+  Pencil, 
+  Trash2, 
+  ArrowUpRight, 
+  X, 
+  ChevronDown, 
+  Eye, 
+  EyeOff,
+  User as UserIcon,
+  Loader2,
+  Calendar
+} from 'lucide-react';
+import { db } from '../../firebase';
+import { 
+  collection, 
+  onSnapshot, 
+  query, 
+  orderBy,
+  doc,
+  deleteDoc
+} from 'firebase/firestore';
+import toast from 'react-hot-toast';
 
 const Users = () => {
+  const [users, setUsers] = useState([]);
+  const [loading, setLoading] = useState(true);
   const [searchTerm, setSearchTerm] = useState('');
   const [filterOpen, setFilterOpen] = useState(false);
   const [rowsOpen, setRowsOpen] = useState(false);
   const [activeFilter, setActiveFilter] = useState('All');
   const [rowsPerPage, setRowsPerPage] = useState(10);
-  const [sortConfig, setSortConfig] = useState({ key: null, dir: 'asc' });
+  const [sortConfig, setSortConfig] = useState({ key: 'createdAt', dir: 'desc' });
+
   const filterRef = useRef(null);
   const rowsRef = useRef(null);
+
+  // Real-time Firestore Listener
+  useEffect(() => {
+    const q = query(collection(db, 'users'), orderBy('createdAt', 'desc'));
+    
+    const unsubscribe = onSnapshot(q, (snapshot) => {
+      const usersData = snapshot.docs.map(doc => ({
+        id: doc.id,
+        ...doc.data()
+      }));
+      setUsers(usersData);
+      setLoading(false);
+    }, (error) => {
+      console.error("Error fetching users:", error);
+      toast.error("Failed to load users data.");
+      setLoading(false);
+    });
+
+    return () => unsubscribe();
+  }, []);
 
   const handleSort = (key) => {
     setSortConfig(prev =>
@@ -18,7 +65,6 @@ const Users = () => {
   };
 
   const rowOptions = [5, 10, 20, 50];
-
 
   const SortIcon = ({ colKey }) => {
     const isActive = sortConfig.key === colKey;
@@ -32,39 +78,39 @@ const Users = () => {
     );
   };
 
-  const customers = [
-    { name: 'John Smith', address: '123 Maple St, NY', phone: '+1 234-567-8901', registered_at: '12/03/2024', avatar: 'https://i.pravatar.cc/150?u=john', city: 'NY' },
-    { name: 'Jane Doe', address: '456 Oak Ave, CA', phone: '+1 987-654-3210', registered_at: '15/03/2024', avatar: 'https://i.pravatar.cc/150?u=jane', city: 'CA' },
-    { name: 'Bob Johnson', address: '789 Pine Rd, TX', phone: '+1 555-012-3456', registered_at: '18/03/2024', avatar: 'https://i.pravatar.cc/150?u=bob', city: 'TX' },
-    { name: 'Aditi Sharma', address: 'B-402 Green Valey, Mumbai', phone: '+91 98223 34455', registered_at: '01/04/2024', avatar: 'https://i.pravatar.cc/150?u=aditi', city: 'Mumbai' },
-    { name: 'Rahul Varma', address: 'Flat 10, Sunrise Apts, Pune', phone: '+91 77665 54433', registered_at: '05/04/2024', avatar: 'https://i.pravatar.cc/150?u=rahul', city: 'Pune' },
-    { name: 'Priya Iyer', address: 'H-12 Hillside, Bangalore', phone: '+91 99001 12233', registered_at: '10/04/2024', avatar: 'https://i.pravatar.cc/150?u=priya', city: 'Bangalore' },
-    { name: 'Sanjay Gupta', address: 'Sector 15, Gurgaon', phone: '+91 98110 55667', registered_at: '12/04/2024', avatar: 'https://i.pravatar.cc/150?u=sanjay', city: 'Gurgaon' },
-    { name: 'Megha Rao', address: 'Jupiter Apts, Hyderabad', phone: '+91 94400 33221', registered_at: '13/04/2024', avatar: 'https://i.pravatar.cc/150?u=megha', city: 'Hyderabad' },
-    { name: 'Karthik S.', address: 'Old Market St, Chennai', phone: '+91 98400 77889', registered_at: '14/04/2024', avatar: 'https://i.pravatar.cc/150?u=karthik', city: 'Chennai' },
-    { name: 'Deepa Patel', address: 'Navrangpura, Ahmedabad', phone: '+91 98250 99887', registered_at: '15/04/2024', avatar: 'https://i.pravatar.cc/150?u=deepa', city: 'Ahmedabad' },
-    { name: 'Vikram Singh', address: 'Civil Lines, Jaipur', phone: '+91 94140 11223', registered_at: '15/04/2024', avatar: 'https://i.pravatar.cc/150?u=vikram', city: 'Jaipur' },
-    { name: 'Anjali Das', address: 'Salt Lake City, Kolkata', phone: '+91 98310 44556', registered_at: '15/04/2024', avatar: 'https://i.pravatar.cc/150?u=anjali', city: 'Kolkata' },
-  ];
+  const formatDate = (timestamp) => {
+    if (!timestamp) return '---';
+    const date = timestamp.toDate ? timestamp.toDate() : new Date(timestamp);
+    const day = String(date.getDate()).padStart(2, '0');
+    const month = String(date.getMonth() + 1).padStart(2, '0');
+    const year = date.getFullYear();
+    return `${day}/${month}/${year}`;
+  };
 
-  const filterOptions = ['All', 'NY', 'CA', 'TX', 'Mumbai', 'Pune', 'Bangalore', 'Gurgaon', 'Hyderabad', 'Chennai', 'Ahmedabad', 'Jaipur', 'Kolkata'];
-
-  const filteredCustomers = (() => {
-    let list = customers.filter(customer => {
+  const filteredUsers = (() => {
+    let list = users.filter(user => {
       const matchesSearch =
-        customer.name.toLowerCase().includes(searchTerm.toLowerCase()) ||
-        customer.address.toLowerCase().includes(searchTerm.toLowerCase()) ||
-        customer.phone.toLowerCase().includes(searchTerm.toLowerCase());
-      const matchesFilter = activeFilter === 'All' || customer.city === activeFilter;
+        (user.fullName?.toLowerCase() || '').includes(searchTerm.toLowerCase()) ||
+        (user.email?.toLowerCase() || '').includes(searchTerm.toLowerCase()) ||
+        (user.phone?.toLowerCase() || '').includes(searchTerm.toLowerCase());
+      const matchesFilter = activeFilter === 'All' || (user.status || 'Active') === activeFilter;
       return matchesSearch && matchesFilter;
     });
 
     if (sortConfig.key) {
       list = [...list].sort((a, b) => {
-        const aVal = a[sortConfig.key] ?? '';
-        const bVal = b[sortConfig.key] ?? '';
-        const cmp = aVal.toString().localeCompare(bVal.toString());
-        return sortConfig.dir === 'asc' ? cmp : -cmp;
+        let aVal = a[sortConfig.key] || '';
+        let bVal = b[sortConfig.key] || '';
+
+        // Handle Firestore Timestamps for sorting
+        if (sortConfig.key === 'createdAt' || sortConfig.key === 'updatedAt') {
+          if (aVal?.toDate) aVal = aVal.toDate();
+          if (bVal?.toDate) bVal = bVal.toDate();
+        }
+
+        if (aVal < bVal) return sortConfig.dir === 'asc' ? -1 : 1;
+        if (aVal > bVal) return sortConfig.dir === 'asc' ? 1 : -1;
+        return 0;
       });
     }
     return list;
@@ -80,6 +126,15 @@ const Users = () => {
     return () => document.removeEventListener('mousedown', handler);
   }, []);
 
+  if (loading) {
+    return (
+      <div className="h-[60vh] w-full flex flex-col items-center justify-center gap-4">
+        <Loader2 className="w-10 h-10 animate-spin text-[#1BAFAF]" />
+        <p className="text-[14px] font-medium text-gray-400">Loading user database...</p>
+      </div>
+    );
+  }
+
   return (
     <div className="max-w-[1280px] mx-auto space-y-6 animate-in fade-in slide-in-from-bottom-2 duration-500" style={{ fontFamily: "'Inter', -apple-system, sans-serif" }}>
 
@@ -88,15 +143,10 @@ const Users = () => {
         <div className="flex items-center justify-between">
           <div>
             <h1 className="text-[22px] font-semibold text-gray-900 tracking-tight">
-              Registered Customers
+              User Directory
             </h1>
-            <p className="text-[12px] text-gray-400 font-medium font-inter">Manage your e-commerce customer database and profiles</p>
+            <p className="text-[12px] text-gray-400 font-medium font-inter">Monitor and manage all registered accounts in the system</p>
           </div>
-
-          <button className="flex items-center gap-2 bg-[#1BAFAF] hover:bg-[#17a0a0] text-white px-4 py-2 rounded-xl text-[13px] font-semibold transition-all shadow-sm shadow-[#1BAFAF]/10 active:scale-95">
-            <Plus size={16} strokeWidth={2.5} />
-            Add Customer
-          </button>
         </div>
         <hr className="border-gray-100" />
       </div>
@@ -107,7 +157,7 @@ const Users = () => {
           <Search className="absolute left-3.5 top-1/2 -translate-y-1/2 w-4 h-4 text-gray-300 group-focus-within:text-[#1BAFAF] transition-colors" />
           <input
             type="text"
-            placeholder="Search by name, phone or address..."
+            placeholder="Search by name, email or phone..."
             value={searchTerm}
             onChange={(e) => setSearchTerm(e.target.value)}
             className="w-full bg-gray-50 border-none py-2 pl-10 pr-4 text-[13px] rounded-xl outline-none focus:bg-white transition-all font-medium"
@@ -149,20 +199,17 @@ const Users = () => {
               }`}
             >
               <Filter size={14} strokeWidth={2.5} />
-              {activeFilter !== 'All' ? `City: ${activeFilter}` : 'Filters'}
+              {activeFilter !== 'All' ? `Status: ${activeFilter}` : 'Filters'}
               {activeFilter !== 'All' && (
-                <span
-                  onClick={(e) => { e.stopPropagation(); setActiveFilter('All'); }}
-                  className="ml-1 hover:text-red-400"
-                >
+                <span onClick={(e) => { e.stopPropagation(); setActiveFilter('All'); }} className="ml-1 hover:text-red-400">
                   <X size={12} strokeWidth={2.5} />
                 </span>
               )}
             </button>
             {filterOpen && (
-              <div className="absolute right-0 top-full mt-2 w-36 bg-white border border-gray-100 rounded-xl shadow-lg z-50 py-1 overflow-hidden">
-                <p className="px-3 py-1.5 text-[10px] font-bold text-gray-400 uppercase tracking-widest">Filter by City</p>
-                {filterOptions.map(opt => (
+              <div className="absolute right-0 top-full mt-2 w-40 bg-white border border-gray-100 rounded-xl shadow-lg z-50 py-1 overflow-hidden">
+                <p className="px-3 py-1.5 text-[10px] font-bold text-gray-400 uppercase tracking-widest">Filter by Status</p>
+                {['All', 'Active', 'Inactive', 'Suspended'].map(opt => (
                   <button
                     key={opt}
                     onClick={() => { setActiveFilter(opt); setFilterOpen(false); }}
@@ -179,59 +226,81 @@ const Users = () => {
         </div>
       </div>
 
-      {/* Content Container with tighter spacing */}
+      {/* Content Container */}
       <div className="space-y-3">
-        {/* Robust HTML Table Structure */}
         <div className="bg-white rounded-[20px] border border-gray-100 shadow-sm overflow-x-auto">
           <table className="w-full border-collapse">
             <thead>
               <tr className="border-b border-gray-50 bg-white">
                 <th className="px-6 py-4 text-left text-[14px] font-bold text-[#1BAFAF]">Sr No</th>
                 <th className="px-6 py-4 text-left text-[14px] font-bold text-[#1BAFAF]">
-                  <button onClick={() => handleSort('name')} className="flex items-center gap-1 hover:opacity-75 transition-opacity">
-                    Customer <SortIcon colKey="name" />
+                  <button onClick={() => handleSort('fullName')} className="flex items-center gap-1 hover:opacity-75 transition-opacity">
+                    Full Name <SortIcon colKey="fullName" />
                   </button>
                 </th>
                 <th className="px-6 py-4 text-left text-[14px] font-bold text-[#1BAFAF]">
-                  <button onClick={() => handleSort('address')} className="flex items-center gap-1 hover:opacity-75 transition-opacity">
-                    Address <SortIcon colKey="address" />
+                  <button onClick={() => handleSort('email')} className="flex items-center gap-1 hover:opacity-75 transition-opacity">
+                    Email Address <SortIcon colKey="email" />
                   </button>
                 </th>
                 <th className="px-6 py-4 text-left text-[14px] font-bold text-[#1BAFAF]">
                   <button onClick={() => handleSort('phone')} className="flex items-center gap-1 hover:opacity-75 transition-opacity">
-                    Phone <SortIcon colKey="phone" />
+                    Phone Number <SortIcon colKey="phone" />
                   </button>
                 </th>
                 <th className="px-6 py-4 text-left text-[14px] font-bold text-[#1BAFAF]">
-                  <button onClick={() => handleSort('registered_at')} className="flex items-center gap-1 hover:opacity-75 transition-opacity">
-                    Registered at <SortIcon colKey="registered_at" />
+                  <button onClick={() => handleSort('status')} className="flex items-center gap-1 hover:opacity-75 transition-opacity">
+                    Status <SortIcon colKey="status" />
+                  </button>
+                </th>
+                <th className="px-6 py-4 text-left text-[14px] font-bold text-[#1BAFAF]">
+                  <button onClick={() => handleSort('createdAt')} className="flex items-center gap-1 hover:opacity-75 transition-opacity">
+                    Registered <SortIcon colKey="createdAt" />
                   </button>
                 </th>
                 <th className="px-6 py-4 text-right text-[14px] font-bold text-[#1BAFAF]">Actions</th>
               </tr>
             </thead>
             <tbody className="divide-y divide-gray-50/50">
-              {filteredCustomers.length > 0 ? (
-                filteredCustomers.slice(0, rowsPerPage).map((customer, idx) => (
-                  <tr key={idx} className="hover:bg-gray-50 group transition-colors">
+              {filteredUsers.length > 0 ? (
+                filteredUsers.slice(0, rowsPerPage).map((user, idx) => (
+                  <tr key={user.id} className="hover:bg-gray-50 group transition-colors">
                     <td className="px-6 py-4 whitespace-nowrap text-[14px] text-gray-400 font-medium">{(idx + 1).toString().padStart(2, '0')}</td>
-                    <td className="px-6 py-4 max-w-[180px]">
-                      <div className="flex items-center gap-3 min-w-0">
-                        <div className="w-9 h-9 rounded-full overflow-hidden bg-gray-100 border border-gray-50 flex-shrink-0">
-                          <img src={customer.avatar} alt={customer.name} className="w-full h-full object-cover" />
+                    <td className="px-6 py-4 min-w-[200px]">
+                      <div className="flex items-center gap-3">
+                        <div className="w-10 h-10 rounded-xl overflow-hidden bg-gray-100 border border-gray-50 flex-shrink-0 flex items-center justify-center">
+                          {user.profileImage ? (
+                            <img src={user.profileImage} alt={user.fullName} className="w-full h-full object-cover" />
+                          ) : (
+                            <UserIcon size={20} className="text-gray-300" />
+                          )}
                         </div>
-                        <span className="text-[15px] font-bold text-gray-900 truncate" title={customer.name}>{customer.name}</span>
+                        <span className="text-[14px] font-bold text-gray-900">{user.fullName}</span>
                       </div>
                     </td>
-                    <td className="px-6 py-4 max-w-[180px]"><span className="block text-[14px] text-gray-500 font-normal truncate" title={customer.address}>{customer.address}</span></td>
-                    <td className="px-6 py-4 max-w-[140px]"><span className="block text-[14px] text-gray-500 font-normal truncate" title={customer.phone}>{customer.phone}</span></td>
-                    <td className="px-6 py-4 whitespace-nowrap text-[14px] text-gray-500 font-normal">{customer.registered_at}</td>
+                    <td className="px-6 py-4">
+                      <span className="text-[14px] text-gray-500 font-medium">{user.email}</span>
+                    </td>
+                    <td className="px-6 py-4">
+                      <span className="text-[14px] text-gray-500 font-medium">{user.phone || '---'}</span>
+                    </td>
+                    <td className="px-6 py-4 whitespace-nowrap">
+                      <span className={`text-[11px] font-bold uppercase tracking-wider px-2.5 py-1 rounded-lg ${
+                        (user.status || 'Active') === 'Active' ? 'text-[#1BAFAF] bg-[#eaf6f6]' :
+                        'text-red-500 bg-red-50'
+                      }`}>
+                        {user.status || 'Active'}
+                      </span>
+                    </td>
+                    <td className="px-6 py-4 whitespace-nowrap text-[14px] text-gray-500 font-medium">
+                      {formatDate(user.createdAt)}
+                    </td>
                     <td className="px-6 py-4 text-right">
                       <div className="flex items-center justify-end gap-2">
-                        <button className="w-8 h-8 flex items-center justify-center text-emerald-600 hover:bg-emerald-50 rounded-lg transition-all active:scale-90" title="Edit">
+                        <button className="w-8 h-8 flex items-center justify-center text-[#1BAFAF] hover:bg-[#1BAFAF]/5 rounded-lg transition-all active:scale-90">
                           <Pencil size={14} strokeWidth={2.5} />
                         </button>
-                        <button className="w-8 h-8 flex items-center justify-center text-red-600 hover:bg-red-50 rounded-lg transition-all active:scale-90" title="Delete">
+                        <button className="w-8 h-8 flex items-center justify-center text-red-600 hover:bg-red-50 rounded-lg transition-all active:scale-90">
                           <Trash2 size={14} strokeWidth={2.5} />
                         </button>
                       </div>
@@ -240,16 +309,8 @@ const Users = () => {
                 ))
               ) : (
                 <tr>
-                  <td colSpan="6" className="px-6 py-12 text-center">
-                    <div className="flex flex-col items-center gap-2">
-                      <span className="text-gray-400 font-medium">No results found for "{searchTerm}"</span>
-                      <button 
-                        onClick={() => setSearchTerm('')}
-                        className="text-[#1BAFAF] text-[13px] font-semibold hover:underline"
-                      >
-                        Clear search
-                      </button>
-                    </div>
+                  <td colSpan="7" className="px-6 py-12 text-center text-gray-400 font-medium">
+                    No users found matching your criteria
                   </td>
                 </tr>
               )}
@@ -257,23 +318,16 @@ const Users = () => {
           </table>
         </div>
 
-        {/* Page Footer */}
-        <div className="flex items-center justify-between px-2 pt-3">
+        {/* Footer info */}
+        <div className="flex items-center justify-between px-2 pt-1">
           <span className="text-[11px] font-semibold text-gray-300 uppercase tracking-widest">
-            Showing 1-{Math.min(rowsPerPage, filteredCustomers.length)} of {filteredCustomers.length}
+            Total Records: {filteredUsers.length}
           </span>
           <div className="flex items-center gap-2">
-            <div className="w-8 h-8 rounded-lg bg-gray-50 flex items-center justify-center text-gray-300 transition-all cursor-not-allowed">
-              <ArrowUpRight size={14} className="rotate-[225deg]" />
-            </div>
-            <button className="w-8 h-8 rounded-lg bg-white border border-gray-100 flex items-center justify-center text-gray-900 hover:shadow-sm hover:text-[#1BAFAF] transition-all">
-              <ArrowUpRight size={14} className="rotate-45" />
-            </button>
+             <p className="text-[11px] text-gray-400 italic">Showing top {Math.min(rowsPerPage, filteredUsers.length)} results</p>
           </div>
         </div>
       </div>
-
-
     </div>
   );
 };
