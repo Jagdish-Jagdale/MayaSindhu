@@ -12,26 +12,19 @@ const firebaseConfig = {
   appId: import.meta.env.VITE_FIREBASE_APP_ID
 };
 
-// Initialize Firebase
-let app;
-let auth = null;
-let db = null;
-
-try {
-  // Only initialize if API key exists and isn't a placeholder
-  const isInvalidKey = !firebaseConfig.apiKey || firebaseConfig.apiKey.includes('your_api_key');
-  
-  if (isInvalidKey) {
-    console.warn("Firebase: Invalid or missing API key. App will run in fallback mode.");
-  } else {
-    app = initializeApp(firebaseConfig);
-    auth = getAuth(app);
-    db = getFirestore(app);
+// Log for debugging (only in development)
+if (import.meta.env.DEV) {
+  console.log("Firebase Initializing with Project:", firebaseConfig.projectId);
+  if (!firebaseConfig.apiKey) {
+    console.warn("⚠️ CRITICAL: Firebase API Key is missing. Check your .env file.");
   }
-} catch (error) {
-  console.error("Firebase initialization error:", error);
 }
 
-export { auth, db };
+// Initialize Firebase
+const app = initializeApp(firebaseConfig);
+const auth = getAuth(app);
+const db = getFirestore(app);
+
+export { auth, db, app };
 export default app;
 

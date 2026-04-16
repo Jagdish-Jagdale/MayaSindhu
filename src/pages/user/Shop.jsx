@@ -11,7 +11,7 @@ export default function Shop() {
     <div className="bg-brand-cream min-h-screen pt-32 pb-24">
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
         <header className="mb-16 text-center">
-          <h1 className="text-5xl font-serif text-brand-burgundy-dark mb-4">The Collection</h1>
+          <h1 className="text-5xl font-fashion text-brand-burgundy-dark mb-4">The Collection</h1>
           <p className="text-brand-burgundy/60 font-sans tracking-widest uppercase text-xs">Carefully curated handmade textiles</p>
         </header>
 
