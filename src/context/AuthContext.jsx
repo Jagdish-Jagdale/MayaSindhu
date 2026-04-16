@@ -25,7 +25,6 @@ export const AuthProvider = ({ children }) => {
 
   useEffect(() => {
     const unsubscribe = onAuthStateChanged(auth, (currentUser) => {
-      console.log("Auth State Changed: ", currentUser ? `Logged in as ${currentUser.email}` : "Logged out");
       setUser(currentUser);
       setLoading(false);
     });
@@ -33,20 +32,15 @@ export const AuthProvider = ({ children }) => {
   }, []);
 
   const login = async (email, password) => {
-    console.log("Attempting login for:", email);
     try {
       const result = await signInWithEmailAndPassword(auth, email, password);
-      console.log("Login successful!");
       return result;
     } catch (error) {
-      console.error("Firebase Login Error Code:", error.code);
-      console.error("Firebase Login Error Message:", error.message);
       throw error;
     }
   };
 
   const signup = async (email, password, displayName) => {
-    console.log("Attempting signup for:", email);
     try {
       // 1. Create User in Firebase Authentication
       const result = await createUserWithEmailAndPassword(auth, email, password);
@@ -77,7 +71,6 @@ export const AuthProvider = ({ children }) => {
   };
 
   const logout = () => {
-    console.log("Logging out...");
     return signOut(auth);
   };
 
