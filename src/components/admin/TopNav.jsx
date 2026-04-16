@@ -2,7 +2,7 @@ import { Search, Bell, PanelLeft } from 'lucide-react';
 import { useLocation } from 'react-router-dom';
 
 const PAGE_TITLES = {
-  '/admin': { title: 'Dashboard', sub: 'Welcome back — here\'s what\'s happening today.' },
+  '/admin/dashboard': { title: 'Dashboard', sub: 'Welcome back — here\'s what\'s happening today.' },
   '/admin/users': { title: 'Users', sub: 'Manage your registered clients and accounts.' },
   '/admin/products': { title: 'Product Inventory', sub: 'Manage the curated archive of handcrafted textiles.' },
   '/admin/categories': { title: 'Categories', sub: 'Organise your product catalogue by technique & fabric.' },
@@ -55,14 +55,14 @@ export default function TopNav({ sidebarOpen, onToggleSidebar }) {
       <div className="flex-1" />
 
       {/* Glassy Search */}
-      <div className="relative w-full max-w-xs shrink-0">
-        <Search size={14} className="absolute left-3 top-1/2 -translate-y-1/2 text-gray-800 opacity-60" />
+      <div className="relative w-full max-w-xs shrink-0 drop-shadow-sm">
         <input
           type="text"
           placeholder="Search Masterpieces..."
-          className="w-full bg-white/40 border border-white/60 rounded-full text-[12px] text-gray-800 placeholder:text-gray-400 outline-none transition-all focus:bg-white/60 backdrop-blur-md shadow-sm"
-          style={{ padding: '6px 12px 6px 32px' }}
+          className="w-full bg-white/40 border border-white/60 rounded-full text-[12px] text-gray-700 placeholder:text-gray-400 outline-none transition-all focus:bg-white/60 backdrop-blur-md"
+          style={{ padding: '7px 12px 7px 35px' }}
         />
+        <Search size={15} className="absolute left-3.5 top-1/2 -translate-y-1/2 text-gray-700 pointer-events-none z-10" />
       </div>
 
       {/* Glassy Bell */}

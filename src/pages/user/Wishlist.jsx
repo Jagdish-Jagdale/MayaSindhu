@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { Heart, ShoppingBag, X } from 'lucide-react';
 import { Link } from 'react-router-dom';
@@ -24,6 +24,7 @@ const initialWishlist = [
 
 export default function Wishlist() {
   const [items, setItems] = useState(initialWishlist);
+
 
   const removeItem = (id) => {
     setItems(items.filter(item => item.id !== id));

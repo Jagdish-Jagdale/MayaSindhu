@@ -1,3 +1,4 @@
+import React, { useEffect } from 'react';
 import { TrendingUp, ShoppingBag, Users, Layers, ArrowUpRight, Package } from 'lucide-react';
 
 const STATS = [
@@ -55,6 +56,9 @@ const STATUS_STYLES = {
 };
 
 export default function Dashboard() {
+  useEffect(() => {
+  }, []);
+
   return (
     <div className="space-y-8">
       {/* Stats row */}
