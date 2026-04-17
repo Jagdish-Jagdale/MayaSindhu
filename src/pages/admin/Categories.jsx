@@ -1,7 +1,7 @@
-import React, { useState, useRef, useEffect } from 'react';
-import { Plus, Search, Filter, Pencil, Trash2, ArrowUpRight, X, ChevronDown, Grid2X2 } from 'lucide-react';
+import { useAdminUI } from '../../context/AdminUIContext';
 
 const Categories = () => {
+  const { isCollapsed } = useAdminUI();
   const [searchTerm, setSearchTerm] = useState('');
   const [filterOpen, setFilterOpen] = useState(false);
   const [rowsOpen, setRowsOpen] = useState(false);
@@ -80,7 +80,7 @@ const Categories = () => {
   }, []);
 
   return (
-    <div className="max-w-[1280px] mx-auto space-y-6 animate-in fade-in slide-in-from-bottom-2 duration-500" style={{ fontFamily: "'Inter', -apple-system, sans-serif" }}>
+    <div className={`mx-auto space-y-6 animate-in fade-in slide-in-from-bottom-2 duration-500 transition-all duration-300 ${isCollapsed ? 'max-w-[1600px]' : 'max-w-[1280px]'}`} style={{ fontFamily: "'Inter', -apple-system, sans-serif" }}>
 
       {/* Header Section */}
       <div className="space-y-2 py-2">

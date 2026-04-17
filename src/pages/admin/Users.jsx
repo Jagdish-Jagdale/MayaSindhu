@@ -25,7 +25,10 @@ import {
 } from 'firebase/firestore';
 import toast from 'react-hot-toast';
 
+import { useAdminUI } from '../../context/AdminUIContext';
+
 const Users = () => {
+  const { isCollapsed } = useAdminUI();
   const [users, setUsers] = useState([]);
   const [loading, setLoading] = useState(true);
   const [searchTerm, setSearchTerm] = useState('');
@@ -136,7 +139,7 @@ const Users = () => {
   }
 
   return (
-    <div className="max-w-[1280px] mx-auto space-y-6 animate-in fade-in slide-in-from-bottom-2 duration-500" style={{ fontFamily: "'Inter', -apple-system, sans-serif" }}>
+    <div className={`mx-auto space-y-6 animate-in fade-in slide-in-from-bottom-2 duration-500 transition-all duration-300 ${isCollapsed ? 'max-w-[1600px]' : 'max-w-[1280px]'}`} style={{ fontFamily: "'Inter', -apple-system, sans-serif" }}>
 
       {/* Header Section */}
       <div className="space-y-2 py-2">
