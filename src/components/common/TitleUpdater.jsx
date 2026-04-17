@@ -8,6 +8,7 @@ const TitleUpdater = () => {
   useEffect(() => {
     const { pathname } = location;
     
+    // Default title
     let title = 'Home';
     
     if (pathname !== '/') {
@@ -17,25 +18,32 @@ const TitleUpdater = () => {
       if (segments[0] === 'product' && segments[1]) {
         const slug = segments[1];
         const product = PRODUCTS.find(p => p.slug === slug);
-        title = product ? product.name : slug.split('-').map(word => word.charAt(0).toUpperCase() + word.slice(1)).join(' ');
+        title = product ? product.name : formatSegment(slug);
       } 
       // Special handling for Category pages
       else if (segments[0] === 'category' && segments[1]) {
-        title = `Category: ${segments[1].split('-').map(word => word.charAt(0).toUpperCase() + word.slice(1)).join(' ')}`;
+        title = `Category: ${formatSegment(segments[1])}`;
       }
-      // General handling for other pages (about, shop, cart, etc.)
+      // General handling for other segments
       else {
+        // If it's an admin path, we might want to take the last segment or the rest
+        // e.g., /admin/settings/banner -> Banner
         const lastSegment = segments[segments.length - 1];
-        // Convert kbab-case to Title Case (e.g., about-us -> About Us)
-        title = lastSegment
-          .split('-')
-          .map(word => word.charAt(0).toUpperCase() + word.slice(1))
-          .join(' ');
+        title = formatSegment(lastSegment);
       }
     }
 
     document.title = `${title} | MayaSindhu`;
   }, [location]);
+
+  // Helper to convert kbab-case to Title Case
+  const formatSegment = (segment) => {
+    if (!segment) return '';
+    return segment
+      .split('-')
+      .map(word => word.charAt(0).toUpperCase() + word.slice(1))
+      .join(' ');
+  };
 
   return null;
 };

@@ -1,4 +1,17 @@
+import React, { useState, useEffect, useRef } from 'react';
+import { 
+  Plus, 
+  Search, 
+  ChevronDown, 
+  Filter, 
+  X, 
+  Pencil, 
+  Trash2, 
+  ArrowUpRight,
+  Grid2X2
+} from 'lucide-react';
 import { useAdminUI } from '../../context/AdminUIContext';
+
 
 const Categories = () => {
   const { isCollapsed } = useAdminUI();
