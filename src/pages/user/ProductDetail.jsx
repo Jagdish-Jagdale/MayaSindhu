@@ -1,13 +1,16 @@
-import { useParams, useNavigate, useLocation } from 'react-router-dom';
-import { motion } from 'framer-motion';
-import { ShoppingBag, ChevronRight, Star } from 'lucide-react';
+import { useState } from 'react';
+import { useParams, useNavigate, useLocation, Navigate } from 'react-router-dom';
+import { motion, AnimatePresence } from 'framer-motion';
+import { ShoppingBag, ChevronRight, Star, Heart, CheckCircle2 } from 'lucide-react';
 import { useAuth } from '../../context/AuthContext';
-
-import { Navigate } from 'react-router-dom';
 import { PRODUCTS } from '../../data/products';
 
 export default function ProductDetail() {
   const { slug } = useParams();
+  const navigate = useNavigate();
+  const location = useLocation();
+  const { user } = useAuth();
+  const [isAdded, setIsAdded] = useState(false);
 
   // 1. Try to find by slug
   let product = PRODUCTS.find(p => p.slug === slug);
@@ -22,8 +25,25 @@ export default function ProductDetail() {
   }
 
   // 3. Fallback to first product or 404 if absolutely nothing matches
-  // Using PRODUCTS[0] as final fallback to avoid crash, but redirection is preferred
   if (!product) product = PRODUCTS[0];
+
+  const handleAddToCart = () => {
+    if (!user) {
+      navigate('/login', { state: { from: location } });
+      return;
+    }
+
+    setIsAdded(true);
+    setTimeout(() => setIsAdded(false), 2000);
+  };
+
+  const handleWishlist = () => {
+    if (!user) {
+      navigate('/login', { state: { from: location } });
+      return;
+    }
+    // Wishlist logic
+  };
 
 
   return (
@@ -43,11 +63,47 @@ export default function ProductDetail() {
           <motion.div
             initial={{ opacity: 0, x: -20 }}
             animate={{ opacity: 1, x: 0 }}
-            className="space-y-4"
+            className="space-y-4 relative"
           >
-            <div className="aspect-[3/4] overflow-hidden bg-brand-cream-dark">
+            <div className="aspect-[3/4] overflow-hidden bg-brand-cream-dark rounded-[3rem] shadow-2xl">
               <img src={product.image} alt={product.name} className="w-full h-full object-cover" />
             </div>
+
+            {/* Success Animation Overlay */}
+            <AnimatePresence>
+              {isAdded && (
+                <motion.div
+                  initial={{ opacity: 0 }}
+                  animate={{ opacity: 1 }}
+                  exit={{ opacity: 0 }}
+                  className="absolute inset-0 bg-white/95 backdrop-blur-sm z-30 flex flex-col items-center justify-center text-center p-6 rounded-[3rem]"
+                >
+                  <motion.div
+                    initial={{ scale: 0.5, opacity: 0 }}
+                    animate={{ scale: 1, opacity: 1 }}
+                    transition={{ type: "spring", stiffness: 300, damping: 20 }}
+                  >
+                    <CheckCircle2 size={60} className="text-[#FF6B00] mb-4" />
+                  </motion.div>
+                  <motion.h4
+                    initial={{ y: 10, opacity: 0 }}
+                    animate={{ y: 0, opacity: 1 }}
+                    transition={{ delay: 0.2 }}
+                    className="text-[#1A1A1A] font-fashion font-bold text-2xl mb-1"
+                  >
+                    Added to Cart!
+                  </motion.h4>
+                  <motion.p
+                    initial={{ y: 10, opacity: 0 }}
+                    animate={{ y: 0, opacity: 1 }}
+                    transition={{ delay: 0.3 }}
+                    className="text-gray-500 text-sm font-medium"
+                  >
+                    {product.name} successfully added.
+                  </motion.p>
+                </motion.div>
+              )}
+            </AnimatePresence>
           </motion.div>
 
           {/* Info */}
@@ -81,13 +137,22 @@ export default function ProductDetail() {
               ))}
             </ul>
 
-            <button 
-              onClick={handleAddToCart}
-              className="btn btn-primary bg-brand-burgundy text-brand-cream w-full md:w-auto px-16 py-4 flex items-center justify-center space-x-4 hover:bg-brand-burgundy-dark transition-all shadow-xl"
-            >
-              <ShoppingBag size={20} />
-              <span className="tracking-widest uppercase font-bold text-sm">Add to Bag</span>
-            </button>
+            <div className="flex flex-col md:flex-row gap-4">
+              <button 
+                onClick={handleAddToCart}
+                className="btn btn-primary bg-brand-orange text-white flex-1 md:flex-none px-12 py-4 flex items-center justify-center space-x-4 hover:bg-brand-orange-dark transition-all shadow-xl active:scale-95"
+              >
+                <ShoppingBag size={20} />
+                <span className="tracking-widest uppercase font-bold text-sm">Add to Bag</span>
+              </button>
+
+              <button 
+                onClick={handleWishlist}
+                className="p-4 border-2 border-brand-black/10 rounded-full hover:bg-brand-black hover:text-white transition-all active:scale-90"
+              >
+                <Heart size={24} />
+              </button>
+            </div>
           </motion.div>
         </div>
       </div>
