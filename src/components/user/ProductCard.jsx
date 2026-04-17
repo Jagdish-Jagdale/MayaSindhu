@@ -58,14 +58,14 @@ export default function ProductCard({ id, slug, name, price, image, rating = 4.8
           <Heart size={18} strokeWidth={2} />
         </button>
 
-        {/* Add to Cart - Orange Pill (Hover only) */}
-        <div className="absolute bottom-8 left-1/2 -translate-x-1/2 translate-y-12 opacity-0 group-hover:translate-y-0 group-hover:opacity-100 transition-all duration-500 z-10 w-full px-8">
+        {/* Add to Cart - Orange Pill (Always visible on mobile, hover on desktop) */}
+        <div className="absolute bottom-6 md:bottom-8 left-1/2 -translate-x-1/2 md:translate-y-12 md:opacity-0 group-hover:translate-y-0 group-hover:opacity-100 transition-all duration-500 z-10 w-full px-4 md:px-8">
           <button
             onClick={handleAddToCart}
-            className="w-full flex items-center justify-center space-x-3 bg-[#FF6B00] text-white py-4 rounded-full shadow-xl hover:bg-[#E66000] active:scale-95 transition-all duration-300"
+            className="w-full flex items-center justify-center space-x-2 md:space-x-3 bg-[#FF6B00] text-white py-3 md:py-4 rounded-full shadow-xl hover:bg-[#E66000] active:scale-95 transition-all duration-300"
           >
-            <ShoppingBag size={20} strokeWidth={2.5} />
-            <span className="text-[12px] font-bold uppercase tracking-widest whitespace-nowrap">Add to Cart</span>
+            <ShoppingBag size={18} className="md:w-5 md:h-5" strokeWidth={2.5} />
+            <span className="text-[9px] md:text-[12px] font-bold uppercase tracking-widest whitespace-nowrap">Add to Cart</span>
           </button>
         </div>
 
@@ -108,15 +108,15 @@ export default function ProductCard({ id, slug, name, price, image, rating = 4.8
 
       <div className="mt-6 px-2">
         <Link to={`/product/${slug}`}>
-          <h3 className="text-base font-fashion font-semibold text-[#1A1A1A] hover:text-[#FF6B00] transition-colors line-clamp-1 mb-2">{name}</h3>
+          <h3 className="text-sm md:text-base font-fashion font-semibold text-[#1A1A1A] hover:text-[#FF6B00] transition-colors line-clamp-1 mb-1 md:mb-2">{name}</h3>
         </Link>
         <div className="flex items-center justify-between">
-          <p className="text-[#FF6B00] font-bold text-xl">
+          <p className="text-[#FF6B00] font-bold text-lg md:text-xl">
             ₹{typeof price === 'number' ? price.toLocaleString('en-IN') : price}
           </p>
           <div className="flex items-center space-x-1 text-[#1A1A1A]">
-            <Star size={14} fill="currentColor" className="text-[#FF6B00]" />
-            <span className="text-[12px] font-bold">{rating}</span>
+            <Star size={12} fill="currentColor" className="text-[#FF6B00] md:w-3.5 md:h-3.5" />
+            <span className="text-[10px] md:text-[12px] font-bold">{rating}</span>
           </div>
         </div>
       </div>

@@ -20,6 +20,7 @@ export default function Navbar() {
   const { user } = useAuth();
   const [isScrolled, setIsScrolled] = useState(false);
   const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false);
+  const [isMobileSearchOpen, setIsMobileSearchOpen] = useState(false);
   const location = useLocation();
 
   useEffect(() => {
@@ -57,7 +58,13 @@ export default function Navbar() {
           </div>
 
           {/* Right: Icon Group */}
-          <div className="flex items-center gap-2 lg:gap-5">
+          <div className="flex items-center gap-1 sm:gap-2">
+            <button
+              onClick={() => setIsMobileSearchOpen(!isMobileSearchOpen)}
+              className="p-2 text-brand-black md:hidden hover:text-brand-orange transition-colors"
+            >
+              <Search size={22} strokeWidth={1.5} />
+            </button>
             <Link 
               to={user ? "/profile" : "/login"} 
               className="p-2 text-brand-black hover:text-brand-orange transition-colors relative"
@@ -65,7 +72,7 @@ export default function Navbar() {
               <User size={22} strokeWidth={1.5} />
               {user && <span className="absolute bottom-1 right-1 w-2 h-2 bg-green-500 rounded-full border border-white"></span>}
             </Link>
-            <Link to="/wishlist" className="p-2 text-brand-black hover:text-brand-orange transition-colors relative">
+            <Link to="/wishlist" className="p-2 text-brand-black hover:text-brand-orange transition-colors relative hidden sm:block">
               <Heart size={22} strokeWidth={1.5} />
               <span className="absolute top-1 right-1 bg-brand-orange text-white text-[9px] font-bold w-4 h-4 flex items-center justify-center rounded-full shadow-lg shadow-brand-orange/20">0</span>
             </Link>
@@ -81,6 +88,32 @@ export default function Navbar() {
             </button>
           </div>
         </div>
+
+        {/* Mobile Search Bar Expansion */}
+        <AnimatePresence>
+          {isMobileSearchOpen && (
+            <motion.div
+              initial={{ height: 0, opacity: 0 }}
+              animate={{ height: 'auto', opacity: 1 }}
+              exit={{ height: 0, opacity: 0 }}
+              className="md:hidden border-t border-gray-50 bg-gray-50/50 overflow-hidden"
+            >
+              <div className="px-6 py-4">
+                <div className="relative">
+                  <input
+                    type="text"
+                    placeholder="Search for Sarees, Jewelry..."
+                    autoFocus
+                    className="w-full bg-white border border-brand-orange/20 rounded-full py-3 pl-5 pr-12 focus:outline-none focus:border-brand-orange focus:ring-4 focus:ring-brand-orange/5 transition-all text-sm"
+                  />
+                  <div className="absolute right-4 top-1/2 -translate-y-1/2 text-brand-orange">
+                    <Search size={18} />
+                  </div>
+                </div>
+              </div>
+            </motion.div>
+          )}
+        </AnimatePresence>
       </div>
 
       {/* Category Navigation (Desktop) */}

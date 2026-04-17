@@ -1,5 +1,5 @@
 import { motion, AnimatePresence } from 'framer-motion';
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useRef } from 'react';
 import { Link } from 'react-router-dom';
 import ProductCard from '../../components/user/ProductCard';
 import VideoCard from '../../components/user/VideoCard';
@@ -19,31 +19,35 @@ import { PRODUCTS } from '../../data/products';
 const videos = [
   {
     id: 1,
-    title: "The Art of the Loom",
+    title: "Off White Pure Silk Cotton Fabric",
     category: "Heritage Weave",
     url: "https://assets.mixkit.co/videos/preview/mixkit-weaving-on-a-loom-15740-preview.mp4",
-    thumbnail: p3
+    thumbnail: p3,
+    productImage: p3
   },
   {
     id: 2,
-    title: "Echoes of Silver",
+    title: "Hand-painted Madhubani Heritage",
     category: "Artisan Jewelry",
     url: "https://assets.mixkit.co/videos/preview/mixkit-close-up-of-hands-making-jewelry-41225-preview.mp4",
-    thumbnail: p1
+    thumbnail: p1,
+    productImage: p1
   },
   {
     id: 3,
-    title: "Draped in Tradition",
+    title: "Traditional Draped Silhouette",
     category: "Saree Stories",
     url: "https://assets.mixkit.co/videos/preview/mixkit-woman-wearing-a-traditional-indian-dress-41131-preview.mp4",
-    thumbnail: p5
+    thumbnail: p5,
+    productImage: p5
   },
   {
     id: 4,
-    title: "Colors of the Earth",
+    title: "Earthy tones of Natural Dyes",
     category: "Natural Dyes",
     url: "https://assets.mixkit.co/videos/preview/mixkit-colors-in-a-pot-of-dye-39943-preview.mp4",
-    thumbnail: p4
+    thumbnail: p4,
+    productImage: p4
   }
 ];
 
@@ -105,6 +109,17 @@ export default function Home() {
   const [currentSlide, setCurrentSlide] = useState(0);
   const [selectedVideo, setSelectedVideo] = useState(null);
   const [isVideoModalOpen, setIsVideoModalOpen] = useState(false);
+  const featuredRef = useRef(null);
+  const artisanRef = useRef(null);
+  const videoRef = useRef(null);
+
+  const scroll = (ref, direction) => {
+    if (ref.current) {
+      const { scrollLeft, clientWidth } = ref.current;
+      const scrollTo = direction === 'left' ? scrollLeft - clientWidth : scrollLeft + clientWidth;
+      ref.current.scrollTo({ left: scrollTo, behavior: 'smooth' });
+    }
+  };
 
   const openVideo = (video) => {
     setSelectedVideo(video);
@@ -121,7 +136,7 @@ export default function Home() {
   return (
     <div className="bg-white min-h-screen">
       {/* Cinematic Banner Slider */}
-      <section className="relative h-[75vh] md:h-[85vh] w-full flex items-center overflow-hidden bg-white">
+      <section className="relative h-[30vh] sm:h-[45vh] md:h-[85vh] w-full flex items-center overflow-hidden bg-white">
         <AnimatePresence mode="popLayout" initial={false}>
           <motion.div
             key={currentSlide}
@@ -136,27 +151,27 @@ export default function Home() {
               <img
                 src={slides[currentSlide].image}
                 alt={`Slide ${currentSlide + 1}`}
-                className="w-full h-full object-cover object-top"
+                className="w-full h-full object-contain md:object-cover object-center md:object-top"
               />
             </div>
           </motion.div>
         </AnimatePresence>
 
-        {/* Edge-to-Edge Navigation Arrows */}
-        <div className="absolute inset-y-0 left-0 flex items-center z-20">
-          <button 
+        {/* Minimalist Floating Navigation Arrows */}
+        <div className="absolute inset-y-0 left-2 md:left-6 flex items-center z-20">
+          <button
             onClick={() => setCurrentSlide((prev) => (prev - 1 + slides.length) % slides.length)}
-            className="w-10 h-24 bg-white/40 backdrop-blur-md border-y border-r border-white/20 flex items-center justify-center text-brand-black/60 hover:text-brand-orange hover:bg-white/90 transition-all active:scale-95 group"
+            className="w-8 h-8 md:w-12 md:h-12 bg-white/10 backdrop-blur-md rounded-full border border-white/20 flex items-center justify-center text-white hover:bg-white/90 hover:text-brand-orange transition-all active:scale-95 group shadow-lg"
           >
-            <ChevronLeft size={32} strokeWidth={1.5} className="group-hover:-translate-x-0.5 transition-transform" />
+            <ChevronLeft size={16} md:size={20} strokeWidth={2.5} className="group-hover:-translate-x-0.5 transition-transform" />
           </button>
         </div>
-        <div className="absolute inset-y-0 right-0 flex items-center z-20">
-          <button 
+        <div className="absolute inset-y-0 right-2 md:right-6 flex items-center z-20">
+          <button
             onClick={() => setCurrentSlide((prev) => (prev + 1) % slides.length)}
-            className="w-10 h-24 bg-white/40 backdrop-blur-md border-y border-l border-white/20 flex items-center justify-center text-brand-black/60 hover:text-brand-orange hover:bg-white/90 transition-all active:scale-95 group"
+            className="w-8 h-8 md:w-12 md:h-12 bg-white/10 backdrop-blur-md rounded-full border border-white/20 flex items-center justify-center text-white hover:bg-white/90 hover:text-brand-orange transition-all active:scale-95 group shadow-lg"
           >
-            <ChevronRight size={32} strokeWidth={1.5} className="group-hover:translate-x-0.5 transition-transform" />
+            <ChevronRight size={16} md:size={20} strokeWidth={2.5} className="group-hover:translate-x-0.5 transition-transform" />
           </button>
         </div>
 
@@ -166,9 +181,8 @@ export default function Home() {
             <button
               key={idx}
               onClick={() => setCurrentSlide(idx)}
-              className={`h-[4px] rounded-full transition-all duration-500 ${
-                currentSlide === idx ? 'w-24 bg-brand-black/60' : 'w-12 bg-brand-black/10 hover:bg-brand-black/20'
-              }`}
+              className={`h-[2px] md:h-[4px] rounded-full transition-all duration-500 shadow-sm ${currentSlide === idx ? 'w-10 md:w-24 bg-white' : 'w-4 md:w-12 bg-white/40 hover:bg-white/60'
+                }`}
             />
           ))}
         </div>
@@ -176,7 +190,7 @@ export default function Home() {
       {/* Curated Realms Section */}
       <section className="py-20 max-w-[1440px] mx-auto px-8 lg:px-24 bg-white">
         <div className="mb-12">
-          <h2 className="text-3xl md:text-4xl font-fashion font-bold text-[#1A1A1A] tracking-tight mb-2">Curated Realms</h2>
+          <h2 className="text-3xl md:text-4xl font-fashion font-bold text-[#1A1A1A] tracking-tight mb-2">Explore Category</h2>
           <div className="w-16 h-1 bg-[#FF6B00]/60 rounded-full" />
         </div>
 
@@ -185,7 +199,7 @@ export default function Home() {
           {/* Sarees - Large Vertical (Takes up more width) */}
           <motion.div
             whileHover={{ y: -8 }}
-            className="md:col-span-1 md:row-span-2 relative group overflow-hidden rounded-[2.5rem] shadow-lg"
+            className="md:col-span-1 md:row-span-2 relative group overflow-hidden rounded-[2rem] md:rounded-[2.5rem] shadow-md hover:shadow-xl transition-all duration-500 h-[320px] md:h-full"
           >
             <img
               src={PRODUCTS.find(p => p.id === 7).image}
@@ -203,7 +217,7 @@ export default function Home() {
           {/* Jewellery - Smaller width */}
           <motion.div
             whileHover={{ y: -8 }}
-            className="md:col-span-1 md:row-span-1 relative group overflow-hidden rounded-[2.5rem] shadow-lg h-[280px] md:h-full"
+            className="md:col-span-1 md:row-span-1 relative group overflow-hidden rounded-[2.5rem] shadow-lg h-[220px] md:h-full"
           >
             <img
               src={PRODUCTS.find(p => p.id === 1).image}
@@ -220,7 +234,7 @@ export default function Home() {
           {/* Dresses - Smaller width */}
           <motion.div
             whileHover={{ y: -8 }}
-            className="md:col-span-1 md:row-span-1 relative group overflow-hidden rounded-[2.5rem] shadow-lg h-[280px] md:h-full"
+            className="md:col-span-1 md:row-span-1 relative group overflow-hidden rounded-[2.5rem] shadow-lg h-[220px] md:h-full"
           >
             <img
               src={PRODUCTS.find(p => p.id === 6).image}
@@ -237,7 +251,7 @@ export default function Home() {
           {/* Handmade Crafts - Bottom Right (Smaller width) */}
           <motion.div
             whileHover={{ y: -8 }}
-            className="md:col-span-2 md:row-span-1 relative group overflow-hidden rounded-[2.5rem] shadow-lg h-[280px] md:h-full"
+            className="md:col-span-2 md:row-span-1 relative group overflow-hidden rounded-[2.5rem] shadow-lg h-[220px] md:h-full"
           >
             <img
               src={PRODUCTS.find(p => p.id === 2).image}
@@ -256,79 +270,107 @@ export default function Home() {
 
 
       {/* Featured Treasures Section */}
-      <section className="py-24 max-w-[1536px] mx-auto px-6 lg:px-24">
-        <div className="text-center mb-16">
-          <span className="text-[12px] uppercase font-bold tracking-[0.4em] text-[#B08968] mb-4 block">The Selection</span>
-          <h2 className="text-5xl md:text-6xl font-fashion font-bold text-[#1A1A1A] tracking-tight">Featured Treasures</h2>
+      <section className="py-16 md:py-24 max-w-[1536px] mx-auto px-6 lg:px-24">
+        <div className="flex flex-col md:flex-row md:items-end justify-between mb-12 md:mb-16 space-y-4 md:space-y-0 text-center md:text-left">
+          <div>
+            <span className="text-[10px] md:text-[12px] uppercase font-bold tracking-[0.4em] text-brand-orange mb-3 md:mb-4 block">The Selection</span>
+            <h2 className="text-3xl md:text-6xl font-fashion font-bold text-[#1A1A1A] tracking-tight leading-tight">Customer Favourites</h2>
+          </div>
+
+          <div className="flex space-x-3">
+            <button
+              onClick={() => scroll(featuredRef, 'left')}
+              className="p-3 border border-gray-200 rounded-full bg-white hover:bg-brand-orange hover:text-white transition-all shadow-sm active:scale-90"
+            >
+              <ChevronLeft size={24} />
+            </button>
+            <button
+              onClick={() => scroll(featuredRef, 'right')}
+              className="p-3 border border-gray-200 rounded-full bg-white hover:bg-brand-orange hover:text-white transition-all shadow-sm active:scale-90"
+            >
+              <ChevronRight size={24} />
+            </button>
+          </div>
         </div>
 
-        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-x-10 gap-y-20">
-          {[1, 3, 4, 8].map(id => {
-            const product = PRODUCTS.find(p => p.id === id);
-            return <ProductCard key={id} {...product} />;
-          })}
+        <div
+          ref={featuredRef}
+          className="flex space-x-8 overflow-x-auto pb-12 no-scrollbar scroll-smooth snap-x"
+        >
+          {PRODUCTS.filter(p => [1, 3, 4, 8, 2, 5, 7].includes(p.id)).map(product => (
+            <div key={product.id} className="flex-shrink-0 w-[220px] md:w-[350px] snap-start">
+              <ProductCard {...product} />
+            </div>
+          ))}
         </div>
       </section>
 
 
       {/* Artisan's Bloom Section */}
-      <section className="py-24 bg-[#F0F7FF]">
+      <section className="py-16 md:py-24 bg-[#F0F7FF]">
         <div className="max-w-[1536px] mx-auto px-6 lg:px-24">
-          <div className="flex justify-between items-center mb-16">
-            <h2 className="text-4xl md:text-5xl font-fashion font-bold text-[#004D40] tracking-tight">The Artisan's Bloom</h2>
+          <div className="flex flex-col md:flex-row md:justify-between md:items-center mb-12 md:mb-16 space-y-6 md:space-y-0 text-center md:text-left">
+            <h2 className="text-3xl md:text-5xl font-fashion font-bold text-[#1A1A1A] tracking-tight">Shop By Trend</h2>
             <div className="flex space-x-4">
-              <button className="p-3 border border-gray-200 rounded-full bg-white hover:bg-gray-50 transition-colors shadow-sm">
-                <span className="sr-only">Previous</span>
-                <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="m15 18-6-6 6-6" /></svg>
+              <button
+                onClick={() => scroll(artisanRef, 'left')}
+                className="p-3 border border-gray-200 rounded-full bg-white hover:bg-[#1A1A1A] hover:text-white transition-all shadow-sm active:scale-90"
+              >
+                <ChevronLeft size={20} />
               </button>
-              <button className="p-3 border border-gray-200 rounded-full bg-white hover:bg-gray-50 transition-colors shadow-sm">
-                <span className="sr-only">Next</span>
-                <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="m9 18 6-6-6-6" /></svg>
+              <button
+                onClick={() => scroll(artisanRef, 'right')}
+                className="p-3 border border-gray-200 rounded-full bg-white hover:bg-[#1A1A1A] hover:text-white transition-all shadow-sm active:scale-90"
+              >
+                <ChevronRight size={20} />
               </button>
             </div>
           </div>
 
-          <div className="flex space-x-8 overflow-x-auto pb-12 no-scrollbar scroll-smooth">
+          <div
+            ref={artisanRef}
+            className="flex space-x-8 overflow-x-auto pb-12 no-scrollbar scroll-smooth snap-x"
+          >
             {/* Card 1 */}
-            <div className="flex-shrink-0 w-[450px] bg-white rounded-[3rem] p-10 flex items-center space-x-8 shadow-sm">
-              <div className="w-40 h-40 rounded-full overflow-hidden flex-shrink-0 bg-gray-50">
+            <div className="flex-shrink-0 w-[280px] md:w-[450px] bg-white rounded-[2rem] md:rounded-[3rem] p-6 md:p-10 flex flex-col md:flex-row items-center md:space-x-8 space-y-6 md:space-y-0 shadow-sm transition-all">
+              <div className="w-24 h-24 md:w-40 md:h-40 rounded-full overflow-hidden flex-shrink-0 bg-gray-50">
                 <img src={PRODUCTS.find(p => p.id === 1).image} alt="Artisanal Earrings" className="w-full h-full object-cover" />
               </div>
-              <div>
-                <span className="text-[10px] uppercase font-bold tracking-[0.2em] text-[#B08968] mb-3 block">Boutique Selection</span>
-                <h3 className="text-xl font-fashion font-bold text-[#1A1A1A] mb-3">Artisanal Earring Set</h3>
-                <p className="text-gray-500 text-sm leading-relaxed mb-6">Hand-cast by master silversmiths, featuring intricate heritage motifs.</p>
-                <Link to="/shop" className="text-[12px] font-bold text-[#004D40] border-b-2 border-[#004D40]/20 pb-0.5 hover:text-[#00695C] transition-colors">
+              <div className="text-center md:text-left">
+                <span className="text-[9px] md:text-[10px] uppercase font-bold tracking-[0.2em] text-[#B08968] mb-2 md:mb-3 block">Boutique Selection</span>
+                <h3 className="text-lg md:text-xl font-fashion font-bold text-[#1A1A1A] mb-2 md:mb-3">Artisanal Earring Set</h3>
+                <p className="text-gray-500 text-[12px] md:text-sm leading-relaxed mb-4 md:mb-6 line-clamp-2 md:line-clamp-none">Hand-cast by master silversmiths, featuring intricate heritage motifs.</p>
+                <Link to="/shop" className="text-[11px] md:text-[12px] font-bold text-[#004D40] border-b-2 border-[#004D40]/20 pb-0.5 hover:text-[#00695C] transition-colors">
                   Discover More
                 </Link>
               </div>
             </div>
 
             {/* Card 2 */}
-            <div className="flex-shrink-0 w-[450px] bg-white rounded-[3rem] p-10 flex items-center space-x-8 shadow-sm">
-              <div className="w-40 h-40 rounded-full overflow-hidden flex-shrink-0 bg-gray-50">
+            <div className="flex-shrink-0 w-[280px] md:w-[450px] bg-white rounded-[2rem] md:rounded-[3rem] p-6 md:p-10 flex flex-col md:flex-row items-center md:space-x-8 space-y-6 md:space-y-0 shadow-sm transition-all">
+              <div className="w-24 h-24 md:w-40 md:h-40 rounded-full overflow-hidden flex-shrink-0 bg-gray-50">
                 <img src={PRODUCTS.find(p => p.id === 2).image} alt="Madhubani Set" className="w-full h-full object-cover" />
               </div>
-              <div>
-                <span className="text-[10px] uppercase font-bold tracking-[0.2em] text-[#B08968] mb-3 block">Hand-painted</span>
-                <h3 className="text-xl font-fashion font-bold text-[#1A1A1A] mb-3">Madhubani Gift Set</h3>
-                <p className="text-gray-500 text-sm leading-relaxed mb-6">Authentic hand-painted Madhubani art on sustainable materials.</p>
-                <Link to="/shop" className="text-[12px] font-bold text-[#004D40] border-b-2 border-[#004D40]/20 pb-0.5 hover:text-[#00695C] transition-colors">
+              <div className="text-center md:text-left">
+                <span className="text-[9px] md:text-[10px] uppercase font-bold tracking-[0.2em] text-[#B08968] mb-2 md:mb-3 block">Hand-painted</span>
+                <h3 className="text-lg md:text-xl font-fashion font-bold text-[#1A1A1A] mb-2 md:mb-3">Madhubani Gift Set</h3>
+                <p className="text-gray-500 text-[12px] md:text-sm leading-relaxed mb-4 md:mb-6 line-clamp-2 md:line-clamp-none">Authentic hand-painted Madhubani art on sustainable materials.</p>
+                <Link to="/shop" className="text-[11px] md:text-[12px] font-bold text-[#004D40] border-b-2 border-[#004D40]/20 pb-0.5 hover:text-[#00695C] transition-colors">
                   Discover More
                 </Link>
               </div>
             </div>
 
             {/* Card 3 */}
-            <div className="flex-shrink-0 w-[450px] bg-white rounded-[3rem] p-10 flex items-center space-x-8 shadow-sm">
-              <div className="w-40 h-40 rounded-full overflow-hidden flex-shrink-0 bg-gray-50">
+            <div className="flex-shrink-0 w-[280px] md:w-[450px] bg-white rounded-[2rem] md:rounded-[3rem] p-6 md:p-10 flex flex-col md:flex-row items-center md:space-x-8 space-y-6 md:space-y-0 shadow-sm transition-all">
+              <div className="w-24 h-24 md:w-40 md:h-40 rounded-full overflow-hidden flex-shrink-0 bg-gray-50">
                 <img src={PRODUCTS.find(p => p.id === 9).image} alt="Linen Saree" className="w-full h-full object-cover" />
               </div>
-              <div>
-                <span className="text-[10px] uppercase font-bold tracking-[0.2em] text-[#B08968] mb-3 block">Fine Textiles</span>
-                <h3 className="text-xl font-fashion font-bold text-[#1A1A1A] mb-3">Pastel Linen Saree</h3>
-                <p className="text-gray-500 text-sm leading-relaxed mb-6">Breathable artisan linen with minimalist heritage detailing.</p>
-                <Link to="/shop" className="text-[12px] font-bold text-[#004D40] border-b-2 border-[#004D40]/20 pb-0.5 hover:text-[#00695C] transition-colors">
+              <div className="text-center md:text-left">
+                <span className="text-[9px] md:text-[10px] uppercase font-bold tracking-[0.2em] text-[#B08968] mb-2 md:mb-3 block">Fine Textiles</span>
+                <h3 className="text-lg md:text-xl font-fashion font-bold text-[#1A1A1A] mb-2 md:mb-3">Pastel Linen Saree</h3>
+                <p className="text-gray-500 text-[12px] md:text-sm leading-relaxed mb-4 md:mb-6 line-clamp-2 md:line-clamp-none">Breathable artisan linen with minimalist heritage detailing.</p>
+                <Link to="/shop" className="text-[11px] md:text-[12px] font-bold text-[#004D40] border-b-2 border-[#004D40]/20 pb-0.5 hover:text-[#00695C] transition-colors">
                   Discover More
                 </Link>
               </div>
@@ -338,21 +380,17 @@ export default function Home() {
       </section>
 
       {/* Stories in Motion Section - Video Section */}
-      <section className="py-24 bg-white overflow-hidden">
+      <section className="py-16 md:py-24 bg-white overflow-hidden">
         <div className="max-w-[1536px] mx-auto px-6 lg:px-24">
-          <div className="flex flex-col md:flex-row md:items-end justify-between mb-16 space-y-4 md:space-y-0">
-            <div className="max-w-2xl">
-              <span className="text-[12px] uppercase font-bold tracking-[0.4em] text-[#B08968] mb-4 block">The Living Gallery</span>
-              <h2 className="text-5xl md:text-6xl font-fashion font-bold text-[#1A1A1A] tracking-tight">Stories in Motion</h2>
-              <p className="text-gray-500 mt-6 text-lg leading-relaxed">Experience the soulful craftsmanship behind each piece through our cinematic artisan chronicles.</p>
-            </div>
-
-            <Link to="/shop" className="text-[14px] font-bold text-[#1A1A1A] border-b-2 border-brand-orange pb-1 hover:text-brand-orange transition-colors">
-              Explore All Stories
-            </Link>
+          <div className="text-center mb-12 md:mb-16">
+            <h2 className="text-3xl md:text-5xl font-fashion font-bold text-[#1A1A1A] tracking-tight">Shop The Look</h2>
+            <div className="mx-auto w-16 h-1 bg-brand-orange mt-4 rounded-full opacity-30" />
           </div>
 
-          <div className="flex space-x-8 overflow-x-auto pb-12 no-scrollbar snap-x snap-mandatory">
+          <div
+            ref={videoRef}
+            className="flex flex-nowrap justify-start md:justify-center gap-6 pb-12 overflow-x-auto md:overflow-visible no-scrollbar snap-x snap-mandatory"
+          >
             {videos.map((video) => (
               <div key={video.id} className="snap-center" onClick={() => openVideo(video)}>
                 <VideoCard
@@ -360,6 +398,7 @@ export default function Home() {
                   title={video.title}
                   category={video.category}
                   thumbnail={video.thumbnail}
+                  productImage={video.productImage}
                 />
               </div>
             ))}
@@ -376,7 +415,7 @@ export default function Home() {
       />
 
       {/* Our Purpose / Impact Section */}
-      <section className="py-24 bg-white overflow-hidden">
+      <section className="py-16 md:py-24 bg-white overflow-hidden">
         <div className="max-w-[1536px] mx-auto px-6 lg:px-24">
           <div className="flex flex-col lg:flex-row items-center gap-16 lg:gap-32">
             {/* Left Column: Artistic Image Framing */}
@@ -411,7 +450,7 @@ export default function Home() {
               >
                 <span className="text-[#B08968] text-[12px] font-bold uppercase tracking-[0.4em] mb-6 block">Our Purpose</span>
 
-                <h2 className="text-5xl md:text-6xl font-fashion font-bold text-[#1A1A1A] leading-[1.1] mb-10 tracking-tight">
+                <h2 className="text-3xl md:text-6xl font-fashion font-bold text-[#1A1A1A] leading-[1.1] mb-8 md:mb-10 tracking-tight">
                   Empowering Every Stitch, Supporting Every Artisan.
                 </h2>
 
@@ -448,8 +487,8 @@ export default function Home() {
         </div>
       </section>
 
-      {/* Soulful Echoes / Review Section */}
-      <section className="py-24 bg-[#F9F7F5] overflow-hidden">
+      {/* Review Section */}
+      <section className="py-16 md:py-24 bg-[#F9F7F5] overflow-hidden">
         <div className="max-w-[1536px] mx-auto px-6 lg:px-24 text-center">
           <motion.div
             initial={{ opacity: 0, y: 20 }}
@@ -457,65 +496,78 @@ export default function Home() {
             viewport={{ once: true }}
             className="mb-20"
           >
-            <span className="text-[#B08968] text-[12px] font-bold uppercase tracking-[0.4em] mb-4 block">Patron Stories</span>
-            <h2 className="text-5xl md:text-6xl font-fashion font-bold text-[#1A1A1A] tracking-tight">Soulful Echoes</h2>
-            <div className="mx-auto w-24 h-1 bg-brand-orange mt-6 rounded-full opacity-30" />
+            <h2 className="text-3xl md:text-6xl font-fashion font-bold text-[#1A1A1A] tracking-tight">Speaking from their hearts</h2>
+            <div className="mx-auto w-16 md:w-24 h-1 bg-brand-orange mt-4 md:mt-6 rounded-full opacity-30" />
           </motion.div>
 
-          <div className="grid grid-cols-1 md:grid-cols-3 gap-12 relative">
+          <div className="flex md:grid overflow-x-auto md:overflow-visible md:grid-cols-3 gap-8 md:gap-12 pb-12 md:pb-0 no-scrollbar snap-x snap-mandatory relative">
             {/* Background Decorative Element */}
             <div className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-[120%] h-64 bg-[#E8F0EF] rounded-full blur-[100px] opacity-40 -z-10" />
 
-            {reviews.map((review, index) => (
-              <motion.div
-                key={review.id}
-                initial={{ opacity: 0, y: 30 }}
-                whileInView={{ opacity: 1, y: 0 }}
-                viewport={{ once: true }}
-                transition={{ duration: 0.8, delay: index * 0.2 }}
-                className="bg-white p-10 rounded-[3rem] shadow-sm hover:shadow-xl transition-shadow duration-500 flex flex-col items-center group relative h-full"
-              >
-                {/* Quote Icon */}
-                <div className="absolute top-6 right-10 text-brand-orange/5 group-hover:text-brand-orange/10 transition-colors">
-                  <svg width="60" height="60" viewBox="0 0 24 24" fill="currentColor"><path d="M14.017 21L14.017 18C14.017 16.8954 14.9124 16 16.017 16H19.017C19.5693 16 20.017 15.5523 20.017 15V9C20.017 8.44772 19.5693 8 19.017 8H15.017C14.4647 8 14.017 8.44772 14.017 9V14C14.017 14.5523 13.5693 15 13.017 15H11.017C10.4647 15 10.017 14.5523 10.017 14V9C10.017 7.34315 11.3601 6 13.017 6H19.017C20.6739 6 22.017 7.34315 22.017 9V15C22.017 18.3137 19.3307 21 16.017 21H14.017ZM3.017 21L3.017 18C3.017 16.8954 3.91241 16 5.017 16H8.017C8.56928 16 9.017 15.5523 9.017 15V9C9.017 8.44772 8.56928 8 8.017 8H4.017C3.46472 8 3.017 8.44772 3.017 9V14C3.017 14.5523 2.56928 15 2.017 15H0.017C-0.535004 15 -0.98274 14.5523 -0.98274 14V9C-0.98274 7.34315 0.360407 6 2.017 6H8.017C9.67386 6 11.017 7.34315 11.017 9V15C11.017 18.3137 8.33071 21 5.017 21H3.017Z" /></svg>
-                </div>
+            {reviews.map((review, index) => {
+              const [isExpanded, setIsExpanded] = useState(false);
+              
+              return (
+                <motion.div
+                  key={review.id}
+                  initial={{ opacity: 0, y: 30 }}
+                  whileInView={{ opacity: 1, y: 0 }}
+                  viewport={{ once: true }}
+                  transition={{ duration: 0.8, delay: index * 0.2 }}
+                  className={`flex-shrink-0 w-[280px] md:w-auto snap-center bg-white p-6 md:p-10 rounded-[2rem] md:rounded-[3rem] shadow-sm hover:shadow-xl transition-all duration-500 flex flex-col items-center group relative ${isExpanded ? 'h-auto' : 'h-full'}`}
+                >
+                  {/* Quote Icon */}
+                  <div className="absolute top-6 right-8 md:right-10 text-brand-orange/5 group-hover:text-brand-orange/10 transition-colors">
+                    <svg width="40" height="40" md:width="60" md:height="60" viewBox="0 0 24 24" fill="currentColor"><path d="M14.017 21L14.017 18C14.017 16.8954 14.9124 16 16.017 16H19.017C19.5693 16 20.017 15.5523 20.017 15V9C20.017 8.44772 19.5693 8 19.017 8H15.017C14.4647 8 14.017 8.44772 14.017 9V14C14.017 14.5523 13.5693 15 13.017 15H11.017C10.4647 15 10.017 14.5523 10.017 14V9C10.017 7.34315 11.3601 6 13.017 6H19.017C20.6739 6 22.017 7.34315 22.017 9V15C22.017 18.3137 19.3307 21 16.017 21H14.017ZM3.017 21L3.017 18C3.017 16.8954 3.91241 16 5.017 16H8.017C8.56928 16 9.017 15.5523 9.017 15V9C9.017 8.44772 8.56928 8 8.017 8H4.017C3.46472 8 3.017 8.44772 3.017 9V14C3.017 14.5523 2.56928 15 2.017 15H0.017C-0.535004 15 -0.98274 14.5523 -0.98274 14V9C-0.98274 7.34315 0.360407 6 2.017 6H8.017C9.67386 6 11.017 7.34315 11.017 9V15C11.017 18.3137 8.33071 21 5.017 21H3.017Z" /></svg>
+                  </div>
 
-                <div className="w-24 h-24 mb-8 relative">
-                  {/* Artistic Border/Blob Effect */}
-                  <div className="absolute inset-0 bg-brand-orange/10 rounded-[35%_65%_70%_30%] scale-110 group-hover:rotate-45 transition-transform duration-700" />
-                  <img
-                    src={review.image}
-                    alt={review.name}
-                    className="w-full h-full object-cover relative z-10 rounded-[45%_55%_40%_60%] border-4 border-white shadow-md grayscale-[30%] group-hover:grayscale-0 transition-all duration-500"
-                  />
-                </div>
+                  <div className="w-20 h-20 md:w-24 md:h-24 mb-6 md:mb-8 relative">
+                    {/* Artistic Border/Blob Effect */}
+                    <div className="absolute inset-0 bg-brand-orange/10 rounded-[35%_65%_70%_30%] scale-110 group-hover:rotate-45 transition-transform duration-700" />
+                    <img
+                      src={review.image}
+                      alt={review.name}
+                      className="w-full h-full object-cover relative z-10 rounded-[45%_55%_40%_60%] border-4 border-white shadow-md grayscale-[30%] group-hover:grayscale-0 transition-all duration-500"
+                    />
+                  </div>
 
-                {/* Star Rating Rendering */}
-                <div className="flex space-x-1 mb-6">
-                  {[...Array(review.rating)].map((_, i) => (
-                    <svg key={i} width="16" height="16" viewBox="0 0 24 24" fill="#FFB800">
-                      <path d="M12 17.27L18.18 21l-1.64-7.03L22 9.24l-7.19-.61L12 2 9.19 8.63 2 9.24l5.46 4.73L5.82 21z" />
-                    </svg>
-                  ))}
-                </div>
+                  {/* Star Rating Rendering */}
+                  <div className="flex space-x-1 mb-4 md:mb-6">
+                    {[...Array(review.rating)].map((_, i) => (
+                      <svg key={i} width="14" height="14" md:width="16" md:height="16" viewBox="0 0 24 24" fill="#FFB800">
+                        <path d="M12 17.27L18.18 21l-1.64-7.03L22 9.24l-7.19-.61L12 2 9.19 8.63 2 9.24l5.46 4.73L5.82 21z" />
+                      </svg>
+                    ))}
+                  </div>
 
-                <p className="text-gray-600 text-[16px] leading-relaxed italic mb-8 relative z-10">
-                  "{review.text}"
-                </p>
+                  <div className="relative z-10 w-full text-center">
+                    <p className={`text-gray-600 text-sm md:text-[16px] leading-relaxed italic mb-2 ${isExpanded ? '' : 'line-clamp-3 md:line-clamp-none'}`}>
+                      "{review.text}"
+                    </p>
+                    
+                    {/* Show More/Less Button (Mobile Only) */}
+                    <button 
+                      onClick={() => setIsExpanded(!isExpanded)}
+                      className="md:hidden text-brand-orange text-[11px] font-bold uppercase tracking-widest mt-2 hover:underline"
+                    >
+                      {isExpanded ? 'Show Less' : 'Show More'}
+                    </button>
+                  </div>
 
-                <div className="mt-auto">
-                  <h4 className="text-[#1A1A1A] font-fashion font-bold text-lg mb-1">{review.name}</h4>
-                  <p className="text-[#B08968] text-[10px] uppercase font-bold tracking-[0.2em]">{review.location}</p>
-                </div>
-              </motion.div>
-            ))}
+                  <div className="mt-6 md:mt-auto">
+                    <h4 className="text-[#1A1A1A] font-fashion font-bold text-base md:text-lg mb-0.5 md:mb-1 uppercase tracking-tight">{review.name}</h4>
+                    <p className="text-[#B08968] text-[9px] md:text-[10px] uppercase font-bold tracking-[0.2em]">{review.location}</p>
+                  </div>
+                </motion.div>
+              );
+            })}
           </div>
         </div>
       </section>
 
       {/* Stay Connected / Newsletter Section */}
-      <section className="py-24 bg-white px-6 lg:px-24">
-        <div className="max-w-[1440px] mx-auto relative overflow-hidden bg-brand-orange rounded-[3rem] md:rounded-[4rem] px-8 md:px-16 py-16 md:py-24 text-center">
+      <section className="py-16 md:py-24 bg-white px-6 lg:px-24">
+        <div className="max-w-[1440px] mx-auto relative overflow-hidden bg-brand-orange rounded-[2rem] md:rounded-[4rem] px-6 md:px-16 py-12 md:py-24 text-center">
 
           {/* Decorative Background Circles (Matching Theme) */}
           <div className="absolute -top-24 -left-24 w-64 h-64 bg-brand-orange-dark rounded-full opacity-40 blur-3xl" />
@@ -530,7 +582,7 @@ export default function Home() {
             transition={{ duration: 1 }}
             className="relative z-10 max-w-3xl mx-auto"
           >
-            <h2 className="text-4xl md:text-5xl lg:text-6xl font-fashion font-bold text-white mb-6 leading-tight">
+            <h2 className="text-3xl md:text-5xl lg:text-6xl font-fashion font-bold text-white mb-6 leading-tight text-center">
               Stay Connected with <br className="hidden md:block" /> Handmade Fashion
             </h2>
 
