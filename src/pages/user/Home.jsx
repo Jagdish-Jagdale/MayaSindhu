@@ -4,7 +4,11 @@ import { Link } from 'react-router-dom';
 import ProductCard from '../../components/user/ProductCard';
 import VideoCard from '../../components/user/VideoCard';
 import VideoModal from '../../components/user/VideoModal';
+import { ChevronLeft, ChevronRight, Plus } from 'lucide-react';
 
+import h1 from '../../assets/h1.png';
+import h2 from '../../assets/h2.png';
+import h3 from '../../assets/h3.png';
 import p1 from '../../assets/p1.jpeg';
 import p3 from '../../assets/p3.jpeg';
 import p4 from '../../assets/p4.jpeg';
@@ -44,7 +48,30 @@ const videos = [
 ];
 
 const slides = [
-  // ... (existing slides)
+  {
+    id: 1,
+    image: h1,
+    accent: "HERITAGE EDIT",
+    title: "A Woven Chronicle \nof the Northeast",
+    description: "Discover the intricate artistry of hand-loomed textiles, crafted with stories of the land.",
+    buttonText: "Shop Now"
+  },
+  {
+    id: 2,
+    image: h2,
+    accent: "ARTISANAL BLOOM",
+    title: "Silken Verses \nof Tradition",
+    description: "Drape yourself in the elegance of hand-woven heritage, where every thread is a legacy.",
+    buttonText: "Discover More"
+  },
+  {
+    id: 3,
+    image: h3,
+    accent: "CRAFTED ROOTS",
+    title: "Timeless Moitfs \nfor the Modern Muse",
+    description: "Intricately hand-embroidered ensembles that bridge the gap between ancient art and contemporary style.",
+    buttonText: "Explore Now"
+  }
 ];
 
 const reviews = [
@@ -93,70 +120,57 @@ export default function Home() {
 
   return (
     <div className="bg-white min-h-screen">
-      {/* Hero Section - Inspired by Reference Image */}
-      <section className="relative h-[85vh] md:h-[90vh] w-full flex items-center overflow-hidden pt-12 md:pt-20">
-        {/* Background Image */}
-        <div className="absolute inset-0 w-full h-full">
-          <img
-            src="/hero-orange.png"
-            alt="MayaSindhu Hero"
-            className="w-full h-full object-cover object-center"
-          />
-          {/* Subtle gradient overlay for readability */}
-          <div className="absolute inset-0 bg-gradient-to-r from-white/90 via-white/40 to-transparent" />
+      {/* Cinematic Banner Slider */}
+      <section className="relative h-[75vh] md:h-[85vh] w-full flex items-center overflow-hidden bg-white">
+        <AnimatePresence mode="popLayout" initial={false}>
+          <motion.div
+            key={currentSlide}
+            initial={{ x: '100%' }}
+            animate={{ x: 0 }}
+            exit={{ x: '-100%' }}
+            transition={{ duration: 0.8, ease: [0.4, 0, 0.2, 1] }}
+            className="absolute inset-0 w-full h-full"
+          >
+            {/* Background Image */}
+            <div className="absolute inset-0 w-full h-full">
+              <img
+                src={slides[currentSlide].image}
+                alt={`Slide ${currentSlide + 1}`}
+                className="w-full h-full object-cover object-top"
+              />
+            </div>
+          </motion.div>
+        </AnimatePresence>
+
+        {/* Edge-to-Edge Navigation Arrows */}
+        <div className="absolute inset-y-0 left-0 flex items-center z-20">
+          <button 
+            onClick={() => setCurrentSlide((prev) => (prev - 1 + slides.length) % slides.length)}
+            className="w-10 h-24 bg-white/40 backdrop-blur-md border-y border-r border-white/20 flex items-center justify-center text-brand-black/60 hover:text-brand-orange hover:bg-white/90 transition-all active:scale-95 group"
+          >
+            <ChevronLeft size={32} strokeWidth={1.5} className="group-hover:-translate-x-0.5 transition-transform" />
+          </button>
+        </div>
+        <div className="absolute inset-y-0 right-0 flex items-center z-20">
+          <button 
+            onClick={() => setCurrentSlide((prev) => (prev + 1) % slides.length)}
+            className="w-10 h-24 bg-white/40 backdrop-blur-md border-y border-l border-white/20 flex items-center justify-center text-brand-black/60 hover:text-brand-orange hover:bg-white/90 transition-all active:scale-95 group"
+          >
+            <ChevronRight size={32} strokeWidth={1.5} className="group-hover:translate-x-0.5 transition-transform" />
+          </button>
         </div>
 
-        {/* Hero Content */}
-        <div className="relative max-w-[1536px] mx-auto px-6 lg:px-12 w-full z-10">
-          <motion.div
-            initial={{ opacity: 0, x: -50 }}
-            animate={{ opacity: 1, x: 0 }}
-            transition={{ duration: 1, ease: "easeOut" }}
-            className="max-w-2xl"
-          >
-            <motion.span
-              initial={{ opacity: 0, y: 10 }}
-              animate={{ opacity: 1, y: 0 }}
-              transition={{ delay: 0.5, duration: 0.8 }}
-              className="text-[#B08968] text-[11px] font-bold uppercase tracking-[0.4em] mb-6 block"
-            >
-              Handcrafted Excellence
-            </motion.span>
-
-            <motion.h1
-              initial={{ opacity: 0, y: 20 }}
-              animate={{ opacity: 1, y: 0 }}
-              transition={{ delay: 0.7, duration: 0.8 }}
-              className="text-6xl md:text-8xl font-fashion font-bold text-[#1A1A1A] leading-[1.1] mb-8"
-            >
-              Celebrate <br />
-              <span className="text-[#FF6B00] italic">Handmade</span> <br />
-              Elegance
-            </motion.h1>
-
-            <motion.p
-              initial={{ opacity: 0, y: 20 }}
-              animate={{ opacity: 1, y: 0 }}
-              transition={{ delay: 0.9, duration: 0.8 }}
-              className="text-gray-600 text-[16px] md:text-[18px] leading-relaxed max-w-lg mb-12"
-            >
-              Discover a soulful collection of artisanal fashion, where every thread tells a story of heritage and empowered craftsmanship.
-            </motion.p>
-
-            <motion.div
-              initial={{ opacity: 0, y: 20 }}
-              animate={{ opacity: 1, y: 0 }}
-              transition={{ delay: 1.1, duration: 0.8 }}
-              className="flex flex-wrap gap-4"
-            >
-              <Link to="/shop" className="btn btn-primary">
-                Shop Now
-              </Link>
-              <Link to="/shop" className="btn btn-outline">
-                Explore Collections
-              </Link>
-            </motion.div>
-          </motion.div>
+        {/* Line Progress Indicators (Bottom Center) */}
+        <div className="absolute bottom-6 left-1/2 -translate-x-1/2 flex items-center gap-2 z-20">
+          {slides.map((_, idx) => (
+            <button
+              key={idx}
+              onClick={() => setCurrentSlide(idx)}
+              className={`h-[4px] rounded-full transition-all duration-500 ${
+                currentSlide === idx ? 'w-24 bg-brand-black/60' : 'w-12 bg-brand-black/10 hover:bg-brand-black/20'
+              }`}
+            />
+          ))}
         </div>
       </section>
       {/* Curated Realms Section */}

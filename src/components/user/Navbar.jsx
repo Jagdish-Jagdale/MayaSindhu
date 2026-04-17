@@ -38,8 +38,8 @@ export default function Navbar() {
           {/* Left: Logo */}
           <div className="flex-shrink-0">
             <Link to="/" className="flex items-center">
-              <h1 className="text-2xl md:text-3xl font-fashion font-bold tracking-tighter text-[#004D4D]">
-                Maya<span className="text-[#D4AF37]">Sindhu</span>
+              <h1 className="text-2xl md:text-3xl font-fashion font-bold tracking-tighter text-brand-black">
+                Maya<span className="text-brand-orange">Sindhu</span>
               </h1>
             </Link>
           </div>
@@ -49,9 +49,9 @@ export default function Navbar() {
             <input
               type="text"
               placeholder="Search for Handcrafted Sarees, Jewelry..."
-              className="w-full bg-[#FFF9F0]/50 border border-[#004D4D]/10 rounded-full py-2.5 pl-5 pr-12 focus:outline-none focus:border-[#D4AF37] focus:ring-4 focus:ring-[#D4AF37]/5 transition-all text-sm placeholder-[#004D4D]/40 text-[#004D4D]"
+              className="w-full bg-brand-gray/50 border border-brand-orange/10 rounded-full py-2.5 pl-5 pr-12 focus:outline-none focus:border-brand-orange focus:ring-4 focus:ring-brand-orange/5 transition-all text-sm placeholder-brand-black/40 text-brand-black"
             />
-            <div className="absolute right-4 top-1/2 -translate-y-1/2 text-[#004D4D]/60 group-hover:text-[#D4AF37] transition-colors cursor-pointer">
+            <div className="absolute right-4 top-1/2 -translate-y-1/2 text-brand-black/60 group-hover:text-brand-orange transition-colors cursor-pointer">
               <Search size={20} strokeWidth={1.5} />
             </div>
           </div>
@@ -60,22 +60,22 @@ export default function Navbar() {
           <div className="flex items-center gap-2 lg:gap-5">
             <Link 
               to={user ? "/profile" : "/login"} 
-              className="p-2 text-[#004D4D] hover:text-[#D4AF37] transition-colors relative"
+              className="p-2 text-brand-black hover:text-brand-orange transition-colors relative"
             >
               <User size={22} strokeWidth={1.5} />
               {user && <span className="absolute bottom-1 right-1 w-2 h-2 bg-green-500 rounded-full border border-white"></span>}
             </Link>
-            <Link to="/wishlist" className="p-2 text-[#004D4D] hover:text-[#D4AF37] transition-colors relative">
+            <Link to="/wishlist" className="p-2 text-brand-black hover:text-brand-orange transition-colors relative">
               <Heart size={22} strokeWidth={1.5} />
-              <span className="absolute top-1 right-1 bg-[#D4AF37] text-white text-[9px] font-bold w-4 h-4 flex items-center justify-center rounded-full">0</span>
+              <span className="absolute top-1 right-1 bg-brand-orange text-white text-[9px] font-bold w-4 h-4 flex items-center justify-center rounded-full shadow-lg shadow-brand-orange/20">0</span>
             </Link>
-            <Link to="/cart" className="p-2 text-[#004D4D] hover:text-[#D4AF37] transition-colors relative">
+            <Link to="/cart" className="p-2 text-brand-black hover:text-brand-orange transition-colors relative">
               <ShoppingBag size={22} strokeWidth={1.5} />
-              <span className="absolute top-1 right-1 bg-[#D4AF37] text-white text-[9px] font-bold w-4 h-4 flex items-center justify-center rounded-full">0</span>
+              <span className="absolute top-1 right-1 bg-brand-orange text-white text-[9px] font-bold w-4 h-4 flex items-center justify-center rounded-full shadow-lg shadow-brand-orange/20">0</span>
             </Link>
             <button
               onClick={() => setIsMobileMenuOpen(true)}
-              className="p-2 text-[#004D4D] md:hidden"
+              className="p-2 text-brand-black md:hidden"
             >
               <Menu size={24} />
             </button>
@@ -84,7 +84,7 @@ export default function Navbar() {
       </div>
 
       {/* Category Navigation (Desktop) */}
-      <nav className="hidden md:block bg-[#FFF9F0] border-b border-[#004D4D]/5">
+      <nav className="hidden md:block bg-white border-b border-gray-100">
         <div className="max-w-[1536px] mx-auto px-6">
           <ul className="flex items-center justify-center gap-10">
             {['Apparels', 'Jewellery', 'Festive', 'Bags', 'Others'].map((name) => {
@@ -93,7 +93,7 @@ export default function Navbar() {
                 <NavItem key={category.id} category={category} location={location} />
               ) : (
                 <li key={name} className="py-3">
-                  <span className="text-xs font-bold uppercase tracking-[0.2em] text-[#004D4D] opacity-50">{name}</span>
+                  <span className="text-xs font-bold uppercase tracking-[0.2em] text-brand-black opacity-30">{name}</span>
                 </li>
               );
             })}
@@ -127,7 +127,7 @@ function NavItem({ category, location }) {
     >
       <Link
         to={`/category/${category.id}`}
-        className={`flex items-center gap-1.5 text-xs font-bold uppercase tracking-[0.2em] py-3 transition-colors ${isActive || isHovered ? 'text-[#D4AF37]' : 'text-[#004D4D]'
+        className={`flex items-center gap-1.5 text-xs font-bold uppercase tracking-[0.2em] py-3 transition-colors ${isActive || isHovered ? 'text-brand-orange' : 'text-brand-black opacity-80'
           }`}
       >
         {category.name}
@@ -149,7 +149,7 @@ function NavItem({ category, location }) {
                 {/* 1. Render groups that HAVE children (e.g., Sarees) */}
                 {category.children.filter(sub => sub.children && sub.children.length > 0).map((subGroup) => (
                   <div key={subGroup.id} className="space-y-5">
-                    <h4 className="text-[10px] font-black uppercase tracking-[0.2em] text-[#004D4D] border-b border-[#004D4D]/10 pb-3 h-10 flex items-end">
+                    <h4 className="text-[10px] font-black uppercase tracking-[0.2em] text-brand-black border-b border-gray-100 pb-3 h-10 flex items-end">
                       {subGroup.name}
                     </h4>
                     <ul className="space-y-2.5">
@@ -157,7 +157,7 @@ function NavItem({ category, location }) {
                         <li key={item.id}>
                           <Link 
                             to={`/category/${item.id}`}
-                            className="text-[11px] text-[#004D4D]/70 hover:text-[#D4AF37] transition-colors block leading-tight"
+                            className="text-[11px] text-brand-black/60 hover:text-brand-orange transition-colors block leading-tight"
                           >
                             {item.name}
                           </Link>
@@ -166,7 +166,7 @@ function NavItem({ category, location }) {
                       <li>
                         <Link 
                           to={`/category/${subGroup.id}`}
-                          className="text-[9px] font-bold uppercase tracking-widest text-[#D4AF37] hover:underline pt-3 block"
+                          className="text-[9px] font-bold uppercase tracking-widest text-brand-orange hover:underline pt-3 block"
                         >
                           View All
                         </Link>
@@ -178,7 +178,7 @@ function NavItem({ category, location }) {
                 {/* 2. Render groups that DO NOT have children (flat list) */}
                 {category.children.filter(sub => !sub.children || sub.children.length === 0).length > 0 && (
                    <div className="space-y-5">
-                    <h4 className="text-[10px] font-black uppercase tracking-[0.2em] text-[#004D4D] border-b border-[#004D4D]/10 pb-3 h-10 flex items-end">
+                    <h4 className="text-[10px] font-black uppercase tracking-[0.2em] text-brand-black border-b border-gray-100 pb-3 h-10 flex items-end">
                       Shop {category.name}
                     </h4>
                     <ul className="space-y-2.5">
@@ -186,7 +186,7 @@ function NavItem({ category, location }) {
                         <li key={item.id}>
                           <Link 
                             to={`/category/${item.id}`}
-                            className="text-[11px] text-[#004D4D]/70 hover:text-[#D4AF37] transition-colors block leading-tight"
+                            className="text-[11px] text-brand-black/60 hover:text-brand-orange transition-colors block leading-tight"
                           >
                             {item.name}
                           </Link>
@@ -200,10 +200,10 @@ function NavItem({ category, location }) {
               {/* Subtle Bottom Banner */}
               <div className="mt-12 pt-8 border-t border-gray-50 flex items-center justify-between">
                 <div className="flex items-center gap-4">
-                  <span className="w-12 h-[1px] bg-[#D4AF37]/30"></span>
-                  <p className="text-[10px] uppercase tracking-[0.3em] text-[#004D4D]/40 font-bold">MayaSindhu Handcrafted Heritage</p>
+                  <span className="w-12 h-[1px] bg-brand-orange/30"></span>
+                  <p className="text-[10px] uppercase tracking-[0.3em] text-brand-black/40 font-bold">MayaSindhu Handcrafted Heritage</p>
                 </div>
-                <Link to="/shop" className="text-[10px] font-bold uppercase tracking-widest text-[#004D4D] hover:text-[#D4AF37] transition-all flex items-center gap-2 group">
+                <Link to="/shop" className="text-[10px] font-bold uppercase tracking-widest text-brand-black hover:text-brand-orange transition-all flex items-center gap-2 group">
                   Explore Full {category.name} Collection <Plus size={12} className="group-hover:rotate-90 transition-transform" />
                 </Link>
               </div>
@@ -235,7 +235,7 @@ function MobileMenu({ categories, onClose }) {
         animate={{ opacity: 1 }}
         exit={{ opacity: 0 }}
         onClick={onClose}
-        className="fixed inset-0 bg-[#004D4D]/20 backdrop-blur-sm z-[1100]"
+        className="fixed inset-0 bg-brand-black/20 backdrop-blur-sm z-[1100]"
       />
       <motion.div
         initial={{ x: '-100%' }}
@@ -244,9 +244,9 @@ function MobileMenu({ categories, onClose }) {
         transition={{ type: 'spring', damping: 25, stiffness: 200 }}
         className="fixed top-0 left-0 bottom-0 w-[85%] max-w-[350px] bg-white z-[1200] flex flex-col shadow-2xl"
       >
-        <div className="flex items-center justify-between p-6 bg-[#FFF9F0] border-b border-[#004D4D]/10">
-          <h2 className="text-xl font-fashion font-bold text-[#004D4D]">MayaSindhu</h2>
-          <button onClick={onClose} className="p-2 text-[#004D4D] hover:text-[#D4AF37] transition-colors">
+        <div className="flex items-center justify-between p-6 bg-brand-orange-light border-b border-brand-orange/10">
+          <h2 className="text-xl font-fashion font-bold text-brand-black">Maya<span className="text-brand-orange">Sindhu</span></h2>
+          <button onClick={onClose} className="p-2 text-brand-black hover:text-brand-orange transition-colors">
             <X size={24} />
           </button>
         </div>
@@ -254,7 +254,7 @@ function MobileMenu({ categories, onClose }) {
         <div className="flex-1 overflow-y-auto p-6 space-y-2">
           
           <div className="pt-4">
-            <p className="text-[10px] font-black uppercase tracking-[0.2em] text-[#004D4D]/40 mb-4">Categories</p>
+            <p className="text-[10px] font-black uppercase tracking-[0.2em] text-brand-black/40 mb-4">Categories</p>
             {['Apparels', 'Jewellery', 'Festive', 'Bags', 'Others'].map((name) => {
               const cat = categories.find(c => c.name === name);
               return cat ? (
@@ -267,10 +267,10 @@ function MobileMenu({ categories, onClose }) {
           </div>
         </div>
 
-        <div className="p-6 border-t bg-[#FFF9F0]">
+        <div className="p-6 border-t bg-brand-orange-light">
           <button 
             onClick={handleUserAction}
-            className="w-full bg-[#004D4D] text-white font-bold py-4 rounded-xl shadow-lg shadow-[#004D4D]/20 hover:bg-[#003333] transition-all"
+            className="w-full bg-brand-orange text-white font-bold py-4 rounded-xl shadow-lg shadow-brand-orange/20 hover:bg-brand-orange-dark transition-all active:scale-95"
           >
             {user ? 'View My Profile' : 'Login / Signup'}
           </button>
@@ -290,14 +290,14 @@ function MobileAccordion({ item, onClose, depth = 0 }) {
         <Link
           to={`/category/${item.id}`}
           onClick={onClose}
-          className={`text-sm font-bold uppercase tracking-widest ${depth === 0 ? 'text-[#004D4D]' : 'text-[#004D4D]/70'}`}
+          className={`text-sm font-bold uppercase tracking-widest ${depth === 0 ? 'text-brand-black' : 'text-brand-black/70'}`}
         >
           {item.name}
         </Link>
         {hasChildren && (
           <button
             onClick={() => setIsOpen(!isOpen)}
-            className="p-1 text-[#D4AF37]"
+            className="p-1 text-brand-orange"
           >
             {isOpen ? <Minus size={18} /> : <Plus size={18} />}
           </button>
@@ -310,7 +310,7 @@ function MobileAccordion({ item, onClose, depth = 0 }) {
             initial={{ height: 0, opacity: 0 }}
             animate={{ height: 'auto', opacity: 1 }}
             exit={{ height: 0, opacity: 0 }}
-            className="pl-4 border-l border-[#D4AF37]/20 ml-2 overflow-hidden"
+            className="pl-4 border-l border-brand-orange/20 ml-2 overflow-hidden"
           >
             {item.children.map(child => (
               <MobileAccordion key={child.id} item={child} onClose={onClose} depth={depth + 1} />
