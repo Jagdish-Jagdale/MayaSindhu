@@ -1,8 +1,20 @@
 import React, { useState, useEffect, useRef } from 'react';
+import { 
+  Plus, 
+  Search, 
+  ChevronDown, 
+  Filter, 
+  X, 
+  Pencil, 
+  Trash2, 
+  ArrowUpRight,
+  Grid2X2
+} from 'lucide-react';
 import { useAdminUI } from '../../context/AdminUIContext';
 import { Plus, Search, ChevronDown, Filter, X, Grid2X2, Pencil, Trash2, ArrowUpRight, Database } from 'lucide-react';
 import useCategories from '../../hooks/useCategories';
 import { seedCategories } from '../../utils/seedFirestore';
+
 
 const Categories = () => {
   const { isCollapsed } = useAdminUI();

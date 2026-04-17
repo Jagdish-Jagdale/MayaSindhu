@@ -1,4 +1,16 @@
+import React, { useState, useEffect, useRef } from 'react';
+import { 
+  Plus, 
+  Search, 
+  ChevronDown, 
+  Filter, 
+  X, 
+  Pencil, 
+  Trash2, 
+  ArrowUpRight 
+} from 'lucide-react';
 import { useAdminUI } from '../../context/AdminUIContext';
+
 
 export default function ProductManagement() {
   const { isCollapsed } = useAdminUI();

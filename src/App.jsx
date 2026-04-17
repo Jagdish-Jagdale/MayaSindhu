@@ -23,13 +23,19 @@ import AdminLogin from './pages/admin/Login';
 import Users from './pages/admin/Users';
 import Categories from './pages/admin/Categories';
 import Orders from './pages/admin/Orders';
-import AdminCart from './pages/admin/Cart';
-import InventoryLogs from './pages/admin/InventoryLogs';
 import useOnlineStatus from './hooks/useOnlineStatus';
-import OfflineStatus from './components/common/OfflineStatus';
-import NotFound from './components/common/NotFound';
 import AdminProtectedRoute from './components/admin/AdminProtectedRoute';
 import Settings from './pages/admin/Settings';
+import NotFound from './components/common/NotFound';
+
+// Settings Sub-pages
+import Banner from './pages/admin/settings/Banner';
+import CuratedRealms from './pages/admin/settings/CuratedRealms';
+import FeaturedTreasures from './pages/admin/settings/FeaturedTreasures';
+import ArtisanBlooms from './pages/admin/settings/ArtisanBlooms';
+import Stories from './pages/admin/settings/Stories';
+import Purpose from './pages/admin/settings/Purpose';
+
 import './App.css';
 
 import { AuthProvider } from './context/AuthContext';
@@ -41,6 +47,7 @@ function App() {
   return (
     <Router>
       <AuthProvider>
+        <TitleUpdater />
         <Toaster 
           position="top-right" 
           reverseOrder={false}
@@ -98,9 +105,13 @@ function App() {
             <Route path="products" element={<ProductManagement />} />
             <Route path="categories" element={<Categories />} />
             <Route path="orders" element={<Orders />} />
-            <Route path="cart" element={<Cart />} />
-            <Route path="inventory-logs" element={<InventoryLogs />} />
             <Route path="settings" element={<Settings />} />
+            <Route path="settings/banner" element={<Banner />} />
+            <Route path="settings/curated-realms" element={<CuratedRealms />} />
+            <Route path="settings/featured-treasures" element={<FeaturedTreasures />} />
+            <Route path="settings/artisan-blooms" element={<ArtisanBlooms />} />
+            <Route path="settings/stories" element={<Stories />} />
+            <Route path="settings/purpose" element={<Purpose />} />
           </Route>
 
           {/* Catch-all Route for 404 - Page Not Found */}
@@ -111,6 +122,4 @@ function App() {
   );
 }
 
-
-
-export default App
+export default App;
