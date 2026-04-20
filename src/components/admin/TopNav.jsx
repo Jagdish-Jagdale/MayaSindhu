@@ -18,7 +18,7 @@ export default function TopNav({ sidebarOpen, onToggleSidebar, isMobile }) {
 
   return (
     <header
-      className="flex items-center px-4 sm:px-6 shrink-0 relative"
+      className="flex items-center gap-3 px-4 sm:px-6 shrink-0 relative"
       style={{
         height: '64px',
         borderBottom: '1px solid #f0f0f0',
@@ -26,9 +26,9 @@ export default function TopNav({ sidebarOpen, onToggleSidebar, isMobile }) {
         backdropFilter: 'blur(8px)',
       }}
     >
-      {/* ─── MOBILE LAYOUT (Toggle Left, Logo Center, Icons Right) ─── */}
-      {isMobile && (
-        <>
+      {/* ─── UNIFIED HEADER CONTENT (Toggle - Logo - Divider - Title) ─── */}
+      <div className="flex items-center gap-2 sm:gap-4 flex-1 min-w-0">
+        {isMobile && (
           <div className="z-20">
             <button
               onClick={onToggleSidebar}
@@ -36,49 +36,35 @@ export default function TopNav({ sidebarOpen, onToggleSidebar, isMobile }) {
               title="Toggle Sidebar"
             >
               <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
-                <line x1="3" y1="12" x2="21" y2="12" />
-                <line x1="3" y1="6" x2="21" y2="6" />
-                <line x1="3" y1="18" x2="21" y2="18" />
+                <rect x="3" y="3" width="18" height="18" rx="2" ry="2" />
+                <line x1="9" y1="3" x2="9" y2="21" />
               </svg>
             </button>
           </div>
+        )}
 
-          <div className="absolute inset-0 flex items-center justify-center pointer-events-none">
-            <div className="pointer-events-auto">
-              <img
-                src={mstitle}
-                alt="MayaSindhu"
-                className="h-8 w-auto object-contain"
-              />
-            </div>
-          </div>
-        </>
-      )}
+        {/* Brand Logo */}
+        <div className="shrink-0 flex items-center h-full">
+          <img
+            src={mstitle}
+            alt="MayaSindhu"
+            className="h-6 sm:h-7 lg:h-9 w-auto object-contain transition-all duration-300"
+          />
+        </div>
 
-      {/* ─── DESKTOP LAYOUT (Logo | | Title | Spacer | Search | Icons) ─── */}
-      {!isMobile && (
-        <div className="flex items-center gap-4 flex-1">
-          {/* Brand Logo */}
-          <div className="shrink-0 flex items-center">
-            <img
-              src={mstitle}
-              alt="MayaSindhu"
-              className="h-7 w-auto object-contain"
-            />
-          </div>
+        {/* Vertical Divider */}
+        <div className="w-[1px] h-5 sm:h-6 bg-gray-200 mx-0.5 sm:mx-1 shrink-0" />
 
-          {/* Vertical Divider */}
-          <div className="w-[1px] h-6 bg-gray-200 mx-1" />
+        {/* Page Name */}
+        <h1 className="text-[13px] sm:text-[15px] font-bold text-gray-800 tracking-tight truncate">
+          {page.title}
+        </h1>
 
-          {/* Page Name */}
-          <h1 className="text-[15px] font-bold text-gray-800 tracking-tight">
-            {page.title}
-          </h1>
+        {/* Spacer for Desktop Search */}
+        {!isMobile && <div className="flex-1" />}
 
-          {/* Spacer */}
-          <div className="flex-1" />
-
-          {/* Search Bar */}
+        {/* Desktop Search Bar */}
+        {!isMobile && (
           <div className="relative w-full max-w-[280px] shrink-0 drop-shadow-sm">
             <input
               type="text"
@@ -88,8 +74,8 @@ export default function TopNav({ sidebarOpen, onToggleSidebar, isMobile }) {
             />
             <Search size={15} className="absolute left-3.5 top-1/2 -translate-y-1/2 text-gray-700 pointer-events-none z-10" />
           </div>
-        </div>
-      )}
+        )}
+      </div>
 
       {/* ─── COMMON RIGHT ACTIONS (Notification / Mobile Search) ─── */}
       <div className="flex items-center gap-2 ml-auto z-20">

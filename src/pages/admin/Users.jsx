@@ -231,7 +231,7 @@ const Users = () => {
 
       {/* Content Container */}
       <div className="space-y-3">
-        <div className="bg-white rounded-[20px] border border-gray-100 shadow-sm overflow-x-auto">
+        <div className="bg-white rounded-[20px] border border-gray-100 shadow-sm overflow-x-auto custom-scrollbar">
           <table className="w-full border-collapse">
             <thead>
               <tr className="border-b border-gray-50 bg-white">
