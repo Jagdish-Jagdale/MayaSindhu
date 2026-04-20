@@ -25,9 +25,9 @@ const menuItems = [
   { title: 'Products', icon: Package, path: '/admin/products' },
   { title: 'Categories', icon: Grid2X2, path: '/admin/categories' },
   { title: 'Orders', icon: ShoppingBag, path: '/admin/orders' },
-  { 
-    title: 'Settings', 
-    icon: Settings, 
+  {
+    title: 'Settings',
+    icon: Settings,
     path: '/admin/settings',
     subItems: [
       { title: 'Banner', icon: Image, path: '/admin/settings/banner' },
@@ -44,7 +44,7 @@ export default function Sidebar({ isCollapsed }) {
   const location = useLocation();
   const navigate = useNavigate();
   const [userEmail, setUserEmail] = useState('');
-  const [openMenus, setOpenMenus] = useState(['Settings']); // Settings open by default
+  const [openMenus, setOpenMenus] = useState([]); // Closed by default
 
   useEffect(() => {
     const unsub = onAuthStateChanged(auth, (u) => {
@@ -63,9 +63,9 @@ export default function Sidebar({ isCollapsed }) {
   };
 
   const isActive = (path) => location.pathname === path || (path !== '/admin/dashboard' && location.pathname.startsWith(path));
-  
+
   const toggleMenu = (title) => {
-    setOpenMenus(prev => 
+    setOpenMenus(prev =>
       prev.includes(title) ? prev.filter(t => t !== title) : [...prev, title]
     );
   };
@@ -74,11 +74,16 @@ export default function Sidebar({ isCollapsed }) {
     <div className="flex flex-col flex-1 min-h-0 overflow-hidden">
 
       {/* Brand header */}
-      <div className={`px-4 py-6 border-b border-gray-100 min-h-[56px] flex items-center justify-center transition-all duration-300 ${isCollapsed ? 'opacity-0 scale-50' : 'opacity-100 scale-100'}`}>
+      <div className={`px-4 py-8 border-b border-gray-100 min-h-[56px] flex flex-col items-center justify-center gap-1 transition-all duration-300 ${isCollapsed ? 'opacity-0 scale-50' : 'opacity-100 scale-100'}`}>
         {!isCollapsed && (
-          <span className="text-[13px] font-black uppercase tracking-[0.2em] text-center bg-gradient-to-r from-red-500 via-orange-500 via-yellow-500 via-green-500 via-blue-500 via-indigo-500 to-purple-500 bg-clip-text text-transparent animate-gradient-x">
-            Admin Panel
-          </span>
+          <>
+            <span className="text-[10px] font-bold uppercase tracking-[0.3em] text-gray-400">
+              E-Commerce
+            </span>
+            <span className="text-[14px] font-black uppercase tracking-[0.2em] text-center bg-gradient-to-r from-red-500 via-orange-500 via-yellow-500 via-green-500 via-blue-500 via-indigo-500 to-purple-500 bg-clip-text text-transparent animate-gradient-x">
+              Admin Panel
+            </span>
+          </>
         )}
       </div>
 
@@ -111,9 +116,9 @@ export default function Sidebar({ isCollapsed }) {
                   {!isCollapsed && (
                     <>
                       <span className="truncate flex-1 text-left">{item.title}</span>
-                      <ChevronDown 
-                        size={14} 
-                        className={`transition-transform duration-300 ${isMenuOpen ? 'rotate-180' : ''}`} 
+                      <ChevronDown
+                        size={14}
+                        className={`transition-transform duration-300 ${isMenuOpen ? 'rotate-180' : ''}`}
                       />
                     </>
                   )}
@@ -153,8 +158,8 @@ export default function Sidebar({ isCollapsed }) {
                         to={sub.path}
                         className={`
                           flex items-center gap-3 px-3 py-2 rounded-lg text-[12px] transition-all duration-200
-                          ${subActive 
-                            ? 'text-[#1BAFAF] font-bold bg-[#1BAFAF]/5' 
+                          ${subActive
+                            ? 'text-[#1BAFAF] font-bold bg-[#1BAFAF]/5'
                             : 'text-gray-400 hover:text-gray-700 hover:bg-gray-50'
                           }
                         `}
@@ -183,9 +188,9 @@ export default function Sidebar({ isCollapsed }) {
         >
           <LogOut size={isCollapsed ? 20 : 16} className="text-red-500 group-hover:text-white transition-colors shrink-0" />
           {!isCollapsed && (
-             <span className="truncate animate-in fade-in slide-in-from-left-2 duration-300">
-                Log out
-             </span>
+            <span className="truncate animate-in fade-in slide-in-from-left-2 duration-300">
+              Log out
+            </span>
           )}
         </button>
       </div>

@@ -60,7 +60,7 @@ export default function Orders() {
 
       {/* Table Container */}
       <div className="bg-white rounded-[20px] border border-gray-100 shadow-sm overflow-hidden">
-        <div className="overflow-x-auto">
+        <div className="overflow-x-auto custom-scrollbar">
           <table className="w-full border-collapse">
             <thead>
               <tr className="border-b border-gray-50 bg-white">

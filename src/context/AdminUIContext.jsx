@@ -1,4 +1,4 @@
-import React, { createContext, useContext, useState, useEffect } from 'react';
+import React, { createContext, useContext, useState, useEffect, useCallback, useMemo } from 'react';
 
 const AdminUIContext = createContext();
 
@@ -21,18 +21,20 @@ export const AdminUIProvider = ({ children }) => {
     return () => window.removeEventListener('resize', handleResize);
   }, []);
 
-  const toggleSidebar = () => setSidebarOpen(prev => !prev);
-  const closeSidebar = () => {
-    if (isMobile) setSidebarOpen(false);
-  };
+  const toggleSidebar = useCallback(() => setSidebarOpen(prev => !prev), []);
+  const closeSidebar = useCallback(() => {
+    if (window.innerWidth <= 1024) {
+      setSidebarOpen(false);
+    }
+  }, []);
 
-  const value = {
+  const value = useMemo(() => ({
     sidebarOpen,
     isMobile,
     isCollapsed: !sidebarOpen && !isMobile,
     toggleSidebar,
     closeSidebar,
-  };
+  }), [sidebarOpen, isMobile, toggleSidebar, closeSidebar]);
 
   return (
     <AdminUIContext.Provider value={value}>

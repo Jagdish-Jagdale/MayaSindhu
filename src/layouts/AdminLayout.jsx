@@ -41,7 +41,7 @@ function AdminLayoutContent() {
             ${isMobile ? (sidebarOpen ? 'translate-x-0' : '-translate-x-full') : 'translate-x-0'}
           `}
           style={{
-            width: isMobile ? '280px' : (sidebarOpen ? '260px' : '80px'),
+            width: isMobile ? '250px' : (sidebarOpen ? '260px' : '80px'),
             background: '#ffffff',
             borderRadius: isMobile ? '0 20px 20px 0' : '16px',
             boxShadow: isMobile ? '' : (sidebarOpen ? '0 8px 32px rgba(0,0,0,0.10)' : '0 4px 12px rgba(0,0,0,0.05)'),
@@ -60,17 +60,13 @@ function AdminLayoutContent() {
               className="p-1.5 rounded-lg hover:bg-gray-100 text-gray-400 transition-colors"
               title={sidebarOpen ? "Collapse Sidebar" : "Expand Sidebar"}
             >
-              {isMobile ? (
-                <X size={20} />
-              ) : (
                 <svg 
-                  className={`transition-transform duration-300 ${!sidebarOpen ? 'rotate-180' : ''}`}
+                  className={`transition-transform duration-300 ${isMobile ? 'rotate-180' : (!sidebarOpen ? 'rotate-180' : '')}`}
                   width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"
                 >
                   <rect x="3" y="3" width="18" height="18" rx="2" ry="2" />
                   <line x1="9" y1="3" x2="9" y2="21" />
                 </svg>
-              )}
             </button>
           </div>
 
