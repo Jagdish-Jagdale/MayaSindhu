@@ -1,15 +1,15 @@
 import React, { useState, useEffect, useRef } from 'react';
-import { 
-  Plus, 
-  Search, 
-  ChevronDown, 
+import {
+  Plus,
+  Search,
+  ChevronDown,
   ChevronRight,
-  Filter, 
-  X, 
-  Grid2X2, 
-  Pencil, 
-  Trash2, 
-  ArrowUpRight, 
+  Filter,
+  X,
+  Grid2X2,
+  Pencil,
+  Trash2,
+  ArrowUpRight,
   Package,
   Shapes,
   Diamond,
@@ -28,16 +28,16 @@ import toast from 'react-hot-toast';
 export default function Categories() {
   const { isCollapsed } = useAdminUI();
   const { categories: fullHierarchy, loading: catsLoading } = useCategories();
-  
+
   const [products, setProducts] = useState([]);
   const [productsLoading, setProductsLoading] = useState(true);
   const [searchTerm, setSearchTerm] = useState('');
   const [rowsPerPage, setRowsPerPage] = useState(10);
   const [rowsOpen, setRowsOpen] = useState(false);
-  
+
   // Navigation State
   const [currentPath, setCurrentPath] = useState([]); // Array of category IDs
-  
+
   // Modal State
   const [isModalOpen, setIsModalOpen] = useState(false);
   const [editingCategory, setEditingCategory] = useState(null);
@@ -239,7 +239,7 @@ export default function Categories() {
             <p className="text-[12px] text-gray-400 font-medium">Manage your multi-level heritage collections and products</p>
           </div>
           <div className="flex items-center gap-3">
-            <button 
+            <button
               onClick={() => { setEditingCategory(null); setCategoryDraft({ name: '' }); setIsModalOpen(true); }}
               className="flex items-center gap-2 bg-[#1BAFAF] hover:bg-[#17a0a0] text-white px-4 py-2 rounded-xl text-[13px] font-semibold transition-all shadow-sm shadow-[#1BAFAF]/10 active:scale-95"
             >
@@ -253,11 +253,10 @@ export default function Categories() {
 
       {/* Breadcrumb / Navigation Bar */}
       <div className="flex items-center gap-2 px-1 py-1">
-        <button 
+        <button
           onClick={() => handleBreadcrumb(-1)}
-          className={`flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-[13px] font-bold transition-all ${
-            currentPath.length === 0 ? 'bg-[#eaf6f6] text-[#1BAFAF]' : 'text-gray-400 hover:text-gray-700'
-          }`}
+          className={`flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-[13px] font-bold transition-all ${currentPath.length === 0 ? 'bg-[#eaf6f6] text-[#1BAFAF]' : 'text-gray-400 hover:text-gray-700'
+            }`}
         >
           <Shapes size={14} strokeWidth={2.5} />
           Main
@@ -267,9 +266,8 @@ export default function Categories() {
             <ChevronRight size={14} className="text-gray-200" />
             <button
               onClick={() => handleBreadcrumb(idx)}
-              className={`flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-[13px] font-bold transition-all ${
-                idx === currentPath.length - 1 ? 'bg-[#eaf6f6] text-[#1BAFAF]' : 'text-gray-400 hover:text-gray-700'
-              }`}
+              className={`flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-[13px] font-bold transition-all ${idx === currentPath.length - 1 ? 'bg-[#eaf6f6] text-[#1BAFAF]' : 'text-gray-400 hover:text-gray-700'
+                }`}
             >
               {crumb.name}
             </button>
@@ -304,9 +302,8 @@ export default function Categories() {
                   <button
                     key={opt}
                     onClick={() => { setRowsPerPage(opt); setRowsOpen(false); }}
-                    className={`w-full text-left px-3 py-2 text-[13px] transition-colors ${
-                      rowsPerPage === opt ? 'text-[#1BAFAF] font-semibold bg-[#1BAFAF]/5' : 'text-gray-600 hover:bg-gray-50'
-                    }`}
+                    className={`w-full text-left px-3 py-2 text-[13px] transition-colors ${rowsPerPage === opt ? 'text-[#1BAFAF] font-semibold bg-[#1BAFAF]/5' : 'text-gray-600 hover:bg-gray-50'
+                      }`}
                   >
                     {opt} rows
                   </button>
@@ -338,10 +335,10 @@ export default function Categories() {
                 {visibleCategories.slice(0, rowsPerPage).map((cat, idx) => {
                   const itemsCount = products.filter(p => p.categoryId === cat.id).length;
                   const hasChildren = cat.children && cat.children.length > 0;
-                  
+
                   return (
-                    <tr 
-                      key={cat.id} 
+                    <tr
+                      key={cat.id}
                       className="hover:bg-gray-50 group transition-all duration-200 cursor-pointer"
                       onClick={() => handleDrillDown(cat)}
                     >
@@ -350,9 +347,8 @@ export default function Categories() {
                       </td>
                       <td className="px-6 py-4">
                         <div className="flex items-center gap-3">
-                          <div className={`w-10 h-10 rounded-[12px] flex items-center justify-center transition-all ${
-                            hasChildren ? 'bg-[#eaf6f6] text-[#1BAFAF] group-hover:scale-110' : 'bg-gray-50 text-gray-400 border border-gray-100'
-                          }`}>
+                          <div className={`w-10 h-10 rounded-[12px] flex items-center justify-center transition-all ${hasChildren ? 'bg-[#eaf6f6] text-[#1BAFAF] group-hover:scale-110' : 'bg-gray-50 text-gray-400 border border-gray-100'
+                            }`}>
                             {hasChildren ? <Shapes size={18} strokeWidth={2.5} /> : <Diamond size={16} strokeWidth={2.5} />}
                           </div>
                           <div>
@@ -362,9 +358,8 @@ export default function Categories() {
                         </div>
                       </td>
                       <td className="px-6 py-4 whitespace-nowrap">
-                        <span className={`text-[10px] font-bold uppercase tracking-wider px-2.5 py-1 rounded-lg ${
-                          currentPath.length === 0 ? 'text-[#1BAFAF] bg-[#eaf6f6]' : 'text-gray-400 bg-gray-100'
-                        }`}>
+                        <span className={`text-[10px] font-bold uppercase tracking-wider px-2.5 py-1 rounded-lg ${currentPath.length === 0 ? 'text-[#1BAFAF] bg-[#eaf6f6]' : 'text-gray-400 bg-gray-100'
+                          }`}>
                           {currentPath.length === 0 ? 'Main' : `L${currentPath.length} Layer`}
                         </span>
                       </td>
@@ -389,15 +384,15 @@ export default function Categories() {
                       </td>
                       <td className="px-6 py-4 text-right" onClick={e => e.stopPropagation()}>
                         <div className="flex items-center justify-end gap-2">
-                          <button 
+                          <button
                             onClick={() => handleEdit(cat)}
-                            className="w-8 h-8 flex items-center justify-center text-emerald-600 hover:bg-emerald-50 rounded-lg transition-all active:scale-90" 
+                            className="w-8 h-8 flex items-center justify-center text-emerald-600 hover:bg-emerald-50 rounded-lg transition-all active:scale-90"
                           >
                             <Pencil size={14} strokeWidth={2.5} />
                           </button>
-                          <button 
+                          <button
                             onClick={() => handleDelete(cat)}
-                            className="w-8 h-8 flex items-center justify-center text-red-600 hover:bg-red-50 rounded-lg transition-all active:scale-90" 
+                            className="w-8 h-8 flex items-center justify-center text-red-600 hover:bg-red-50 rounded-lg transition-all active:scale-90"
                           >
                             <Trash2 size={14} strokeWidth={2.5} />
                           </button>
@@ -424,8 +419,8 @@ export default function Categories() {
                 <tbody className="divide-y divide-gray-50/50">
                   {(() => {
                     const activeCatId = currentPath[currentPath.length - 1].id;
-                    const catProducts = products.filter(p => 
-                      p.categoryId === activeCatId && 
+                    const catProducts = products.filter(p =>
+                      p.categoryId === activeCatId &&
                       (searchTerm ? p.name.toLowerCase().includes(searchTerm.toLowerCase()) : true)
                     );
 
@@ -471,17 +466,16 @@ export default function Categories() {
                           {p.stock} Units
                         </td>
                         <td className="px-6 py-4 whitespace-nowrap">
-                          <span className={`text-[10px] font-bold uppercase tracking-wider px-2.5 py-1 rounded-lg ${
-                            p.isAvailable ? 'text-[#1BAFAF] bg-[#eaf6f6]' : 'text-gray-400 bg-gray-100'
-                          }`}>
+                          <span className={`text-[10px] font-bold uppercase tracking-wider px-2.5 py-1 rounded-lg ${p.isAvailable ? 'text-[#1BAFAF] bg-[#eaf6f6]' : 'text-gray-400 bg-gray-100'
+                            }`}>
                             {p.isAvailable ? 'Available' : 'Hidden'}
                           </span>
                         </td>
                         <td className="px-6 py-4 text-right">
                           <div className="flex items-center justify-end gap-2">
-                             <button className="w-8 h-8 flex items-center justify-center text-gray-400 hover:text-[#1BAFAF] hover:bg-gray-50 rounded-lg transition-all active:scale-95">
-                                <ArrowUpRight size={16} />
-                             </button>
+                            <button className="w-8 h-8 flex items-center justify-center text-gray-400 hover:text-[#1BAFAF] hover:bg-gray-50 rounded-lg transition-all active:scale-95">
+                              <ArrowUpRight size={16} />
+                            </button>
                           </div>
                         </td>
                       </tr>
@@ -505,7 +499,7 @@ export default function Categories() {
         {/* Table Footer */}
         <div className="flex items-center justify-between px-2 pt-3">
           <span className="text-[11px] font-bold text-gray-300 uppercase tracking-widest">
-            {visibleCategories.length > 0 
+            {visibleCategories.length > 0
               ? `Showing ${Math.min(visibleCategories.length, 1)}-${Math.min(rowsPerPage, visibleCategories.length)} of ${visibleCategories.length} Layers`
               : "End of hierarchy reached • Viewing Products"
             }
@@ -523,13 +517,13 @@ export default function Categories() {
               <div className="flex items-center justify-between">
                 <div>
                   <h2 className="text-xl font-bold text-gray-900">
-                    {editingCategory 
-                      ? 'Refine Category' 
+                    {editingCategory
+                      ? 'Refine Category'
                       : (currentPath.length > 0 ? 'New Sub Category' : 'New Main Category')
                     }
                   </h2>
                   <p className="text-[12px] text-gray-400 font-medium">
-                    {editingCategory 
+                    {editingCategory
                       ? `Refining ${currentPath.length > 0 ? 'sub-layer' : 'main layer'} in heritage`
                       : `Adding a new layer under ${currentPath.length > 0 ? breadcrumbs.map(p => p.name).join(' > ') : 'Main'}`
                     }
