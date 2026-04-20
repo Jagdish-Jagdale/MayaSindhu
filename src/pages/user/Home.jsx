@@ -4,7 +4,7 @@ import { Link } from 'react-router-dom';
 import ProductCard from '../../components/user/ProductCard';
 import VideoCard from '../../components/user/VideoCard';
 import VideoModal from '../../components/user/VideoModal';
-import { ChevronLeft, ChevronRight, Plus } from 'lucide-react';
+import { ChevronLeft, ChevronRight, Plus, Loader2 } from 'lucide-react';
 
 import h1 from '../../assets/h1.png';
 import h2 from '../../assets/h2.png';
@@ -105,13 +105,67 @@ const reviews = [
   }
 ];
 
+import { db } from '../../firebase';
+import { collection, onSnapshot, query, orderBy } from 'firebase/firestore';
+
 export default function Home() {
   const [currentSlide, setCurrentSlide] = useState(0);
   const [selectedVideo, setSelectedVideo] = useState(null);
   const [isVideoModalOpen, setIsVideoModalOpen] = useState(false);
+  const [realms, setRealms] = useState([]);
+  const [realmsLoading, setRealmsLoading] = useState(true);
+  
+  const [featuredTreasures, setFeaturedTreasures] = useState([]);
+  const [ftLoading, setFtLoading] = useState(true);
+  
   const featuredRef = useRef(null);
   const artisanRef = useRef(null);
   const videoRef = useRef(null);
+
+  // Load All Products and Featured Treasures
+  useEffect(() => {
+    let productsList = [];
+    
+    // 1. Listen to all products (to get live details for any featured item)
+    const qProd = query(collection(db, 'products'));
+    const unsubscribeProd = onSnapshot(qProd, (snapshot) => {
+      productsList = snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() }));
+    });
+
+    // 2. Listen to featured treasures configuration
+    const qFt = query(collection(db, 'featuredTreasures'), orderBy('order', 'asc'));
+    const unsubscribeFt = onSnapshot(qFt, (snapshot) => {
+      const ftData = snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() }));
+      
+      // Hydrate with product details
+      const hydrated = ftData.map(ft => {
+        const product = productsList.find(p => p.id === ft.productId);
+        return product ? { ...product, originalFeaturedId: ft.id } : null;
+      }).filter(Boolean);
+
+      setFeaturedTreasures(hydrated);
+      setFtLoading(false);
+    });
+
+    return () => {
+      unsubscribeProd();
+      unsubscribeFt();
+    };
+  }, []);
+
+  // Load Curated Realms from Firestore
+  useEffect(() => {
+    const q = query(collection(db, 'curatedRealms'), orderBy('slotId', 'asc'));
+    const unsubscribe = onSnapshot(q, (snapshot) => {
+      const data = snapshot.docs.map(doc => ({
+        id: doc.id,
+        ...doc.data()
+      }));
+      setRealms(data);
+      setRealmsLoading(false);
+    });
+    return () => unsubscribe();
+  }, []);
 
   const scroll = (ref, direction) => {
     if (ref.current) {
@@ -132,6 +186,16 @@ export default function Home() {
     }, 8000);
     return () => clearInterval(timer);
   }, []);
+
+  const getSlotClasses = (slotId) => {
+    switch (slotId) {
+      case 1: return "md:col-span-1 md:row-span-2 relative group overflow-hidden rounded-[2rem] md:rounded-[2.5rem] shadow-md hover:shadow-xl transition-all duration-500 h-[320px] md:h-full";
+      case 2: return "md:col-span-1 md:row-span-1 relative group overflow-hidden rounded-[2.5rem] shadow-lg h-[220px] md:h-full";
+      case 3: return "md:col-span-1 md:row-span-1 relative group overflow-hidden rounded-[2.5rem] shadow-lg h-[220px] md:h-full";
+      case 4: return "md:col-span-2 md:row-span-1 relative group overflow-hidden rounded-[2.5rem] shadow-lg h-[220px] md:h-full";
+      default: return "";
+    }
+  };
 
   return (
     <div className="bg-white min-h-screen">
@@ -181,12 +245,13 @@ export default function Home() {
             <button
               key={idx}
               onClick={() => setCurrentSlide(idx)}
-              className={`h-[2px] md:h-[4px] rounded-full transition-all duration-500 shadow-sm ${currentSlide === idx ? 'w-10 md:w-24 bg-white' : 'w-4 md:w-12 bg-white/40 hover:bg-white/60'
+              className={`h-[2px] md:h-[4px] rounded-full transition-all duration-500 shadow-sm ${currentSlide === idx ? 'focus:w-10 md:w-24 bg-white' : 'w-4 md:w-12 bg-white/40 hover:bg-white/60'
                 }`}
             />
           ))}
         </div>
       </section>
+
       {/* Curated Realms Section */}
       <section className="py-20 max-w-[1440px] mx-auto px-8 lg:px-24 bg-white">
         <div className="mb-12">
@@ -194,77 +259,39 @@ export default function Home() {
           <div className="w-16 h-1 bg-[#FF6B00]/60 rounded-full" />
         </div>
 
-        {/* Custom grid with 1.5fr for the left and 1fr for each of the right columns */}
-        <div className="grid grid-cols-1 md:grid-cols-[1.4fr_0.8fr_0.8fr] gap-6 h-auto md:h-[650px]">
-          {/* Sarees - Large Vertical (Takes up more width) */}
-          <motion.div
-            whileHover={{ y: -8 }}
-            className="md:col-span-1 md:row-span-2 relative group overflow-hidden rounded-[2rem] md:rounded-[2.5rem] shadow-md hover:shadow-xl transition-all duration-500 h-[320px] md:h-full"
-          >
-            <img
-              src={PRODUCTS.find(p => p.id === 7).image}
-              alt="Sarees"
-              className="w-full h-full object-cover transition-transform duration-1000 group-hover:scale-105"
-            />
-            <div className="absolute inset-0 bg-gradient-to-t from-black/70 via-black/10 to-transparent" />
-            <div className="absolute bottom-8 left-8 text-white">
-              <h3 className="text-2xl font-fashion font-bold mb-1 tracking-tight">Sarees</h3>
-              <p className="text-white/70 text-[10px] tracking-[0.2em] font-medium uppercase font-fashion">The Art of Draping Heritage</p>
-            </div>
-            <Link to="/shop" className="absolute inset-0 z-10" />
-          </motion.div>
-
-          {/* Jewellery - Smaller width */}
-          <motion.div
-            whileHover={{ y: -8 }}
-            className="md:col-span-1 md:row-span-1 relative group overflow-hidden rounded-[2.5rem] shadow-lg h-[220px] md:h-full"
-          >
-            <img
-              src={PRODUCTS.find(p => p.id === 1).image}
-              alt="Jewellery"
-              className="w-full h-full object-cover transition-transform duration-1000 group-hover:scale-105"
-            />
-            <div className="absolute inset-0 bg-gradient-to-t from-black/70 via-transparent to-transparent " />
-            <div className="absolute bottom-6 left-6 text-white">
-              <h3 className="text-lg font-fashion font-bold tracking-tight">Jewellery</h3>
-            </div>
-            <Link to="/shop" className="absolute inset-0 z-10" />
-          </motion.div>
-
-          {/* Dresses - Smaller width */}
-          <motion.div
-            whileHover={{ y: -8 }}
-            className="md:col-span-1 md:row-span-1 relative group overflow-hidden rounded-[2.5rem] shadow-lg h-[220px] md:h-full"
-          >
-            <img
-              src={PRODUCTS.find(p => p.id === 6).image}
-              alt="Heritage Silk"
-              className="w-full h-full object-cover transition-transform duration-1000 group-hover:scale-105"
-            />
-            <div className="absolute inset-0 bg-gradient-to-t from-black/70 via-transparent to-transparent" />
-            <div className="absolute bottom-6 left-6 text-white">
-              <h3 className="text-lg font-fashion font-bold tracking-tight">Heritage Silk</h3>
-            </div>
-            <Link to="/shop" className="absolute inset-0 z-10" />
-          </motion.div>
-
-          {/* Handmade Crafts - Bottom Right (Smaller width) */}
-          <motion.div
-            whileHover={{ y: -8 }}
-            className="md:col-span-2 md:row-span-1 relative group overflow-hidden rounded-[2.5rem] shadow-lg h-[220px] md:h-full"
-          >
-            <img
-              src={PRODUCTS.find(p => p.id === 2).image}
-              alt="Handmade Show Pieces"
-              className="w-full h-full object-cover transition-transform duration-1000 group-hover:scale-105"
-            />
-            <div className="absolute inset-0 bg-gradient-to-t from-black/70 via-black/10 to-transparent" />
-            <div className="absolute bottom-8 left-8 text-white">
-              <h3 className="text-2xl font-fashion font-bold tracking-tight">Handmade Show Pieces</h3>
-            </div>
-            <Link to="/shop" className="absolute inset-0 z-10" />
-          </motion.div>
-        </div>
+        {realmsLoading ? (
+          <div className="flex items-center justify-center h-[400px]">
+             <Loader2 className="w-8 h-8 animate-spin text-brand-orange" />
+          </div>
+        ) : (
+          <div className="grid grid-cols-1 md:grid-cols-[1.4fr_0.8fr_0.8fr] gap-6 h-auto md:h-[650px]">
+            {realms.map((realm) => (
+              <motion.div
+                key={realm.id}
+                whileHover={{ y: -8 }}
+                className={getSlotClasses(realm.slotId)}
+              >
+                <img
+                  src={realm.imageUrl}
+                  alt={realm.title}
+                  className="w-full h-full object-cover transition-transform duration-1000 group-hover:scale-105"
+                />
+                <div className="absolute inset-0 bg-gradient-to-t from-black/70 via-transparent to-transparent" />
+                <div className="absolute bottom-6 left-6 md:bottom-8 md:left-8 text-white">
+                  <h3 className={`${realm.slotId === 1 || realm.slotId === 4 ? 'text-2xl' : 'text-lg'} font-fashion font-bold mb-1 tracking-tight`}>
+                    {realm.title}
+                  </h3>
+                  {realm.subtitle && (
+                    <p className="text-white/70 text-[10px] tracking-[0.2em] font-medium uppercase font-fashion">
+                      {realm.subtitle}
+                    </p>
+                  )}
+                </div>
+                <Link to={`/category/${realm.categoryId}`} className="absolute inset-0 z-10" />
+              </motion.div>
+            ))}
+          </div>
+        )}
       </section>
 
 
@@ -293,18 +320,22 @@ export default function Home() {
           </div>
         </div>
 
-        <div
-          ref={featuredRef}
-          className="flex space-x-8 overflow-x-auto pb-12 no-scrollbar scroll-smooth snap-x"
-        >
-          {PRODUCTS.filter(p => [1, 3, 4, 8, 2, 5, 7].includes(p.id)).map(product => (
-            <div key={product.id} className="flex-shrink-0 w-[220px] md:w-[350px] snap-start">
-              <ProductCard {...product} />
-            </div>
-          ))}
-          {/* Spacer for horizontal scroll padding */}
-          <div className="flex-shrink-0 w-6 md:hidden" />
-        </div>
+        {ftLoading ? (
+          <div className="flex items-center justify-center h-[400px]">
+            <Loader2 className="w-8 h-8 animate-spin text-brand-orange" />
+          </div>
+        ) : (
+          <div
+            ref={featuredRef}
+            className="flex space-x-8 overflow-x-auto pb-12 no-scrollbar scroll-smooth snap-x"
+          >
+            {featuredTreasures.map(product => (
+              <div key={product.id} className="flex-shrink-0 w-[220px] md:w-[350px] snap-start">
+                <ProductCard {...product} />
+              </div>
+            ))}
+          </div>
+        )}
       </section>
 
 

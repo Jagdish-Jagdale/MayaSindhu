@@ -12,7 +12,8 @@ import {
   Gem,
   Flower2,
   Tv,
-  Heart
+  Heart,
+  MessageSquareQuote
 } from 'lucide-react';
 import { Link, useLocation, useNavigate } from 'react-router-dom';
 import { auth } from '../../firebase';
@@ -31,11 +32,12 @@ const menuItems = [
     path: '/admin/settings',
     subItems: [
       { title: 'Banner', icon: Image, path: '/admin/settings/banner' },
-      { title: 'Curated Realms', icon: ScrollText, path: '/admin/settings/curated-realms' },
-      { title: 'Featured Treasures', icon: Gem, path: '/admin/settings/featured-treasures' },
-      { title: 'Artisan Blooms', icon: Flower2, path: '/admin/settings/artisan-blooms' },
-      { title: 'Stories', icon: Tv, path: '/admin/settings/stories' },
-      { title: 'Purpose', icon: Heart, path: '/admin/settings/purpose' },
+      { title: 'Explore Category', icon: ScrollText, path: '/admin/settings/curated-realms' },
+      { title: 'Customer Favorite', icon: Gem, path: '/admin/settings/featured-treasures' },
+      { title: 'Shop by Trend', icon: Flower2, path: '/admin/settings/artisan-blooms' },
+      { title: 'Shop the Look', icon: Tv, path: '/admin/settings/stories' },
+      { title: 'Our Purpose', icon: Heart, path: '/admin/settings/purpose' },
+      { title: 'Testimonial', icon: MessageSquareQuote, path: '/admin/settings/testimonial' },
     ]
   },
 ];

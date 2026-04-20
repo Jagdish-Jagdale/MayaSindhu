@@ -21,33 +21,23 @@ export default function ProductFormModal({ isOpen, onClose, product = null }) {
     images: [] // Will store Base64 strings
   });
 
+  const [selectedPathIds, setSelectedPathIds] = useState([]);
+
   const [imageFiles, setImageFiles] = useState([]);
   const [previews, setPreviews] = useState([]);
   const fileInputRef = useRef(null);
 
-  // Group categories by their parent path for a professional dropdown
-  const getGroupedCategories = (items, parentPath = '') => {
-    let groups = {};
-    
-    items.forEach(item => {
-      const hasChildren = item.children && item.children.length > 0;
-      
-      if (!hasChildren) {
-        const groupName = parentPath || 'General';
-        if (!groups[groupName]) groups[groupName] = [];
-        groups[groupName].push({ id: item.id, name: item.name });
-      } else {
-        const currentPath = parentPath ? `${parentPath} / ${item.name}` : item.name;
-        const subGroups = getGroupedCategories(item.children, currentPath);
-        groups = { ...groups, ...subGroups };
+  // Helper to find the full path of category IDs for a given leaf category ID
+  const findPathToCategory = (id, items, currentPath = []) => {
+    for (const item of items) {
+      if (item.id === id) return [...currentPath, item.id];
+      if (item.children && item.children.length > 0) {
+        const found = findPathToCategory(id, item.children, [...currentPath, item.id]);
+        if (found) return found;
       }
-    });
-    
-    return groups;
+    }
+    return null;
   };
-
-  const groupedCategories = getGroupedCategories(heirarchy);
-
   useEffect(() => {
     if (product) {
       setFormData({
@@ -61,6 +51,14 @@ export default function ProductFormModal({ isOpen, onClose, product = null }) {
         description: product.description || '',
         images: product.images || []
       });
+
+      if (product.categoryId) {
+        const path = findPathToCategory(product.categoryId, heirarchy);
+        setSelectedPathIds(path || []);
+      } else {
+        setSelectedPathIds([]);
+      }
+
       setPreviews(product.images || []);
       setImageFiles([]);
     } else {
@@ -75,10 +73,11 @@ export default function ProductFormModal({ isOpen, onClose, product = null }) {
         description: '',
         images: []
       });
+      setSelectedPathIds([]);
       setPreviews([]);
       setImageFiles([]);
     }
-  }, [product, isOpen]);
+  }, [product, isOpen, heirarchy]);
 
   const handleInputChange = (e) => {
     const { name, value, type, checked } = e.target;
@@ -88,10 +87,19 @@ export default function ProductFormModal({ isOpen, onClose, product = null }) {
       return;
     }
 
-    setFormData(prev => ({
-      ...prev,
-      [name]: type === 'checkbox' ? checked : value
-    }));
+    setFormData(prev => {
+      const newData = {
+        ...prev,
+        [name]: type === 'checkbox' ? checked : value
+      };
+      
+      // Force stock to 1 if productType is switched to Unique
+      if (name === 'productType' && value === 'Unique') {
+        newData.stock = '1';
+      }
+      
+      return newData;
+    });
   };
 
   const handleKeyPress = (e) => {
@@ -116,6 +124,39 @@ export default function ProductFormModal({ isOpen, onClose, product = null }) {
       if (e.key === '.' && e.target.value.includes('.')) {
         e.preventDefault();
       }
+    }
+  };
+
+  const handleLevelChange = (level, id) => {
+    if (!id) {
+      const newPath = selectedPathIds.slice(0, level);
+      setSelectedPathIds(newPath);
+      setFormData(prev => ({ ...prev, categoryId: newPath[newPath.length - 1] || '' }));
+      return;
+    }
+
+    const newPath = [...selectedPathIds.slice(0, level), id];
+    setSelectedPathIds(newPath);
+
+    // Check if this category has children
+    const findCategory = (items, targetId) => {
+      for (const item of items) {
+        if (item.id === targetId) return item;
+        if (item.children) {
+          const found = findCategory(item.children, targetId);
+          if (found) return found;
+        }
+      }
+      return null;
+    };
+
+    const selectedCategory = findCategory(heirarchy, id);
+    const hasChildren = selectedCategory?.children && selectedCategory.children.length > 0;
+
+    // Only set the final categoryId if it's a leaf node
+    if (!hasChildren) {
+      setFormData(prev => ({ ...prev, categoryId: id }));
+    } else {
     }
   };
 
@@ -188,21 +229,26 @@ export default function ProductFormModal({ isOpen, onClose, product = null }) {
       const productData = {
         ...formData,
         images: finalImages,
+        stock: formData.productType === 'Unique' ? 1 : Number(formData.stock),
         price: Number(formData.price),
-        costPrice: Number(formData.costPrice),
-        stock: Number(formData.stock),
+        costPrice: Number(formData.costPrice || 0),
         updatedAt: serverTimestamp()
       };
 
+      // Set isShow for Unique products based on stock (1 = true, 0 = false)
+      if (formData.productType === 'Unique') {
+        productData.isShow = productData.stock > 0;
+      }
+
       if (product) {
         await updateDoc(doc(db, 'products', product.id), productData);
-        toast.success('Product updated successfully');
+        toast.success("Product updated successfully");
       } else {
         await addDoc(collection(db, 'products'), {
           ...productData,
           createdAt: serverTimestamp()
         });
-        toast.success('Product added successfully');
+        toast.success("Product added to collection");
       }
       onClose();
     } catch (error) {
@@ -262,26 +308,50 @@ export default function ProductFormModal({ isOpen, onClose, product = null }) {
                   </div>
 
                   <div className="grid grid-cols-2 gap-4">
-                    <div className="space-y-1.5">
-                      <label className="text-[13px] font-bold text-gray-700 ml-1">Category *</label>
-                        <select
-                          required
-                          name="categoryId"
-                          value={formData.categoryId}
-                          onChange={handleInputChange}
-                          className="w-full bg-gray-50 border-none px-4 py-3 rounded-xl text-[14px] outline-none focus:ring-2 focus:ring-[#1BAFAF]/20 focus:bg-white transition-all font-bold text-gray-700 appearance-none"
-                        >
-                          <option value="">Select Category</option>
-                          {Object.entries(groupedCategories).map(([groupName, categories]) => (
-                            <optgroup key={groupName} label={groupName} className="font-bold text-[#1BAFAF] bg-white">
-                              {categories.map(cat => (
-                                <option key={cat.id} value={cat.id} className="font-medium text-gray-700 ml-4">
-                                  {cat.name}
-                                </option>
+                    <div className="space-y-4">
+                      {/* Cascading Selects */}
+                      {[0, ...selectedPathIds].map((selectedId, level) => {
+                        // Get options for this level
+                        let options = [];
+                        if (level === 0) {
+                          options = heirarchy;
+                        } else {
+                          const parentId = selectedPathIds[level - 1];
+                          const findChildren = (items, targetId) => {
+                            for (const item of items) {
+                              if (item.id === targetId) return item.children || [];
+                              if (item.children) {
+                                const found = findChildren(item.children, targetId);
+                                if (found) return found;
+                              }
+                            }
+                            return null;
+                          };
+                          options = findChildren(heirarchy, parentId) || [];
+                        }
+
+                        // Don't render a new level if previous level has no children
+                        if (level > 0 && options.length === 0) return null;
+
+                        return (
+                          <div key={level} className="space-y-1.5 animate-in fade-in slide-in-from-top-2 duration-300">
+                            <label className="text-[13px] font-bold text-gray-700 ml-1">
+                              {level === 0 ? 'Main Category *' : `Sub Category ${level} *`}
+                            </label>
+                            <select
+                              required
+                              value={selectedPathIds[level] || ''}
+                              onChange={(e) => handleLevelChange(level, e.target.value)}
+                              className="w-full bg-gray-50 border-none px-4 py-3 rounded-xl text-[14px] outline-none focus:ring-2 focus:ring-[#1BAFAF]/20 focus:bg-white transition-all font-bold text-gray-700 appearance-none"
+                            >
+                              <option value="">Select {level === 0 ? 'Category' : 'Sub Category'}</option>
+                              {options.map(cat => (
+                                <option key={cat.id} value={cat.id}>{cat.name}</option>
                               ))}
-                            </optgroup>
-                          ))}
-                        </select>
+                            </select>
+                          </div>
+                        );
+                      })}
                     </div>
 
                     <div className="space-y-1.5">

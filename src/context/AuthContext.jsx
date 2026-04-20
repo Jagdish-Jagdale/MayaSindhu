@@ -6,7 +6,7 @@ import {
   signOut,
   updateProfile
 } from 'firebase/auth';
-import { doc, setDoc, serverTimestamp } from 'firebase/firestore';
+import { doc, setDoc, serverTimestamp, addDoc, collection } from 'firebase/firestore';
 import { auth, db } from '../firebase';
 
 const AuthContext = createContext();
@@ -59,6 +59,14 @@ export const AuthProvider = ({ children }) => {
         role: "user",
         createdAt: serverTimestamp(),
         updatedAt: serverTimestamp(),
+      });
+
+      // 4. Create Admin Notification
+      await addDoc(collection(db, "notifications"), {
+        type: 'user',
+        uid: user.uid,
+        message: `New user joined: ${displayName}`,
+        createdAt: serverTimestamp(),
       });
 
       console.log("Signup and Firestore Profile Created Successfully!");
