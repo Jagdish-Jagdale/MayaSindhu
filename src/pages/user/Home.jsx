@@ -136,7 +136,7 @@ export default function Home() {
   return (
     <div className="bg-white min-h-screen">
       {/* Cinematic Banner Slider */}
-      <section className="relative h-[30vh] sm:h-[45vh] md:h-[85vh] w-full flex items-center overflow-hidden bg-white">
+      <section className="relative h-[35vh] sm:h-[40vh] md:h-[600px] w-full flex items-center overflow-hidden bg-white">
         <AnimatePresence mode="popLayout" initial={false}>
           <motion.div
             key={currentSlide}
@@ -302,6 +302,8 @@ export default function Home() {
               <ProductCard {...product} />
             </div>
           ))}
+          {/* Spacer for horizontal scroll padding */}
+          <div className="flex-shrink-0 w-6 md:hidden" />
         </div>
       </section>
 
@@ -375,6 +377,8 @@ export default function Home() {
                 </Link>
               </div>
             </div>
+            {/* Spacer for horizontal scroll padding */}
+            <div className="flex-shrink-0 w-6 md:hidden" />
           </div>
         </div>
       </section>
@@ -506,7 +510,7 @@ export default function Home() {
 
             {reviews.map((review, index) => {
               const [isExpanded, setIsExpanded] = useState(false);
-              
+
               return (
                 <motion.div
                   key={review.id}
@@ -544,9 +548,9 @@ export default function Home() {
                     <p className={`text-gray-600 text-sm md:text-[16px] leading-relaxed italic mb-2 ${isExpanded ? '' : 'line-clamp-3 md:line-clamp-none'}`}>
                       "{review.text}"
                     </p>
-                    
+
                     {/* Show More/Less Button (Mobile Only) */}
-                    <button 
+                    <button
                       onClick={() => setIsExpanded(!isExpanded)}
                       className="md:hidden text-brand-orange text-[11px] font-bold uppercase tracking-widest mt-2 hover:underline"
                     >
