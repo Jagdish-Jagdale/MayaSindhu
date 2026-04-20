@@ -48,8 +48,8 @@ function App() {
     <Router>
       <AuthProvider>
         <TitleUpdater />
-        <Toaster 
-          position="top-right" 
+        <Toaster
+          position="top-right"
           reverseOrder={false}
           toastOptions={{
             style: {
