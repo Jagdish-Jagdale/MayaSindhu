@@ -2,12 +2,45 @@ import React, { useState, useEffect } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { Check, ChevronRight, Lock, CreditCard, Truck, ShoppingBag } from 'lucide-react';
 import { Link } from 'react-router-dom';
+import { db } from '../../firebase';
+import { collection, addDoc, serverTimestamp } from 'firebase/firestore';
 
 const steps = ['Shipping', 'Payment', 'Confirmation'];
 
 export default function Checkout() {
   const [activeStep, setActiveStep] = useState(0);
 
+  const handlePlaceOrder = async () => {
+    try {
+      const orderId = `#ORD-${Math.floor(1000 + Math.random() * 9000)}`;
+      
+      // Save Order to Firestore
+      await addDoc(collection(db, "orders"), {
+        orderId: orderId,
+        customerName: "Anjali Sharma", // Mocked for now
+        productName: "Designer Dress Materials", // Mocked for now
+        quantity: 2,
+        total: "₹24,500",
+        status: 'Pending',
+        createdAt: serverTimestamp(),
+      });
+
+      // Trigger Admin Notification
+      await addDoc(collection(db, "notifications"), {
+        type: 'order',
+        uid: orderId,
+        message: `New Order Placed: ${orderId}`,
+        createdAt: serverTimestamp(),
+      });
+
+      nextStep();
+    } catch (error) {
+      console.error("Order Notification Error:", error);
+      // Still proceed to confirmation for demo purposes if needed, 
+      // but in real app we'd handle error
+      nextStep();
+    }
+  };
 
   const nextStep = () => setActiveStep((prev) => Math.min(prev + 1, steps.length - 1));
   const prevStep = () => setActiveStep((prev) => Math.max(prev - 1, 0));
@@ -107,7 +140,7 @@ export default function Checkout() {
 
                   <div className="mt-12 flex justify-between">
                     <button onClick={prevStep} className="text-sm font-bold text-gray-400 hover:text-[#1A1A1A]">Back to Shipping</button>
-                    <button onClick={nextStep} className="btn btn-primary px-12 py-5 rounded-2xl flex items-center gap-2">
+                    <button onClick={handlePlaceOrder} className="btn btn-primary px-12 py-5 rounded-2xl flex items-center gap-2">
                       Place Order <Lock size={16} />
                     </button>
                   </div>

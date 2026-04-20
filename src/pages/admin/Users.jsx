@@ -26,6 +26,7 @@ import {
 import toast from 'react-hot-toast';
 
 import { useAdminUI } from '../../context/AdminUIContext';
+import DeleteConfirmationModal from '../../components/admin/DeleteConfirmationModal';
 
 const Users = () => {
   const { isCollapsed } = useAdminUI();
@@ -37,6 +38,11 @@ const Users = () => {
   const [activeFilter, setActiveFilter] = useState('All');
   const [rowsPerPage, setRowsPerPage] = useState(10);
   const [sortConfig, setSortConfig] = useState({ key: 'createdAt', dir: 'desc' });
+
+  // Delete Modal States
+  const [isDeleteModalOpen, setIsDeleteModalOpen] = useState(false);
+  const [userToDelete, setUserToDelete] = useState(null);
+  const [isDeleting, setIsDeleting] = useState(false);
 
   const filterRef = useRef(null);
   const rowsRef = useRef(null);
@@ -60,6 +66,27 @@ const Users = () => {
 
     return () => unsubscribe();
   }, []);
+
+  const handleDelete = (user) => {
+    setUserToDelete(user);
+    setIsDeleteModalOpen(true);
+  };
+
+  const confirmDelete = async () => {
+    if (!userToDelete) return;
+    try {
+      setIsDeleting(true);
+      await deleteDoc(doc(db, 'users', userToDelete.id));
+      toast.success(`User "${userToDelete.fullName || userToDelete.email}" removed`);
+      setIsDeleteModalOpen(false);
+      setUserToDelete(null);
+    } catch (error) {
+      console.error("Error deleting user:", error);
+      toast.error("Failed to delete user profile");
+    } finally {
+      setIsDeleting(false);
+    }
+  };
 
   const handleSort = (key) => {
     setSortConfig(prev =>
@@ -303,7 +330,10 @@ const Users = () => {
                         <button className="w-8 h-8 flex items-center justify-center text-[#1BAFAF] hover:bg-[#1BAFAF]/5 rounded-lg transition-all active:scale-90">
                           <Pencil size={14} strokeWidth={2.5} />
                         </button>
-                        <button className="w-8 h-8 flex items-center justify-center text-red-600 hover:bg-red-50 rounded-lg transition-all active:scale-90">
+                        <button 
+                          onClick={() => handleDelete(user)}
+                          className="w-8 h-8 flex items-center justify-center text-red-600 hover:bg-red-50 rounded-lg transition-all active:scale-90"
+                        >
                           <Trash2 size={14} strokeWidth={2.5} />
                         </button>
                       </div>
@@ -331,6 +361,14 @@ const Users = () => {
           </div>
         </div>
       </div>
+
+      <DeleteConfirmationModal
+        isOpen={isDeleteModalOpen}
+        onClose={() => setIsDeleteModalOpen(false)}
+        onConfirm={confirmDelete}
+        itemName={userToDelete?.fullName || userToDelete?.email}
+        loading={isDeleting}
+      />
     </div>
   );
 };

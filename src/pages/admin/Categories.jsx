@@ -22,6 +22,7 @@ import { useAdminUI } from '../../context/AdminUIContext';
 import { db } from '../../firebase';
 import { collection, onSnapshot, query, orderBy, doc, deleteDoc, addDoc, updateDoc, serverTimestamp } from 'firebase/firestore';
 import useCategories from '../../hooks/useCategories';
+import DeleteConfirmationModal from '../../components/admin/DeleteConfirmationModal';
 import toast from 'react-hot-toast';
 
 export default function Categories() {
@@ -42,6 +43,13 @@ export default function Categories() {
   const [editingCategory, setEditingCategory] = useState(null);
   const [categoryDraft, setCategoryDraft] = useState({ name: '' });
   const [isSaving, setIsSaving] = useState(false);
+  const [loading, setLoading] = useState(false);
+
+  // States for Delete Modal
+  const [isDeleteModalOpen, setIsDeleteModalOpen] = useState(false);
+  const [categoryToDelete, setCategoryToDelete] = useState(null);
+  const [isDeleting, setIsDeleting] = useState(false);
+  const [deleteMessage, setDeleteMessage] = useState("");
 
   const rowsRef = useRef(null);
 
@@ -120,10 +128,26 @@ export default function Categories() {
 
   const handleSaveCategory = async (e) => {
     e.preventDefault();
-    if (!categoryDraft.name.trim()) return;
+    const cleanName = categoryDraft.name.trim();
+    if (!cleanName) return;
 
     setIsSaving(true);
     try {
+      // Check for duplicates (case-insensitive)
+      const checkDuplicate = (items, name, excludeId) => {
+        for (const cat of items) {
+          if (cat.name.toLowerCase() === name.toLowerCase() && cat.id !== excludeId) return true;
+          if (cat.children && checkDuplicate(cat.children, name, excludeId)) return true;
+        }
+        return false;
+      };
+
+      if (checkDuplicate(fullHierarchy, cleanName, editingCategory?.id)) {
+        toast.error(`"${cleanName}" already exists in heritage mapping`);
+        setIsSaving(false);
+        return;
+      }
+
       if (editingCategory) {
         // Update existing
         await updateDoc(doc(db, 'categories', editingCategory.id), {
@@ -154,38 +178,42 @@ export default function Categories() {
     }
   };
 
-  const handleDelete = async (category) => {
-    const confirmMessage = category.children?.length > 0 
-      ? `Delete "${category.name}" and all its ${category.children.length} sub-layers? This action cannot be undone.`
-      : `Are you sure you want to delete "${category.name}"?`;
+  const handleDelete = (category) => {
+    const message = category.children?.length > 0 
+      ? `This will delete "${category.name}" and all its ${category.children.length} sub-layers. Information relating to these categories will be removed.`
+      : null;
+    
+    setCategoryToDelete(category);
+    setDeleteMessage(message);
+    setIsDeleteModalOpen(true);
+  };
 
-    if (window.confirm(confirmMessage)) {
-      try {
-        setLoading(true);
-        
-        // Helper to collect all child IDs recursively
-        const getAllChildIds = (cat) => {
-          let ids = [cat.id];
-          if (cat.children && cat.children.length > 0) {
-            cat.children.forEach(child => {
-              ids = [...ids, ...getAllChildIds(child)];
-            });
-          }
-          return ids;
-        };
+  const confirmDelete = async () => {
+    if (!categoryToDelete) return;
+    try {
+      setIsDeleting(true);
+      
+      const getAllChildIds = (cat) => {
+        let ids = [cat.id];
+        if (cat.children && cat.children.length > 0) {
+          cat.children.forEach(child => {
+            ids = [...ids, ...getAllChildIds(child)];
+          });
+        }
+        return ids;
+      };
 
-        const idsToDelete = getAllChildIds(category);
-        
-        // Delete all collections in this branch
-        await Promise.all(idsToDelete.map(id => deleteDoc(doc(db, 'categories', id))));
-        
-        toast.success(`Removed "${category.name}" and its branch from heritage`);
-      } catch (err) {
-        console.error("Error deleting category branch:", err);
-        toast.error("Failed to prune category branch");
-      } finally {
-        setLoading(false);
-      }
+      const idsToDelete = getAllChildIds(categoryToDelete);
+      await Promise.all(idsToDelete.map(id => deleteDoc(doc(db, 'categories', id))));
+      
+      toast.success(`Removed "${categoryToDelete.name}" and its branch from heritage`);
+      setIsDeleteModalOpen(false);
+      setCategoryToDelete(null);
+    } catch (err) {
+      console.error("Error deleting category branch:", err);
+      toast.error("Failed to prune category branch");
+    } finally {
+      setIsDeleting(false);
     }
   };
 
@@ -206,9 +234,9 @@ export default function Categories() {
         <div className="flex items-center justify-between">
           <div>
             <h1 className="text-[22px] font-semibold text-gray-900 tracking-tight">
-              Hierarchy Explorer
+              Manage Categories
             </h1>
-            <p className="text-[12px] text-gray-400 font-medium">Manage your multi-level heritage collections and masterpieces</p>
+            <p className="text-[12px] text-gray-400 font-medium">Manage your multi-level heritage collections and products</p>
           </div>
           <div className="flex items-center gap-3">
             <button 
@@ -255,7 +283,7 @@ export default function Categories() {
           <Search className="absolute left-3.5 top-1/2 -translate-y-1/2 w-4 h-4 text-gray-300 group-focus-within:text-[#1BAFAF] transition-colors" />
           <input
             type="text"
-            placeholder={`Search ${visibleCategories.length > 0 ? 'collections' : 'masterpieces'} in ${currentPath.length > 0 ? breadcrumbs[breadcrumbs.length - 1]?.name : 'Main'}...`}
+            placeholder={`Search ${visibleCategories.length > 0 ? 'collections' : 'products'} in ${currentPath.length > 0 ? breadcrumbs[breadcrumbs.length - 1]?.name : 'Main'}...`}
             value={searchTerm}
             onChange={(e) => setSearchTerm(e.target.value)}
             className="w-full bg-gray-50 border-none py-2 pl-10 pr-4 text-[13px] rounded-xl outline-none focus:bg-white transition-all font-medium"
@@ -295,13 +323,15 @@ export default function Categories() {
           {visibleCategories.length > 0 ? (
             <table className="w-full border-collapse">
               <thead>
-                <tr className="border-b border-gray-50 bg-white">
-                  <th className="px-6 py-4 text-left text-[14px] font-bold text-[#1BAFAF] w-20">Sr No</th>
-                  <th className="px-6 py-4 text-left text-[14px] font-bold text-[#1BAFAF]">Category</th>
-                  <th className="px-6 py-4 text-left text-[14px] font-bold text-[#1BAFAF]">Layer</th>
-                  <th className="px-6 py-4 text-left text-[14px] font-bold text-[#1BAFAF]">Items</th>
-                  <th className="px-6 py-4 text-left text-[14px] font-bold text-[#1BAFAF]">Sub-layers</th>
-                  <th className="px-6 py-4 text-right text-[14px] font-bold text-[#1BAFAF]">Actions</th>
+                <tr className="border-b border-gray-50 bg-white text-[#1BAFAF]">
+                  <th className="px-6 py-4 text-left text-[14px] font-bold w-20">Sr No</th>
+                  <th className="px-6 py-4 text-left text-[14px] font-bold">Category</th>
+                  <th className="px-6 py-4 text-left text-[14px] font-bold">Layer</th>
+                  {visibleCategories.some(cat => !cat.children || cat.children.length === 0) && (
+                    <th className="px-6 py-4 text-left text-[14px] font-bold">Products</th>
+                  )}
+                  <th className="px-6 py-4 text-left text-[14px] font-bold">Sub-layers</th>
+                  <th className="px-6 py-4 text-right text-[14px] font-bold">Actions</th>
                 </tr>
               </thead>
               <tbody className="divide-y divide-gray-50/50">
@@ -327,7 +357,7 @@ export default function Categories() {
                           </div>
                           <div>
                             <span className="text-[14px] font-bold text-gray-900 group-hover:text-[#1BAFAF] transition-colors">{cat.name}</span>
-                            <p className="text-[10px] text-gray-400 font-bold uppercase tracking-widest">{hasChildren ? 'Discover Layers' : 'View Masterpieces'}</p>
+                            <p className="text-[10px] text-gray-400 font-bold uppercase tracking-widest">{hasChildren ? 'Discover Layers' : 'View Products'}</p>
                           </div>
                         </div>
                       </td>
@@ -338,14 +368,20 @@ export default function Categories() {
                           {currentPath.length === 0 ? 'Main' : `L${currentPath.length} Layer`}
                         </span>
                       </td>
-                      <td className="px-6 py-4 whitespace-nowrap">
+                      {visibleCategories.some(c => !c.children || c.children.length === 0) && (
+                        <td className="px-6 py-4 whitespace-nowrap">
+                          {!hasChildren ? (
+                            <div className="flex items-center gap-2">
+                              <Diamond size={12} className="text-gray-300" />
+                              <span className="text-[14px] font-bold text-gray-700">{itemsCount} products</span>
+                            </div>
+                          ) : (
+                            <span className="text-gray-300">---</span>
+                          )}
+                        </td>
+                      )}
+                      <td className="px-6 py-4 whitespace-nowrap text-gray-400 font-bold text-[13px]">
                         <div className="flex items-center gap-2">
-                          <Diamond size={12} className="text-gray-300" />
-                          <span className="text-[14px] font-bold text-gray-700">{itemsCount} Pieces</span>
-                        </div>
-                      </td>
-                      <td className="px-6 py-4 whitespace-nowrap">
-                        <div className="flex items-center gap-2 text-gray-400 font-bold text-[13px]">
                           <Layers size={14} className="text-gray-200" />
                           {cat.children?.length || 0} Layers
                           <ChevronRight size={14} className="group-hover:translate-x-1 transition-transform" />
@@ -378,7 +414,7 @@ export default function Categories() {
                 <thead>
                   <tr className="border-b border-gray-50 bg-white">
                     <th className="px-6 py-4 text-left text-[14px] font-bold text-[#1BAFAF] w-20">Sr No</th>
-                    <th className="px-6 py-4 text-left text-[14px] font-bold text-[#1BAFAF]">Masterpiece</th>
+                    <th className="px-6 py-4 text-left text-[14px] font-bold text-[#1BAFAF]">Product</th>
                     <th className="px-6 py-4 text-left text-[14px] font-bold text-[#1BAFAF]">Price</th>
                     <th className="px-6 py-4 text-left text-[14px] font-bold text-[#1BAFAF]">Stock</th>
                     <th className="px-6 py-4 text-left text-[14px] font-bold text-[#1BAFAF]">Status</th>
@@ -401,7 +437,7 @@ export default function Categories() {
                               <div className="w-16 h-16 bg-gray-50 rounded-full flex items-center justify-center text-gray-200 border border-gray-100">
                                 <Diamond size={32} />
                               </div>
-                              <p className="text-gray-500 font-bold text-[14px]">No pieces found in this collection</p>
+                              <p className="text-gray-500 font-bold text-[14px]">No products found in this collection</p>
                             </div>
                           </td>
                         </tr>
@@ -471,11 +507,11 @@ export default function Categories() {
           <span className="text-[11px] font-bold text-gray-300 uppercase tracking-widest">
             {visibleCategories.length > 0 
               ? `Showing ${Math.min(visibleCategories.length, 1)}-${Math.min(rowsPerPage, visibleCategories.length)} of ${visibleCategories.length} Layers`
-              : "End of hierarchy reached • Viewing Masterpieces"
+              : "End of hierarchy reached • Viewing Products"
             }
           </span>
           <div className="flex items-center gap-2 text-[12px] font-bold text-gray-400">
-            {visibleCategories.length > 0 ? 'Click rows to explore deeper' : 'Direct masterpiece overview'}
+            {visibleCategories.length > 0 ? 'Click rows to explore deeper' : 'Direct product overview'}
           </div>
         </div>
       </div>
@@ -545,6 +581,14 @@ export default function Categories() {
           </div>
         </div>
       )}
+      <DeleteConfirmationModal
+        isOpen={isDeleteModalOpen}
+        onClose={() => setIsDeleteModalOpen(false)}
+        onConfirm={confirmDelete}
+        itemName={categoryToDelete?.name}
+        message={deleteMessage}
+        loading={isDeleting}
+      />
     </div>
   );
 }

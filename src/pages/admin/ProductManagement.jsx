@@ -25,6 +25,7 @@ import {
 } from 'firebase/firestore';
 import useCategories from '../../hooks/useCategories';
 import ProductFormModal from '../../components/admin/ProductFormModal';
+import DeleteConfirmationModal from '../../components/admin/DeleteConfirmationModal';
 import toast from 'react-hot-toast';
 
 export default function ProductManagement() {
@@ -42,6 +43,11 @@ export default function ProductManagement() {
   
   const [isModalOpen, setIsModalOpen] = useState(false);
   const [editingProduct, setEditingProduct] = useState(null);
+  
+  // States for Delete Modal
+  const [isDeleteModalOpen, setIsDeleteModalOpen] = useState(false);
+  const [productToDelete, setProductToDelete] = useState(null);
+  const [isDeleting, setIsDeleting] = useState(false);
 
   const filterRef = useRef(null);
   const rowsRef = useRef(null);
@@ -98,20 +104,24 @@ export default function ProductManagement() {
     );
   };
 
-  const handleDelete = async (product) => {
-    if (window.confirm(`Are you sure you want to delete "${product.name}"?`)) {
-      try {
-        setLoading(true);
-        // Documents now contain images as Base64 strings, 
-        // so direct deletion of the document is sufficient.
-        await deleteDoc(doc(db, 'products', product.id));
-        toast.success("Product deleted successfully");
-      } catch (error) {
-        console.error("Error deleting product:", error);
-        toast.error("Failed to delete product");
-      } finally {
-        setLoading(false);
-      }
+  const handleDelete = (product) => {
+    setProductToDelete(product);
+    setIsDeleteModalOpen(true);
+  };
+
+  const confirmDelete = async () => {
+    if (!productToDelete) return;
+    try {
+      setIsDeleting(true);
+      await deleteDoc(doc(db, 'products', productToDelete.id));
+      toast.success(`"${productToDelete.name}" deleted successfully`);
+      setIsDeleteModalOpen(false);
+      setProductToDelete(null);
+    } catch (error) {
+      console.error("Error deleting product:", error);
+      toast.error("Failed to delete product");
+    } finally {
+      setIsDeleting(false);
     }
   };
 
@@ -344,10 +354,16 @@ export default function ProductManagement() {
                     <td className="px-6 py-4 whitespace-nowrap text-[14px] text-[#1BAFAF] font-bold">₹{Number(product.price).toLocaleString()}</td>
                     <td className="px-6 py-4 whitespace-nowrap">
                       <div className="flex items-center gap-2">
-                        <span className={`text-[14px] font-medium ${Number(product.stock) < 5 ? 'text-red-500 font-bold' : 'text-gray-500'}`}>
+                        <span className={`text-[14px] font-medium ${
+                          product.productType === 'Unique' 
+                            ? 'text-gray-500' // No alert for unique items
+                            : (Number(product.stock) < 5 ? 'text-red-500 font-bold' : 'text-gray-500')
+                        }`}>
                           {product.stock}
                         </span>
-                        {Number(product.stock) < 5 && <AlertCircle size={12} className="text-red-500" />}
+                        {product.productType !== 'Unique' && Number(product.stock) < 5 && (
+                          <AlertCircle size={12} className="text-red-500" />
+                        )}
                       </div>
                     </td>
                     <td className="px-6 py-4 whitespace-nowrap">
@@ -434,6 +450,13 @@ export default function ProductManagement() {
         product={editingProduct}
       />
 
+      <DeleteConfirmationModal
+        isOpen={isDeleteModalOpen}
+        onClose={() => setIsDeleteModalOpen(false)}
+        onConfirm={confirmDelete}
+        itemName={productToDelete?.name}
+        loading={isDeleting}
+      />
     </div>
   );
 }

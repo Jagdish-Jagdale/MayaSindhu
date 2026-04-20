@@ -4,7 +4,7 @@ import HomeSectionTemplate from './HomeSectionTemplate';
 export default function Purpose() {
   return (
     <HomeSectionTemplate 
-      title="Purpose & Impact" 
+      title="Our Purpose" 
       description="Refine the brand narrative and social impact stories that define your heritage."
     />
   );

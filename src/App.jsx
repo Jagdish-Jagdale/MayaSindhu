@@ -35,6 +35,7 @@ import FeaturedTreasures from './pages/admin/settings/FeaturedTreasures';
 import ArtisanBlooms from './pages/admin/settings/ArtisanBlooms';
 import Stories from './pages/admin/settings/Stories';
 import Purpose from './pages/admin/settings/Purpose';
+import Testimonial from './pages/admin/settings/Testimonial';
 
 import './App.css';
 
@@ -112,6 +113,7 @@ function App() {
             <Route path="settings/artisan-blooms" element={<ArtisanBlooms />} />
             <Route path="settings/stories" element={<Stories />} />
             <Route path="settings/purpose" element={<Purpose />} />
+            <Route path="settings/testimonial" element={<Testimonial />} />
           </Route>
 
           {/* Catch-all Route for 404 - Page Not Found */}
