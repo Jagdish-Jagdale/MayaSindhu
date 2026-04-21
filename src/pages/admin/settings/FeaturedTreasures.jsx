@@ -30,6 +30,7 @@ import toast from 'react-hot-toast';
 export default function FeaturedTreasures() {
   const { isCollapsed } = useAdminUI();
   const [featuredItems, setFeaturedItems] = useState([]);
+  const FEATURED_LIMIT = 8;
   const [allProducts, setAllProducts] = useState([]);
   const [loading, setLoading] = useState(true);
   const [isSaving, setIsSaving] = useState(false);
@@ -70,6 +71,7 @@ export default function FeaturedTreasures() {
         }).filter(Boolean);
         setFeaturedItems(hydrated);
         setLoading(false);
+        setHasChanges(false);
       }
     });
     return () => unsubscribe();
@@ -77,11 +79,9 @@ export default function FeaturedTreasures() {
 
   // Handle Search
   useEffect(() => {
-    // Show all available products if focused but nothing typed
     if (searchTerm.trim() === '') {
       const eligible = allProducts.filter(p => !featuredItems.some(fi => fi.id === p.id));
       setSearchResults(eligible);
-      // We don't set isSearching to false here, we let the focus handler manage it
       return;
     }
     
@@ -106,6 +106,12 @@ export default function FeaturedTreasures() {
   }, []);
 
   const addProductToFeatured = (product) => {
+    if (featuredItems.length >= FEATURED_LIMIT) {
+      toast.error(`You can only feature up to ${FEATURED_LIMIT} masterpieces`);
+      setIsSearching(false);
+      return;
+    }
+
     setFeaturedItems(prev => [
       ...prev, 
       { ...product, isNew: true, order: prev.length }
@@ -126,7 +132,7 @@ export default function FeaturedTreasures() {
       setIsSaving(true);
       const batch = writeBatch(db);
       
-      // Clear existing (simpler strategy for small ordered lists)
+      // Clear existing
       const existingDocs = await getDocs(collection(db, 'featuredTreasures'));
       existingDocs.forEach(d => batch.delete(d.ref));
       
@@ -154,7 +160,7 @@ export default function FeaturedTreasures() {
   if (loading) {
     return (
       <div className="h-[60vh] w-full flex flex-col items-center justify-center gap-4">
-        <Loader2 className="w-10 h-10 animate-spin text-[#FF6B00]" />
+        <Loader2 className="w-10 h-10 animate-spin text-brand-orange" />
         <p className="text-[14px] font-medium text-gray-400">Loading treasures...</p>
       </div>
     );
@@ -168,21 +174,21 @@ export default function FeaturedTreasures() {
         <div className="flex flex-col md:flex-row md:items-center justify-between gap-4">
           <div>
             <h1 className="text-[22px] font-semibold text-gray-900 tracking-tight">Customer Favorite</h1>
-            <p className="text-[12px] text-gray-400 font-medium tracking-tight">Select and arrange the featured masterpieces to showcase on the landing page.</p>
+            <p className="text-[12px] text-gray-400 font-medium font-inter tracking-tight">Select up to 8 featured masterpieces to showcase on the landing page.</p>
           </div>
           
           <div className="flex items-center gap-3">
             {/* Search Dropdown */}
             <div className="relative min-w-[300px]" ref={searchRef}>
               <div className="relative group">
-                <Search size={16} className="absolute left-4 top-1/2 -translate-y-1/2 text-gray-400 group-focus-within:text-[#FF6B00] transition-colors" />
+                <Search size={16} className="absolute left-4 top-1/2 -translate-y-1/2 text-gray-400 group-focus-within:text-brand-orange transition-colors" />
                 <input 
                   type="text"
                   placeholder="Search products to feature..."
                   value={searchTerm}
                   onChange={(e) => setSearchTerm(e.target.value)}
                   onFocus={() => setIsSearching(true)}
-                  className="w-full bg-white border border-gray-100 rounded-2xl pl-11 pr-11 py-2.5 text-[13px] font-medium focus:outline-none focus:ring-2 focus:ring-[#FF6B00]/10 focus:border-[#FF6B00]/30 transition-all shadow-sm"
+                  className="w-full bg-white border border-gray-100 rounded-2xl pl-11 pr-11 py-2.5 text-[13px] font-medium focus:outline-none focus:ring-2 focus:ring-brand-orange/10 focus:border-brand-orange/30 transition-all shadow-sm"
                 />
                 <ChevronDown size={14} className="absolute right-4 top-1/2 -translate-y-1/2 text-gray-400 pointer-events-none transition-transform duration-300 group-focus-within:rotate-180" />
               </div>
@@ -200,10 +206,10 @@ export default function FeaturedTreasures() {
                         <img src={product.image} className="w-full h-full object-cover" alt="" />
                       </div>
                       <div className="flex-1 min-w-0">
-                        <p className="text-[13px] font-semibold text-gray-900 truncate group-hover:text-[#FF6B00] transition-colors">{product.name}</p>
+                        <p className="text-[13px] font-semibold text-gray-900 truncate group-hover:text-brand-orange transition-colors">{product.name}</p>
                         <p className="text-[11px] text-gray-400 font-medium">₹{product.price.toLocaleString('en-IN')}</p>
                       </div>
-                      <Plus size={16} className="text-gray-300 group-hover:text-[#FF6B00]" />
+                      <Plus size={16} className="text-gray-300 group-hover:text-brand-orange" />
                     </button>
                   ))}
                 </div>
@@ -214,7 +220,7 @@ export default function FeaturedTreasures() {
               <button 
                 onClick={handleSave}
                 disabled={isSaving}
-                className="flex items-center gap-2 bg-[#FF6B00] hover:bg-[#E66000] text-white px-6 py-2.5 rounded-2xl text-[13px] font-bold transition-all shadow-lg shadow-[#FF6B00]/20 active:scale-95 disabled:opacity-50"
+                className="flex items-center gap-2 bg-[#1BAFAF] hover:bg-[#17a0a0] text-white px-6 py-2.5 rounded-xl text-[13px] font-bold transition-all shadow-lg shadow-[#1BAFAF]/10 active:scale-95 disabled:opacity-50"
               >
                 {isSaving ? <Loader2 size={16} className="animate-spin" /> : <Save size={16} strokeWidth={2.5} />}
                 Save Changes
@@ -232,7 +238,7 @@ export default function FeaturedTreasures() {
             <LayoutGrid size={16} />
             Selected Masterpieces
           </h2>
-          <span className="text-[11px] text-gray-400 font-medium">{featuredItems.length} Products Featured</span>
+          <span className="text-[11px] text-gray-400 font-medium">{featuredItems.length} / {FEATURED_LIMIT} Products Featured</span>
         </div>
 
         {featuredItems.length === 0 ? (
@@ -259,7 +265,7 @@ export default function FeaturedTreasures() {
                   {/* Remove Button Overlay */}
                   <div className="absolute top-4 right-4 flex items-center gap-2 opacity-100 md:opacity-0 group-hover:opacity-100 transition-all translate-y-2 group-hover:translate-y-0 z-20">
                     {product.isNew && (
-                      <span className="bg-[#FF6B00] text-white text-[9px] font-bold px-2 py-1 rounded-lg uppercase tracking-wider shadow-lg">New</span>
+                      <span className="bg-brand-orange text-white text-[9px] font-bold px-2 py-1 rounded-lg uppercase tracking-wider shadow-lg">New</span>
                     )}
                     <button 
                       onClick={() => removeProduct(product.id)}
@@ -276,11 +282,11 @@ export default function FeaturedTreasures() {
                   <div className="flex items-start justify-between mb-2">
                     <h3 className="text-[14px] font-fashion font-bold text-gray-900 line-clamp-1 flex-1">{product.name}</h3>
                     <div className="flex items-center gap-1 text-gray-900 ml-2">
-                      <Star size={10} fill="#FF6B00" className="text-[#FF6B00]" />
+                      <Star size={10} fill="#FF6B00" className="text-brand-orange" />
                       <span className="text-[11px] font-bold">{product.rating || '4.8'}</span>
                     </div>
                   </div>
-                  <p className="text-[#FF6B00] font-bold text-[16px]">₹{product.price.toLocaleString('en-IN')}</p>
+                  <p className="text-brand-orange font-bold text-[16px]">₹{product.price.toLocaleString('en-IN')}</p>
                 </div>
               </div>
             ))}

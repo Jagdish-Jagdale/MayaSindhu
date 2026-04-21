@@ -157,12 +157,11 @@ export default function CuratedRealms() {
   return (
     <div className={`mx-auto space-y-8 animate-in fade-in slide-in-from-bottom-2 duration-500 transition-all duration-300 ${isCollapsed ? 'max-w-[1600px]' : 'max-w-[1280px]'}`} style={{ fontFamily: "'Inter', -apple-system, sans-serif" }}>
       
-      {/* Hidden File Input */}
       <input type="file" ref={fileInputRef} className="hidden" accept="image/*" onChange={handleFileSelect} />
 
       {/* Header Section */}
-      <div className="space-y-2 py-2">
-        <div className="flex items-center justify-between">
+      <div className="space-y-4 py-2">
+        <div className="flex flex-col md:flex-row md:items-center justify-between gap-4">
           <div>
             <h1 className="text-[22px] font-semibold text-gray-900 tracking-tight">Explore Category</h1>
             <p className="text-[12px] text-gray-400 font-medium font-inter tracking-tight">Manage the category-based visual storytelling sections on your homepage.</p>
@@ -172,7 +171,7 @@ export default function CuratedRealms() {
               <button 
                 onClick={handleSave}
                 disabled={isSaving}
-                className="flex items-center gap-2 bg-[#1BAFAF] hover:bg-[#17a0a0] text-white px-5 py-2 rounded-xl text-[13px] font-semibold transition-all shadow-sm shadow-[#1BAFAF]/10 active:scale-95 disabled:opacity-50"
+                className="flex items-center gap-2 bg-[#1BAFAF] hover:bg-[#17a0a0] text-white px-6 py-2.5 rounded-xl text-[13px] font-bold transition-all shadow-lg shadow-[#1BAFAF]/10 active:scale-95 disabled:opacity-50"
               >
                 {isSaving ? <Loader2 size={16} className="animate-spin" /> : <Save size={16} strokeWidth={2.5} />}
                 Save Changes
@@ -261,7 +260,7 @@ export default function CuratedRealms() {
                     <Camera size={14} />
                   </button>
                   {realm.isModified && (
-                    <div className="px-2 py-1 bg-brand-orange text-white text-[9px] font-bold rounded-lg uppercase tracking-wider shadow-lg">
+                    <div className="px-2 py-1 bg-[#1BAFAF] text-white text-[9px] font-bold rounded-lg uppercase tracking-wider shadow-lg">
                       Modified
                     </div>
                   )}
@@ -271,7 +270,6 @@ export default function CuratedRealms() {
           })}
         </div>
       </div>
-
     </div>
   );
 }
