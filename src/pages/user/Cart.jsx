@@ -1,43 +1,76 @@
 import React, { useState, useEffect } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
-import { Trash2, Plus, Minus, ShoppingBag, ArrowRight } from 'lucide-react';
+import { Trash2, Plus, Minus, ShoppingBag, ArrowRight, Loader2 } from 'lucide-react';
 import { Link } from 'react-router-dom';
-
-// Placeholder data for cart items
-const initialCart = [
-  {
-    id: 1,
-    name: "Artisanal Earring Collection",
-    price: 8500,
-    image: "/src/assets/p1.jpeg",
-    qty: 1
-  },
-  {
-    id: 3,
-    name: "Lavender Daisy Cotton Saree",
-    price: 12500,
-    image: "/src/assets/p3.jpeg",
-    qty: 1
-  }
-];
+import { db } from '../../firebase';
+import { collection, query, orderBy, onSnapshot, doc, updateDoc, deleteDoc, serverTimestamp } from 'firebase/firestore';
+import { useAuth } from '../../context/AuthContext';
 
 export default function Cart() {
-  const [items, setItems] = useState(initialCart);
+  const { user } = useAuth();
+  const [items, setItems] = useState([]);
+  const [loading, setLoading] = useState(true);
 
+  useEffect(() => {
+    if (!user) {
+      setItems([]);
+      setLoading(false);
+      return;
+    }
 
-  const updateQty = (id, delta) => {
-    setItems(items.map(item =>
-      item.id === id ? { ...item, qty: Math.max(1, item.qty + delta) } : item
-    ));
+    const q = query(
+      collection(db, 'users', user.uid, 'cart'),
+      orderBy('addedAt', 'desc')
+    );
+
+    const unsubscribe = onSnapshot(q, (snapshot) => {
+      const cartItems = snapshot.docs.map(doc => ({
+        docId: doc.id,
+        ...doc.data()
+      }));
+      setItems(cartItems);
+      setLoading(false);
+    }, (error) => {
+      console.error("Cart real-time error:", error);
+      setLoading(false);
+    });
+
+    return () => unsubscribe();
+  }, [user]);
+
+  const updateQty = async (docId, delta, currentQty) => {
+    try {
+      const newQty = Math.max(1, currentQty + delta);
+      const itemRef = doc(db, 'users', user.uid, 'cart', docId);
+      await updateDoc(itemRef, {
+        qty: newQty,
+        updatedAt: serverTimestamp()
+      });
+    } catch (error) {
+      console.error("Error updating qty:", error);
+    }
   };
 
-  const removeItem = (id) => {
-    setItems(items.filter(item => item.id !== id));
+  const removeItem = async (docId) => {
+    try {
+      const itemRef = doc(db, 'users', user.uid, 'cart', docId);
+      await deleteDoc(itemRef);
+    } catch (error) {
+      console.error("Error removing item:", error);
+    }
   };
 
   const subtotal = items.reduce((acc, item) => acc + (item.price * item.qty), 0);
   const shipping = 500;
   const total = subtotal + shipping;
+
+  if (loading) {
+    return (
+      <div className="min-h-screen flex items-center justify-center bg-[#FAF9F6]">
+        <Loader2 className="w-12 h-12 animate-spin text-brand-orange" />
+      </div>
+    );
+  }
 
   if (items.length === 0) {
     return (
@@ -63,7 +96,7 @@ export default function Cart() {
             <AnimatePresence>
               {items.map((item) => (
                 <motion.div
-                  key={item.id}
+                  key={item.docId}
                   layout
                   initial={{ opacity: 0, y: 20 }}
                   animate={{ opacity: 1, y: 0 }}
@@ -80,11 +113,11 @@ export default function Cart() {
 
                     <div className="flex items-center justify-center md:justify-start gap-4">
                       <div className="flex items-center bg-[#FAF9F6] rounded-full px-4 py-2 gap-6">
-                        <button onClick={() => updateQty(item.id, -1)} className="text-gray-400 hover:text-brand-orange">
+                        <button onClick={() => updateQty(item.docId, -1, item.qty)} className="text-gray-400 hover:text-brand-orange">
                           <Minus size={16} />
                         </button>
                         <span className="font-bold text-sm">{item.qty}</span>
-                        <button onClick={() => updateQty(item.id, 1)} className="text-gray-400 hover:text-brand-orange">
+                        <button onClick={() => updateQty(item.docId, 1, item.qty)} className="text-gray-400 hover:text-brand-orange">
                           <Plus size={16} />
                         </button>
                       </div>
@@ -94,7 +127,7 @@ export default function Cart() {
                   <div className="flex flex-col items-center md:items-end gap-10">
                     <p className="text-xl font-bold text-[#1A1A1A]">₹{(item.price * item.qty).toLocaleString()}</p>
                     <button
-                      onClick={() => removeItem(item.id)}
+                      onClick={() => removeItem(item.docId)}
                       className="text-gray-300 hover:text-red-500 transition-colors"
                     >
                       <Trash2 size={20} strokeWidth={1.5} />

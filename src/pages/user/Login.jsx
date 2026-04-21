@@ -33,9 +33,9 @@ export default function Login() {
     } catch (err) {
       console.error("Login Submission Error:", err);
       const errorCode = err.code;
-      
+
       let message = 'An unexpected error occurred. Please try again.';
-      
+
       if (errorCode === 'auth/invalid-credential' || errorCode === 'auth/invalid-login-credentials' || errorCode === 'auth/wrong-password') {
         message = 'Invalid email or password. Please double check your credentials.';
       } else if (errorCode === 'auth/user-not-found') {
@@ -63,7 +63,7 @@ export default function Login() {
         <div className="absolute bottom-[-10%] right-[-10%] w-[40%] h-[40%] bg-[#004D4D]/5 rounded-full blur-[100px]" />
       </div>
 
-      <motion.div 
+      <motion.div
         initial={{ opacity: 0, y: 20 }}
         animate={{ opacity: 1, y: 0 }}
         className="w-full max-w-[1100px] bg-white rounded-[3rem] shadow-2xl overflow-hidden flex flex-col md:flex-row relative z-10"
@@ -71,13 +71,13 @@ export default function Login() {
         {/* Left Side: Image & Branding */}
         <div className="w-full md:w-1/2 bg-[#004D4D] p-12 md:p-16 text-white flex flex-col justify-between relative overflow-hidden">
           <div className="absolute inset-0 opacity-20">
-            <img 
-              src="https://images.unsplash.com/photo-1583391733956-6c78276477e2?w=800&q=80" 
-              alt="Handloom Detail" 
+            <img
+              src="https://images.unsplash.com/photo-1583391733956-6c78276477e2?w=800&q=80"
+              alt="Handloom Detail"
               className="w-full h-full object-cover"
             />
           </div>
-          
+
           <div className="relative z-10">
             <Link to="/" className="inline-block mb-12">
               <h1 className="text-3xl font-fashion font-bold tracking-tighter">
@@ -93,10 +93,10 @@ export default function Login() {
           </div>
 
           <div className="relative z-10 pt-12">
-             <div className="flex items-center gap-4">
-                <div className="w-12 h-[1px] bg-[#D4AF37]" />
-                <span className="text-[10px] uppercase font-bold tracking-[0.3em] text-[#D4AF37]">Est. 1994</span>
-             </div>
+            <div className="flex items-center gap-4">
+              <div className="w-12 h-[1px] bg-[#D4AF37]" />
+              <span className="text-[10px] uppercase font-bold tracking-[0.3em] text-[#D4AF37]">Est. 1994</span>
+            </div>
           </div>
         </div>
 
@@ -104,13 +104,13 @@ export default function Login() {
         <div className="w-full md:w-1/2 p-12 md:p-20 bg-white">
           <div className="mb-12">
             <div className="flex gap-8 mb-8">
-              <button 
+              <button
                 onClick={() => setIsLogin(true)}
                 className={`text-sm font-bold uppercase tracking-[0.2em] pb-2 transition-all border-b-2 ${isLogin ? 'border-[#FF6B00] text-[#1A1A1A]' : 'border-transparent text-gray-300'}`}
               >
                 Login
               </button>
-              <button 
+              <button
                 onClick={() => setIsLogin(false)}
                 className={`text-sm font-bold uppercase tracking-[0.2em] pb-2 transition-all border-b-2 ${!isLogin ? 'border-[#FF6B00] text-[#1A1A1A]' : 'border-transparent text-gray-300'}`}
               >
@@ -136,7 +136,7 @@ export default function Login() {
                     <div className="absolute left-5 top-1/2 -translate-y-1/2 text-gray-300 group-focus-within:text-[#FF6B00] transition-colors">
                       <User size={18} />
                     </div>
-                    <input 
+                    <input
                       type="text"
                       required={!isLogin}
                       value={name}
@@ -155,7 +155,7 @@ export default function Login() {
                 <div className="absolute left-5 top-1/2 -translate-y-1/2 text-gray-300 group-focus-within:text-[#FF6B00] transition-colors">
                   <Mail size={18} />
                 </div>
-                <input 
+                <input
                   type="email"
                   required
                   value={email}
@@ -175,7 +175,7 @@ export default function Login() {
                 <div className="absolute left-5 top-1/2 -translate-y-1/2 text-gray-300 group-focus-within:text-[#FF6B00] transition-colors">
                   <Lock size={18} />
                 </div>
-                <input 
+                <input
                   type="password"
                   required
                   value={password}
@@ -187,7 +187,7 @@ export default function Login() {
             </div>
 
             {error && (
-              <motion.div 
+              <motion.div
                 initial={{ opacity: 0, x: -10 }}
                 animate={{ opacity: 1, x: 0 }}
                 className="flex items-center gap-2 text-red-500 text-xs font-medium bg-red-50 p-4 rounded-xl"
@@ -197,7 +197,7 @@ export default function Login() {
               </motion.div>
             )}
 
-            <button 
+            <button
               type="submit"
               disabled={isLoading}
               className="w-full bg-[#FF6B00] text-white py-5 rounded-2xl font-bold uppercase text-[12px] tracking-[0.2em] shadow-xl shadow-[#FF6B00]/20 hover:bg-[#E66000] active:scale-[0.98] transition-all flex items-center justify-center gap-3 disabled:opacity-70 disabled:pointer-events-none"
@@ -212,9 +212,9 @@ export default function Login() {
           </form>
 
           <div className="mt-12 text-center">
-             <p className="text-gray-400 text-xs">
-                By continuing, you agree to MayaSindhu's <span className="text-[#1A1A1A] underline cursor-pointer">Terms of Service</span> and <span className="text-[#1A1A1A] underline cursor-pointer">Privacy Policy</span>.
-             </p>
+            <p className="text-gray-400 text-xs">
+              By continuing, you agree to MayaSindhu's <span className="text-[#1A1A1A] underline cursor-pointer">Terms of Service</span> and <span className="text-[#1A1A1A] underline cursor-pointer">Privacy Policy</span>.
+            </p>
           </div>
         </div>
       </motion.div>

@@ -7,13 +7,29 @@ const useCategories = () => {
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
-    const buildHierarchy = (items, parentId = null) => {
+    const slugify = (text) => {
+      return text
+        .toString()
+        .toLowerCase()
+        .trim()
+        .replace(/\s+/g, '-')      // Replace spaces with -
+        .replace(/[^\w-]+/g, '')     // Remove all non-word chars
+        .replace(/--+/g, '-');      // Replace multiple - with single -
+    };
+
+    const buildHierarchy = (items, parentId = null, parentPath = '/c') => {
       return items
         .filter(item => item.parentId === parentId)
-        .map(item => ({
-          ...item,
-          children: buildHierarchy(items, item.id)
-        }));
+        .map(item => {
+          const slug = item.slug || slugify(item.name);
+          const fullPath = `${parentPath}/${slug}`;
+          return {
+            ...item,
+            slug,
+            fullPath,
+            children: buildHierarchy(items, item.id, fullPath)
+          };
+        });
     };
 
     if (!db) {

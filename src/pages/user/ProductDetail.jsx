@@ -1,9 +1,11 @@
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { useParams, useNavigate, useLocation, Navigate } from 'react-router-dom';
 import { motion, AnimatePresence } from 'framer-motion';
 import { ShoppingBag, ChevronRight, Star, Heart, CheckCircle2 } from 'lucide-react';
 import { useAuth } from '../../context/AuthContext';
 import { PRODUCTS } from '../../data/products';
+import { db } from '../../firebase';
+import { doc, getDoc, setDoc, updateDoc, deleteDoc, serverTimestamp, onSnapshot } from 'firebase/firestore';
 
 export default function ProductDetail() {
   const { slug } = useParams();
@@ -11,6 +13,22 @@ export default function ProductDetail() {
   const location = useLocation();
   const { user } = useAuth();
   const [isAdded, setIsAdded] = useState(false);
+  const [isWishlisted, setIsWishlisted] = useState(false);
+
+  // Listen for wishlist status
+  useEffect(() => {
+    if (!user || !product) {
+      setIsWishlisted(false);
+      return;
+    }
+
+    const wishItemRef = doc(db, 'users', user.uid, 'wishlist', product.id.toString());
+    const unsubscribe = onSnapshot(wishItemRef, (docSnap) => {
+      setIsWishlisted(docSnap.exists());
+    });
+
+    return () => unsubscribe();
+  }, [user, product]);
 
   // 1. Try to find by slug
   let product = PRODUCTS.find(p => p.slug === slug);
@@ -27,22 +45,65 @@ export default function ProductDetail() {
   // 3. Fallback to first product or 404 if absolutely nothing matches
   if (!product) product = PRODUCTS[0];
 
-  const handleAddToCart = () => {
+  const handleAddToCart = async () => {
     if (!user) {
       navigate('/login', { state: { from: location } });
       return;
     }
 
-    setIsAdded(true);
-    setTimeout(() => setIsAdded(false), 2000);
+    try {
+      const cartItemRef = doc(db, 'users', user.uid, 'cart', product.id.toString());
+      const cartItemSnap = await getDoc(cartItemRef);
+
+      if (cartItemSnap.exists()) {
+        await updateDoc(cartItemRef, {
+          qty: cartItemSnap.data().qty + 1,
+          updatedAt: serverTimestamp()
+        });
+      } else {
+        await setDoc(cartItemRef, {
+          id: product.id,
+          slug: product.slug,
+          name: product.name,
+          price: product.price,
+          image: product.image,
+          qty: 1,
+          addedAt: serverTimestamp()
+        });
+      }
+
+      setIsAdded(true);
+      setTimeout(() => setIsAdded(false), 2000);
+    } catch (error) {
+      console.error("Error adding to cart:", error);
+    }
   };
 
-  const handleWishlist = () => {
+  const handleWishlist = async () => {
     if (!user) {
       navigate('/login', { state: { from: location } });
       return;
     }
-    // Wishlist logic
+
+    try {
+      const wishItemRef = doc(db, 'users', user.uid, 'wishlist', product.id.toString());
+      
+      if (isWishlisted) {
+        await deleteDoc(wishItemRef);
+      } else {
+        await setDoc(wishItemRef, {
+          id: product.id,
+          slug: product.slug,
+          name: product.name,
+          price: product.price,
+          image: product.image,
+          rating: product.rating || 4.8,
+          addedAt: serverTimestamp()
+        });
+      }
+    } catch (error) {
+      console.error("Error toggling wishlist:", error);
+    }
   };
 
 
@@ -148,9 +209,13 @@ export default function ProductDetail() {
 
               <button 
                 onClick={handleWishlist}
-                className="p-4 border-2 border-brand-black/10 rounded-full hover:bg-brand-black hover:text-white transition-all active:scale-90"
+                className={`p-4 border-2 rounded-full transition-all active:scale-90 ${
+                  isWishlisted 
+                    ? 'bg-red-50 border-red-200 text-red-500' 
+                    : 'border-brand-black/10 text-brand-black hover:bg-brand-black hover:text-white'
+                }`}
               >
-                <Heart size={24} />
+                <Heart size={24} fill={isWishlisted ? "currentColor" : "none"} />
               </button>
             </div>
           </motion.div>

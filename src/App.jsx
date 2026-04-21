@@ -3,6 +3,7 @@ import UserLayout from './layouts/UserLayout';
 import { Toaster } from 'react-hot-toast';
 import AdminLayout from './layouts/AdminLayout';
 import TitleUpdater from './components/common/TitleUpdater';
+import ScrollToTop from './components/common/ScrollToTop';
 
 // User Pages
 import Home from './pages/user/Home';
@@ -47,6 +48,7 @@ function App() {
 
   return (
     <Router>
+      <ScrollToTop />
       <AuthProvider>
         <TitleUpdater />
         <Toaster
@@ -77,7 +79,7 @@ function App() {
             <Route index element={<Home />} />
             <Route path="shop" element={<Shop />} />
             <Route path="product/:id" element={<ProductDetail />} />
-            <Route path="category/:id" element={<CategoryView />} />
+            <Route path="c/*" element={<CategoryView />} />
             <Route path="cart" element={<Cart />} />
             <Route path="wishlist" element={<Wishlist />} />
             <Route path="about" element={<About />} />

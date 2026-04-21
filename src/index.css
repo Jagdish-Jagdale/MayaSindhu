@@ -2,24 +2,33 @@
 @import "tailwindcss";
 
 @theme {
-  --font-sans: "Montserrat", ui-sans-serif, system-ui, sans-serif;
+  --font-sans: "Montserrat", sans-serif;
   --font-fashion: "Montserrat", sans-serif;
 
+  /* Brand Palette */
+  --color-primary: #1A1A1A;
+  --color-accent: #D4AF37;
   --color-brand-orange: #FF6B00;
   --color-brand-orange-dark: #E66000;
   --color-brand-orange-light: #FFF5EB;
+
+  /* Functional Palette */
+  --color-text-main: #1A1A1A;
+  --color-text-muted: #666666;
+  --color-bg-alt: #FCFBF9;
+  --color-brand-gray: #F5F5F7;
+  
   --color-brand-white: #FFFFFF;
   --color-brand-black: #1A1A1A;
-  --color-brand-gray: #F5F5F7;
 }
 
 @layer base {
   body {
-    @apply bg-white text-brand-black font-sans;
+    @apply bg-white text-text-main font-sans antialiased;
   }
 
   h1, h2, h3, h4, h5, h6 {
-    @apply font-fashion font-semibold;
+    @apply font-fashion font-bold text-text-main;
   }
 
   button, 
