@@ -2,7 +2,7 @@ import React, { useState, useEffect } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { 
   Package, User, Heart, Settings, LogOut, ChevronRight, 
-  MapPin, CreditCard, Bell, RotateCcw, HelpCircle, Menu, X 
+  MapPin, CreditCard, Bell, RotateCcw, HelpCircle, Menu, X, ShoppingBag
 } from 'lucide-react';
 import { useNavigate } from 'react-router-dom';
 import { useAuth } from '../../context/AuthContext';
@@ -16,6 +16,7 @@ import NotificationSettings from './Profile/sections/NotificationSettings';
 import ReturnsRefunds from './Profile/sections/ReturnsRefunds';
 import PaymentMethods from './Profile/sections/PaymentMethods';
 import SupportTab from './Profile/sections/SupportTab';
+import CartTab from './Profile/sections/CartTab';
 
 const TABS = [
   { id: 'profile', label: 'My Profile', icon: <User size={20} />, component: ProfileInfo },
@@ -25,6 +26,7 @@ const TABS = [
   { id: 'payments', label: 'Saved Payments', icon: <CreditCard size={20} />, component: PaymentMethods },
   { id: 'notifications', label: 'Notifications', icon: <Bell size={20} />, component: NotificationSettings },
   { id: 'returns', label: 'Returns & Refunds', icon: <RotateCcw size={20} />, component: ReturnsRefunds },
+  { id: 'cart', label: 'Shopping Bag', icon: <ShoppingBag size={20} />, component: CartTab },
   { id: 'support', label: 'Help & Support', icon: <HelpCircle size={20} />, component: SupportTab },
 ];
 

@@ -91,17 +91,17 @@ export default function Navbar() {
     <header className={`sticky top-0 z-[1000] transition-all duration-300 ${isScrolled ? 'shadow-lg' : ''}`}>
       {/* Top Navbar: Brand & Search & Icons */}
       <div className="bg-brand-orange border-b border-white/10">
-        <div className="max-w-[1536px] mx-auto px-6 py-2 flex items-center justify-between">
-          
+        <div className="max-w-[1536px] mx-auto px-6 py-1 md:py-2 flex items-center justify-between">
+
           {/* 1. Logo (Left) */}
-          <div className="w-[200px] lg:w-[300px] flex-shrink-0">
+          <div className="flex-1 md:w-[200px] lg:w-[300px] flex justify-start items-center">
             <Link to="/" className="flex items-center">
-              <img src={navLogo} alt="MayaSindhu" className="h-14 md:h-20 w-auto object-contain" />
+              <img src={navLogo} alt="MayaSindhu" className="h-10 md:h-14 lg:h-20 w-auto object-contain" />
             </Link>
           </div>
 
           {/* 2. Search Bar (Centered) */}
-          <div className="hidden md:flex flex-1 justify-center px-10">
+          <div className="hidden md:flex flex-[2] justify-center px-10">
             <div className="w-full max-w-2xl relative group">
               <input
                 type="text"
@@ -115,29 +115,29 @@ export default function Navbar() {
           </div>
 
           {/* 3. Icon Group (Right) */}
-          <div className="w-[200px] lg:w-[300px] flex items-center justify-end gap-2 sm:gap-4">
+          <div className="flex-1 md:w-[200px] lg:w-[300px] flex items-center justify-end gap-0 sm:gap-4">
             <button
               onClick={() => setIsMobileSearchOpen(!isMobileSearchOpen)}
-              className="p-2 text-white md:hidden hover:opacity-80 transition-opacity"
+              className="p-2 text-white md:hidden hover:opacity-80 transition-opacity flex items-center justify-center min-w-[40px]"
             >
-              <Search size={24} strokeWidth={1.5} />
+              <Search size={22} strokeWidth={2} />
             </button>
             <Link
               to={user ? "/profile" : "/login"}
-              className="p-2 text-white hover:opacity-80 transition-opacity relative"
+              className="p-2 text-white hover:opacity-80 transition-opacity relative flex items-center justify-center min-w-[40px]"
             >
-              <User size={24} strokeWidth={1.5} />
+              <User size={22} strokeWidth={2} />
             </Link>
-            <Link to="/wishlist" className="p-2 text-white hover:opacity-80 transition-opacity relative hidden sm:block">
-              <Heart size={24} strokeWidth={1.5} />
+            <Link to="/wishlist" className="p-2 text-white hover:opacity-80 transition-opacity relative hidden sm:flex items-center justify-center min-w-[40px]">
+              <Heart size={22} strokeWidth={2} />
               {wishlistCount > 0 && (
                 <span className="absolute top-1 right-1 bg-white text-brand-orange text-[9px] font-bold w-4 h-4 flex items-center justify-center rounded-full shadow-lg">
                   {wishlistCount}
                 </span>
               )}
             </Link>
-            <Link to="/cart" className="p-2 text-white hover:opacity-80 transition-opacity relative">
-              <ShoppingBag size={24} strokeWidth={1.5} />
+            <Link to="/cart" className="p-2 text-white hover:opacity-80 transition-opacity relative flex items-center justify-center min-w-[40px]">
+              <ShoppingBag size={22} strokeWidth={2} />
               {cartCount > 0 && (
                 <span className="absolute top-1 right-1 bg-white text-brand-orange text-[9px] font-bold w-4 h-4 flex items-center justify-center rounded-full shadow-lg">
                   {cartCount}
@@ -146,9 +146,9 @@ export default function Navbar() {
             </Link>
             <button
               onClick={() => setIsMobileMenuOpen(true)}
-              className="p-2 text-white md:hidden"
+              className="p-2 text-white md:hidden flex items-center justify-center min-w-[40px]"
             >
-              <Menu size={28} />
+              <Menu size={26} />
             </button>
           </div>
         </div>
@@ -185,10 +185,10 @@ export default function Navbar() {
         <div className="max-w-[1536px] mx-auto px-6 py-1">
           <ul className="flex items-center justify-center gap-4 lg:gap-14">
             {sortedCategories.map((category, index) => (
-              <NavItem 
-                key={category.id} 
-                category={category} 
-                location={location} 
+              <NavItem
+                key={category.id}
+                category={category}
+                location={location}
                 side={index >= sortedCategories.length / 2 ? 'right' : 'left'}
               />
             ))}
@@ -227,9 +227,9 @@ function NavItem({ category, location, side }) {
       >
         {category.name}
         {hasSubCategories && (
-          <ChevronDown 
-            size={12} 
-            className={`transition-transform duration-300 ${isHovered ? 'rotate-180' : ''}`} 
+          <ChevronDown
+            size={12}
+            className={`transition-transform duration-300 ${isHovered ? 'rotate-180' : ''}`}
           />
         )}
       </Link>
@@ -269,9 +269,8 @@ function RecursiveMenuItem({ item, side }) {
     >
       <Link
         to={item.fullPath}
-        className={`flex items-center justify-between w-full px-4 py-2.5 rounded-xl text-[12px] font-medium transition-all ${
-          isHovered ? 'bg-brand-orange/5 text-brand-orange' : 'text-brand-black/70 hover:bg-gray-50'
-        }`}
+        className={`flex items-center justify-between w-full px-4 py-2.5 rounded-xl text-[12px] font-medium transition-all ${isHovered ? 'bg-brand-orange/5 text-brand-orange' : 'text-brand-black/70 hover:bg-gray-50'
+          }`}
       >
         <span>{item.name}</span>
         {hasSubCategories && (
