@@ -1,18 +1,48 @@
-import React, { useEffect } from 'react';
-import { motion } from 'framer-motion';
-import { Package, User, Heart, Settings, LogOut, ChevronRight } from 'lucide-react';
-import { Link, useNavigate } from 'react-router-dom';
+import React, { useState, useEffect } from 'react';
+import { motion, AnimatePresence } from 'framer-motion';
+import { 
+  Package, User, Heart, Settings, LogOut, ChevronRight, 
+  MapPin, CreditCard, Bell, RotateCcw, HelpCircle, Menu, X 
+} from 'lucide-react';
+import { useNavigate } from 'react-router-dom';
 import { useAuth } from '../../context/AuthContext';
+
+// Import sections
+import ProfileInfo from './Profile/sections/ProfileInfo';
+import OrderHistory from './Profile/sections/OrderHistory';
+import AddressBook from './Profile/sections/AddressBook';
+import WishlistTab from './Profile/sections/WishlistTab';
+import NotificationSettings from './Profile/sections/NotificationSettings';
+import ReturnsRefunds from './Profile/sections/ReturnsRefunds';
+import PaymentMethods from './Profile/sections/PaymentMethods';
+import SupportTab from './Profile/sections/SupportTab';
+
+const TABS = [
+  { id: 'profile', label: 'My Profile', icon: <User size={20} />, component: ProfileInfo },
+  { id: 'orders', label: 'My Orders', icon: <Package size={20} />, component: OrderHistory },
+  { id: 'addresses', label: 'Address Book', icon: <MapPin size={20} />, component: AddressBook },
+  { id: 'wishlist', label: 'Wishlist', icon: <Heart size={20} />, component: WishlistTab },
+  { id: 'payments', label: 'Saved Payments', icon: <CreditCard size={20} />, component: PaymentMethods },
+  { id: 'notifications', label: 'Notifications', icon: <Bell size={20} />, component: NotificationSettings },
+  { id: 'returns', label: 'Returns & Refunds', icon: <RotateCcw size={20} />, component: ReturnsRefunds },
+  { id: 'support', label: 'Help & Support', icon: <HelpCircle size={20} />, component: SupportTab },
+];
 
 export default function Profile() {
   const { user, logout } = useAuth();
   const navigate = useNavigate();
+  const [activeTab, setActiveTab] = useState('profile');
+  const [isSidebarOpen, setIsSidebarOpen] = useState(false);
 
   useEffect(() => {
     if (!user) {
       navigate('/login');
     }
   }, [user, navigate]);
+
+  useEffect(() => {
+    window.scrollTo({ top: 0, behavior: 'smooth' });
+  }, [activeTab]);
 
   if (!user) return null;
 
@@ -25,120 +55,111 @@ export default function Profile() {
     }
   };
 
-  const recentOrders = [
-    { id: 'MS-8291', date: 'Oct 12, 2025', status: 'Delivered', total: 12500, image: '/src/assets/p3.jpeg' },
-    { id: 'MS-7102', date: 'Sep 28, 2025', status: 'In Transit', total: 8500, image: '/src/assets/p1.jpeg' }
-  ];
+  const ActiveComponent = TABS.find(t => t.id === activeTab)?.component || ProfileInfo;
 
   return (
-    <div className="bg-[#FAF9F6] min-h-screen py-16 md:py-24">
-      <div className="max-w-[1400px] mx-auto px-6">
-        <div className="grid grid-cols-1 lg:grid-cols-4 gap-12">
+    <div className="bg-[#FAF9F6] min-h-screen pt-32 pb-24 font-sans focus-within:scroll-smooth">
+      <div className="max-w-[1536px] mx-auto px-6 lg:px-12">
+        
+        {/* Mobile Sidebar Toggle */}
+        <div className="lg:hidden mb-8 flex items-center justify-between bg-white p-6 rounded-3xl shadow-sm">
+          <div className="flex items-center gap-4">
+            <div className="w-12 h-12 bg-brand-orange text-white rounded-2xl flex items-center justify-center font-fashion font-bold text-xl uppercase">
+              {user.displayName?.charAt(0) || user.email?.charAt(0)}
+            </div>
+            <div>
+              <h3 className="font-fashion font-bold text-[#1A1A1A] leading-none mb-1">
+                {TABS.find(t => t.id === activeTab)?.label}
+              </h3>
+              <p className="text-[10px] text-gray-400 uppercase tracking-widest font-bold">Menu</p>
+            </div>
+          </div>
+          <button 
+            onClick={() => setIsSidebarOpen(!isSidebarOpen)}
+            className="p-3 bg-gray-50 text-text-main rounded-2xl active:scale-90 transition-all"
+          >
+            {isSidebarOpen ? <X size={24} /> : <Menu size={24} />}
+          </button>
+        </div>
 
-          {/* Sidebar Navigation */}
-          <div className="lg:col-span-1 space-y-4">
-            <div className="bg-white p-8 rounded-[3rem] mb-6 text-center">
-              <div className="w-24 h-24 bg-brand-orange/10 mx-auto rounded-full flex items-center justify-center mb-4 overflow-hidden">
+        <div className="flex flex-col lg:flex-row gap-12 relative">
+          
+          {/* Dashboard Sidebar */}
+          <aside className={`
+            lg:w-80 flex-shrink-0 z-40 transition-all duration-500
+            ${isSidebarOpen ? 'fixed inset-0 bg-white p-12 overflow-y-auto' : 'hidden lg:block'}
+          `}>
+            <div className="bg-white p-10 rounded-[3.5rem] shadow-sm flex flex-col items-center text-center mb-8 hidden lg:flex">
+              <div className="w-24 h-24 bg-brand-orange rounded-[2rem] flex items-center justify-center text-white font-fashion font-bold text-3xl mb-6 shadow-xl shadow-brand-orange/20 overflow-hidden">
                 {user.photoURL ? (
                   <img src={user.photoURL} alt="Profile" className="w-full h-full object-cover" />
                 ) : (
-                  <span className="text-3xl font-fashion font-bold text-brand-orange">
-                    {user.displayName?.charAt(0) || user.email?.charAt(0).toUpperCase()}
-                  </span>
+                  user.displayName?.charAt(0) || user.email?.charAt(0).toUpperCase()
                 )}
               </div>
-              <h2 className="text-xl font-fashion font-bold text-[#1A1A1A]">{user.displayName || 'Guest User'}</h2>
-              <p className="text-gray-400 text-sm">{user.email}</p>
+              <div>
+                <h2 className="text-xl font-fashion font-bold text-[#1A1A1A] leading-tight mb-1">{user.displayName || 'Guest User'}</h2>
+                <p className="text-gray-400 text-xs font-medium">{user.email}</p>
+              </div>
             </div>
 
-            <nav className="bg-white rounded-[3rem] overflow-hidden p-4">
-              <ProfileNavLink icon={<Package size={20} />} label="My Orders" active />
-              <ProfileNavLink icon={<User size={20} />} label="Personal Info" />
-              <ProfileNavLink icon={<Heart size={20} />} label="My Wishlist" />
-              <ProfileNavLink icon={<Settings size={20} />} label="Settings" />
-              <div className="border-t border-gray-50 mt-4 pt-4">
-                <ProfileNavLink 
-                  icon={<LogOut size={20} />} 
-                  label="Logout" 
-                  danger 
-                  onClick={handleLogout}
-                />
+            <nav className="bg-white rounded-[3.5rem] overflow-hidden p-4 shadow-sm border border-gray-50">
+              <div className="space-y-2">
+                {TABS.map((tab) => (
+                  <button
+                    key={tab.id}
+                    onClick={() => {
+                      setActiveTab(tab.id);
+                      setIsSidebarOpen(false);
+                    }}
+                    className={`
+                      w-full flex items-center justify-between p-5 rounded-2xl transition-all group
+                      ${activeTab === tab.id 
+                        ? 'bg-brand-orange text-white shadow-lg shadow-brand-orange/20' 
+                        : 'text-gray-400 hover:bg-gray-50 hover:text-[#1A1A1A]'
+                      }
+                    `}
+                  >
+                    <div className="flex items-center gap-4">
+                      <span className={`${activeTab === tab.id ? 'text-white' : 'text-gray-400 group-hover:text-brand-orange'} transition-colors`}>
+                        {tab.icon}
+                      </span>
+                      <span className="text-[14px] font-bold tracking-wide">{tab.label}</span>
+                    </div>
+                    <ChevronRight size={16} className={`${activeTab === tab.id ? 'opacity-100' : 'opacity-0'} transition-opacity`} />
+                  </button>
+                ))}
+                
+                <div className="border-t border-gray-50 mt-4 pt-4">
+                  <button 
+                    onClick={handleLogout}
+                    className="w-full flex items-center gap-4 p-5 rounded-2xl text-red-400 hover:bg-red-50 transition-all font-bold"
+                  >
+                    <LogOut size={20} />
+                    <span className="text-[14px]">Logout</span>
+                  </button>
+                </div>
               </div>
             </nav>
-          </div>
+          </aside>
 
-          {/* Main Content Area */}
-          <div className="lg:col-span-3 space-y-8">
-            <div className="bg-white p-10 md:p-14 rounded-[4rem] shadow-sm">
-              <div className="flex justify-between items-center mb-10">
-                <h3 className="text-3xl font-fashion font-bold text-[#1A1A1A]">Recent Orders</h3>
-                <Link to="/orders" className="text-sm font-bold text-brand-orange border-b border-brand-orange/20 pb-1">View All</Link>
-              </div>
-
-              <div className="space-y-6">
-                {recentOrders.map((order) => (
-                  <div key={order.id} className="flex items-center gap-6 p-6 border border-gray-50 rounded-[2.5rem] hover:border-brand-orange/10 transition-colors group">
-                    <div className="w-20 h-24 bg-gray-50 rounded-2xl overflow-hidden flex-shrink-0">
-                      <img src={order.image} alt="Product" className="w-full h-full object-cover" />
-                    </div>
-
-                    <div className="flex-grow">
-                      <div className="flex justify-between items-start mb-2">
-                        <div>
-                          <p className="text-[10px] uppercase font-bold tracking-widest text-gray-400 mb-1">Order ID</p>
-                          <h4 className="text-lg font-fashion font-bold text-[#1A1A1A]">{order.id}</h4>
-                        </div>
-                        <span className={`text-[10px] uppercase font-bold tracking-widest px-4 py-1.5 rounded-full ${order.status === 'Delivered' ? 'bg-green-50 text-green-600' : 'bg-orange-50 text-orange-600'
-                          }`}>
-                          {order.status}
-                        </span>
-                      </div>
-                      <div className="flex justify-between items-center">
-                        <p className="text-sm text-gray-500">{order.date}</p>
-                        <p className="font-bold text-[#1A1A1A]">₹{order.total.toLocaleString()}</p>
-                      </div>
-                    </div>
-
-                    <ChevronRight size={20} className="text-gray-300 group-hover:text-brand-orange transition-colors" />
-                  </div>
-                ))}
-              </div>
-            </div>
-
-            {/* Address Management - Card */}
-            <div className="bg-white p-10 md:p-14 rounded-[4rem] shadow-sm">
-              <h3 className="text-2xl font-fashion font-bold text-[#1A1A1A] mb-8">Shipping Address</h3>
-              <div className="p-8 border-2 border-dashed border-gray-100 rounded-[3rem] relative">
-                <p className="font-bold text-[#1A1A1A] mb-2 font-fashion">Home Address</p>
-                <p className="text-gray-500 leading-relaxed mb-6">
-                  42nd Heritage Row, Near City Palace,<br />
-                  Jaipur, Rajasthan, 302001<br />
-                  India
-                </p>
-                <button className="text-sm font-bold text-brand-orange">Edit Address</button>
-              </div>
-            </div>
-          </div>
+          {/* Main Display Area */}
+          <main className="flex-grow min-w-0">
+            <AnimatePresence mode="wait">
+              <motion.div
+                key={activeTab}
+                initial={{ opacity: 0, y: 20 }}
+                animate={{ opacity: 1, y: 0 }}
+                exit={{ opacity: 0, y: -20 }}
+                transition={{ duration: 0.4, ease: "easeOut" }}
+              >
+                <ActiveComponent user={user} />
+              </motion.div>
+            </AnimatePresence>
+          </main>
 
         </div>
       </div>
     </div>
-  );
-}
-
-function ProfileNavLink({ icon, label, active, danger, onClick }) {
-  return (
-    <button 
-      onClick={onClick}
-      className={`w-full flex items-center justify-between p-5 rounded-2xl transition-all ${active ? 'bg-brand-orange/5 text-brand-orange font-bold' :
-        danger ? 'text-red-400 hover:bg-red-50' : 'text-gray-500 hover:bg-gray-50'
-      }`}
-    >
-      <div className="flex items-center gap-4">
-        {icon}
-        <span className="text-[14px]">{label}</span>
-      </div>
-      <ChevronRight size={16} className={active ? 'opacity-100' : 'opacity-0'} />
-    </button>
   );
 }

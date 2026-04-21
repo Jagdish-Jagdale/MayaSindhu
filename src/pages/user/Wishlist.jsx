@@ -1,34 +1,61 @@
 import React, { useState, useEffect } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
-import { Heart, ShoppingBag, X } from 'lucide-react';
+import { Heart, ShoppingBag, X, Trash2 } from 'lucide-react';
 import { Link } from 'react-router-dom';
 import ProductCard from '../../components/user/ProductCard';
-
-// Placeholder data for wishlist
-const initialWishlist = [
-  {
-    id: 1,
-    name: "Artisanal Earring Collection",
-    price: 8500,
-    image: "/src/assets/p1.jpeg",
-    rating: 4.9
-  },
-  {
-    id: 4,
-    name: "Indigo Block Print Saree",
-    price: 9800,
-    image: "/src/assets/p4.jpeg",
-    rating: 5.0
-  }
-];
+import { db } from '../../firebase';
+import { collection, query, orderBy, onSnapshot, doc, deleteDoc } from 'firebase/firestore';
+import { useAuth } from '../../context/AuthContext';
+import { Loader2 } from 'lucide-react';
 
 export default function Wishlist() {
-  const [items, setItems] = useState(initialWishlist);
+  const { user } = useAuth();
+  const [items, setItems] = useState([]);
+  const [loading, setLoading] = useState(true);
 
+  useEffect(() => {
+    if (!user) {
+      setItems([]);
+      setLoading(false);
+      return;
+    }
 
-  const removeItem = (id) => {
-    setItems(items.filter(item => item.id !== id));
+    const q = query(
+      collection(db, 'users', user.uid, 'wishlist'),
+      orderBy('addedAt', 'desc')
+    );
+
+    const unsubscribe = onSnapshot(q, (snapshot) => {
+      const wishlistItems = snapshot.docs.map(doc => ({
+        docId: doc.id,
+        ...doc.data()
+      }));
+      setItems(wishlistItems);
+      setLoading(false);
+    }, (error) => {
+      console.error("Wishlist real-time error:", error);
+      setLoading(false);
+    });
+
+    return () => unsubscribe();
+  }, [user]);
+
+  const removeItem = async (docId) => {
+    try {
+      const itemRef = doc(db, 'users', user.uid, 'wishlist', docId);
+      await deleteDoc(itemRef);
+    } catch (error) {
+      console.error("Error removing from wishlist:", error);
+    }
   };
+
+  if (loading) {
+    return (
+      <div className="min-h-screen flex items-center justify-center bg-white">
+        <Loader2 className="w-12 h-12 animate-spin text-brand-orange" />
+      </div>
+    );
+  }
 
   if (items.length === 0) {
     return (
@@ -55,7 +82,7 @@ export default function Wishlist() {
           <AnimatePresence>
             {items.map((item) => (
               <motion.div
-                key={item.id}
+                key={item.docId}
                 layout
                 initial={{ opacity: 0, scale: 0.9 }}
                 animate={{ opacity: 1, scale: 1 }}
@@ -63,12 +90,21 @@ export default function Wishlist() {
                 className="relative group"
               >
                 <button
-                  onClick={() => removeItem(item.id)}
-                  className="absolute top-4 right-4 z-20 w-8 h-8 bg-white/80 backdrop-blur-sm rounded-full flex items-center justify-center text-gray-400 hover:text-red-500 transition-colors shadow-sm"
+                  onClick={() => removeItem(item.docId)}
+                  className="absolute top-4 right-4 z-20 w-10 h-10 bg-white shadow-lg rounded-full flex items-center justify-center text-gray-400 hover:text-red-500 transition-all active:scale-90 group/remove"
+                  title="Remove from wishlist"
                 >
-                  <X size={16} />
+                  <X size={20} strokeWidth={2.5} className="group-hover/remove:rotate-90 transition-transform duration-300" />
                 </button>
-                <ProductCard {...item} />
+                <div className="flex flex-col h-full">
+                  <ProductCard {...item} />
+                  <button 
+                    onClick={() => removeItem(item.docId)}
+                    className="mt-4 text-[11px] font-bold uppercase tracking-widest text-gray-400 hover:text-red-500 transition-colors flex items-center justify-center gap-2"
+                  >
+                    <Trash2 size={14} /> Remove Treasure
+                  </button>
+                </div>
               </motion.div>
             ))}
           </AnimatePresence>

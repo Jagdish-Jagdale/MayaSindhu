@@ -8,6 +8,7 @@ import {
   Menu,
   Heart,
   ChevronDown,
+  ChevronRight,
   X,
   Plus,
   Minus
@@ -15,6 +16,8 @@ import {
 import { useAuth } from '../../context/AuthContext';
 import useCategories from '../../hooks/useCategories';
 import navLogo from '../../assets/navbar logo.png';
+import { db } from '../../firebase';
+import { collection, onSnapshot, query } from 'firebase/firestore';
 
 export default function Navbar() {
   const { categories } = useCategories();
@@ -22,6 +25,8 @@ export default function Navbar() {
   const [isScrolled, setIsScrolled] = useState(false);
   const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false);
   const [isMobileSearchOpen, setIsMobileSearchOpen] = useState(false);
+  const [cartCount, setCartCount] = useState(0);
+  const [wishlistCount, setWishlistCount] = useState(0);
   const location = useLocation();
   const navigate = useNavigate();
 
@@ -54,12 +59,38 @@ export default function Navbar() {
     return () => window.removeEventListener('scroll', handleScroll);
   }, []);
 
+  // Listen for Dynamic Cart Count
+  useEffect(() => {
+    if (!user) {
+      setCartCount(0);
+      return;
+    }
+    const q = query(collection(db, 'users', user.uid, 'cart'));
+    const unsubscribe = onSnapshot(q, (snapshot) => {
+      setCartCount(snapshot.size);
+    });
+    return () => unsubscribe();
+  }, [user]);
+
+  // Listen for Dynamic Wishlist Count
+  useEffect(() => {
+    if (!user) {
+      setWishlistCount(0);
+      return;
+    }
+    const q = query(collection(db, 'users', user.uid, 'wishlist'));
+    const unsubscribe = onSnapshot(q, (snapshot) => {
+      setWishlistCount(snapshot.size);
+    });
+    return () => unsubscribe();
+  }, [user]);
+
   const isActive = (path) => location.pathname === path;
 
   return (
     <header className={`sticky top-0 z-[1000] transition-all duration-300 ${isScrolled ? 'shadow-lg' : ''}`}>
       {/* Top Navbar: Brand & Search & Icons */}
-      <div className="bg-[#F7931E] border-b border-white/10">
+      <div className="bg-brand-orange border-b border-white/10">
         <div className="max-w-[1536px] mx-auto px-6 py-2 flex items-center justify-between">
           
           {/* 1. Logo (Left) */}
@@ -77,7 +108,7 @@ export default function Navbar() {
                 placeholder="Search for Handcrafted Sarees, Jewelry..."
                 className="w-full bg-white/95 border border-transparent rounded-full py-3.5 pl-7 pr-14 focus:outline-none focus:bg-white focus:ring-4 focus:ring-white/20 transition-all text-sm placeholder-brand-black/30 text-brand-black shadow-lg"
               />
-              <div className="absolute right-6 top-1/2 -translate-y-1/2 text-brand-black/40 group-hover:text-brand-orange transition-colors cursor-pointer">
+              <div className="absolute right-6 top-1/2 -translate-y-1/2 text-text-main/40 group-hover:text-white transition-colors cursor-pointer">
                 <Search size={20} strokeWidth={2} />
               </div>
             </div>
@@ -99,11 +130,19 @@ export default function Navbar() {
             </Link>
             <Link to="/wishlist" className="p-2 text-white hover:opacity-80 transition-opacity relative hidden sm:block">
               <Heart size={24} strokeWidth={1.5} />
-              <span className="absolute top-1 right-1 bg-white text-[#F7931E] text-[9px] font-bold w-4 h-4 flex items-center justify-center rounded-full shadow-lg">0</span>
+              {wishlistCount > 0 && (
+                <span className="absolute top-1 right-1 bg-white text-brand-orange text-[9px] font-bold w-4 h-4 flex items-center justify-center rounded-full shadow-lg">
+                  {wishlistCount}
+                </span>
+              )}
             </Link>
             <Link to="/cart" className="p-2 text-white hover:opacity-80 transition-opacity relative">
               <ShoppingBag size={24} strokeWidth={1.5} />
-              <span className="absolute top-1 right-1 bg-white text-[#F7931E] text-[9px] font-bold w-4 h-4 flex items-center justify-center rounded-full shadow-lg">0</span>
+              {cartCount > 0 && (
+                <span className="absolute top-1 right-1 bg-white text-brand-orange text-[9px] font-bold w-4 h-4 flex items-center justify-center rounded-full shadow-lg">
+                  {cartCount}
+                </span>
+              )}
             </Link>
             <button
               onClick={() => setIsMobileMenuOpen(true)}
@@ -145,8 +184,13 @@ export default function Navbar() {
       <nav className="hidden md:block bg-white border-b border-gray-100 shadow-sm">
         <div className="max-w-[1536px] mx-auto px-6 py-1">
           <ul className="flex items-center justify-center gap-4 lg:gap-14">
-            {sortedCategories.map((category) => (
-              <NavItem key={category.id} category={category} location={location} />
+            {sortedCategories.map((category, index) => (
+              <NavItem 
+                key={category.id} 
+                category={category} 
+                location={location} 
+                side={index >= sortedCategories.length / 2 ? 'right' : 'left'}
+              />
             ))}
           </ul>
         </div>
@@ -165,27 +209,31 @@ export default function Navbar() {
   );
 }
 
-function NavItem({ category, location }) {
+function NavItem({ category, location, side }) {
   const [isHovered, setIsHovered] = useState(false);
   const isActive = location.pathname.includes(`/category/${category.id}`);
   const hasSubCategories = category.children && category.children.length > 0;
 
   return (
     <li
-      className="relative static group"
+      className="relative"
       onMouseEnter={() => setIsHovered(true)}
       onMouseLeave={() => setIsHovered(false)}
     >
       <Link
-        to={`/category/${category.id}`}
+        to={category.fullPath}
         className={`flex items-center gap-1.5 text-[11px] font-bold tracking-[0.14em] py-4 transition-colors ${isActive || isHovered ? 'text-brand-orange' : 'text-brand-black opacity-80'
           }`}
       >
         {category.name}
-        {hasSubCategories && <ChevronDown size={12} className={`transition-transform duration-300 ${isHovered ? 'rotate-180' : ''}`} />}
+        {hasSubCategories && (
+          <ChevronDown 
+            size={12} 
+            className={`transition-transform duration-300 ${isHovered ? 'rotate-180' : ''}`} 
+          />
+        )}
       </Link>
 
-      {/* Mega Menu Dropdown */}
       <AnimatePresence>
         {isHovered && hasSubCategories && (
           <motion.div
@@ -193,71 +241,63 @@ function NavItem({ category, location }) {
             animate={{ opacity: 1, y: 0 }}
             exit={{ opacity: 0, y: 10 }}
             transition={{ duration: 0.2 }}
-            className="absolute left-1/2 -translate-x-1/2 top-full bg-white shadow-2xl border border-gray-100 z-50 pointer-events-auto overflow-hidden rounded-3xl w-max max-w-[90vw]"
+            className={`absolute ${side === 'right' ? 'right-0' : 'left-0'} top-full pt-2 z-[1100]`}
           >
-            <div className="px-10 py-10">
-              <div className="flex gap-16 min-w-[300px]">
-                {/* 1. Render groups that HAVE children (e.g., Sarees) */}
-                {category.children.filter(sub => sub.children && sub.children.length > 0).map((subGroup) => (
-                  <div key={subGroup.id} className="space-y-5">
-                    <h4 className="text-[10px] font-black tracking-[0.2em] text-brand-black border-b border-gray-100 pb-3 h-10 flex items-end">
-                      {subGroup.name}
-                    </h4>
-                    <ul className="space-y-2.5">
-                      {subGroup.children.map((item) => (
-                        <li key={item.id}>
-                          <Link
-                            to={`/category/${item.id}`}
-                            className="text-[11px] text-brand-black/60 hover:text-brand-orange transition-colors block leading-tight"
-                          >
-                            {item.name}
-                          </Link>
-                        </li>
-                      ))}
-                      <li>
-                        <Link
-                          to={`/category/${subGroup.id}`}
-                          className="text-[9px] font-bold tracking-widest text-brand-orange hover:underline pt-3 block"
-                        >
-                          View All
-                        </Link>
-                      </li>
-                    </ul>
-                  </div>
+            <div className="bg-white shadow-2xl border border-gray-100 rounded-2xl min-w-[240px] py-3">
+              <ul className="space-y-0.5">
+                {category.children.map((child) => (
+                  <RecursiveMenuItem key={child.id} item={child} side={side} />
                 ))}
+              </ul>
+            </div>
+          </motion.div>
+        )}
+      </AnimatePresence>
+    </li>
+  );
+}
 
-                {/* 2. Render groups that DO NOT have children (flat list) */}
-                {category.children.filter(sub => !sub.children || sub.children.length === 0).length > 0 && (
-                  <div className="space-y-5">
-                    <h4 className="text-[10px] font-black tracking-[0.2em] text-brand-black border-b border-gray-100 pb-3 h-10 flex items-end">
-                      Shop {category.name}
-                    </h4>
-                    <ul className="space-y-2.5">
-                      {category.children.filter(sub => !sub.children || sub.children.length === 0).map((item) => (
-                        <li key={item.id}>
-                          <Link
-                            to={`/category/${item.id}`}
-                            className="text-[11px] text-brand-black/60 hover:text-brand-orange transition-colors block leading-tight"
-                          >
-                            {item.name}
-                          </Link>
-                        </li>
-                      ))}
-                    </ul>
-                  </div>
-                )}
-              </div>
+function RecursiveMenuItem({ item, side }) {
+  const [isHovered, setIsHovered] = useState(false);
+  const hasSubCategories = item.children && item.children.length > 0;
 
-              {/* Subtle Bottom Banner */}
-              <div className="mt-12 pt-8 border-t border-gray-50 flex items-center justify-between">
-                <div className="flex items-center gap-4">
-                  <span className="w-12 h-[1px] bg-brand-orange/30"></span>
-                  <p className="text-[10px] tracking-[0.3em] text-brand-black/40 font-bold">MayaSindhu Handcrafted Heritage</p>
-                </div>
-                <Link to="/shop" className="text-[10px] font-bold tracking-widest text-brand-black hover:text-brand-orange transition-all flex items-center gap-2 group">
-                  Explore Full {category.name} Collection <Plus size={12} className="group-hover:rotate-90 transition-transform" />
-                </Link>
-              </div>
+  return (
+    <li
+      className="relative px-3"
+      onMouseEnter={() => setIsHovered(true)}
+      onMouseLeave={() => setIsHovered(false)}
+    >
+      <Link
+        to={item.fullPath}
+        className={`flex items-center justify-between w-full px-4 py-2.5 rounded-xl text-[12px] font-medium transition-all ${
+          isHovered ? 'bg-brand-orange/5 text-brand-orange' : 'text-brand-black/70 hover:bg-gray-50'
+        }`}
+      >
+        <span>{item.name}</span>
+        {hasSubCategories && (
+          side === 'right' ? (
+            <ChevronRight size={14} className="opacity-40 rotate-180" /> // Point left if opening left? No, let's just use standard arrow or a left arrow.
+          ) : (
+            <ChevronRight size={14} className="opacity-40" />
+          )
+        )}
+      </Link>
+
+      <AnimatePresence>
+        {isHovered && hasSubCategories && (
+          <motion.div
+            initial={{ opacity: 0, x: side === 'right' ? 10 : -10 }}
+            animate={{ opacity: 1, x: 0 }}
+            exit={{ opacity: 0, x: side === 'right' ? 10 : -10 }}
+            transition={{ duration: 0.2 }}
+            className={`absolute ${side === 'right' ? 'right-[100%]' : 'left-[100%]'} top-0 ${side === 'right' ? 'pr-1' : 'pl-1'} z-[1100]`}
+          >
+            <div className="bg-white shadow-2xl border border-gray-100 rounded-2xl min-w-[240px] py-3">
+              <ul className="space-y-0.5">
+                {item.children.map((child) => (
+                  <RecursiveMenuItem key={child.id} item={child} side={side} />
+                ))}
+              </ul>
             </div>
           </motion.div>
         )}
@@ -295,7 +335,7 @@ function MobileMenu({ categories, onClose }) {
         transition={{ type: 'spring', damping: 25, stiffness: 200 }}
         className="fixed top-0 left-0 bottom-0 w-[85%] max-w-[350px] bg-white z-[1200] flex flex-col shadow-2xl"
       >
-        <div className="flex items-center justify-between p-6 bg-[#F7931E] border-b border-white/10 h-[88px]">
+        <div className="flex items-center justify-between p-6 bg-brand-orange border-b border-white/10 h-[88px]">
           <Link to="/" onClick={onClose} className="flex items-center">
             <img src={navLogo} alt="MayaSindhu" className="h-10 w-auto object-contain" />
           </Link>
@@ -338,7 +378,7 @@ function MobileAccordion({ item, onClose, depth = 0 }) {
     <div className="mb-2">
       <div className="flex items-center justify-between py-2">
         <Link
-          to={`/category/${item.id}`}
+          to={item.fullPath}
           onClick={onClose}
           className={`text-sm font-bold tracking-widest ${depth === 0 ? 'text-brand-black' : 'text-brand-black/70'}`}
         >

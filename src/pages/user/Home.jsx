@@ -212,7 +212,7 @@ export default function Home() {
       {/* Cinematic Banner Slider */}
       <section className="relative h-[35vh] sm:h-[45vh] md:h-[600px] w-full flex items-center overflow-hidden bg-white">
         {bannersLoading ? (
-          <div className="absolute inset-0 flex items-center justify-center bg-gray-50/50 backdrop-blur-sm z-30">
+          <div className="absolute inset-0 flex items-center justify-center bg-brand-gray/50 backdrop-blur-sm z-30">
             <Loader2 className="w-10 h-10 animate-spin text-brand-orange" />
           </div>
         ) : (
@@ -320,8 +320,8 @@ export default function Home() {
       {/* Curated Realms Section */}
       <section className="py-20 max-w-[1440px] mx-auto px-8 lg:px-24 bg-white">
         <div className="mb-12">
-          <h2 className="text-3xl md:text-4xl font-fashion font-bold text-[#1A1A1A] tracking-tight mb-2">Explore Category</h2>
-          <div className="w-16 h-1 bg-[#FF6B00]/60 rounded-full" />
+          <h2 className="text-3xl md:text-4xl font-fashion font-bold text-text-main tracking-tight mb-2">Explore Category</h2>
+          <div className="w-16 h-1 bg-brand-orange/60 rounded-full" />
         </div>
 
         {realmsLoading ? (
@@ -367,7 +367,7 @@ export default function Home() {
           <div className="flex flex-col md:flex-row md:items-end justify-between mb-12 md:mb-16 space-y-4 md:space-y-0 text-center md:text-left">
             <div>
               <span className="text-[10px] md:text-[12px] uppercase font-bold tracking-[0.4em] text-brand-orange mb-3 md:mb-4 block">The Selection</span>
-              <h2 className="text-3xl md:text-6xl font-fashion font-bold text-[#1A1A1A] tracking-tight leading-tight">Customer Favourites</h2>
+              <h2 className="text-3xl md:text-6xl font-fashion font-bold text-text-main tracking-tight leading-tight">Customer Favourites</h2>
             </div>
 
             <div className="flex space-x-3">
@@ -402,20 +402,20 @@ export default function Home() {
 
       {/* Artisan's Bloom Section */}
       {trends.length > 0 && (
-        <section className="py-16 md:py-24 bg-[#F0F7FF]">
+        <section className="py-16 md:py-24 bg-bg-alt">
           <div className="max-w-[1536px] mx-auto px-6 lg:px-24">
             <div className="flex flex-col md:flex-row md:justify-between md:items-center mb-12 md:mb-16 space-y-6 md:space-y-0 text-center md:text-left">
-              <h2 className="text-3xl md:text-5xl font-fashion font-bold text-[#1A1A1A] tracking-tight">Shop By Trend</h2>
+              <h2 className="text-3xl md:text-5xl font-fashion font-bold text-text-main tracking-tight">Shop By Trend</h2>
               <div className="flex space-x-4">
                 <button
                   onClick={() => scroll(artisanRef, 'left')}
-                  className="p-3 border border-gray-200 rounded-full bg-white hover:bg-[#1A1A1A] hover:text-white transition-all shadow-sm active:scale-90"
+                  className="p-3 border border-gray-200 rounded-full bg-white hover:bg-text-main hover:text-white transition-all shadow-sm active:scale-90"
                 >
                   <ChevronLeft size={20} />
                 </button>
                 <button
                   onClick={() => scroll(artisanRef, 'right')}
-                  className="p-3 border border-gray-200 rounded-full bg-white hover:bg-[#1A1A1A] hover:text-white transition-all shadow-sm active:scale-90"
+                  className="p-3 border border-gray-200 rounded-full bg-white hover:bg-text-main hover:text-white transition-all shadow-sm active:scale-90"
                 >
                   <ChevronRight size={20} />
                 </button>
@@ -432,16 +432,16 @@ export default function Home() {
                     <img src={trend.imageUrl} alt={trend.title} className="w-full h-full object-cover transition-transform duration-700 group-hover:scale-110" />
                   </div>
                   <div className="text-center md:text-left flex-1">
-                    <span className="text-[9px] md:text-[10px] uppercase font-bold tracking-[0.2em] text-[#B08968] mb-2 md:mb-3 block">
+                    <span className="text-[9px] md:text-[10px] uppercase font-bold tracking-[0.2em] text-accent mb-2 md:mb-3 block">
                       {trend.accent}
                     </span>
-                    <h3 className="text-lg md:text-xl font-fashion font-bold text-[#1A1A1A] mb-2 md:mb-3">
+                    <h3 className="text-lg md:text-xl font-fashion font-bold text-text-main mb-2 md:mb-3">
                       {trend.title}
                     </h3>
-                    <p className="text-gray-500 text-[12px] md:text-sm leading-relaxed mb-4 md:mb-6 line-clamp-2 md:line-clamp-none">
+                    <p className="text-text-muted text-[12px] md:text-sm leading-relaxed mb-4 md:mb-6 line-clamp-2 md:line-clamp-none">
                       {trend.description}
                     </p>
-                    <Link to="/shop" className="text-[11px] md:text-[12px] font-bold text-[#004D40] border-b-2 border-[#004D40]/20 pb-0.5 hover:text-[#00695C] transition-colors inline-flex items-center gap-1 group/link">
+                    <Link to="/shop" className="text-[11px] md:text-[12px] font-bold text-text-main border-b-2 border-text-main/20 pb-0.5 hover:text-brand-orange hover:border-brand-orange transition-all duration-300 inline-flex items-center gap-1 group/link">
                       Discover More
                       <ChevronRight size={14} className="group-hover/link:translate-x-0.5 transition-transform" />
                     </Link>
@@ -460,7 +460,7 @@ export default function Home() {
         <section className="py-16 md:py-24 bg-white overflow-hidden">
           <div className="max-w-[1536px] mx-auto px-6 lg:px-24">
             <div className="text-center mb-12 md:mb-16">
-              <h2 className="text-3xl md:text-5xl font-fashion font-bold text-[#1A1A1A] tracking-tight">Shop The Look</h2>
+              <h2 className="text-3xl md:text-5xl font-fashion font-bold text-text-main tracking-tight">Shop The Look</h2>
               <div className="mx-auto w-16 h-1 bg-brand-orange mt-4 rounded-full opacity-30" />
             </div>
 
@@ -527,15 +527,15 @@ export default function Home() {
                   viewport={{ once: true }}
                   transition={{ duration: 1, delay: 0.2 }}
                 >
-                  <span className="text-[#B08968] text-[12px] font-bold uppercase tracking-[0.4em] mb-6 block">
+                  <span className="text-accent text-[12px] font-bold uppercase tracking-[0.4em] mb-6 block">
                     {purpose.accent}
                   </span>
 
-                  <h2 className="text-3xl md:text-6xl font-fashion font-bold text-[#1A1A1A] leading-[1.1] mb-8 md:mb-10 tracking-tight">
+                  <h2 className="text-3xl md:text-6xl font-fashion font-bold text-text-main leading-[1.1] mb-8 md:mb-10 tracking-tight">
                     {purpose.title}
                   </h2>
 
-                  <p className="text-gray-600 text-lg md:text-xl leading-relaxed mb-12 max-w-xl">
+                  <p className="text-text-muted text-lg md:text-xl leading-relaxed mb-12 max-w-xl">
                     {purpose.description}
                   </p>
 
@@ -543,14 +543,14 @@ export default function Home() {
                   <div className="grid grid-cols-2 gap-12 mb-12 py-8 border-y border-gray-100">
                     {purpose.stats && purpose.stats.map((stat, idx) => (
                       <div key={idx}>
-                        <span className="text-4xl md:text-5xl font-fashion font-bold text-[#00695C] block mb-2">{stat.value}</span>
-                        <span className="text-[10px] uppercase font-bold tracking-[0.2em] text-gray-400">{stat.label}</span>
+                        <span className="text-4xl md:text-5xl font-fashion font-bold text-accent block mb-2">{stat.value}</span>
+                        <span className="text-[10px] uppercase font-bold tracking-[0.2em] text-text-muted/40">{stat.label}</span>
                       </div>
                     ))}
                   </div>
 
-                  <Link to="/about" className="group inline-flex items-center space-x-3 text-[14px] font-bold text-[#1A1A1A] transition-colors">
-                    <span className="border-b-2 border-[#1A1A1A] pb-1 group-hover:border-brand-orange group-hover:text-brand-orange transition-all">
+                  <Link to="/about" className="group inline-flex items-center space-x-3 text-[14px] font-bold text-text-main transition-colors">
+                    <span className="border-b-2 border-text-main pb-1 group-hover:border-brand-orange group-hover:text-brand-orange transition-all">
                       {purpose.buttonText || "Our Full Manifesto"}
                     </span>
                     <svg
@@ -577,7 +577,7 @@ export default function Home() {
               viewport={{ once: true }}
               className="mb-20"
             >
-              <h2 className="text-3xl md:text-6xl font-fashion font-bold text-[#1A1A1A] tracking-tight">Speaking from their hearts</h2>
+              <h2 className="text-3xl md:text-6xl font-fashion font-bold text-text-main tracking-tight">Speaking from their hearts</h2>
               <div className="mx-auto w-16 md:w-24 h-1 bg-brand-orange mt-4 md:mt-6 rounded-none opacity-30" />
             </motion.div>
 
