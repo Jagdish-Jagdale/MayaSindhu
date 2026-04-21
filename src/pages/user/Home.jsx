@@ -132,20 +132,25 @@ export default function Home() {
   useEffect(() => {
     let productsList = [];
 
-    // 1. Listen to all products (to get live details for any featured item)
+  // 1. Listen to all products
+  useEffect(() => {
     const qProd = query(collection(db, 'products'));
     const unsubscribeProd = onSnapshot(qProd, (snapshot) => {
-      productsList = snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() }));
+      const data = snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() }));
+      setProducts(data);
     });
+    return () => unsubscribeProd();
+  }, []);
 
-    // 2. Listen to featured treasures configuration
+  // 2. Listen to featured treasures metadata and hydrate
+  useEffect(() => {
     const qFt = query(collection(db, 'featuredTreasures'), orderBy('order', 'asc'));
     const unsubscribeFt = onSnapshot(qFt, (snapshot) => {
       const ftData = snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() }));
 
-      // Hydrate with product details
+      // Hydrate with latest product details whenever products OR metadata changes
       const hydrated = ftData.map(ft => {
-        const product = productsList.find(p => p.id === ft.productId);
+        const product = products.find(p => p.id === ft.productId);
         return product ? { ...product, originalFeaturedId: ft.id } : null;
       }).filter(Boolean);
 
@@ -153,11 +158,8 @@ export default function Home() {
       setFtLoading(false);
     });
 
-    return () => {
-      unsubscribeProd();
-      unsubscribeFt();
-    };
-  }, []);
+    return () => unsubscribeFt();
+  }, [products]); // Re-run hydration whenever products state updates
 
   // Load Banners from Firestore with Image Preloading
   useEffect(() => {
@@ -323,147 +325,103 @@ export default function Home() {
       {/* Cinematic Banner Slider */}
       <section className="relative h-[35vh] sm:h-[45vh] md:h-[600px] w-full flex items-center overflow-hidden bg-white">
         {bannersLoading ? (
-          <div className="absolute inset-0 flex items-center justify-center bg-brand-gray/50 backdrop-blur-sm z-30">
-            <Loader2 className="w-10 h-10 animate-spin text-brand-orange" />
+          <div className="aspect-[5/2] w-full flex items-center justify-center bg-brand-gray/50 animate-pulse">
+            <Loader2 className="w-8 h-8 animate-spin text-brand-orange" />
           </div>
         ) : (
-          <AnimatePresence mode="popLayout" initial={false}>
-            <motion.div
-              key={currentSlide}
-              initial={{ x: '100%', opacity: 0 }}
-              animate={{ x: 0, opacity: 1 }}
-              exit={{ x: '-100%', opacity: 0 }}
-              transition={{
-                duration: 1.2,
-                ease: [0.4, 0, 0.2, 1],
-                opacity: { duration: 0.8 }
-              }}
-              className="absolute inset-0 w-full h-full"
-            >
-              {/* Background Image */}
-              <div className="absolute inset-0 w-full h-full">
-                <img
-                  src={displaySlides[currentSlide]?.imageUrl}
-                  alt={displaySlides[currentSlide]?.title || "Banner"}
-                  className="w-full h-full object-cover object-center"
-                />
-                {/* Refined Gradient Overlay for better text legibility */}
-                <div className="absolute inset-0 bg-gradient-to-r from-black/60 via-black/20 to-transparent" />
-              </div>
+          <div className="relative aspect-[5/2] w-full overflow-hidden">
+            <div className="absolute inset-0 w-full h-full">
+              {/* Full Width Hero Image */}
+              <img
+                src={displaySlides[currentSlide]?.imageUrl}
+                alt={displaySlides[currentSlide]?.title || "Banner"}
+                className="w-full h-full object-cover object-center"
+              />
 
-              {/* Content Overlay */}
-              <div className="absolute inset-0 z-10 flex items-center px-8 lg:px-24">
-                <div className="max-w-4xl">
+              {/* Hero Overlay (Static) */}
+              <div className="absolute inset-0 bg-brand-black/10 flex items-center px-[5%] md:px-[8%] pointer-events-none">
+                <div className="max-w-2xl md:max-w-4xl">
                   {displaySlides[currentSlide]?.accent && (
-                    <motion.span
-                      initial={{ opacity: 0, y: 20 }}
-                      animate={{ opacity: 1, y: 0 }}
-                      transition={{ delay: 0.5, duration: 0.8 }}
-                      className="inline-block text-white text-[12px] md:text-[14px] font-bold tracking-[0.5em] uppercase mb-6"
-                    >
+                    <span className="inline-block text-white text-[10px] md:text-[14px] font-bold tracking-[0.4em] uppercase mb-2 md:mb-4">
                       {displaySlides[currentSlide].accent}
-                    </motion.span>
+                    </span>
                   )}
-
                   {displaySlides[currentSlide]?.title && (
-                    <motion.h2
-                      initial={{ opacity: 0, y: 30 }}
-                      animate={{ opacity: 1, y: 0 }}
-                      transition={{ delay: 0.7, duration: 1 }}
-                      className="text-4xl md:text-7xl lg:text-8xl font-fashion font-bold text-white mb-8 leading-[1.1] tracking-tight whitespace-pre-line"
+                    <h1
+                      className="text-white font-fashion font-bold leading-[1.1] md:leading-tight"
+                      style={{ fontSize: 'clamp(18px, 4.5vw, 56px)' }}
                     >
                       {displaySlides[currentSlide].title}
-                    </motion.h2>
+                    </h1>
                   )}
-
-                  {displaySlides[currentSlide]?.description && (
-                    <motion.p
-                      initial={{ opacity: 0, y: 30 }}
-                      animate={{ opacity: 1, y: 0 }}
-                      transition={{ delay: 0.9, duration: 1 }}
-                      className="text-white/80 text-lg md:text-xl font-light mb-12 max-w-xl leading-relaxed"
-                    >
-                      {displaySlides[currentSlide].description}
-                    </motion.p>
-                  )}
-
                 </div>
               </div>
-            </motion.div>
-          </AnimatePresence>
-        )}
-
-        {/* Minimalist Floating Navigation Arrows */}
-        {!bannersLoading && displaySlides.length > 1 && (
-          <>
-            <div className="absolute inset-y-0 left-6 flex items-center z-20">
-              <button
-                onClick={() => setCurrentSlide((prev) => (prev - 1 + displaySlides.length) % displaySlides.length)}
-                className="w-12 h-12 bg-white/10 backdrop-blur-md rounded-full border border-white/20 flex items-center justify-center text-white hover:bg-white/90 hover:text-brand-orange transition-all active:scale-95 group shadow-lg"
-              >
-                <ChevronLeft size={20} strokeWidth={2.5} className="group-hover:-translate-x-0.5 transition-transform" />
-              </button>
-            </div>
-            <div className="absolute inset-y-0 right-6 flex items-center z-20">
-              <button
-                onClick={() => setCurrentSlide((prev) => (prev + 1) % displaySlides.length)}
-                className="w-12 h-12 bg-white/10 backdrop-blur-md rounded-full border border-white/20 flex items-center justify-center text-white hover:bg-white/90 hover:text-brand-orange transition-all active:scale-95 group shadow-lg"
-              >
-                <ChevronRight size={20} strokeWidth={2.5} className="group-hover:translate-x-0.5 transition-transform" />
-              </button>
             </div>
 
-            {/* Line Progress Indicators (Bottom Center) */}
-            <div className="absolute bottom-10 left-1/2 -translate-x-1/2 flex items-center gap-3 z-20">
-              {displaySlides.map((_, idx) => (
+            {/* Nav Arrows Scaling */}
+            {!bannersLoading && displaySlides.length > 1 && (
+              <>
                 <button
-                  key={idx}
-                  onClick={() => setCurrentSlide(idx)}
-                  className={`h-[4px] rounded-full transition-all duration-700 shadow-sm ${currentSlide === idx ? 'w-24 bg-white' : 'w-12 bg-white/30 hover:bg-white/50'
-                    }`}
-                />
-              ))}
-            </div>
-          </>
+                  onClick={() => setCurrentSlide((prev) => (prev - 1 + displaySlides.length) % displaySlides.length)}
+                  className="absolute left-2 md:left-6 transition-all top-1/2 -translate-y-1/2 w-8 h-8 md:w-12 md:h-12 rounded-full bg-white/10 backdrop-blur-md border border-white/20 flex items-center justify-center text-white hover:bg-brand-orange hover:border-brand-orange z-20 group"
+                >
+                  <ChevronLeft className="w-4 h-4 md:w-6 md:h-6 group-hover:-translate-x-1 transition-transform" />
+                </button>
+                <button
+                  onClick={() => setCurrentSlide((prev) => (prev + 1) % displaySlides.length)}
+                  className="absolute right-2 md:right-6 transition-all top-1/2 -translate-y-1/2 w-8 h-8 md:w-12 md:h-12 rounded-full bg-white/10 backdrop-blur-md border border-white/20 flex items-center justify-center text-white hover:bg-brand-orange hover:border-brand-orange z-20 group"
+                >
+                  <ChevronRight className="w-4 h-4 md:w-6 md:h-6 group-hover:translate-x-1 transition-transform" />
+                </button>
+
+                {/* Indicators Scaling */}
+                <div className="absolute bottom-[8%] left-1/2 -translate-x-1/2 flex gap-2 z-20">
+                  {displaySlides.map((_, i) => (
+                    <button
+                      key={i}
+                      onClick={() => setCurrentSlide(i)}
+                      className={`h-1 rounded-full transition-all duration-500 ${currentSlide === i ? 'w-8 md:w-16 bg-brand-orange' : 'w-4 md:w-8 bg-white/40'}`}
+                    />
+                  ))}
+                </div>
+              </>
+            )}
+          </div>
         )}
       </section>
 
-      {/* Curated Realms Section */}
-      <section className="py-20 max-w-[1440px] mx-auto px-8 lg:px-24 bg-white">
-        <div className="mb-12">
-          <h2 className="text-3xl md:text-4xl font-fashion font-bold text-text-main tracking-tight mb-2">Explore Category</h2>
-          <div className="w-16 h-1 bg-brand-orange/60 rounded-full" />
+
+      {/* 3. Explore Category (Responsive Grid) */}
+      <section className="py-10 md:py-16 max-w-[1536px] mx-auto px-4 md:px-8 lg:px-[60px] bg-white">
+        <div className="mb-10 md:mb-14">
+          <h2 className="font-fashion font-bold text-brand-black tracking-tight mb-2" style={{ fontSize: 'clamp(22px, 3vw, 42px)' }}>Explore Category</h2>
+          <div className="w-16 md:w-24 h-1 bg-brand-orange opacity-40 rounded-full" />
         </div>
 
         {realmsLoading ? (
-          <div className="flex items-center justify-center h-[400px]">
+          <div className="flex items-center justify-center h-[300px]">
             <Loader2 className="w-8 h-8 animate-spin text-brand-orange" />
           </div>
         ) : realms.length > 0 ? (
-          <div className="grid grid-cols-1 md:grid-cols-[1.4fr_0.8fr_0.8fr] gap-6 h-auto md:h-[650px]">
+          <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-5 gap-4 md:gap-6">
             {realms.map((realm) => (
               <motion.div
                 key={realm.id}
-                whileHover={{ y: -8 }}
-                className={getSlotClasses(realm.slotId)}
+                whileHover={{ y: -6 }}
+                className="relative group aspect-square w-full max-w-[220px] mx-auto overflow-hidden rounded-2xl md:rounded-3xl shadow-sm hover:shadow-xl transition-all duration-500"
               >
                 <img
                   src={realm.imageUrl}
                   alt={realm.title}
                   className="w-full h-full object-cover transition-transform duration-1000 group-hover:scale-105"
                 />
-                <div className="absolute inset-0 bg-gradient-to-t from-black/70 via-transparent to-transparent" />
-                <div className="absolute bottom-6 left-6 md:bottom-8 md:left-8 text-white">
-                  <h3 className={`${realm.slotId === 1 || realm.slotId === 4 ? 'text-2xl' : 'text-lg'} font-fashion font-bold mb-1 tracking-tight`}>
+                <div className="absolute inset-0 bg-gradient-to-t from-brand-black/80 via-transparent to-transparent" />
+                <div className="absolute bottom-4 left-4 right-4 text-white text-center">
+                  <h3 className="text-sm md:text-lg font-fashion font-bold mb-0.5 tracking-tight line-clamp-1">
                     {realm.title}
                   </h3>
-                  {realm.subtitle && (
-                    <p className="text-white/70 text-[10px] tracking-[0.2em] font-medium uppercase font-fashion">
-                      {realm.subtitle}
-                    </p>
-                  )}
+                  <Link to={`/category/${realm.categoryId}`} className="absolute inset-0 z-10" />
                 </div>
-                <Link to={`/category/${realm.categoryId}`} className="absolute inset-0 z-10" />
               </motion.div>
             ))}
           </div>
@@ -472,7 +430,7 @@ export default function Home() {
 
       {/* Featured Treasures Section */}
       {featuredTreasures.length > 0 && (
-        <section className="py-16 md:py-24 max-w-[1536px] mx-auto px-6 lg:px-24">
+        <section className="pt-10 md:pt-16 pb-6 md:pb-8 max-w-[1536px] mx-auto px-6 lg:px-24">
           <div className="flex flex-col md:flex-row md:items-end justify-between mb-12 md:mb-16 space-y-4 md:space-y-0 text-center md:text-left">
             <div>
               <span className="text-[10px] md:text-[12px] uppercase font-bold tracking-[0.4em] text-brand-orange mb-3 md:mb-4 block">The Selection</span>
@@ -510,7 +468,7 @@ export default function Home() {
 
       {/* Artisan's Bloom Section */}
       {trends.length > 0 && (
-        <section className="py-16 md:py-24 bg-bg-alt">
+        <section className="py-6 md:py-8 bg-bg-alt">
           <div className="max-w-[1536px] mx-auto px-6 lg:px-24">
             <div className="flex flex-col md:flex-row md:justify-between md:items-center mb-12 md:mb-16 space-y-6 md:space-y-0 text-center md:text-left">
               <h2 className="text-3xl md:text-5xl font-fashion font-bold text-text-main tracking-tight">Shop By Trend</h2>
@@ -565,7 +523,7 @@ export default function Home() {
 
       {/* Stories in Motion Section - Video Section */}
       {looks.length > 0 && (
-        <section className="py-16 md:py-24 bg-white overflow-hidden">
+        <section className="pt-6 md:pt-8 pb-10 md:pb-16 bg-white overflow-hidden">
           <div className="max-w-[1536px] mx-auto px-6 lg:px-24">
             <div className="text-center mb-12 md:mb-16">
               <h2 className="text-3xl md:text-5xl font-fashion font-bold text-text-main tracking-tight">Shop The Look</h2>
@@ -602,7 +560,7 @@ export default function Home() {
 
       {/* Our Purpose / Impact Section */}
       {purpose && (
-        <section className="py-16 md:py-24 bg-white overflow-hidden">
+        <section className="py-10 md:py-16 bg-white overflow-hidden">
           <div className="max-w-[1536px] mx-auto px-6 lg:px-24">
             <div className="flex flex-col lg:flex-row items-center gap-16 lg:gap-32">
               {/* Left Column: Artistic Image Framing */}
@@ -677,7 +635,7 @@ export default function Home() {
 
       {/* Review Section */}
       {testimonials.length > 0 && (
-        <section className="py-16 md:py-24 bg-[#F9F7F5] overflow-hidden">
+        <section className="py-10 md:py-16 bg-[#F9F7F5] overflow-hidden">
           <div className="max-w-[1536px] mx-auto px-6 lg:px-24 text-center">
             <motion.div
               initial={{ opacity: 0, y: 20 }}
@@ -725,7 +683,7 @@ export default function Home() {
       )}
 
       {/* Stay Connected / Newsletter Section */}
-      <section className="py-16 md:py-24 bg-white px-6 lg:px-24">
+      <section className="py-10 md:py-16 bg-white px-6 lg:px-24">
         <div className="max-w-[1440px] mx-auto relative overflow-hidden bg-brand-orange rounded-[2rem] md:rounded-[4rem] px-6 md:px-16 py-12 md:py-24 text-center">
 
           {/* Decorative Background Circles (Matching Theme) */}

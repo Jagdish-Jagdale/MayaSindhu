@@ -31,14 +31,22 @@ export default function ProductCard({ id, slug, name, price, image, rating = 4.8
   const handleAddToCart = async (e) => {
     e.preventDefault();
     e.stopPropagation();
-    
+
     if (!user) {
+      console.log("Cart: Redirecting guest to login...");
       navigate('/login', { state: { from: location } });
       return;
     }
 
+    const productId = id?.toString();
+    if (!productId) {
+      console.error("Cart: Operation failed - Product ID is missing.");
+      return;
+    }
+
     try {
-      const cartItemRef = doc(db, 'users', user.uid, 'cart', id.toString());
+      console.log(`Cart: Attempting to add Product [${productId}] for User [${user.uid}]`);
+      const cartItemRef = doc(db, 'users', user.uid, 'cart', productId);
       const cartItemSnap = await getDoc(cartItemRef);
 
       if (cartItemSnap.exists()) {
@@ -46,18 +54,25 @@ export default function ProductCard({ id, slug, name, price, image, rating = 4.8
           qty: cartItemSnap.data().qty + 1,
           updatedAt: serverTimestamp()
         });
+        console.log("Cart: Incremented quantity successfully.");
       } else {
         await setDoc(cartItemRef, {
-          id, slug, name, price, image,
+          id: productId,
+          slug: slug || productId,
+          name: name || 'Handcrafted Treasure',
+          price: price || 0,
+          image: image || '',
           qty: 1,
           addedAt: serverTimestamp()
         });
+        console.log("Cart: Created new item successfully.");
       }
 
       setIsAdded(true);
       setTimeout(() => setIsAdded(false), 2000);
     } catch (error) {
-      console.error("Error adding to cart:", error);
+      console.error("Cart Error:", error);
+      alert(`Database Vault Error: ${error.code || error.message}. Please check your Firebase permissions.`);
     }
   };
 
@@ -66,24 +81,38 @@ export default function ProductCard({ id, slug, name, price, image, rating = 4.8
     e.stopPropagation();
 
     if (!user) {
+      console.log("Wishlist: Redirecting guest to login...");
       navigate('/login', { state: { from: location } });
       return;
     }
 
+    const productId = id?.toString();
+    if (!productId) {
+      console.error("Wishlist: Operation failed - Product ID is missing.");
+      return;
+    }
+
     try {
-      const wishItemRef = doc(db, 'users', user.uid, 'wishlist', id.toString());
-      
+      console.log(`Wishlist: Toggling Product [${productId}] for User [${user.uid}]`);
+      const wishItemRef = doc(db, 'users', user.uid, 'wishlist', productId);
+
       if (isWishlisted) {
         await deleteDoc(wishItemRef);
+        console.log("Wishlist: Item removed.");
       } else {
         await setDoc(wishItemRef, {
-          id, slug, name, price, image,
-          rating,
+          id: productId,
+          slug: slug || productId,
+          name: name || 'Handcrafted Treasure',
+          price: price || 0,
+          image: image || '',
+          rating: rating || 4.8,
           addedAt: serverTimestamp()
         });
+        console.log("Wishlist: Item added.");
       }
     } catch (error) {
-      console.error("Error toggling wishlist:", error);
+      console.error("Wishlist Error:", error);
     }
   };
 
@@ -105,13 +134,12 @@ export default function ProductCard({ id, slug, name, price, image, rating = 4.8
         </Link>
 
         {/* Wishlist Icon */}
-        <button 
+        <button
           onClick={handleWishlist}
-          className={`absolute top-6 right-6 p-2.5 rounded-full shadow-md transition-all duration-300 z-20 ${
-            isWishlisted 
-              ? 'bg-red-50 text-red-500' 
+          className={`absolute top-6 right-6 p-2.5 rounded-full shadow-md transition-all duration-300 z-20 ${isWishlisted
+              ? 'bg-red-50 text-red-500'
               : 'bg-white text-text-main hover:bg-brand-orange hover:text-white'
-          }`}
+            }`}
         >
           <Heart size={18} strokeWidth={2} fill={isWishlisted ? "currentColor" : "none"} />
         </button>

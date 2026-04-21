@@ -68,9 +68,9 @@ export default function VideoCard({ videoUrl, title, category, thumbnail, produc
 
         {/* Product Thumbnail Teaser */}
         <div className="w-8 h-8 md:w-12 md:h-12 rounded-lg md:rounded-xl border-2 border-white/50 overflow-hidden shadow-lg transition-transform duration-500 group-hover:scale-105">
-          <img 
-            src={productImage} 
-            alt="Look product" 
+          <img
+            src={productImage}
+            alt="Look product"
             className="w-full h-full object-cover"
           />
         </div>
