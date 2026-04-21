@@ -28,6 +28,14 @@ import AdminProtectedRoute from './components/admin/AdminProtectedRoute';
 import Settings from './pages/admin/Settings';
 import NotFound from './components/common/NotFound';
 
+// Super Admin Pages
+import SuperAdminLayout from './layouts/SuperAdminLayout';
+import SuperAdminDashboard from './pages/superadmin/Dashboard';
+import SuperAdminAdmins from './pages/superadmin/Admins';
+import SuperAdminUsers from './pages/superadmin/Users';
+import SuperAdminSuperAdmins from './pages/superadmin/SuperAdmins';
+
+
 // Settings Sub-pages
 import Banner from './pages/admin/settings/Banner';
 import CuratedRealms from './pages/admin/settings/CuratedRealms';
@@ -114,6 +122,19 @@ function App() {
             <Route path="settings/stories" element={<Stories />} />
             <Route path="settings/purpose" element={<Purpose />} />
             <Route path="settings/testimonial" element={<Testimonial />} />
+          </Route>
+
+          {/* Super Admin Route */}
+          <Route path="/superadmin" element={
+            <AdminProtectedRoute>
+              <SuperAdminLayout />
+            </AdminProtectedRoute>
+          }>
+            <Route index element={<Navigate to="/superadmin/dashboard" replace />} />
+            <Route path="dashboard" element={<SuperAdminDashboard />} />
+            <Route path="superadmins" element={<SuperAdminSuperAdmins />} />
+            <Route path="admins" element={<SuperAdminAdmins />} />
+            <Route path="users" element={<SuperAdminUsers />} />
           </Route>
 
           {/* Catch-all Route for 404 - Page Not Found */}
