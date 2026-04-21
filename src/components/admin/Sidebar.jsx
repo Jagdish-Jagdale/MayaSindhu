@@ -13,40 +13,51 @@ import {
   Flower2,
   Tv,
   Heart,
-  MessageSquareQuote
+  MessageSquareQuote,
+  BarChart3
 } from 'lucide-react';
 import { Link, useLocation, useNavigate } from 'react-router-dom';
 import { auth } from '../../firebase';
 import { signOut, onAuthStateChanged } from 'firebase/auth';
 import { useState, useEffect } from 'react';
+import LogoutConfirmationModal from './LogoutConfirmationModal';
 
-const menuItems = [
-  { title: 'Dashboard', icon: LayoutDashboard, path: '/admin/dashboard' },
-  { title: 'Users', icon: Users, path: '/admin/users' },
-  { title: 'Products', icon: Package, path: '/admin/products' },
-  { title: 'Categories', icon: Grid2X2, path: '/admin/categories' },
-  { title: 'Orders', icon: ShoppingBag, path: '/admin/orders' },
-  {
-    title: 'Settings',
-    icon: Settings,
-    path: '/admin/settings',
-    subItems: [
-      { title: 'Banner', icon: Image, path: '/admin/settings/banner' },
-      { title: 'Explore Category', icon: ScrollText, path: '/admin/settings/curated-realms' },
-      { title: 'Customer Favorite', icon: Gem, path: '/admin/settings/featured-treasures' },
-      { title: 'Shop by Trend', icon: Flower2, path: '/admin/settings/artisan-blooms' },
-      { title: 'Shop the Look', icon: Tv, path: '/admin/settings/stories' },
-      { title: 'Our Purpose', icon: Heart, path: '/admin/settings/purpose' },
-      { title: 'Testimonial', icon: MessageSquareQuote, path: '/admin/settings/testimonial' },
-    ]
-  },
-];
+function getMenuItems(pathname) {
+  const isOffline = pathname.startsWith('/admin-offline');
+  const base = isOffline ? '/admin-offline' : '/admin';
+  const eBase = '/admin'; // Original admin base for shared resources
+
+  return [
+    { title: 'Dashboard', icon: LayoutDashboard, path: `${base}/dashboard` },
+    { title: 'Users', icon: Users, path: `${eBase}/users` },
+    { title: 'Products', icon: Package, path: `${eBase}/products` },
+    { title: 'Categories', icon: Grid2X2, path: `${eBase}/categories` },
+    { title: 'Orders', icon: ShoppingBag, path: `${base}/orders` },
+    { title: 'Reports', icon: BarChart3, path: `${eBase}/reports` },
+    {
+      title: 'Settings',
+      icon: Settings,
+      path: `${eBase}/settings`,
+      subItems: [
+        { title: 'Banner', icon: Image, path: `${eBase}/settings/banner` },
+        { title: 'Explore Category', icon: ScrollText, path: `${eBase}/settings/curated-realms` },
+        { title: 'Customer Favorite', icon: Gem, path: `${eBase}/settings/featured-treasures` },
+        { title: 'Shop by Trend', icon: Flower2, path: `${eBase}/settings/artisan-blooms` },
+        { title: 'Shop the Look', icon: Tv, path: `${eBase}/settings/stories` },
+        { title: 'Our Purpose', icon: Heart, path: `${eBase}/settings/purpose` },
+        { title: 'Testimonial', icon: MessageSquareQuote, path: `${eBase}/settings/testimonial` },
+      ]
+    },
+  ];
+}
 
 export default function Sidebar({ isCollapsed }) {
   const location = useLocation();
   const navigate = useNavigate();
   const [userEmail, setUserEmail] = useState('');
   const [openMenus, setOpenMenus] = useState([]); // Closed by default
+  const [isLogoutModalOpen, setIsLogoutModalOpen] = useState(false);
+  const [isLoggingOut, setIsLoggingOut] = useState(false);
 
   useEffect(() => {
     const unsub = onAuthStateChanged(auth, (u) => {
@@ -56,11 +67,15 @@ export default function Sidebar({ isCollapsed }) {
   }, []);
 
   const handleLogout = async () => {
+    setIsLoggingOut(true);
     try {
       await signOut(auth);
       navigate('/admin/login');
     } catch (err) {
       console.error('Logout error:', err);
+    } finally {
+      setIsLoggingOut(false);
+      setIsLogoutModalOpen(false);
     }
   };
 
@@ -80,7 +95,7 @@ export default function Sidebar({ isCollapsed }) {
         {!isCollapsed && (
           <>
             <span className="text-[10px] font-bold uppercase tracking-[0.3em] text-gray-400">
-              E-Commerce
+              {location.pathname.startsWith('/admin-offline') ? 'Offline Shop' : 'E-Commerce'}
             </span>
             <span className="text-[14px] font-black uppercase tracking-[0.2em] text-center bg-gradient-to-r from-red-500 via-orange-500 via-yellow-500 via-green-500 via-blue-500 via-indigo-500 to-purple-500 bg-clip-text text-transparent animate-gradient-x">
               Admin Panel
@@ -91,7 +106,7 @@ export default function Sidebar({ isCollapsed }) {
 
       {/* Nav links */}
       <nav className="flex-1 px-2 py-3 space-y-1 overflow-y-auto min-h-0 scrollbar-hide">
-        {menuItems.map((item) => {
+        {getMenuItems(location.pathname).map((item) => {
           const hasSubItems = item.subItems && item.subItems.length > 0;
           const isMenuOpen = openMenus.includes(item.title);
           const active = isActive(item.path);
@@ -181,7 +196,7 @@ export default function Sidebar({ isCollapsed }) {
       {/* Logout button */}
       <div className={`px-3 py-3 border-t border-gray-100 shrink-0 transition-all duration-300`}>
         <button
-          onClick={handleLogout}
+          onClick={() => setIsLogoutModalOpen(true)}
           title={isCollapsed ? "Log out" : ""}
           className={`
             flex items-center rounded-xl text-red-500 bg-red-50/60 hover:bg-red-500 hover:text-white transition-all duration-200 shadow-sm shadow-red-500/5 group
@@ -196,6 +211,13 @@ export default function Sidebar({ isCollapsed }) {
           )}
         </button>
       </div>
+
+      <LogoutConfirmationModal
+        isOpen={isLogoutModalOpen}
+        onClose={() => setIsLogoutModalOpen(false)}
+        onConfirm={handleLogout}
+        loading={isLoggingOut}
+      />
     </div>
   );
 }

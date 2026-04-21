@@ -6,7 +6,7 @@ import {
   signOut,
   updateProfile
 } from 'firebase/auth';
-import { doc, setDoc, serverTimestamp, addDoc, collection } from 'firebase/firestore';
+import { doc, getDoc, serverTimestamp, addDoc, collection, query, where, getDocs } from 'firebase/firestore';
 import { auth, db } from '../firebase';
 
 const AuthContext = createContext();
@@ -21,10 +21,48 @@ export const useAuth = () => {
 
 export const AuthProvider = ({ children }) => {
   const [user, setUser] = useState(null);
+  const [isAdmin, setIsAdmin] = useState(false);
+  const [adminRole, setAdminRole] = useState(null);
+  const [isEcommerceAdmin, setIsEcommerceAdmin] = useState(false);
+  const [isOfflineStoreAdmin, setIsOfflineStoreAdmin] = useState(false);
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
-    const unsubscribe = onAuthStateChanged(auth, (currentUser) => {
+    const unsubscribe = onAuthStateChanged(auth, async (currentUser) => {
+      if (currentUser) {
+        try {
+          const q = query(collection(db, 'admins'), where('email', '==', currentUser.email.toLowerCase()));
+          const snapshot = await getDocs(q);
+          
+          if (!snapshot.empty) {
+            const adminData = snapshot.docs[0].data();
+            if (adminData.status === 'Active') {
+              setIsAdmin(true);
+              setAdminRole(adminData.role);
+              setIsEcommerceAdmin(!!adminData.isEcommerceAdmin);
+              setIsOfflineStoreAdmin(!!adminData.isOfflineStoreAdmin);
+            } else {
+              setIsAdmin(false);
+              setAdminRole(null);
+              setIsEcommerceAdmin(false);
+              setIsOfflineStoreAdmin(false);
+            }
+          } else {
+            setIsAdmin(false);
+            setAdminRole(null);
+            setIsEcommerceAdmin(false);
+            setIsOfflineStoreAdmin(false);
+          }
+        } catch (error) {
+          console.error("Error fetching admin status in Context:", error);
+        }
+      } else {
+        setIsAdmin(false);
+        setAdminRole(null);
+        setIsEcommerceAdmin(false);
+        setIsOfflineStoreAdmin(false);
+      }
+      
       setUser(currentUser);
       setLoading(false);
     });
@@ -84,6 +122,10 @@ export const AuthProvider = ({ children }) => {
 
   const value = {
     user,
+    isAdmin,
+    adminRole,
+    isEcommerceAdmin,
+    isOfflineStoreAdmin,
     loading,
     login,
     signup,

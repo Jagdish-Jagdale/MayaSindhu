@@ -1,54 +1,22 @@
-import React, { useState, useEffect } from 'react';
+import React from 'react';
 import { Navigate, useLocation } from 'react-router-dom';
-import { onAuthStateChanged } from 'firebase/auth';
-import { auth, db } from '../../firebase';
 import { Loader2 } from 'lucide-react';
-import { collection, query, where, getDocs } from 'firebase/firestore';
+import { useAuth } from '../../context/AuthContext';
 
 /**
  * AdminProtectedRoute component
- * @param {boolean} requireAuth - If true, only authenticated users can access. If false, only guests can access.
+ * Handles both authenticated administration access and guest-only access (login page).
+ * @param {boolean} requireAuth - If true, only authenticated users can access. If false (guest mode), logged-in users are redirected away.
  */
 const AdminProtectedRoute = ({ children, requireAuth = true }) => {
-  const [loading, setLoading] = useState(true);
-  const [user, setUser] = useState(null);
-  const [role, setRole] = useState(null);
+  const { 
+    user, 
+    loading, 
+    adminRole: role, 
+    isEcommerceAdmin, 
+    isOfflineStoreAdmin 
+  } = useAuth();
   const location = useLocation();
-
-  useEffect(() => {
-    const unsubscribe = onAuthStateChanged(auth, async (authUser) => {
-      // Intentionally NOT setting loading to true here to avoid wiping out the beautiful login UI
-      // with a white spinner screen during the 200ms background DB check.
-      if (authUser) {
-        try {
-          const q = query(collection(db, 'admins'), where('email', '==', authUser.email.toLowerCase()));
-          const snapshot = await getDocs(q);
-          if (!snapshot.empty) {
-            const adminData = snapshot.docs[0].data();
-            if (adminData.status === 'Active') {
-              setRole(adminData.role);
-              setUser(authUser); // strictly only set when they are a confirmed active admin
-            } else {
-              setUser(null);
-              setRole(null);
-            }
-          } else {
-            setUser(null);
-            setRole(null);
-          }
-        } catch (error) {
-          console.error("Error fetching admin role:", error);
-          setUser(null);
-          setRole(null);
-        }
-      } else {
-        setUser(null);
-        setRole(null);
-      }
-      setLoading(false);
-    });
-    return () => unsubscribe();
-  }, []);
 
   if (loading) {
     return (
@@ -64,17 +32,43 @@ const AdminProtectedRoute = ({ children, requireAuth = true }) => {
       return <Navigate to="/admin/login" state={{ from: location }} replace />;
     }
     
-    // Explicit Role Check: Prevent standard Admins from accessing Super Admin routes
+    // 1. Super Admin: full access to everything
+    if (role === 'Super Admin') return children;
+
+    // 2. Portal-Specific Enforcement
+    const isAccessingOffline = location.pathname.startsWith('/admin-offline');
+    const isAccessingEcommerce = !isAccessingOffline && location.pathname.startsWith('/admin');
+
+    if (isAccessingEcommerce && !isEcommerceAdmin) {
+      // User is in E-Com portal but only has Offline permission
+      if (isOfflineStoreAdmin) return <Navigate to="/admin-offline/dashboard" replace />;
+      return <Navigate to="/admin/login" replace />;
+    }
+
+    if (isAccessingOffline && !isOfflineStoreAdmin) {
+      // User is in Offline portal but only has E-Com permission
+      if (isEcommerceAdmin) return <Navigate to="/admin/dashboard" replace />;
+      return <Navigate to="/admin/login" replace />;
+    }
+
+    // 3. Prevent specialized admins from hitting Super Admin routes
     if (location.pathname.startsWith('/superadmin') && role !== 'Super Admin') {
-      return <Navigate to="/admin/dashboard" replace />;
+      if (isEcommerceAdmin) return <Navigate to="/admin/dashboard" replace />;
+      if (isOfflineStoreAdmin) return <Navigate to="/admin-offline/dashboard" replace />;
+      return <Navigate to="/admin/login" replace />;
     }
   } else {
-    // If auth is NOT required (Guest Only) but user IS logged in, redirect to correct dashboard
+    // GUEST ONLY (Login Page)
     if (user) {
-      if (role === 'Super Admin') {
-        return <Navigate to="/superadmin/dashboard" replace />;
-      }
-      return <Navigate to="/admin/dashboard" replace />;
+      if (role === 'Super Admin') return <Navigate to="/superadmin/dashboard" replace />;
+      
+      // If user has BOTH roles, DO NOT redirect from login page yet. 
+      // This allows the Login component to show its "Portal Selection" UI.
+      if (isEcommerceAdmin && isOfflineStoreAdmin) return children;
+
+      if (isEcommerceAdmin) return <Navigate to="/admin/dashboard" replace />;
+      if (isOfflineStoreAdmin) return <Navigate to="/admin-offline/dashboard" replace />;
+      return <Navigate to="/" replace />;
     }
   }
 

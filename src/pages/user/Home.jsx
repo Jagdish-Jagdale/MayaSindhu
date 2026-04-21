@@ -9,8 +9,85 @@ import { ChevronLeft, ChevronRight, Plus, Loader2 } from 'lucide-react';
 
 import { db } from '../../firebase';
 import { collection, onSnapshot, query, orderBy, doc } from 'firebase/firestore';
+import mstitle from '../../assets/mstitle.png';
+
+const SplashScreen = () => (
+  <motion.div
+    initial={{ opacity: 1 }}
+    exit={{ y: '-100%', opacity: 0, scale: 1.05 }}
+    transition={{ duration: 0.8, ease: [0.75, 0, 0.25, 1] }}
+    className="fixed inset-0 z-[9999] bg-[#F9F7F5] flex flex-col items-center justify-center overflow-hidden"
+  >
+    {/* Decorative background circle */}
+    <motion.div
+      initial={{ scale: 0, opacity: 0 }}
+      animate={{ scale: 1, opacity: 0.3 }}
+      transition={{ duration: 1.5, ease: "easeOut" }}
+      className="absolute w-[40vw] h-[40vw] max-w-[400px] max-h-[400px] bg-brand-orange rounded-full blur-[100px] -z-10"
+    />
+
+    <motion.div
+      initial={{ y: 20, opacity: 0 }}
+      animate={{ y: 0, opacity: 1 }}
+      transition={{ duration: 1, ease: "easeOut" }}
+      className="flex flex-col items-center"
+    >
+      {/* Brand Title Image with Clipped Glass Shine */}
+      <div className="relative mb-8 inline-block">
+        <img src={mstitle} alt="MayaSindhu" className="h-16 md:h-24 lg:h-32 w-auto object-contain filter drop-shadow-xl" />
+
+        {/* Glass-like Shine clipped EXACTLY to the logo's pixels */}
+        <div
+          className="absolute inset-0 z-10 pointer-events-none"
+          style={{
+            WebkitMaskImage: `url(${mstitle})`,
+            WebkitMaskSize: 'contain',
+            WebkitMaskRepeat: 'no-repeat',
+            WebkitMaskPosition: 'center',
+            maskImage: `url(${mstitle})`,
+            maskSize: 'contain',
+            maskRepeat: 'no-repeat',
+            maskPosition: 'center'
+          }}
+        >
+          <motion.div
+            className="absolute top-0 bottom-0 w-[60px] bg-gradient-to-r from-transparent via-white to-transparent skew-x-[-25deg] opacity-90"
+            initial={{ left: '-50%' }}
+            animate={{ left: '150%' }}
+            transition={{ duration: 1.8, delay: 0.4, ease: "easeInOut" }}
+            style={{ filter: 'blur(1px)' }}
+          />
+        </div>
+      </div>
+
+      <motion.p
+        initial={{ opacity: 0, letterSpacing: '0px' }}
+        animate={{ opacity: 1, letterSpacing: '8px' }}
+        transition={{ delay: 0.6, duration: 1.2, ease: "easeOut" }}
+        className="text-[11px] md:text-[13px] font-medium uppercase text-text-muted text-center"
+      >
+        Handcrafted Lifestyle Brand
+      </motion.p>
+    </motion.div>
+
+    <motion.div
+      initial={{ opacity: 0 }}
+      animate={{ opacity: 1 }}
+      transition={{ delay: 1, duration: 0.8 }}
+      className="absolute bottom-16 left-1/2 -translate-x-1/2 flex items-center justify-center space-x-2"
+    >
+      <span className="w-1.5 h-1.5 rounded-full bg-brand-orange animate-bounce" style={{ animationDelay: '0ms' }} />
+      <span className="w-1.5 h-1.5 rounded-full bg-brand-orange animate-bounce" style={{ animationDelay: '150ms' }} />
+      <span className="w-1.5 h-1.5 rounded-full bg-brand-orange animate-bounce" style={{ animationDelay: '300ms' }} />
+    </motion.div>
+  </motion.div>
+);
 
 export default function Home() {
+  const [showSplash, setShowSplash] = useState(() => {
+    // Only show if the user hasn't seen it in this session
+    return !sessionStorage.getItem('mayasindhu_splash_seen');
+  });
   const [currentSlide, setCurrentSlide] = useState(0);
   const [selectedVideo, setSelectedVideo] = useState(null);
   const [isVideoModalOpen, setIsVideoModalOpen] = useState(false);
@@ -40,7 +117,20 @@ export default function Home() {
   const videoRef = useRef(null);
   const testimonialRef = useRef(null);
 
-  const [products, setProducts] = useState([]);
+  // Splash Screen Timer
+  useEffect(() => {
+    if (!showSplash) return;
+
+    const timer = setTimeout(() => {
+      setShowSplash(false);
+      sessionStorage.setItem('mayasindhu_splash_seen', 'true');
+    }, 2800);
+    return () => clearTimeout(timer);
+  }, [showSplash]);
+
+  // Load All Products and Featured Treasures
+  useEffect(() => {
+    let productsList = [];
 
   // 1. Listen to all products
   useEffect(() => {
@@ -71,12 +161,31 @@ export default function Home() {
     return () => unsubscribeFt();
   }, [products]); // Re-run hydration whenever products state updates
 
-  // Load Banners from Firestore
+  // Load Banners from Firestore with Image Preloading
   useEffect(() => {
     const q = query(collection(db, 'banners'), orderBy('order', 'asc'));
-    const unsubscribe = onSnapshot(q, (snapshot) => {
+    const unsubscribe = onSnapshot(q, async (snapshot) => {
       const data = snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() }));
       setBanners(data);
+
+      // Preload critical banner images
+      if (data.length > 0) {
+        const preloadImage = (url) => {
+          return new Promise((resolve) => {
+            const img = new Image();
+            img.src = url;
+            img.onload = resolve;
+            img.onerror = resolve; // resolve anyway to avoid hanging
+          });
+        };
+
+        // Preload first 2 banners specifically while splash is visible
+        await Promise.all([
+          preloadImage(data[0].imageUrl),
+          data[1] ? preloadImage(data[1].imageUrl) : Promise.resolve()
+        ]);
+      }
+
       setBannersLoading(false);
     }, (error) => {
       console.error("Banners fetch error:", error);
@@ -208,9 +317,13 @@ export default function Home() {
   };
 
   return (
-    <div className="bg-white min-h-screen">
-      {/* 1. Hero Banner Slider (16/5 Balanced Hero) */}
-      <section className="relative w-full bg-white overflow-hidden">
+    <div className="bg-white min-h-screen relative">
+      <AnimatePresence>
+        {showSplash && <SplashScreen />}
+      </AnimatePresence>
+
+      {/* Cinematic Banner Slider */}
+      <section className="relative h-[35vh] sm:h-[45vh] md:h-[600px] w-full flex items-center overflow-hidden bg-white">
         {bannersLoading ? (
           <div className="aspect-[5/2] w-full flex items-center justify-center bg-brand-gray/50 animate-pulse">
             <Loader2 className="w-8 h-8 animate-spin text-brand-orange" />
@@ -315,8 +428,6 @@ export default function Home() {
         ) : null}
       </section>
 
-
-
       {/* Featured Treasures Section */}
       {featuredTreasures.length > 0 && (
         <section className="pt-10 md:pt-16 pb-6 md:pb-8 max-w-[1536px] mx-auto px-6 lg:px-24">
@@ -354,7 +465,6 @@ export default function Home() {
           </div>
         </section>
       )}
-
 
       {/* Artisan's Bloom Section */}
       {trends.length > 0 && (

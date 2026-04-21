@@ -1,10 +1,11 @@
 import React, { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { auth, db } from '../../firebase';
-import { signInWithEmailAndPassword, onAuthStateChanged, signOut } from 'firebase/auth';
-import { collection, query, where, getDocs } from 'firebase/firestore';
-import { Mail, Lock, AlertCircle, Loader2, ArrowRight, Eye, EyeOff } from 'lucide-react';
+import { auth } from '../../firebase';
+import { signInWithEmailAndPassword, signOut } from 'firebase/auth';
+import { Mail, Lock, AlertCircle, Loader2, ArrowRight, ShoppingCart, Store, ChevronRight } from 'lucide-react';
 import toast from 'react-hot-toast';
+import { motion, AnimatePresence } from 'framer-motion';
+import { useAuth } from '../../context/AuthContext';
 
 import mstitle from '../../assets/mstitle.png';
 
@@ -13,8 +14,27 @@ const AdminLogin = () => {
   const [password, setPassword] = useState('');
   const [showPassword, setShowPassword] = useState(false);
   const [error, setError] = useState('');
-  const [loading, setLoading] = useState(false);
   const [shake, setShake] = useState(false);
+  const [showPortalSelect, setShowPortalSelect] = useState(false);
+  
+  const navigate = useNavigate();
+  const { 
+    isEcommerceAdmin, 
+    isOfflineStoreAdmin, 
+    adminRole, 
+    loading: authLoading 
+  } = useAuth();
+
+  const [loginLoading, setLoginLoading] = useState(false);
+
+  // Synchronize Portal Selection with AuthContext
+  useEffect(() => {
+    if (isEcommerceAdmin && isOfflineStoreAdmin) {
+      setShowPortalSelect(true);
+    } else {
+      setShowPortalSelect(false);
+    }
+  }, [isEcommerceAdmin, isOfflineStoreAdmin]);
 
   const triggerError = (msg) => {
     setError(msg);
@@ -26,7 +46,6 @@ const AdminLogin = () => {
     e.preventDefault();
     setError('');
 
-    // Manual validation for iOS-like experience
     if (!email.trim()) {
       triggerError('Email address is required.');
       return;
@@ -36,192 +55,171 @@ const AdminLogin = () => {
       return;
     }
 
-    setLoading(true);
-
+    setLoginLoading(true);
     try {
-      const userCredential = await signInWithEmailAndPassword(auth, email.trim(), password);
-      
-      // Verify role in Firestore
-      const q = query(collection(db, 'admins'), where('email', '==', email.trim().toLowerCase()));
-      const querySnapshot = await getDocs(q);
-
-      if (querySnapshot.empty) {
-        // Prevent login if not in the admins collection
-        await signOut(auth);
-        triggerError('Unauthorized access. Administrator profile not found.');
-        return;
-      }
-
-      const adminData = querySnapshot.docs[0].data();
-      
-      if (adminData.status === 'Inactive') {
-        await signOut(auth);
-        triggerError('Account is inactive. Contact the Super Admin.');
-        return;
-      }
-
-      const role = adminData.role;
-
-      if (role === 'Super Admin') {
-        toast.success("Authenticated Successfully. Welcome to Super Admin Panel.", {
-          duration: 3000,
-        });
-        navigate('/superadmin/dashboard', { replace: true });
-      } else {
-        toast.success("Authenticated Successfully. Welcome to the Administrator Panel.", {
-          duration: 3000,
-        });
-        navigate('/admin/dashboard', { replace: true });
-      }
-
+      await signInWithEmailAndPassword(auth, email, password);
+      // Logic for redirection is handled by AdminProtectedRoute or the useEffect above
+      toast.success("Identity verified.");
     } catch (err) {
-      console.error('Login error:', err.code, err.message);
-      const code = err?.code;
-      let msg = '';
-      if (code === 'auth/invalid-credential' || code === 'auth/wrong-password' || code === 'auth/user-not-found') {
-        msg = 'Invalid email or password.';
-      } else if (code === 'auth/user-disabled') {
-        msg = 'This account has been disabled.';
-      } else if (code === 'auth/too-many-requests') {
-        msg = 'Too many attempts. Try again later.';
-      } else if (code === 'auth/network-request-failed') {
-        msg = 'Network error. Check your connection.';
-      } else if (code === 'auth/invalid-email') {
-        msg = 'Please enter a valid email address.';
-      } else {
-        msg = `Authentication failed. (${code || 'Unknown error'})`;
-      }
-      triggerError(msg);
+      console.error(err);
+      triggerError('Invalid email or password.');
     } finally {
-      setLoading(false);
+      setLoginLoading(false);
     }
   };
 
   return (
-    <div
-      className="min-h-screen w-full flex items-center justify-center p-6 relative overflow-hidden"
-      style={{ fontFamily: "'Inter', 'SF Pro Display', -apple-system, sans-serif" }}
-    >
-      {/* Shake style definition */}
-      <style>{`
-        @keyframes ios-shake {
-          0%, 100% { transform: translateX(0); }
-          20%, 60% { transform: translateX(-10px); }
-          40%, 80% { transform: translateX(10px); }
-        }
-        .shake { animation: ios-shake 0.4s cubic-bezier(.36,.07,.19,.97) both; }
-      `}</style>
-
-      {/* Background Image with Black Overlay */}
-      <div
-        className="absolute inset-0 z-0 bg-cover bg-center bg-no-repeat transition-transform duration-1000"
-        style={{
-          backgroundImage: 'url("https://t3.ftcdn.net/jpg/05/57/94/00/360_F_557940053_E5Dow60meC0PufggPTKxtIIGDmaX0a6O.jpg")',
-        }}
+    <div className="min-h-screen w-full flex items-center justify-center bg-cover bg-center bg-no-repeat relative overflow-hidden">
+      
+      {/* Original Background with Overlay */}
+      <div 
+        className="absolute inset-0 bg-cover bg-center bg-no-repeat"
+        style={{ backgroundImage: 'url("https://t3.ftcdn.net/jpg/05/57/94/00/360_F_557940053_E5Dow60meC0PufggPTKxtIIGDmaX0a6O.jpg")' }}
       >
         <div className="absolute inset-0 bg-black/60" />
       </div>
 
-      {/* Glassy Floating Card */}
-      <div
-        className={`w-full max-w-[460px] relative z-10 border border-white/30 transition-all duration-300 ${shake ? 'shake' : ''}`}
-        style={{
-          borderRadius: '32px',
-          background: 'linear-gradient(135deg, rgba(255, 255, 255, 0.2) 0%, rgba(255, 255, 255, 0.05) 100%)',
-          backdropFilter: 'blur(30px)',
-          WebkitBackdropFilter: 'blur(30px)',
-          boxShadow: '0 25px 50px -12px rgba(0, 0, 0, 0.6)',
-        }}
+      {/* Dynamic Animated Background Elements */}
+      <div className="absolute top-[-10%] left-[-10%] w-[40%] h-[40%] bg-[#1BAFAF]/10 rounded-full blur-[120px] animate-pulse" />
+      <div className="absolute bottom-[-10%] right-[-10%] w-[40%] h-[40%] bg-purple-500/10 rounded-full blur-[120px] animate-pulse" style={{ animationDelay: '1s' }} />
+
+      <div 
+        className={`w-full max-w-[420px] mx-4 relative transition-all duration-500 ${shake ? 'animate-shake' : ''}`}
+        style={{ perspective: '1000px' }}
       >
-        {/* macOS Style Header with dots */}
-        <div className="px-6 pt-5 pb-2 flex items-center gap-1.5">
-          <span className="w-3 h-3 rounded-full bg-[#FF5F57] shadow-sm" />
-          <span className="w-3 h-3 rounded-full bg-[#FFBD2E] shadow-sm" />
-          <span className="w-3 h-3 rounded-full bg-[#28C840] shadow-sm" />
-        </div>
-
-        <div className="px-8 pt-8 pb-14">
-          {/* Brand Logo Header — Using mstitle.png */}
-          <div className="flex flex-col items-center mb-10 text-center">
-            <img
-              src={mstitle}
-              alt="MayaSindhu"
-              className="h-16 w-auto object-contain mb-4 drop-shadow-md"
-            />
-            <p className="text-[13px] text-white font-medium uppercase tracking-wider opacity-80">Welcome Back! Enter your login credentials</p>
+        {/* Glassmorphism Container with Premium Border */}
+        <div className="bg-white/5 backdrop-blur-[40px] border border-white/20 rounded-[40px] shadow-[0_32px_64px_-16px_rgba(0,0,0,0.4)] overflow-hidden">
+          
+          {/* Top Bar macOS-style dots */}
+          <div className="flex gap-1.5 px-8 pt-6">
+            <span className="w-3 h-3 rounded-full bg-[#FF5F57] shadow-sm" />
+            <span className="w-3 h-3 rounded-full bg-[#FEBC2E] shadow-sm" />
+            <span className="w-3 h-3 rounded-full bg-[#28C840] shadow-sm" />
           </div>
 
-          {/* iOS-Style Error Message Row */}
-          <div className={`overflow-hidden transition-all duration-300 ${error ? 'h-10 opacity-100 mb-4' : 'h-0 opacity-0'}`}>
-            <div className="flex items-center justify-center gap-2 text-[#FF5F57] bg-[#FF5F57]/10 py-2 rounded-xl border border-[#FF5F57]/20">
-              <AlertCircle size={14} />
-              <p className="text-[12px] font-bold tracking-tight uppercase">{error}</p>
-            </div>
-          </div>
+          <AnimatePresence mode="wait">
+            {!showPortalSelect ? (
+              <motion.div 
+                key="login-form"
+                initial={{ opacity: 0, x: -20 }}
+                animate={{ opacity: 1, x: 0 }}
+                exit={{ opacity: 0, x: -20 }}
+                className="px-8 pt-8 pb-14"
+              >
+                {/* Brand Logo Header */}
+                <div className="flex flex-col items-center mb-10 text-center">
+                  <img src={mstitle} alt="MayaSindhu" className="h-16 w-auto object-contain mb-4 drop-shadow-md" />
+                  <p className="text-[13px] text-white font-medium uppercase tracking-wider opacity-80">Welcome Back</p>
+                </div>
 
-          <form onSubmit={handleLogin} noValidate className="space-y-6">
-            {/* Email Field */}
-            <div className="space-y-2">
-              <div className="flex justify-between items-center ml-1">
-                <label className="text-[11px] font-bold text-white/90 uppercase tracking-widest">Email Address</label>
-              </div>
-              <div className="relative group">
-                <input
-                  type="email"
-                  required
-                  autoComplete="email"
-                  value={email}
-                  onChange={(e) => setEmail(e.target.value.toLowerCase())}
-                  className="w-full bg-black/20 border border-white/10 rounded-2xl py-4 pl-12 pr-4 text-[14px] text-white placeholder:text-white/30 outline-none focus:bg-black/30 focus:border-[#1BAFAF]/50 focus:ring-4 focus:ring-[#1BAFAF]/10 transition-all duration-300"
-                  placeholder="Enter your email"
-                />
-                <Mail className="absolute left-4.5 top-1/2 -translate-y-1/2 w-4.5 h-4.5 text-white/30 group-focus-within:text-[#1BAFAF] transition-colors" />
-              </div>
-            </div>
+                {/* Error Message */}
+                <div className={`overflow-hidden transition-all duration-300 ${error ? 'h-10 opacity-100 mb-4' : 'h-0 opacity-0'}`}>
+                  <div className="flex items-center justify-center gap-2 text-[#FF5F57] bg-[#FF5F57]/10 py-2 rounded-xl border border-[#FF5F57]/20">
+                    <AlertCircle size={14} />
+                    <p className="text-[12px] font-bold uppercase">{error}</p>
+                  </div>
+                </div>
 
-            {/* Password Field */}
-            <div className="space-y-2">
-              <div className="flex justify-between items-center ml-1">
-                <label className="text-[11px] font-bold text-white/90 uppercase tracking-widest">Password</label>
-              </div>
-              <div className="relative group">
-                <input
-                  type={showPassword ? 'text' : 'password'}
-                  required
-                  autoComplete="current-password"
-                  value={password}
-                  onChange={(e) => setPassword(e.target.value)}
-                  className="w-full bg-black/20 border border-white/10 rounded-2xl py-4 pl-12 pr-12 text-[14px] text-white placeholder:text-white/30 outline-none focus:bg-black/30 focus:border-[#1BAFAF]/50 focus:ring-4 focus:ring-[#1BAFAF]/10 transition-all duration-300"
-                  placeholder="••••••••"
-                />
-                <Lock className="absolute left-4.5 top-1/2 -translate-y-1/2 w-4.5 h-4.5 text-white/30 group-focus-within:text-[#1BAFAF] transition-colors" />
-                <button
-                  type="button"
-                  onClick={() => setShowPassword(!showPassword)}
-                  className="absolute right-5 top-1/2 -translate-y-1/2 text-[11px] font-bold text-white/30 hover:text-white uppercase tracking-widest transition-colors active:scale-95"
-                  style={{ letterSpacing: '0.05em' }}
-                >
-                  {showPassword ? 'Hide' : 'Show'}
-                </button>
-              </div>
-            </div>
+                <form onSubmit={handleLogin} noValidate className="space-y-6">
+                  {/* Email */}
+                  <div className="space-y-2">
+                    <label className="text-[11px] font-bold text-white/90 uppercase tracking-widest ml-1">Email Address</label>
+                    <div className="relative group">
+                      <input
+                        type="email"
+                        value={email}
+                        onChange={(e) => setEmail(e.target.value.toLowerCase())}
+                        className="w-full bg-black/20 border border-white/10 rounded-2xl py-4 pl-12 pr-4 text-[14px] text-white outline-none focus:border-[#1BAFAF]/50 transition-all"
+                        placeholder="admin@mayasindhu.com"
+                      />
+                      <Mail className="absolute left-4.5 top-1/2 -translate-y-1/2 w-4.5 h-4.5 text-white/30 group-focus-within:text-[#1BAFAF]" />
+                    </div>
+                  </div>
 
-            {/* Submit Button */}
-            <button
-              type="submit"
-              disabled={loading}
-              className="w-full bg-[#1BAFAF] text-white py-4.5 rounded-2xl flex items-center justify-center gap-3 group transition-all duration-300 hover:bg-[#17a0a0] hover:shadow-xl hover:shadow-[#1BAFAF]/20 active:scale-[0.98] disabled:opacity-50 mt-4"
-            >
-              {loading ? (
-                <Loader2 className="w-5 h-5 animate-spin" />
-              ) : (
-                <>
-                  <span className="text-[15px] font-bold tracking-tight">Sign In</span>
-                  <ArrowRight className="w-4 h-4 group-hover:translate-x-1 transition-transform" />
-                </>
-              )}
-            </button>
-          </form>
+                  {/* Password */}
+                  <div className="space-y-2">
+                    <label className="text-[11px] font-bold text-white/90 uppercase tracking-widest ml-1">Password</label>
+                    <div className="relative group">
+                      <input
+                        type={showPassword ? 'text' : 'password'}
+                        value={password}
+                        onChange={(e) => setPassword(e.target.value)}
+                        className="w-full bg-black/20 border border-white/10 rounded-2xl py-4 pl-12 pr-12 text-[14px] text-white outline-none focus:border-[#1BAFAF]/50 transition-all"
+                        placeholder="••••••••"
+                      />
+                      <Lock className="absolute left-4.5 top-1/2 -translate-y-1/2 w-4.5 h-4.5 text-white/30 group-focus-within:text-[#1BAFAF]" />
+                      <button type="button" onClick={() => setShowPassword(!showPassword)} className="absolute right-5 top-1/2 -translate-y-1/2 text-[11px] font-bold text-white/30 hover:text-white uppercase">
+                        {showPassword ? 'Hide' : 'Show'}
+                      </button>
+                    </div>
+                  </div>
+
+                  <button
+                    type="submit"
+                    disabled={loginLoading || authLoading}
+                    className="w-full bg-[#1BAFAF] text-white py-4.5 rounded-2xl flex items-center justify-center gap-3 transition-all hover:bg-[#17a0a0] active:scale-[0.98] disabled:opacity-50"
+                  >
+                    {loginLoading || authLoading ? <Loader2 className="w-5 h-5 animate-spin" /> : <> <span className="text-[15px] font-bold">Sign In</span> <ArrowRight className="w-4 h-4" /> </>}
+                  </button>
+                </form>
+              </motion.div>
+            ) : (
+              <motion.div 
+                key="portal-select"
+                initial={{ opacity: 0, x: 20 }}
+                animate={{ opacity: 1, x: 0 }}
+                exit={{ opacity: 0, x: 20 }}
+                className="px-8 pt-8 pb-14"
+              >
+                <div className="flex flex-col items-center mb-10 text-center">
+                  <div className="w-16 h-16 rounded-2xl bg-[#1BAFAF]/10 border border-[#1BAFAF]/30 flex items-center justify-center mb-4">
+                     <ArrowRight className="text-[#1BAFAF] rotate-[-45deg]" size={32} />
+                  </div>
+                  <h2 className="text-[20px] font-bold text-white mb-1">Select Your Workspace</h2>
+                  <p className="text-[12px] text-white/50 uppercase tracking-widest font-medium">Multiple roles detected</p>
+                </div>
+
+                <div className="space-y-4">
+                  <button 
+                    onClick={() => navigate('/admin/dashboard')}
+                    className="w-full bg-white/5 hover:bg-white/10 border border-white/10 hover:border-[#1BAFAF]/50 p-5 rounded-3xl flex items-center gap-5 transition-all group/card"
+                  >
+                    <div className="w-14 h-14 rounded-2xl bg-emerald-500/10 flex items-center justify-center text-emerald-400 group-hover/card:scale-110 transition-transform">
+                      <ShoppingCart size={24} />
+                    </div>
+                    <div className="flex-1 text-left">
+                      <p className="text-[15px] font-bold text-white">E-Commerce Panel</p>
+                      <p className="text-[11px] text-white/40 uppercase tracking-widest">Online Store Management</p>
+                    </div>
+                    <ChevronRight size={20} className="text-white/20 group-hover/card:text-[#1BAFAF] transition-all" />
+                  </button>
+
+                  <button 
+                    onClick={() => navigate('/admin-offline/dashboard')}
+                    className="w-full bg-white/5 hover:bg-white/10 border border-white/10 hover:border-amber-500/50 p-5 rounded-3xl flex items-center gap-5 transition-all group/card"
+                  >
+                    <div className="w-14 h-14 rounded-2xl bg-amber-500/10 flex items-center justify-center text-amber-500 group-hover/card:scale-110 transition-transform">
+                      <Store size={24} />
+                    </div>
+                    <div className="flex-1 text-left">
+                      <p className="text-[15px] font-bold text-white">Offline Shop Panel</p>
+                      <p className="text-[11px] text-white/40 uppercase tracking-widest">In-Store Management</p>
+                    </div>
+                    <ChevronRight size={20} className="text-white/20 group-hover/card:text-amber-500 transition-all" />
+                  </button>
+                </div>
+
+                <div className="mt-8 text-center">
+                   <button 
+                    onClick={() => signOut(auth)}
+                    className="text-[11px] font-bold text-white/30 hover:text-white uppercase tracking-[0.2em] transition-colors"
+                   >
+                      Back to Login
+                   </button>
+                </div>
+              </motion.div>
+            )}
+          </AnimatePresence>
         </div>
       </div>
     </div>

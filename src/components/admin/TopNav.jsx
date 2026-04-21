@@ -23,8 +23,11 @@ const PAGE_TITLES = {
   '/admin/products': { title: 'Products' },
   '/admin/categories': { title: 'Categories' },
   '/admin/orders': { title: 'Orders' },
+  '/admin/reports': { title: 'Reports' },
   '/admin/inventory-logs': { title: 'Logs' },
   '/admin/settings': { title: 'Settings' },
+  '/admin-offline/dashboard': { title: 'Shop Dashboard' },
+  '/admin-offline/orders': { title: 'Shop Orders' },
 };
 
 const PLACEHOLDERS = ["Products", "Categories", "Users"];
