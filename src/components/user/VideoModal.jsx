@@ -1,6 +1,19 @@
 import { motion, AnimatePresence } from 'framer-motion';
+import { useEffect } from 'react';
 
 export default function VideoModal({ isOpen, onClose, videoUrl, title }) {
+  // Lock body scroll when modal is open
+  useEffect(() => {
+    if (isOpen) {
+      document.body.style.overflow = 'hidden';
+    } else {
+      document.body.style.overflow = 'unset';
+    }
+    return () => {
+      document.body.style.overflow = 'unset';
+    };
+  }, [isOpen]);
+
   if (!isOpen) return null;
 
   return (
@@ -9,42 +22,49 @@ export default function VideoModal({ isOpen, onClose, videoUrl, title }) {
         initial={{ opacity: 0 }}
         animate={{ opacity: 1 }}
         exit={{ opacity: 0 }}
-        className="fixed inset-0 z-[100] flex items-center justify-center p-4 md:p-10 pointer-events-auto"
+        className="fixed inset-0 z-[900] flex items-center justify-center p-4 md:p-12 pointer-events-auto"
       >
         {/* Backdrop */}
-        <div 
-          className="absolute inset-0 bg-black/95 backdrop-blur-xl" 
+        <motion.div
+          initial={{ opacity: 0 }}
+          animate={{ opacity: 1 }}
+          className="absolute inset-0 bg-black/80 backdrop-blur-md"
           onClick={onClose}
         />
 
-        {/* Close Button */}
-        <button 
-          onClick={onClose}
-          className="absolute top-8 right-8 z-[110] text-white/50 hover:text-white transition-colors p-2"
-        >
-          <svg width="32" height="32" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5">
-            <path d="M18 6L6 18M6 6l12 12" />
-          </svg>
-        </button>
-
-        {/* Modal Content */}
+        {/* Modal Content container shifted down */}
         <motion.div
-          initial={{ scale: 0.9, opacity: 0, y: 20 }}
-          animate={{ scale: 1, opacity: 1, y: 0 }}
-          exit={{ scale: 0.9, opacity: 0, y: 20 }}
-          transition={{ type: "spring", damping: 25, stiffness: 300 }}
-          className="relative w-full max-w-6xl aspect-video rounded-[2rem] overflow-hidden shadow-2xl shadow-black/50 border border-white/10"
+          initial={{ scale: 0.9, opacity: 0, y: 40 }}
+          animate={{ scale: 1, opacity: 1, y: 60 }}
+          exit={{ scale: 0.9, opacity: 0, y: 40 }}
+          transition={{ type: "spring", damping: 30, stiffness: 300 }}
+          className="relative w-full max-w-4xl aspect-video rounded-[2rem] overflow-visible shadow-[0_0_80px_rgba(0,0,0,0.3)] border border-white/10 bg-black"
         >
-          <video
-            src={videoUrl}
-            controls
-            autoPlay
-            className="w-full h-full object-cover"
-          />
-          
-          {/* Overlay Info */}
-          <div className="absolute bottom-0 left-0 right-0 p-8 bg-gradient-to-t from-black/80 to-transparent">
-            <h3 className="text-white text-3xl font-fashion font-bold">{title}</h3>
+          {/* Close Button positioned above the video card */}
+          <div className="absolute -top-12 right-0 flex items-center gap-3">
+
+            <button
+              onClick={onClose}
+              className="w-10 h-10 bg-black/50 hover:bg-red-500 text-white rounded-full flex items-center justify-center transition-all border border-white/10 shadow-lg"
+            >
+              <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5">
+                <path d="M18 6L6 18M6 6l12 12" />
+              </svg>
+            </button>
+          </div>
+
+          <div className="w-full h-full rounded-[2rem] overflow-hidden">
+            <video
+              src={videoUrl}
+              controls
+              autoPlay
+              className="w-full h-full object-contain"
+            />
+          </div>
+
+          {/* Subtle Overlay Info */}
+          <div className="absolute bottom-0 left-0 right-0 p-8 bg-gradient-to-t from-black/90 via-black/40 to-transparent pointer-events-none rounded-b-[2rem]">
+            <h3 className="text-white text-xl md:text-2xl font-fashion font-bold tracking-tight">{title}</h3>
           </div>
         </motion.div>
       </motion.div>

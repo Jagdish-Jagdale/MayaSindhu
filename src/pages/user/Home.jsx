@@ -4,109 +4,11 @@ import { Link } from 'react-router-dom';
 import ProductCard from '../../components/user/ProductCard';
 import VideoCard from '../../components/user/VideoCard';
 import VideoModal from '../../components/user/VideoModal';
+import TestimonialCard from '../../components/user/TestimonialCard';
 import { ChevronLeft, ChevronRight, Plus, Loader2 } from 'lucide-react';
 
-import h1 from '../../assets/h1.png';
-import h2 from '../../assets/h2.png';
-import h3 from '../../assets/h3.png';
-import p1 from '../../assets/p1.jpeg';
-import p3 from '../../assets/p3.jpeg';
-import p4 from '../../assets/p4.jpeg';
-import p5 from '../../assets/p5.jpeg';
-
-import { PRODUCTS } from '../../data/products';
-
-const videos = [
-  {
-    id: 1,
-    title: "Off White Pure Silk Cotton Fabric",
-    category: "Heritage Weave",
-    url: "https://assets.mixkit.co/videos/preview/mixkit-weaving-on-a-loom-15740-preview.mp4",
-    thumbnail: p3,
-    productImage: p3
-  },
-  {
-    id: 2,
-    title: "Hand-painted Madhubani Heritage",
-    category: "Artisan Jewelry",
-    url: "https://assets.mixkit.co/videos/preview/mixkit-close-up-of-hands-making-jewelry-41225-preview.mp4",
-    thumbnail: p1,
-    productImage: p1
-  },
-  {
-    id: 3,
-    title: "Traditional Draped Silhouette",
-    category: "Saree Stories",
-    url: "https://assets.mixkit.co/videos/preview/mixkit-woman-wearing-a-traditional-indian-dress-41131-preview.mp4",
-    thumbnail: p5,
-    productImage: p5
-  },
-  {
-    id: 4,
-    title: "Earthy tones of Natural Dyes",
-    category: "Natural Dyes",
-    url: "https://assets.mixkit.co/videos/preview/mixkit-colors-in-a-pot-of-dye-39943-preview.mp4",
-    thumbnail: p4,
-    productImage: p4
-  }
-];
-
-const slides = [
-  {
-    id: 1,
-    image: h1,
-    accent: "HERITAGE EDIT",
-    title: "A Woven Chronicle \nof the Northeast",
-    description: "Discover the intricate artistry of hand-loomed textiles, crafted with stories of the land.",
-    buttonText: "Shop Now"
-  },
-  {
-    id: 2,
-    image: h2,
-    accent: "ARTISANAL BLOOM",
-    title: "Silken Verses \nof Tradition",
-    description: "Drape yourself in the elegance of hand-woven heritage, where every thread is a legacy.",
-    buttonText: "Discover More"
-  },
-  {
-    id: 3,
-    image: h3,
-    accent: "CRAFTED ROOTS",
-    title: "Timeless Moitfs \nfor the Modern Muse",
-    description: "Intricately hand-embroidered ensembles that bridge the gap between ancient art and contemporary style.",
-    buttonText: "Explore Now"
-  }
-];
-
-const reviews = [
-  {
-    id: 1,
-    name: "Ananya Sharma",
-    location: "Mumbai, India",
-    text: "The craftsmanship is unparalleled. I felt like I was wearing a piece of history. The Banarasi silk has a weight and sheen that only true hand-weaving can achieve.",
-    image: "https://images.unsplash.com/photo-1594744803329-a584af1cae21?w=400&q=80",
-    rating: 5
-  },
-  {
-    id: 2,
-    name: "Priya Kapoor",
-    location: "London, UK",
-    text: "MayaSindhu doesn't just sell sarees; they sell stories. My bridal ensemble was a masterpiece that drew compliments from everyone. Truly soulful artistry.",
-    image: "https://images.unsplash.com/photo-1610030469668-9de19bd49031?w=400&q=80",
-    rating: 5
-  },
-  {
-    id: 3,
-    name: "Meera Reddy",
-    location: "Hyderabad, India",
-    text: "Supporting local artisans while looking elegant is a beautiful combination. The attention to detail in the embroidery is something you simply can't find in mass-produced fashion.",
-    image: "https://images.unsplash.com/photo-1621184455862-c163dfb30e0f?w=400&q=80",
-    rating: 5
-  }
-];
-
 import { db } from '../../firebase';
-import { collection, onSnapshot, query, orderBy } from 'firebase/firestore';
+import { collection, onSnapshot, query, orderBy, doc } from 'firebase/firestore';
 
 export default function Home() {
   const [currentSlide, setCurrentSlide] = useState(0);
@@ -114,18 +16,34 @@ export default function Home() {
   const [isVideoModalOpen, setIsVideoModalOpen] = useState(false);
   const [realms, setRealms] = useState([]);
   const [realmsLoading, setRealmsLoading] = useState(true);
-  
+
   const [featuredTreasures, setFeaturedTreasures] = useState([]);
   const [ftLoading, setFtLoading] = useState(true);
-  
+
+  const [banners, setBanners] = useState([]);
+  const [bannersLoading, setBannersLoading] = useState(true);
+
+  const [trends, setTrends] = useState([]);
+  const [trendsLoading, setTrendsLoading] = useState(true);
+
+  const [looks, setLooks] = useState([]);
+  const [looksLoading, setLooksLoading] = useState(true);
+
+  const [purpose, setPurpose] = useState(null);
+  const [purposeLoading, setPurposeLoading] = useState(true);
+
+  const [testimonials, setTestimonials] = useState([]);
+  const [testimonialsLoading, setTestimonialsLoading] = useState(true);
+
   const featuredRef = useRef(null);
   const artisanRef = useRef(null);
   const videoRef = useRef(null);
+  const testimonialRef = useRef(null);
 
   // Load All Products and Featured Treasures
   useEffect(() => {
     let productsList = [];
-    
+
     // 1. Listen to all products (to get live details for any featured item)
     const qProd = query(collection(db, 'products'));
     const unsubscribeProd = onSnapshot(qProd, (snapshot) => {
@@ -136,7 +54,7 @@ export default function Home() {
     const qFt = query(collection(db, 'featuredTreasures'), orderBy('order', 'asc'));
     const unsubscribeFt = onSnapshot(qFt, (snapshot) => {
       const ftData = snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() }));
-      
+
       // Hydrate with product details
       const hydrated = ftData.map(ft => {
         const product = productsList.find(p => p.id === ft.productId);
@@ -153,19 +71,108 @@ export default function Home() {
     };
   }, []);
 
+  // Load Banners from Firestore
+  useEffect(() => {
+    const q = query(collection(db, 'banners'), orderBy('order', 'asc'));
+    const unsubscribe = onSnapshot(q, (snapshot) => {
+      const data = snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() }));
+      setBanners(data);
+      setBannersLoading(false);
+    }, (error) => {
+      console.error("Banners fetch error:", error);
+      setBannersLoading(false);
+    });
+    return () => unsubscribe();
+  }, []);
+
   // Load Curated Realms from Firestore
   useEffect(() => {
     const q = query(collection(db, 'curatedRealms'), orderBy('slotId', 'asc'));
     const unsubscribe = onSnapshot(q, (snapshot) => {
-      const data = snapshot.docs.map(doc => ({
-        id: doc.id,
-        ...doc.data()
-      }));
+      const data = snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() }));
       setRealms(data);
+      setRealmsLoading(false);
+    }, (error) => {
+      console.error("Realms fetch error:", error);
       setRealmsLoading(false);
     });
     return () => unsubscribe();
   }, []);
+
+  // Load Trends from Firestore
+  useEffect(() => {
+    const q = query(collection(db, 'shopByTrend'), orderBy('order', 'asc'));
+    const unsubscribe = onSnapshot(q, (snapshot) => {
+      const data = snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() }));
+      setTrends(data);
+      setTrendsLoading(false);
+    }, (error) => {
+      console.error("Trends fetch error:", error);
+      setTrendsLoading(false);
+    });
+    return () => unsubscribe();
+  }, []);
+
+  // Load Looks from Firestore
+  useEffect(() => {
+    const q = query(collection(db, 'shopTheLook'), orderBy('order', 'asc'));
+    const unsubscribe = onSnapshot(q, (snapshot) => {
+      const data = snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() }));
+      setLooks(data);
+      setLooksLoading(false);
+    }, (error) => {
+      console.error("Looks fetch error:", error);
+      setLooksLoading(false);
+    });
+    return () => unsubscribe();
+  }, []);
+
+  // Load Purpose from Firestore
+  useEffect(() => {
+    const unsubscribe = onSnapshot(doc(db, 'ourPurpose', 'main'), (docSnap) => {
+      if (docSnap.exists()) {
+        setPurpose(docSnap.data());
+      }
+      setPurposeLoading(false);
+    }, (error) => {
+      console.error("Purpose fetch error:", error);
+      setPurposeLoading(false);
+    });
+    return () => unsubscribe();
+  }, []);
+
+  // Load Testimonials from Firestore
+  useEffect(() => {
+    const q = query(collection(db, 'testimonials'), orderBy('createdAt', 'desc'));
+    const unsubscribe = onSnapshot(q, (snapshot) => {
+      const data = snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() }));
+      setTestimonials(data);
+      setTestimonialsLoading(false);
+    }, (error) => {
+      console.error("Testimonials fetch error:", error);
+      setTestimonialsLoading(false);
+    });
+    return () => unsubscribe();
+  }, []);
+
+  // Auto-slide Testimonials
+  useEffect(() => {
+    if (testimonialsLoading || testimonials.length === 0) return;
+    
+    const interval = setInterval(() => {
+      if (testimonialRef.current) {
+        const { scrollLeft, scrollWidth, clientWidth } = testimonialRef.current;
+        // If we are at the end, scroll back to start, otherwise scroll right
+        if (scrollLeft + clientWidth >= scrollWidth - 10) {
+          testimonialRef.current.scrollTo({ left: 0, behavior: 'smooth' });
+        } else {
+          scroll(testimonialRef, 'right');
+        }
+      }
+    }, 5000);
+
+    return () => clearInterval(interval);
+  }, [testimonials, testimonialsLoading]);
 
   const scroll = (ref, direction) => {
     if (ref.current) {
@@ -175,17 +182,20 @@ export default function Home() {
     }
   };
 
+  const displaySlides = banners;
+
   const openVideo = (video) => {
     setSelectedVideo(video);
     setIsVideoModalOpen(true);
   };
 
   useEffect(() => {
+    if (displaySlides.length <= 1) return;
     const timer = setInterval(() => {
-      setCurrentSlide((prev) => (prev + 1) % slides.length);
+      setCurrentSlide((prev) => (prev + 1) % displaySlides.length);
     }, 8000);
     return () => clearInterval(timer);
-  }, []);
+  }, [displaySlides.length]);
 
   const getSlotClasses = (slotId) => {
     switch (slotId) {
@@ -200,56 +210,111 @@ export default function Home() {
   return (
     <div className="bg-white min-h-screen">
       {/* Cinematic Banner Slider */}
-      <section className="relative h-[35vh] sm:h-[40vh] md:h-[600px] w-full flex items-center overflow-hidden bg-white">
-        <AnimatePresence mode="popLayout" initial={false}>
-          <motion.div
-            key={currentSlide}
-            initial={{ x: '100%' }}
-            animate={{ x: 0 }}
-            exit={{ x: '-100%' }}
-            transition={{ duration: 0.8, ease: [0.4, 0, 0.2, 1] }}
-            className="absolute inset-0 w-full h-full"
-          >
-            {/* Background Image */}
-            <div className="absolute inset-0 w-full h-full">
-              <img
-                src={slides[currentSlide].image}
-                alt={`Slide ${currentSlide + 1}`}
-                className="w-full h-full object-contain md:object-cover object-center md:object-top"
-              />
-            </div>
-          </motion.div>
-        </AnimatePresence>
+      <section className="relative h-[35vh] sm:h-[45vh] md:h-[600px] w-full flex items-center overflow-hidden bg-white">
+        {bannersLoading ? (
+          <div className="absolute inset-0 flex items-center justify-center bg-gray-50/50 backdrop-blur-sm z-30">
+            <Loader2 className="w-10 h-10 animate-spin text-brand-orange" />
+          </div>
+        ) : (
+          <AnimatePresence mode="popLayout" initial={false}>
+            <motion.div
+              key={currentSlide}
+              initial={{ x: '100%', opacity: 0 }}
+              animate={{ x: 0, opacity: 1 }}
+              exit={{ x: '-100%', opacity: 0 }}
+              transition={{
+                duration: 1.2,
+                ease: [0.4, 0, 0.2, 1],
+                opacity: { duration: 0.8 }
+              }}
+              className="absolute inset-0 w-full h-full"
+            >
+              {/* Background Image */}
+              <div className="absolute inset-0 w-full h-full">
+                <img
+                  src={displaySlides[currentSlide]?.imageUrl}
+                  alt={displaySlides[currentSlide]?.title || "Banner"}
+                  className="w-full h-full object-cover object-center"
+                />
+                {/* Refined Gradient Overlay for better text legibility */}
+                <div className="absolute inset-0 bg-gradient-to-r from-black/60 via-black/20 to-transparent" />
+              </div>
+
+              {/* Content Overlay */}
+              <div className="absolute inset-0 z-10 flex items-center px-8 lg:px-24">
+                <div className="max-w-4xl">
+                  {displaySlides[currentSlide]?.accent && (
+                    <motion.span
+                      initial={{ opacity: 0, y: 20 }}
+                      animate={{ opacity: 1, y: 0 }}
+                      transition={{ delay: 0.5, duration: 0.8 }}
+                      className="inline-block text-white text-[12px] md:text-[14px] font-bold tracking-[0.5em] uppercase mb-6"
+                    >
+                      {displaySlides[currentSlide].accent}
+                    </motion.span>
+                  )}
+
+                  {displaySlides[currentSlide]?.title && (
+                    <motion.h2
+                      initial={{ opacity: 0, y: 30 }}
+                      animate={{ opacity: 1, y: 0 }}
+                      transition={{ delay: 0.7, duration: 1 }}
+                      className="text-4xl md:text-7xl lg:text-8xl font-fashion font-bold text-white mb-8 leading-[1.1] tracking-tight whitespace-pre-line"
+                    >
+                      {displaySlides[currentSlide].title}
+                    </motion.h2>
+                  )}
+
+                  {displaySlides[currentSlide]?.description && (
+                    <motion.p
+                      initial={{ opacity: 0, y: 30 }}
+                      animate={{ opacity: 1, y: 0 }}
+                      transition={{ delay: 0.9, duration: 1 }}
+                      className="text-white/80 text-lg md:text-xl font-light mb-12 max-w-xl leading-relaxed"
+                    >
+                      {displaySlides[currentSlide].description}
+                    </motion.p>
+                  )}
+
+                </div>
+              </div>
+            </motion.div>
+          </AnimatePresence>
+        )}
 
         {/* Minimalist Floating Navigation Arrows */}
-        <div className="absolute inset-y-0 left-2 md:left-6 flex items-center z-20">
-          <button
-            onClick={() => setCurrentSlide((prev) => (prev - 1 + slides.length) % slides.length)}
-            className="w-8 h-8 md:w-12 md:h-12 bg-white/10 backdrop-blur-md rounded-full border border-white/20 flex items-center justify-center text-white hover:bg-white/90 hover:text-brand-orange transition-all active:scale-95 group shadow-lg"
-          >
-            <ChevronLeft size={16} md:size={20} strokeWidth={2.5} className="group-hover:-translate-x-0.5 transition-transform" />
-          </button>
-        </div>
-        <div className="absolute inset-y-0 right-2 md:right-6 flex items-center z-20">
-          <button
-            onClick={() => setCurrentSlide((prev) => (prev + 1) % slides.length)}
-            className="w-8 h-8 md:w-12 md:h-12 bg-white/10 backdrop-blur-md rounded-full border border-white/20 flex items-center justify-center text-white hover:bg-white/90 hover:text-brand-orange transition-all active:scale-95 group shadow-lg"
-          >
-            <ChevronRight size={16} md:size={20} strokeWidth={2.5} className="group-hover:translate-x-0.5 transition-transform" />
-          </button>
-        </div>
+        {!bannersLoading && displaySlides.length > 1 && (
+          <>
+            <div className="absolute inset-y-0 left-6 flex items-center z-20">
+              <button
+                onClick={() => setCurrentSlide((prev) => (prev - 1 + displaySlides.length) % displaySlides.length)}
+                className="w-12 h-12 bg-white/10 backdrop-blur-md rounded-full border border-white/20 flex items-center justify-center text-white hover:bg-white/90 hover:text-brand-orange transition-all active:scale-95 group shadow-lg"
+              >
+                <ChevronLeft size={20} strokeWidth={2.5} className="group-hover:-translate-x-0.5 transition-transform" />
+              </button>
+            </div>
+            <div className="absolute inset-y-0 right-6 flex items-center z-20">
+              <button
+                onClick={() => setCurrentSlide((prev) => (prev + 1) % displaySlides.length)}
+                className="w-12 h-12 bg-white/10 backdrop-blur-md rounded-full border border-white/20 flex items-center justify-center text-white hover:bg-white/90 hover:text-brand-orange transition-all active:scale-95 group shadow-lg"
+              >
+                <ChevronRight size={20} strokeWidth={2.5} className="group-hover:translate-x-0.5 transition-transform" />
+              </button>
+            </div>
 
-        {/* Line Progress Indicators (Bottom Center) */}
-        <div className="absolute bottom-6 left-1/2 -translate-x-1/2 flex items-center gap-2 z-20">
-          {slides.map((_, idx) => (
-            <button
-              key={idx}
-              onClick={() => setCurrentSlide(idx)}
-              className={`h-[2px] md:h-[4px] rounded-full transition-all duration-500 shadow-sm ${currentSlide === idx ? 'focus:w-10 md:w-24 bg-white' : 'w-4 md:w-12 bg-white/40 hover:bg-white/60'
-                }`}
-            />
-          ))}
-        </div>
+            {/* Line Progress Indicators (Bottom Center) */}
+            <div className="absolute bottom-10 left-1/2 -translate-x-1/2 flex items-center gap-3 z-20">
+              {displaySlides.map((_, idx) => (
+                <button
+                  key={idx}
+                  onClick={() => setCurrentSlide(idx)}
+                  className={`h-[4px] rounded-full transition-all duration-700 shadow-sm ${currentSlide === idx ? 'w-24 bg-white' : 'w-12 bg-white/30 hover:bg-white/50'
+                    }`}
+                />
+              ))}
+            </div>
+          </>
+        )}
       </section>
 
       {/* Curated Realms Section */}
@@ -261,9 +326,9 @@ export default function Home() {
 
         {realmsLoading ? (
           <div className="flex items-center justify-center h-[400px]">
-             <Loader2 className="w-8 h-8 animate-spin text-brand-orange" />
+            <Loader2 className="w-8 h-8 animate-spin text-brand-orange" />
           </div>
-        ) : (
+        ) : realms.length > 0 ? (
           <div className="grid grid-cols-1 md:grid-cols-[1.4fr_0.8fr_0.8fr] gap-6 h-auto md:h-[650px]">
             {realms.map((realm) => (
               <motion.div
@@ -291,40 +356,36 @@ export default function Home() {
               </motion.div>
             ))}
           </div>
-        )}
+        ) : null}
       </section>
 
 
 
       {/* Featured Treasures Section */}
-      <section className="py-16 md:py-24 max-w-[1536px] mx-auto px-6 lg:px-24">
-        <div className="flex flex-col md:flex-row md:items-end justify-between mb-12 md:mb-16 space-y-4 md:space-y-0 text-center md:text-left">
-          <div>
-            <span className="text-[10px] md:text-[12px] uppercase font-bold tracking-[0.4em] text-brand-orange mb-3 md:mb-4 block">The Selection</span>
-            <h2 className="text-3xl md:text-6xl font-fashion font-bold text-[#1A1A1A] tracking-tight leading-tight">Customer Favourites</h2>
+      {featuredTreasures.length > 0 && (
+        <section className="py-16 md:py-24 max-w-[1536px] mx-auto px-6 lg:px-24">
+          <div className="flex flex-col md:flex-row md:items-end justify-between mb-12 md:mb-16 space-y-4 md:space-y-0 text-center md:text-left">
+            <div>
+              <span className="text-[10px] md:text-[12px] uppercase font-bold tracking-[0.4em] text-brand-orange mb-3 md:mb-4 block">The Selection</span>
+              <h2 className="text-3xl md:text-6xl font-fashion font-bold text-[#1A1A1A] tracking-tight leading-tight">Customer Favourites</h2>
+            </div>
+
+            <div className="flex space-x-3">
+              <button
+                onClick={() => scroll(featuredRef, 'left')}
+                className="p-3 border border-gray-200 rounded-full bg-white hover:bg-brand-orange hover:text-white transition-all shadow-sm active:scale-90"
+              >
+                <ChevronLeft size={24} />
+              </button>
+              <button
+                onClick={() => scroll(featuredRef, 'right')}
+                className="p-3 border border-gray-200 rounded-full bg-white hover:bg-brand-orange hover:text-white transition-all shadow-sm active:scale-90"
+              >
+                <ChevronRight size={24} />
+              </button>
+            </div>
           </div>
 
-          <div className="flex space-x-3">
-            <button
-              onClick={() => scroll(featuredRef, 'left')}
-              className="p-3 border border-gray-200 rounded-full bg-white hover:bg-brand-orange hover:text-white transition-all shadow-sm active:scale-90"
-            >
-              <ChevronLeft size={24} />
-            </button>
-            <button
-              onClick={() => scroll(featuredRef, 'right')}
-              className="p-3 border border-gray-200 rounded-full bg-white hover:bg-brand-orange hover:text-white transition-all shadow-sm active:scale-90"
-            >
-              <ChevronRight size={24} />
-            </button>
-          </div>
-        </div>
-
-        {ftLoading ? (
-          <div className="flex items-center justify-center h-[400px]">
-            <Loader2 className="w-8 h-8 animate-spin text-brand-orange" />
-          </div>
-        ) : (
           <div
             ref={featuredRef}
             className="flex space-x-8 overflow-x-auto pb-12 no-scrollbar scroll-smooth snap-x"
@@ -335,111 +396,93 @@ export default function Home() {
               </div>
             ))}
           </div>
-        )}
-      </section>
+        </section>
+      )}
 
 
       {/* Artisan's Bloom Section */}
-      <section className="py-16 md:py-24 bg-[#F0F7FF]">
-        <div className="max-w-[1536px] mx-auto px-6 lg:px-24">
-          <div className="flex flex-col md:flex-row md:justify-between md:items-center mb-12 md:mb-16 space-y-6 md:space-y-0 text-center md:text-left">
-            <h2 className="text-3xl md:text-5xl font-fashion font-bold text-[#1A1A1A] tracking-tight">Shop By Trend</h2>
-            <div className="flex space-x-4">
-              <button
-                onClick={() => scroll(artisanRef, 'left')}
-                className="p-3 border border-gray-200 rounded-full bg-white hover:bg-[#1A1A1A] hover:text-white transition-all shadow-sm active:scale-90"
-              >
-                <ChevronLeft size={20} />
-              </button>
-              <button
-                onClick={() => scroll(artisanRef, 'right')}
-                className="p-3 border border-gray-200 rounded-full bg-white hover:bg-[#1A1A1A] hover:text-white transition-all shadow-sm active:scale-90"
-              >
-                <ChevronRight size={20} />
-              </button>
+      {trends.length > 0 && (
+        <section className="py-16 md:py-24 bg-[#F0F7FF]">
+          <div className="max-w-[1536px] mx-auto px-6 lg:px-24">
+            <div className="flex flex-col md:flex-row md:justify-between md:items-center mb-12 md:mb-16 space-y-6 md:space-y-0 text-center md:text-left">
+              <h2 className="text-3xl md:text-5xl font-fashion font-bold text-[#1A1A1A] tracking-tight">Shop By Trend</h2>
+              <div className="flex space-x-4">
+                <button
+                  onClick={() => scroll(artisanRef, 'left')}
+                  className="p-3 border border-gray-200 rounded-full bg-white hover:bg-[#1A1A1A] hover:text-white transition-all shadow-sm active:scale-90"
+                >
+                  <ChevronLeft size={20} />
+                </button>
+                <button
+                  onClick={() => scroll(artisanRef, 'right')}
+                  className="p-3 border border-gray-200 rounded-full bg-white hover:bg-[#1A1A1A] hover:text-white transition-all shadow-sm active:scale-90"
+                >
+                  <ChevronRight size={20} />
+                </button>
+              </div>
+            </div>
+
+            <div
+              ref={artisanRef}
+              className="flex space-x-8 overflow-x-auto pb-12 no-scrollbar scroll-smooth snap-x"
+            >
+              {trends.map((trend) => (
+                <div key={trend.id} className="flex-shrink-0 w-[280px] md:w-[450px] bg-white rounded-[2rem] md:rounded-[3rem] p-6 md:p-10 flex flex-col md:flex-row items-center md:space-x-8 space-y-6 md:space-y-0 shadow-sm transition-all group hover:shadow-xl duration-500">
+                  <div className="w-24 h-24 md:w-40 md:h-40 rounded-full overflow-hidden flex-shrink-0 bg-gray-50 border-4 border-white shadow-md">
+                    <img src={trend.imageUrl} alt={trend.title} className="w-full h-full object-cover transition-transform duration-700 group-hover:scale-110" />
+                  </div>
+                  <div className="text-center md:text-left flex-1">
+                    <span className="text-[9px] md:text-[10px] uppercase font-bold tracking-[0.2em] text-[#B08968] mb-2 md:mb-3 block">
+                      {trend.accent}
+                    </span>
+                    <h3 className="text-lg md:text-xl font-fashion font-bold text-[#1A1A1A] mb-2 md:mb-3">
+                      {trend.title}
+                    </h3>
+                    <p className="text-gray-500 text-[12px] md:text-sm leading-relaxed mb-4 md:mb-6 line-clamp-2 md:line-clamp-none">
+                      {trend.description}
+                    </p>
+                    <Link to="/shop" className="text-[11px] md:text-[12px] font-bold text-[#004D40] border-b-2 border-[#004D40]/20 pb-0.5 hover:text-[#00695C] transition-colors inline-flex items-center gap-1 group/link">
+                      Discover More
+                      <ChevronRight size={14} className="group-hover/link:translate-x-0.5 transition-transform" />
+                    </Link>
+                  </div>
+                </div>
+              ))}
+              {/* Spacer for horizontal scroll padding */}
+              <div className="flex-shrink-0 w-6 md:hidden" />
             </div>
           </div>
-
-          <div
-            ref={artisanRef}
-            className="flex space-x-8 overflow-x-auto pb-12 no-scrollbar scroll-smooth snap-x"
-          >
-            {/* Card 1 */}
-            <div className="flex-shrink-0 w-[280px] md:w-[450px] bg-white rounded-[2rem] md:rounded-[3rem] p-6 md:p-10 flex flex-col md:flex-row items-center md:space-x-8 space-y-6 md:space-y-0 shadow-sm transition-all">
-              <div className="w-24 h-24 md:w-40 md:h-40 rounded-full overflow-hidden flex-shrink-0 bg-gray-50">
-                <img src={PRODUCTS.find(p => p.id === 1).image} alt="Artisanal Earrings" className="w-full h-full object-cover" />
-              </div>
-              <div className="text-center md:text-left">
-                <span className="text-[9px] md:text-[10px] uppercase font-bold tracking-[0.2em] text-[#B08968] mb-2 md:mb-3 block">Boutique Selection</span>
-                <h3 className="text-lg md:text-xl font-fashion font-bold text-[#1A1A1A] mb-2 md:mb-3">Artisanal Earring Set</h3>
-                <p className="text-gray-500 text-[12px] md:text-sm leading-relaxed mb-4 md:mb-6 line-clamp-2 md:line-clamp-none">Hand-cast by master silversmiths, featuring intricate heritage motifs.</p>
-                <Link to="/shop" className="text-[11px] md:text-[12px] font-bold text-[#004D40] border-b-2 border-[#004D40]/20 pb-0.5 hover:text-[#00695C] transition-colors">
-                  Discover More
-                </Link>
-              </div>
-            </div>
-
-            {/* Card 2 */}
-            <div className="flex-shrink-0 w-[280px] md:w-[450px] bg-white rounded-[2rem] md:rounded-[3rem] p-6 md:p-10 flex flex-col md:flex-row items-center md:space-x-8 space-y-6 md:space-y-0 shadow-sm transition-all">
-              <div className="w-24 h-24 md:w-40 md:h-40 rounded-full overflow-hidden flex-shrink-0 bg-gray-50">
-                <img src={PRODUCTS.find(p => p.id === 2).image} alt="Madhubani Set" className="w-full h-full object-cover" />
-              </div>
-              <div className="text-center md:text-left">
-                <span className="text-[9px] md:text-[10px] uppercase font-bold tracking-[0.2em] text-[#B08968] mb-2 md:mb-3 block">Hand-painted</span>
-                <h3 className="text-lg md:text-xl font-fashion font-bold text-[#1A1A1A] mb-2 md:mb-3">Madhubani Gift Set</h3>
-                <p className="text-gray-500 text-[12px] md:text-sm leading-relaxed mb-4 md:mb-6 line-clamp-2 md:line-clamp-none">Authentic hand-painted Madhubani art on sustainable materials.</p>
-                <Link to="/shop" className="text-[11px] md:text-[12px] font-bold text-[#004D40] border-b-2 border-[#004D40]/20 pb-0.5 hover:text-[#00695C] transition-colors">
-                  Discover More
-                </Link>
-              </div>
-            </div>
-
-            {/* Card 3 */}
-            <div className="flex-shrink-0 w-[280px] md:w-[450px] bg-white rounded-[2rem] md:rounded-[3rem] p-6 md:p-10 flex flex-col md:flex-row items-center md:space-x-8 space-y-6 md:space-y-0 shadow-sm transition-all">
-              <div className="w-24 h-24 md:w-40 md:h-40 rounded-full overflow-hidden flex-shrink-0 bg-gray-50">
-                <img src={PRODUCTS.find(p => p.id === 9).image} alt="Linen Saree" className="w-full h-full object-cover" />
-              </div>
-              <div className="text-center md:text-left">
-                <span className="text-[9px] md:text-[10px] uppercase font-bold tracking-[0.2em] text-[#B08968] mb-2 md:mb-3 block">Fine Textiles</span>
-                <h3 className="text-lg md:text-xl font-fashion font-bold text-[#1A1A1A] mb-2 md:mb-3">Pastel Linen Saree</h3>
-                <p className="text-gray-500 text-[12px] md:text-sm leading-relaxed mb-4 md:mb-6 line-clamp-2 md:line-clamp-none">Breathable artisan linen with minimalist heritage detailing.</p>
-                <Link to="/shop" className="text-[11px] md:text-[12px] font-bold text-[#004D40] border-b-2 border-[#004D40]/20 pb-0.5 hover:text-[#00695C] transition-colors">
-                  Discover More
-                </Link>
-              </div>
-            </div>
-            {/* Spacer for horizontal scroll padding */}
-            <div className="flex-shrink-0 w-6 md:hidden" />
-          </div>
-        </div>
-      </section>
+        </section>
+      )}
 
       {/* Stories in Motion Section - Video Section */}
-      <section className="py-16 md:py-24 bg-white overflow-hidden">
-        <div className="max-w-[1536px] mx-auto px-6 lg:px-24">
-          <div className="text-center mb-12 md:mb-16">
-            <h2 className="text-3xl md:text-5xl font-fashion font-bold text-[#1A1A1A] tracking-tight">Shop The Look</h2>
-            <div className="mx-auto w-16 h-1 bg-brand-orange mt-4 rounded-full opacity-30" />
-          </div>
+      {looks.length > 0 && (
+        <section className="py-16 md:py-24 bg-white overflow-hidden">
+          <div className="max-w-[1536px] mx-auto px-6 lg:px-24">
+            <div className="text-center mb-12 md:mb-16">
+              <h2 className="text-3xl md:text-5xl font-fashion font-bold text-[#1A1A1A] tracking-tight">Shop The Look</h2>
+              <div className="mx-auto w-16 h-1 bg-brand-orange mt-4 rounded-full opacity-30" />
+            </div>
 
-          <div
-            ref={videoRef}
-            className="flex flex-nowrap justify-start md:justify-center gap-6 pb-12 overflow-x-auto md:overflow-visible no-scrollbar snap-x snap-mandatory"
-          >
-            {videos.map((video) => (
-              <div key={video.id} className="snap-center" onClick={() => openVideo(video)}>
-                <VideoCard
-                  videoUrl={video.url}
-                  title={video.title}
-                  category={video.category}
-                  thumbnail={video.thumbnail}
-                  productImage={video.productImage}
-                />
-              </div>
-            ))}
+            <div
+              ref={videoRef}
+              className="flex flex-nowrap justify-start md:justify-center gap-6 pb-12 overflow-x-auto md:overflow-visible no-scrollbar snap-x snap-mandatory"
+            >
+              {looks.map((video) => (
+                <div key={video.id} className="snap-center" onClick={() => openVideo(video)}>
+                  <VideoCard
+                    videoUrl={video.url}
+                    title={video.title}
+                    category={video.category}
+                    thumbnail={video.thumbnail}
+                    productImage={video.productImage}
+                  />
+                </div>
+              ))}
+            </div>
           </div>
-        </div>
-      </section>
+        </section>
+      )}
 
       {/* Video Modal Interface */}
       <VideoModal
@@ -450,155 +493,128 @@ export default function Home() {
       />
 
       {/* Our Purpose / Impact Section */}
-      <section className="py-16 md:py-24 bg-white overflow-hidden">
-        <div className="max-w-[1536px] mx-auto px-6 lg:px-24">
-          <div className="flex flex-col lg:flex-row items-center gap-16 lg:gap-32">
-            {/* Left Column: Artistic Image Framing */}
-            <div className="relative w-full lg:w-1/2">
-              {/* Decorative Background Shapes */}
-              <div className="absolute -top-12 -left-12 w-48 h-48 bg-[#D0E9E8] rounded-full opacity-60 mix-blend-multiply" />
-              <div className="absolute -bottom-16 -right-8 w-64 h-64 bg-[#FCECD8] rounded-full opacity-70 mix-blend-multiply" />
+      {purpose && (
+        <section className="py-16 md:py-24 bg-white overflow-hidden">
+          <div className="max-w-[1536px] mx-auto px-6 lg:px-24">
+            <div className="flex flex-col lg:flex-row items-center gap-16 lg:gap-32">
+              {/* Left Column: Artistic Image Framing */}
+              <div className="relative w-full lg:w-1/2">
+                {/* Decorative Background Shapes */}
+                <div className="absolute -top-12 -left-12 w-48 h-48 bg-[#D0E9E8] rounded-full opacity-60 mix-blend-multiply" />
+                <div className="absolute -bottom-16 -right-8 w-64 h-64 bg-[#FCECD8] rounded-full opacity-70 mix-blend-multiply" />
 
-              {/* Main Image in Custom Shape */}
-              <motion.div
-                initial={{ opacity: 0, scale: 0.95 }}
-                whileInView={{ opacity: 1, scale: 1 }}
-                viewport={{ once: true }}
-                transition={{ duration: 1.2, ease: "easeOut" }}
-                className="relative z-10 aspect-square md:aspect-[4/5] overflow-hidden rounded-[40%] md:rounded-[45%_55%_45%_55%] border-8 border-white shadow-2xl"
-              >
-                <img
-                  src="https://images.unsplash.com/photo-1590736704228-a4004944883f?w=1000&q=80"
-                  alt="Artisan at work"
-                  className="w-full h-full object-cover grayscale-[20%] hover:grayscale-0 transition-all duration-1000"
-                />
-              </motion.div>
-            </div>
-
-            {/* Right Column: Narrative Content */}
-            <div className="w-full lg:w-1/2">
-              <motion.div
-                initial={{ opacity: 0, x: 50 }}
-                whileInView={{ opacity: 1, x: 0 }}
-                viewport={{ once: true }}
-                transition={{ duration: 1, delay: 0.2 }}
-              >
-                <span className="text-[#B08968] text-[12px] font-bold uppercase tracking-[0.4em] mb-6 block">Our Purpose</span>
-
-                <h2 className="text-3xl md:text-6xl font-fashion font-bold text-[#1A1A1A] leading-[1.1] mb-8 md:mb-10 tracking-tight">
-                  Empowering Every Stitch, Supporting Every Artisan.
-                </h2>
-
-                <p className="text-gray-600 text-lg md:text-xl leading-relaxed mb-12 max-w-xl">
-                  MayaSindhu was born from a desire to bridge the gap between ancient craftsmanship and the modern muse. We work directly with over 200 women-led artisan clusters across the subcontinent, ensuring fair wages and preserving heritage techniques that have been passed down through generations.
-                </p>
-
-                {/* Growth Stats Grid */}
-                <div className="grid grid-cols-2 gap-12 mb-12 py-8 border-y border-gray-100">
-                  <div>
-                    <span className="text-4xl md:text-5xl font-fashion font-bold text-[#00695C] block mb-2">200+</span>
-                    <span className="text-[10px] uppercase font-bold tracking-[0.2em] text-gray-400">Artisans Empowered</span>
-                  </div>
-                  <div>
-                    <span className="text-4xl md:text-5xl font-fashion font-bold text-[#00695C] block mb-2">15+</span>
-                    <span className="text-[10px] uppercase font-bold tracking-[0.2em] text-gray-400">Heritage Crafts</span>
-                  </div>
-                </div>
-
-                <Link to="/about" className="group inline-flex items-center space-x-3 text-[14px] font-bold text-[#1A1A1A] transition-colors">
-                  <span className="border-b-2 border-[#1A1A1A] pb-1 group-hover:border-brand-orange group-hover:text-brand-orange transition-all">
-                    Our Full Manifesto
-                  </span>
-                  <svg
-                    width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"
-                    className="translate-y-0.5 group-hover:translate-x-1 transition-transform"
-                  >
-                    <path d="m9 18 6-6-6-6" />
-                  </svg>
-                </Link>
-              </motion.div>
-            </div>
-          </div>
-        </div>
-      </section>
-
-      {/* Review Section */}
-      <section className="py-16 md:py-24 bg-[#F9F7F5] overflow-hidden">
-        <div className="max-w-[1536px] mx-auto px-6 lg:px-24 text-center">
-          <motion.div
-            initial={{ opacity: 0, y: 20 }}
-            whileInView={{ opacity: 1, y: 0 }}
-            viewport={{ once: true }}
-            className="mb-20"
-          >
-            <h2 className="text-3xl md:text-6xl font-fashion font-bold text-[#1A1A1A] tracking-tight">Speaking from their hearts</h2>
-            <div className="mx-auto w-16 md:w-24 h-1 bg-brand-orange mt-4 md:mt-6 rounded-full opacity-30" />
-          </motion.div>
-
-          <div className="flex md:grid overflow-x-auto md:overflow-visible md:grid-cols-3 gap-8 md:gap-12 pb-12 md:pb-0 no-scrollbar snap-x snap-mandatory relative">
-            {/* Background Decorative Element */}
-            <div className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-[120%] h-64 bg-[#E8F0EF] rounded-full blur-[100px] opacity-40 -z-10" />
-
-            {reviews.map((review, index) => {
-              const [isExpanded, setIsExpanded] = useState(false);
-
-              return (
+                {/* Main Image in Custom Shape */}
                 <motion.div
-                  key={review.id}
-                  initial={{ opacity: 0, y: 30 }}
-                  whileInView={{ opacity: 1, y: 0 }}
+                  initial={{ opacity: 0, scale: 0.95 }}
+                  whileInView={{ opacity: 1, scale: 1 }}
                   viewport={{ once: true }}
-                  transition={{ duration: 0.8, delay: index * 0.2 }}
-                  className={`flex-shrink-0 w-[280px] md:w-auto snap-center bg-white p-6 md:p-10 rounded-[2rem] md:rounded-[3rem] shadow-sm hover:shadow-xl transition-all duration-500 flex flex-col items-center group relative ${isExpanded ? 'h-auto' : 'h-full'}`}
+                  transition={{ duration: 1.2, ease: "easeOut" }}
+                  className="relative z-10 aspect-square md:aspect-[4/5] overflow-hidden rounded-[40%] md:rounded-[45%_55%_45%_55%] border-8 border-white shadow-2xl"
                 >
-                  {/* Quote Icon */}
-                  <div className="absolute top-6 right-8 md:right-10 text-brand-orange/5 group-hover:text-brand-orange/10 transition-colors">
-                    <svg width="40" height="40" md:width="60" md:height="60" viewBox="0 0 24 24" fill="currentColor"><path d="M14.017 21L14.017 18C14.017 16.8954 14.9124 16 16.017 16H19.017C19.5693 16 20.017 15.5523 20.017 15V9C20.017 8.44772 19.5693 8 19.017 8H15.017C14.4647 8 14.017 8.44772 14.017 9V14C14.017 14.5523 13.5693 15 13.017 15H11.017C10.4647 15 10.017 14.5523 10.017 14V9C10.017 7.34315 11.3601 6 13.017 6H19.017C20.6739 6 22.017 7.34315 22.017 9V15C22.017 18.3137 19.3307 21 16.017 21H14.017ZM3.017 21L3.017 18C3.017 16.8954 3.91241 16 5.017 16H8.017C8.56928 16 9.017 15.5523 9.017 15V9C9.017 8.44772 8.56928 8 8.017 8H4.017C3.46472 8 3.017 8.44772 3.017 9V14C3.017 14.5523 2.56928 15 2.017 15H0.017C-0.535004 15 -0.98274 14.5523 -0.98274 14V9C-0.98274 7.34315 0.360407 6 2.017 6H8.017C9.67386 6 11.017 7.34315 11.017 9V15C11.017 18.3137 8.33071 21 5.017 21H3.017Z" /></svg>
-                  </div>
+                  <img
+                    src={purpose.image}
+                    alt="Artisan at work"
+                    className="w-full h-full object-cover grayscale-[20%] hover:grayscale-0 transition-all duration-1000"
+                  />
+                </motion.div>
+              </div>
 
-                  <div className="w-20 h-20 md:w-24 md:h-24 mb-6 md:mb-8 relative">
-                    {/* Artistic Border/Blob Effect */}
-                    <div className="absolute inset-0 bg-brand-orange/10 rounded-[35%_65%_70%_30%] scale-110 group-hover:rotate-45 transition-transform duration-700" />
-                    <img
-                      src={review.image}
-                      alt={review.name}
-                      className="w-full h-full object-cover relative z-10 rounded-[45%_55%_40%_60%] border-4 border-white shadow-md grayscale-[30%] group-hover:grayscale-0 transition-all duration-500"
-                    />
-                  </div>
+              {/* Right Column: Narrative Content */}
+              <div className="w-full lg:w-1/2">
+                <motion.div
+                  initial={{ opacity: 0, x: 50 }}
+                  whileInView={{ opacity: 1, x: 0 }}
+                  viewport={{ once: true }}
+                  transition={{ duration: 1, delay: 0.2 }}
+                >
+                  <span className="text-[#B08968] text-[12px] font-bold uppercase tracking-[0.4em] mb-6 block">
+                    {purpose.accent}
+                  </span>
 
-                  {/* Star Rating Rendering */}
-                  <div className="flex space-x-1 mb-4 md:mb-6">
-                    {[...Array(review.rating)].map((_, i) => (
-                      <svg key={i} width="14" height="14" md:width="16" md:height="16" viewBox="0 0 24 24" fill="#FFB800">
-                        <path d="M12 17.27L18.18 21l-1.64-7.03L22 9.24l-7.19-.61L12 2 9.19 8.63 2 9.24l5.46 4.73L5.82 21z" />
-                      </svg>
+                  <h2 className="text-3xl md:text-6xl font-fashion font-bold text-[#1A1A1A] leading-[1.1] mb-8 md:mb-10 tracking-tight">
+                    {purpose.title}
+                  </h2>
+
+                  <p className="text-gray-600 text-lg md:text-xl leading-relaxed mb-12 max-w-xl">
+                    {purpose.description}
+                  </p>
+
+                  {/* Growth Stats Grid */}
+                  <div className="grid grid-cols-2 gap-12 mb-12 py-8 border-y border-gray-100">
+                    {purpose.stats && purpose.stats.map((stat, idx) => (
+                      <div key={idx}>
+                        <span className="text-4xl md:text-5xl font-fashion font-bold text-[#00695C] block mb-2">{stat.value}</span>
+                        <span className="text-[10px] uppercase font-bold tracking-[0.2em] text-gray-400">{stat.label}</span>
+                      </div>
                     ))}
                   </div>
 
-                  <div className="relative z-10 w-full text-center">
-                    <p className={`text-gray-600 text-sm md:text-[16px] leading-relaxed italic mb-2 ${isExpanded ? '' : 'line-clamp-3 md:line-clamp-none'}`}>
-                      "{review.text}"
-                    </p>
-
-                    {/* Show More/Less Button (Mobile Only) */}
-                    <button
-                      onClick={() => setIsExpanded(!isExpanded)}
-                      className="md:hidden text-brand-orange text-[11px] font-bold uppercase tracking-widest mt-2 hover:underline"
+                  <Link to="/about" className="group inline-flex items-center space-x-3 text-[14px] font-bold text-[#1A1A1A] transition-colors">
+                    <span className="border-b-2 border-[#1A1A1A] pb-1 group-hover:border-brand-orange group-hover:text-brand-orange transition-all">
+                      {purpose.buttonText || "Our Full Manifesto"}
+                    </span>
+                    <svg
+                      width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"
+                      className="translate-y-0.5 group-hover:translate-x-1 transition-transform"
                     >
-                      {isExpanded ? 'Show Less' : 'Show More'}
-                    </button>
-                  </div>
-
-                  <div className="mt-6 md:mt-auto">
-                    <h4 className="text-[#1A1A1A] font-fashion font-bold text-base md:text-lg mb-0.5 md:mb-1 uppercase tracking-tight">{review.name}</h4>
-                    <p className="text-[#B08968] text-[9px] md:text-[10px] uppercase font-bold tracking-[0.2em]">{review.location}</p>
-                  </div>
+                      <path d="m9 18 6-6-6-6" />
+                    </svg>
+                  </Link>
                 </motion.div>
-              );
-            })}
+              </div>
+            </div>
           </div>
-        </div>
-      </section>
+        </section>
+      )}
+
+      {/* Review Section */}
+      {testimonials.length > 0 && (
+        <section className="py-16 md:py-24 bg-[#F9F7F5] overflow-hidden">
+          <div className="max-w-[1536px] mx-auto px-6 lg:px-24 text-center">
+            <motion.div
+              initial={{ opacity: 0, y: 20 }}
+              whileInView={{ opacity: 1, y: 0 }}
+              viewport={{ once: true }}
+              className="mb-20"
+            >
+              <h2 className="text-3xl md:text-6xl font-fashion font-bold text-[#1A1A1A] tracking-tight">Speaking from their hearts</h2>
+              <div className="mx-auto w-16 md:w-24 h-1 bg-brand-orange mt-4 md:mt-6 rounded-none opacity-30" />
+            </motion.div>
+
+            <div className="relative group/testimonials">
+              <div className="relative overflow-hidden">
+                <div 
+                  ref={testimonialRef}
+                  className="flex gap-8 overflow-x-auto snap-x snap-mandatory scroll-smooth hide-scrollbar px-4"
+                  style={{ scrollbarWidth: 'none', msOverflowStyle: 'none' }}
+                >
+                  {testimonialsLoading ? (
+                    <div className="flex items-center justify-center w-full py-20">
+                      <Loader2 className="w-8 h-8 animate-spin text-brand-orange" />
+                    </div>
+                  ) : testimonials.map((review, index) => (
+                    <TestimonialCard key={review.id} review={review} index={index} />
+                  ))}
+                </div>
+              </div>
+
+              {/* Navigation Arrows */}
+              <button
+                onClick={() => scroll(testimonialRef, 'left')}
+                className="absolute left-0 top-1/2 -translate-y-1/2 -translate-x-4 md:-translate-x-12 p-3 bg-white border border-gray-100 rounded-none shadow-lg hover:bg-brand-orange hover:text-white transition-all opacity-0 group-hover/testimonials:opacity-100 z-10 hidden md:block"
+              >
+                <ChevronLeft size={24} />
+              </button>
+              <button
+                onClick={() => scroll(testimonialRef, 'right')}
+                className="absolute right-0 top-1/2 -translate-y-1/2 translate-x-4 md:translate-x-12 p-3 bg-white border border-gray-100 rounded-none shadow-lg hover:bg-brand-orange hover:text-white transition-all opacity-0 group-hover/testimonials:opacity-100 z-10 hidden md:block"
+              >
+                <ChevronRight size={24} />
+              </button>
+            </div>
+          </div>
+        </section>
+      )}
 
       {/* Stay Connected / Newsletter Section */}
       <section className="py-16 md:py-24 bg-white px-6 lg:px-24">
