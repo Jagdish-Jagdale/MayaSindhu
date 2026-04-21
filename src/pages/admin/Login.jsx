@@ -1,7 +1,8 @@
 import React, { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { auth } from '../../firebase';
-import { signInWithEmailAndPassword, onAuthStateChanged } from 'firebase/auth';
+import { auth, db } from '../../firebase';
+import { signInWithEmailAndPassword, onAuthStateChanged, signOut } from 'firebase/auth';
+import { collection, query, where, getDocs } from 'firebase/firestore';
 import { Mail, Lock, AlertCircle, Loader2, ArrowRight, Eye, EyeOff } from 'lucide-react';
 import toast from 'react-hot-toast';
 
@@ -38,12 +39,41 @@ const AdminLogin = () => {
     setLoading(true);
 
     try {
-      await signInWithEmailAndPassword(auth, email.trim(), password);
-      // AdminProtectedRoute will handle the redirect upon auth state change
-      toast.success("Authenticated Successfully. Welcome to the Administrator Panel.", {
-        duration: 3000,
-      });
-      navigate('/admin/dashboard', { replace: true });
+      const userCredential = await signInWithEmailAndPassword(auth, email.trim(), password);
+      
+      // Verify role in Firestore
+      const q = query(collection(db, 'admins'), where('email', '==', email.trim().toLowerCase()));
+      const querySnapshot = await getDocs(q);
+
+      if (querySnapshot.empty) {
+        // Prevent login if not in the admins collection
+        await signOut(auth);
+        triggerError('Unauthorized access. Administrator profile not found.');
+        return;
+      }
+
+      const adminData = querySnapshot.docs[0].data();
+      
+      if (adminData.status === 'Inactive') {
+        await signOut(auth);
+        triggerError('Account is inactive. Contact the Super Admin.');
+        return;
+      }
+
+      const role = adminData.role;
+
+      if (role === 'Super Admin') {
+        toast.success("Authenticated Successfully. Welcome to Super Admin Panel.", {
+          duration: 3000,
+        });
+        navigate('/superadmin/dashboard', { replace: true });
+      } else {
+        toast.success("Authenticated Successfully. Welcome to the Administrator Panel.", {
+          duration: 3000,
+        });
+        navigate('/admin/dashboard', { replace: true });
+      }
+
     } catch (err) {
       console.error('Login error:', err.code, err.message);
       const code = err?.code;
