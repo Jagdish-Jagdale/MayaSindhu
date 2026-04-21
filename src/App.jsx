@@ -24,10 +24,13 @@ import AdminLogin from './pages/admin/Login';
 import Users from './pages/admin/Users';
 import Categories from './pages/admin/Categories';
 import Orders from './pages/admin/Orders';
+import Reports from './pages/admin/Reports';
 import useOnlineStatus from './hooks/useOnlineStatus';
 import AdminProtectedRoute from './components/admin/AdminProtectedRoute';
 import Settings from './pages/admin/Settings';
 import NotFound from './components/common/NotFound';
+import OfflineDashboard from './pages/admin/offline/Dashboard';
+import OfflineOrders from './pages/admin/offline/Orders';
 
 // Super Admin Pages
 import SuperAdminLayout from './layouts/SuperAdminLayout';
@@ -116,6 +119,7 @@ function App() {
             <Route path="products" element={<ProductManagement />} />
             <Route path="categories" element={<Categories />} />
             <Route path="orders" element={<Orders />} />
+            <Route path="reports" element={<Reports />} />
             <Route path="settings" element={<Settings />} />
             <Route path="settings/banner" element={<Banner />} />
             <Route path="settings/curated-realms" element={<CuratedRealms />} />
@@ -124,6 +128,19 @@ function App() {
             <Route path="settings/stories" element={<Stories />} />
             <Route path="settings/purpose" element={<Purpose />} />
             <Route path="settings/testimonial" element={<Testimonial />} />
+          </Route>
+
+          {/* Offline Store Route */}
+          <Route path="/admin-offline" element={
+            <AdminProtectedRoute>
+              <AdminLayout />
+            </AdminProtectedRoute>
+          }>
+            <Route index element={<Navigate to="/admin-offline/dashboard" replace />} />
+            <Route path="dashboard" element={<OfflineDashboard />} />
+            <Route path="orders" element={<OfflineOrders />} />
+            <Route path="users" element={<Users />} />
+            <Route path="products" element={<ProductManagement />} />
           </Route>
 
           {/* Super Admin Route */}

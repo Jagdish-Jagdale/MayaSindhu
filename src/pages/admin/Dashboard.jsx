@@ -199,8 +199,8 @@ export default function Dashboard() {
               <p className="text-[11px] text-gray-400 font-medium">Daily revenue over the last 7 days</p>
             </div>
           </div>
-          <div className="h-[280px] w-full">
-            <ResponsiveContainer width="100%" height="100%">
+          <div className="h-[280px] w-full relative">
+            <ResponsiveContainer width="100%" height="100%" minHeight={0}>
               <AreaChart data={salesData} margin={{ top: 10, right: 10, left: -20, bottom: 0 }}>
                 <defs>
                   <linearGradient id="colorRev" x1="0" y1="0" x2="0" y2="1">
@@ -226,8 +226,8 @@ export default function Dashboard() {
             <h2 className="text-[15px] font-bold text-gray-900">Category Distribution</h2>
             <p className="text-[11px] text-gray-400 font-medium">Product volume by category</p>
           </div>
-          <div className="flex-1 h-[220px]">
-             <ResponsiveContainer width="100%" height="100%">
+          <div className="h-[220px] w-full relative">
+             <ResponsiveContainer width="100%" height="100%" minHeight={0}>
                 <PieChart>
                   <Pie
                     data={categoryData}

@@ -9,6 +9,7 @@ import { Link, useLocation, useNavigate } from 'react-router-dom';
 import { auth } from '../../firebase';
 import { signOut, onAuthStateChanged } from 'firebase/auth';
 import { useState, useEffect } from 'react';
+import LogoutConfirmationModal from '../admin/LogoutConfirmationModal';
 
 const menuItems = [
   { title: 'Dashboard', icon: LayoutDashboard, path: '/superadmin/dashboard' },
@@ -22,6 +23,8 @@ export default function Sidebar({ isCollapsed }) {
   const navigate = useNavigate();
   const [userEmail, setUserEmail] = useState('');
   const [openMenus, setOpenMenus] = useState([]);
+  const [isLogoutModalOpen, setIsLogoutModalOpen] = useState(false);
+  const [isLoggingOut, setIsLoggingOut] = useState(false);
 
   useEffect(() => {
     const unsub = onAuthStateChanged(auth, (u) => {
@@ -31,11 +34,15 @@ export default function Sidebar({ isCollapsed }) {
   }, []);
 
   const handleLogout = async () => {
+    setIsLoggingOut(true);
     try {
       await signOut(auth);
       navigate('/admin/login'); // Defaulting to admin login for now
     } catch (err) {
       console.error('Logout error:', err);
+    } finally {
+      setIsLoggingOut(false);
+      setIsLogoutModalOpen(false);
     }
   };
 
@@ -98,7 +105,7 @@ export default function Sidebar({ isCollapsed }) {
       {/* Logout button */}
       <div className={`px-3 py-3 border-t border-gray-100 shrink-0 transition-all duration-300`}>
         <button
-          onClick={handleLogout}
+          onClick={() => setIsLogoutModalOpen(true)}
           title={isCollapsed ? "Log out" : ""}
           className={`
             flex items-center rounded-xl text-red-500 bg-red-50/60 hover:bg-red-500 hover:text-white transition-all duration-200 shadow-sm shadow-red-500/5 group
@@ -113,6 +120,13 @@ export default function Sidebar({ isCollapsed }) {
           )}
         </button>
       </div>
+
+      <LogoutConfirmationModal
+        isOpen={isLogoutModalOpen}
+        onClose={() => setIsLogoutModalOpen(false)}
+        onConfirm={handleLogout}
+        loading={isLoggingOut}
+      />
     </div>
   );
 }
