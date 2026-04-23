@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { db } from '../../../../firebase';
-import { doc, getDoc, updateDoc, serverTimestamp } from 'firebase/firestore';
+import { doc, getDoc, updateDoc, setDoc, serverTimestamp } from 'firebase/firestore';
 import { User, Phone, Mail, Calendar, Save, Loader2 } from 'lucide-react';
 import toast from 'react-hot-toast';
 
@@ -44,11 +44,11 @@ export default function ProfileInfo({ user }) {
     setSaving(true);
     try {
       const docRef = doc(db, 'users', user.uid);
-      await updateDoc(docRef, {
+      await setDoc(docRef, {
         ...formData,
         updatedAt: serverTimestamp()
-      });
-      toast.success('Profile updated treasures!');
+      }, { merge: true });
+      toast.success('Profile updated successfully!');
     } catch (error) {
       console.error("Update error:", error);
       toast.error('Failed to update profile');

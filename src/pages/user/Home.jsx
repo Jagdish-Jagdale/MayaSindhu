@@ -402,9 +402,10 @@ export default function Home() {
 
       {/* 3. Explore Category (Responsive Grid) */}
       <section className="py-10 md:py-16 max-w-[1536px] mx-auto px-4 md:px-8 lg:px-[60px] bg-white">
-        <div className="mb-10 md:mb-14">
-          <h2 className="font-fashion font-bold text-brand-black tracking-tight mb-2" style={{ fontSize: 'clamp(22px, 3vw, 42px)' }}>Explore Category</h2>
-          <div className="w-16 md:w-24 h-1 bg-brand-orange opacity-40 rounded-full" />
+        <div className="mb-12 md:mb-20 text-center">
+          <span className="text-[10px] md:text-[12px] uppercase font-bold tracking-[0.4em] text-brand-orange mb-3 md:mb-4 block">Curated Realms</span>
+          <h2 className="font-fashion font-bold text-brand-black tracking-tight mb-4" style={{ fontSize: 'clamp(24px, 4vw, 48px)' }}>Explore Category</h2>
+          <div className="w-16 md:w-24 h-1.5 bg-brand-orange opacity-20 rounded-full mx-auto" />
         </div>
 
         {realmsLoading ? (
@@ -412,25 +413,42 @@ export default function Home() {
             <Loader2 className="w-8 h-8 animate-spin text-brand-orange" />
           </div>
         ) : realms.length > 0 ? (
-          <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-5 gap-4 md:gap-6">
+          <div className="flex flex-nowrap md:flex-wrap justify-start md:justify-center gap-6 md:gap-12 lg:gap-16 overflow-x-auto md:overflow-visible pb-8 md:pb-0 no-scrollbar snap-x">
             {realms.map((realm) => (
               <motion.div
                 key={realm.id}
-                whileHover={{ y: -6 }}
-                className="relative group aspect-square w-full max-w-[220px] mx-auto overflow-hidden rounded-2xl md:rounded-3xl shadow-sm hover:shadow-xl transition-all duration-500"
+                initial={{ opacity: 0, y: 20 }}
+                whileInView={{ opacity: 1, y: 0 }}
+                viewport={{ once: true }}
+                whileHover={{ y: -8 }}
+                className="relative group flex flex-col items-center flex-shrink-0 w-[110px] md:w-[150px] transition-all duration-500 snap-center"
               >
-                <img
-                  src={realm.imageUrl}
-                  alt={realm.title}
-                  className="w-full h-full object-cover transition-transform duration-1000 group-hover:scale-105"
-                />
-                <div className="absolute inset-0 bg-gradient-to-t from-brand-black/80 via-transparent to-transparent" />
-                <div className="absolute bottom-4 left-4 right-4 text-white text-center">
-                  <h3 className="text-sm md:text-lg font-fashion font-bold mb-0.5 tracking-tight line-clamp-1">
-                    {realm.title}
-                  </h3>
-                  <Link to={`/category/${realm.categoryId}`} className="absolute inset-0 z-10" />
+                {/* Circular Image Container */}
+                <div className="relative w-24 h-24 md:w-32 md:h-32 rounded-full overflow-hidden p-1 bg-white border-2 border-brand-orange/5 group-hover:border-brand-orange transition-all duration-500 shadow-sm group-hover:shadow-2xl group-hover:shadow-brand-orange/10 mb-4">
+                  <div className="w-full h-full rounded-full overflow-hidden relative">
+                    <img
+                      src={realm.imageUrl}
+                      alt={realm.title}
+                      className="w-full h-full object-cover transition-transform duration-1000 group-hover:scale-115"
+                    />
+                    <div className="absolute inset-0 bg-brand-orange/0 group-hover:bg-brand-orange/10 transition-colors duration-500" />
+                  </div>
                 </div>
+
+                {/* Category Title below */}
+                <h3 className="text-[10px] md:text-[12px] font-bold text-center text-text-main uppercase tracking-[0.2em] transition-colors duration-300 group-hover:text-brand-orange px-2 line-clamp-2">
+                  {realm.title}
+                </h3>
+
+                {/* Interactive Link */}
+                <Link 
+                  to={`/category/${realm.categoryId}`} 
+                  className="absolute inset-0 z-10" 
+                  aria-label={`Shop ${realm.title}`}
+                />
+
+                {/* Subtle underline on hover */}
+                <div className="w-0 h-[2px] bg-brand-orange mt-2 transition-all duration-500 group-hover:w-1/2 rounded-full opacity-50" />
               </motion.div>
             ))}
           </div>
@@ -573,18 +591,18 @@ export default function Home() {
           <div className="max-w-[1536px] mx-auto px-6 lg:px-24">
             <div className="flex flex-col lg:flex-row items-center gap-16 lg:gap-32">
               {/* Left Column: Artistic Image Framing */}
-              <div className="relative w-full lg:w-1/2">
-                {/* Decorative Background Shapes */}
-                <div className="absolute -top-12 -left-12 w-48 h-48 bg-[#D0E9E8] rounded-full opacity-60 mix-blend-multiply" />
-                <div className="absolute -bottom-16 -right-8 w-64 h-64 bg-[#FCECD8] rounded-full opacity-70 mix-blend-multiply" />
+              <div className="relative w-full lg:w-[40%] flex justify-center">
+                {/* Decorative Background Shapes - Scaled down */}
+                <div className="absolute -top-8 -left-8 w-32 h-32 bg-[#D0E9E8] rounded-full opacity-40 mix-blend-multiply" />
+                <div className="absolute -bottom-12 -right-4 w-48 h-48 bg-[#FCECD8] rounded-full opacity-50 mix-blend-multiply" />
 
-                {/* Main Image in Custom Shape */}
+                {/* Main Image in Custom Shape - More compact */}
                 <motion.div
                   initial={{ opacity: 0, scale: 0.95 }}
                   whileInView={{ opacity: 1, scale: 1 }}
                   viewport={{ once: true }}
                   transition={{ duration: 1.2, ease: "easeOut" }}
-                  className="relative z-10 aspect-square md:aspect-[4/5] overflow-hidden rounded-[40%] md:rounded-[45%_55%_45%_55%] border-8 border-white shadow-2xl"
+                  className="relative z-10 w-full max-w-[320px] md:max-w-[400px] aspect-[4/5] overflow-hidden rounded-[3rem] md:rounded-[4rem] border-4 border-white shadow-xl"
                 >
                   <img
                     src={purpose.image}
@@ -595,41 +613,41 @@ export default function Home() {
               </div>
 
               {/* Right Column: Narrative Content */}
-              <div className="w-full lg:w-1/2">
+              <div className="w-full lg:w-[60%] lg:pl-12">
                 <motion.div
-                  initial={{ opacity: 0, x: 50 }}
+                  initial={{ opacity: 0, x: 30 }}
                   whileInView={{ opacity: 1, x: 0 }}
                   viewport={{ once: true }}
                   transition={{ duration: 1, delay: 0.2 }}
                 >
-                  <span className="text-accent text-[12px] font-bold uppercase tracking-[0.4em] mb-6 block">
+                  <span className="text-accent text-[10px] md:text-[11px] font-bold uppercase tracking-[0.3em] mb-4 block">
                     {purpose.accent}
                   </span>
 
-                  <h2 className="text-3xl md:text-6xl font-fashion font-bold text-text-main leading-[1.1] mb-8 md:mb-10 tracking-tight">
+                  <h2 className="text-2xl md:text-4xl lg:text-5xl font-fashion font-bold text-text-main leading-tight mb-6 tracking-tight">
                     {purpose.title}
                   </h2>
 
-                  <p className="text-text-muted text-lg md:text-xl leading-relaxed mb-12 max-w-xl">
+                  <p className="text-text-muted text-sm md:text-base leading-relaxed mb-8 max-w-xl">
                     {purpose.description}
                   </p>
 
-                  {/* Growth Stats Grid */}
-                  <div className="grid grid-cols-2 gap-12 mb-12 py-8 border-y border-gray-100">
+                  {/* Growth Stats Grid - More compact */}
+                  <div className="grid grid-cols-2 gap-8 mb-8 py-6 border-y border-gray-100">
                     {purpose.stats && purpose.stats.map((stat, idx) => (
                       <div key={idx}>
-                        <span className="text-4xl md:text-5xl font-fashion font-bold text-accent block mb-2">{stat.value}</span>
-                        <span className="text-[10px] uppercase font-bold tracking-[0.2em] text-text-muted/40">{stat.label}</span>
+                        <span className="text-3xl md:text-4xl font-fashion font-bold text-accent block mb-1">{stat.value}</span>
+                        <span className="text-[9px] uppercase font-bold tracking-[0.1em] text-text-muted/60">{stat.label}</span>
                       </div>
                     ))}
                   </div>
 
-                  <Link to="/about" className="group inline-flex items-center space-x-3 text-[14px] font-bold text-text-main transition-colors">
+                  <Link to="/about" className="group inline-flex items-center space-x-3 text-[13px] font-bold text-text-main transition-colors">
                     <span className="border-b-2 border-text-main pb-1 group-hover:border-brand-orange group-hover:text-brand-orange transition-all">
                       {purpose.buttonText || "Our Full Manifesto"}
                     </span>
                     <svg
-                      width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"
+                      width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"
                       className="translate-y-0.5 group-hover:translate-x-1 transition-transform"
                     >
                       <path d="m9 18 6-6-6-6" />
