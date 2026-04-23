@@ -116,6 +116,7 @@ export default function Home() {
   const artisanRef = useRef(null);
   const videoRef = useRef(null);
   const testimonialRef = useRef(null);
+  const [products, setProducts] = useState([]);
 
   // Splash Screen Timer
   useEffect(() => {
@@ -129,9 +130,6 @@ export default function Home() {
   }, [showSplash]);
 
   // Load All Products and Featured Treasures
-  useEffect(() => {
-    let productsList = [];
-
   // 1. Listen to all products
   useEffect(() => {
     const qProd = query(collection(db, 'products'));
@@ -293,8 +291,19 @@ export default function Home() {
 
   const displaySlides = banners;
 
+  const resolveVideoUrl = (url) => {
+    if (!url) return '';
+    if (url.includes('Cotton Saree haul') || url.includes('shortsfeed')) {
+      return '/looks_v1.mp4';
+    }
+    if (url.startsWith('assets/')) {
+      return `/${url}`;
+    }
+    return url;
+  };
+
   const openVideo = (video) => {
-    setSelectedVideo(video);
+    setSelectedVideo({ ...video, url: resolveVideoUrl(video.url) });
     setIsVideoModalOpen(true);
   };
 
@@ -537,7 +546,7 @@ export default function Home() {
               {looks.map((video) => (
                 <div key={video.id} className="snap-center" onClick={() => openVideo(video)}>
                   <VideoCard
-                    videoUrl={video.url}
+                    videoUrl={resolveVideoUrl(video.url)}
                     title={video.title}
                     category={video.category}
                     thumbnail={video.thumbnail}

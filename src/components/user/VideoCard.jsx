@@ -2,13 +2,19 @@ import { motion } from 'framer-motion';
 import { useState, useRef } from 'react';
 
 export default function VideoCard({ videoUrl, title, category, thumbnail, productImage }) {
+  console.log("🎬 VideoCard URL:", videoUrl);
+  const [videoError, setVideoError] = useState(false);
   const [isHovered, setIsHovered] = useState(false);
   const videoRef = useRef(null);
 
   const handleMouseEnter = () => {
+    if (videoError) return;
     setIsHovered(true);
     if (videoRef.current) {
-      videoRef.current.play().catch(e => console.error("Video play failed:", e));
+      videoRef.current.play().catch(e => {
+        console.error("Video play failed:", e);
+        setVideoError(true);
+      });
     }
   };
 
@@ -41,7 +47,11 @@ export default function VideoCard({ videoUrl, title, category, thumbnail, produc
         muted
         loop
         playsInline
-        className={`absolute inset-0 w-full h-full object-cover ${isHovered ? 'opacity-100' : 'opacity-0'}`}
+        onError={() => {
+          console.error("❌ Video Source Error:", videoUrl);
+          setVideoError(true);
+        }}
+        className={`absolute inset-0 w-full h-full object-cover ${isHovered && !videoError ? 'opacity-100' : 'opacity-0'}`}
       />
 
       {/* Modern Gradient Overlay */}
