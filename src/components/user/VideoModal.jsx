@@ -2,6 +2,7 @@ import { motion, AnimatePresence } from 'framer-motion';
 import { useEffect } from 'react';
 
 export default function VideoModal({ isOpen, onClose, videoUrl, title }) {
+  console.log("🎬 VideoModal URL:", videoUrl);
   // Lock body scroll when modal is open
   useEffect(() => {
     if (isOpen) {
