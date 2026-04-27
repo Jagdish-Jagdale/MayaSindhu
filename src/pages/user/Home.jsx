@@ -9,6 +9,7 @@ import { ChevronLeft, ChevronRight, Plus, Loader2 } from 'lucide-react';
 
 import { db } from '../../firebase';
 import { collection, onSnapshot, query, orderBy, doc } from 'firebase/firestore';
+import useCategories from '../../hooks/useCategories';
 import mstitle from '../../assets/mstitle.png';
 
 const SplashScreen = () => (
@@ -112,7 +113,9 @@ export default function Home() {
   const [testimonials, setTestimonials] = useState([]);
   const [testimonialsLoading, setTestimonialsLoading] = useState(true);
 
+  const { categories: allCategories } = useCategories();
   const featuredRef = useRef(null);
+
   const artisanRef = useRef(null);
   const videoRef = useRef(null);
   const testimonialRef = useRef(null);
@@ -408,52 +411,72 @@ export default function Home() {
           <div className="w-16 md:w-24 h-1.5 bg-brand-orange opacity-20 rounded-full mx-auto" />
         </div>
 
-        {realmsLoading ? (
-          <div className="flex items-center justify-center h-[300px]">
-            <Loader2 className="w-8 h-8 animate-spin text-brand-orange" />
-          </div>
-        ) : realms.length > 0 ? (
-          <div className="flex flex-nowrap md:flex-wrap justify-start md:justify-center gap-6 md:gap-12 lg:gap-16 overflow-x-auto md:overflow-visible pb-8 md:pb-0 no-scrollbar snap-x">
-            {realms.map((realm) => (
-              <motion.div
-                key={realm.id}
-                initial={{ opacity: 0, y: 20 }}
-                whileInView={{ opacity: 1, y: 0 }}
-                viewport={{ once: true }}
-                whileHover={{ y: -8 }}
-                className="relative group flex flex-col items-center flex-shrink-0 w-[110px] md:w-[150px] transition-all duration-500 snap-center"
-              >
-                {/* Circular Image Container */}
-                <div className="relative w-24 h-24 md:w-32 md:h-32 rounded-full overflow-hidden p-1 bg-white border-2 border-brand-orange/5 group-hover:border-brand-orange transition-all duration-500 shadow-sm group-hover:shadow-2xl group-hover:shadow-brand-orange/10 mb-4">
-                  <div className="w-full h-full rounded-full overflow-hidden relative">
-                    <img
-                      src={realm.imageUrl}
-                      alt={realm.title}
-                      className="w-full h-full object-cover transition-transform duration-1000 group-hover:scale-115"
+        {(() => {
+          const exploreList = [
+            { title: 'Apparels', categoryId: 'apparels-id', imageUrl: 'https://images.unsplash.com/photo-1610030469983-98e550d6193c?q=80&w=800' },
+            { title: 'Jewellery', categoryId: 'jewellery-id', imageUrl: 'https://images.unsplash.com/photo-1515562141207-7a88fb7ce338?q=80&w=800' },
+            { title: 'Festive', categoryId: 'festive-id', imageUrl: 'https://images.unsplash.com/photo-1582730147924-d92b4f00d860?q=80&w=800' },
+            { title: 'Others', categoryId: 'others-id', imageUrl: 'https://images.unsplash.com/photo-1554092970-176bc485890b?q=80&w=800' }
+          ];
+
+          return (
+            <div className="flex flex-nowrap md:flex-wrap justify-start md:justify-center gap-6 md:gap-12 lg:gap-16 overflow-x-auto md:overflow-visible pb-8 md:pb-0 no-scrollbar snap-x">
+              {exploreList.map((item) => {
+                const findCategoryPath = (cats, targetName) => {
+                  for (const cat of cats) {
+                    if (cat.name.toLowerCase() === targetName.toLowerCase()) return cat.fullPath;
+                    if (cat.children) {
+                      const path = findCategoryPath(cat.children, targetName);
+                      if (path) return path;
+                    }
+                  }
+                  return `/shop`;
+                };
+                const path = findCategoryPath(allCategories, item.title);
+
+                return (
+                  <motion.div
+                    key={item.title}
+                    initial={{ opacity: 0, y: 20 }}
+                    whileInView={{ opacity: 1, y: 0 }}
+                    viewport={{ once: true }}
+                    whileHover={{ y: -8 }}
+                    className="relative group flex flex-col items-center flex-shrink-0 w-[110px] md:w-[150px] transition-all duration-500 snap-center"
+                  >
+                    {/* Circular Image Container */}
+                    <div className="relative w-24 h-24 md:w-32 md:h-32 rounded-full overflow-hidden p-1 bg-white border-2 border-brand-orange/5 group-hover:border-brand-orange transition-all duration-500 shadow-sm group-hover:shadow-2xl group-hover:shadow-brand-orange/10 mb-4">
+                      <div className="w-full h-full rounded-full overflow-hidden relative">
+                        <img
+                          src={item.imageUrl}
+                          alt={item.title}
+                          className="w-full h-full object-cover transition-transform duration-1000 group-hover:scale-115"
+                        />
+                        <div className="absolute inset-0 bg-brand-orange/0 group-hover:bg-brand-orange/10 transition-colors duration-500" />
+                      </div>
+                    </div>
+
+                    {/* Category Title below */}
+                    <h3 className="text-[10px] md:text-[12px] font-bold text-center text-text-main uppercase tracking-[0.2em] transition-colors duration-300 group-hover:text-brand-orange px-2 line-clamp-2">
+                      {item.title}
+                    </h3>
+
+                    {/* Interactive Link */}
+                    <Link
+                      to={path}
+                      className="absolute inset-0 z-10"
+                      aria-label={`Shop ${item.title}`}
                     />
-                    <div className="absolute inset-0 bg-brand-orange/0 group-hover:bg-brand-orange/10 transition-colors duration-500" />
-                  </div>
-                </div>
 
-                {/* Category Title below */}
-                <h3 className="text-[10px] md:text-[12px] font-bold text-center text-text-main uppercase tracking-[0.2em] transition-colors duration-300 group-hover:text-brand-orange px-2 line-clamp-2">
-                  {realm.title}
-                </h3>
-
-                {/* Interactive Link */}
-                <Link 
-                  to={`/category/${realm.categoryId}`} 
-                  className="absolute inset-0 z-10" 
-                  aria-label={`Shop ${realm.title}`}
-                />
-
-                {/* Subtle underline on hover */}
-                <div className="w-0 h-[2px] bg-brand-orange mt-2 transition-all duration-500 group-hover:w-1/2 rounded-full opacity-50" />
-              </motion.div>
-            ))}
-          </div>
-        ) : null}
+                    {/* Subtle underline on hover */}
+                    <div className="w-0 h-[2px] bg-brand-orange mt-2 transition-all duration-500 group-hover:w-1/2 rounded-full opacity-50" />
+                  </motion.div>
+                );
+              })}
+            </div>
+          );
+        })()}
       </section>
+
 
       {/* Featured Treasures Section */}
       {featuredTreasures.length > 0 && (

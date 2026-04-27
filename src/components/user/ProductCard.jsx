@@ -6,7 +6,8 @@ import { useAuth } from '../../context/AuthContext';
 import { db } from '../../firebase';
 import { doc, getDoc, setDoc, updateDoc, deleteDoc, serverTimestamp, onSnapshot } from 'firebase/firestore';
 
-export default function ProductCard({ id, slug, name, price, image, rating = 4.8 }) {
+export default function ProductCard({ id, slug, name, price, image, images, rating = 4.8 }) {
+  const displayImage = image || (images && images.length > 0 ? images[0] : '');
   const [isAdded, setIsAdded] = useState(false);
   const { user } = useAuth();
   const [isWishlisted, setIsWishlisted] = useState(false);
@@ -125,9 +126,9 @@ export default function ProductCard({ id, slug, name, price, image, rating = 4.8
       className="group relative"
     >
       <div className="relative aspect-[1/1.1] overflow-hidden bg-brand-gray rounded-[3rem]">
-        <Link to={`/product/${slug}`}>
+        <Link to={`/product/${slug || id}`}>
           <img
-            src={image}
+            src={displayImage}
             alt={name}
             className="w-full h-full object-cover transition-transform duration-1000 group-hover:scale-105"
           />
@@ -137,8 +138,8 @@ export default function ProductCard({ id, slug, name, price, image, rating = 4.8
         <button
           onClick={handleWishlist}
           className={`absolute top-6 right-6 p-2.5 rounded-full shadow-md transition-all duration-300 z-20 ${isWishlisted
-              ? 'bg-red-50 text-red-500'
-              : 'bg-white text-text-main hover:bg-brand-orange hover:text-white'
+            ? 'bg-red-50 text-red-500'
+            : 'bg-white text-text-main hover:bg-brand-orange hover:text-white'
             }`}
         >
           <Heart size={18} strokeWidth={2} fill={isWishlisted ? "currentColor" : "none"} />
@@ -193,7 +194,7 @@ export default function ProductCard({ id, slug, name, price, image, rating = 4.8
       </div>
 
       <div className="mt-6 px-2">
-        <Link to={`/product/${slug}`}>
+        <Link to={`/product/${slug || id}`}>
           <h3 className="text-sm md:text-base font-fashion font-semibold text-text-main hover:text-brand-orange transition-colors line-clamp-1 mb-1 md:mb-2">{name}</h3>
         </Link>
         <div className="flex items-center justify-between">
