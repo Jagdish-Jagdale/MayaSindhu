@@ -11,7 +11,7 @@ export default function ProductDetail() {
   const navigate = useNavigate();
   const location = useLocation();
   const { user } = useAuth();
-  
+
   const [product, setProduct] = useState(null);
   const [loading, setLoading] = useState(true);
   const [isAdded, setIsAdded] = useState(false);
@@ -24,7 +24,7 @@ export default function ProductDetail() {
       try {
         const q = query(collection(db, 'products'), where('slug', '==', slug));
         const querySnapshot = await getDocs(q);
-        
+
         if (!querySnapshot.empty) {
           const doc = querySnapshot.docs[0];
           setProduct({ id: doc.id, ...doc.data() });
@@ -104,7 +104,7 @@ export default function ProductDetail() {
 
     try {
       const wishItemRef = doc(db, 'users', user.uid, 'wishlist', product.id.toString());
-      
+
       if (isWishlisted) {
         await deleteDoc(wishItemRef);
       } else {
@@ -161,7 +161,7 @@ export default function ProductDetail() {
             className="space-y-4 relative"
           >
             <div className="aspect-[4/5] overflow-hidden bg-brand-gray rounded-[4rem] shadow-2xl relative group">
-              <img src={product.image} alt={product.name} className="w-full h-full object-cover transition-transform duration-1000 group-hover:scale-105" />
+              <img src={product.image || (product.images && product.images[0])} alt={product.name} className="w-full h-full object-cover transition-transform duration-1000 group-hover:scale-105" />
               <div className="absolute inset-0 bg-black/5 pointer-events-none" />
             </div>
 
@@ -243,7 +243,7 @@ export default function ProductDetail() {
             )}
 
             <div className="flex flex-col sm:flex-row gap-6">
-              <button 
+              <button
                 onClick={handleAddToCart}
                 className="flex-grow bg-brand-orange text-white px-12 py-5 rounded-3xl flex items-center justify-center space-x-4 hover:shadow-2xl hover:shadow-brand-orange/20 transition-all active:scale-95 group shadow-xl shadow-brand-orange/10"
               >
@@ -251,13 +251,12 @@ export default function ProductDetail() {
                 <span className="tracking-[0.2em] font-black uppercase text-xs">Add to Bag</span>
               </button>
 
-              <button 
+              <button
                 onClick={handleWishlist}
-                className={`p-5 rounded-3xl border-2 transition-all active:scale-90 flex items-center justify-center ${
-                  isWishlisted 
-                    ? 'bg-red-50 border-red-100 text-red-500' 
+                className={`p-5 rounded-3xl border-2 transition-all active:scale-90 flex items-center justify-center ${isWishlisted
+                    ? 'bg-red-50 border-red-100 text-red-500'
                     : 'border-gray-100 text-gray-400 hover:border-gray-200 hover:text-[#1A1A1A]'
-                }`}
+                  }`}
               >
                 <Heart size={24} strokeWidth={2} fill={isWishlisted ? "currentColor" : "none"} />
               </button>

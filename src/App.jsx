@@ -89,7 +89,7 @@ function App() {
           <Route path="/" element={<UserLayout />}>
             <Route index element={<Home />} />
             <Route path="shop" element={<Shop />} />
-            <Route path="product/:id" element={<ProductDetail />} />
+            <Route path="product/:slug" element={<ProductDetail />} />
             <Route path="c/*" element={<CategoryView />} />
             <Route path="cart" element={<Cart />} />
             <Route path="wishlist" element={<Wishlist />} />
