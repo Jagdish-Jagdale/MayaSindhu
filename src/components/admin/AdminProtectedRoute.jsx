@@ -68,7 +68,10 @@ const AdminProtectedRoute = ({ children, requireAuth = true }) => {
 
       if (isEcommerceAdmin) return <Navigate to="/admin/dashboard" replace />;
       if (isOfflineStoreAdmin) return <Navigate to="/admin-offline/dashboard" replace />;
-      return <Navigate to="/" replace />;
+      
+      // If user is logged in but has no admin roles, allow them to stay on the login page 
+      // so they can log in with an admin account if desired.
+      return children;
     }
   }
 
