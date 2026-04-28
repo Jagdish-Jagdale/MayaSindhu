@@ -420,8 +420,8 @@ export default function Home() {
           ];
 
           return (
-            <div className="flex flex-nowrap md:flex-wrap justify-start md:justify-center gap-6 md:gap-12 lg:gap-16 overflow-x-auto md:overflow-visible pb-8 md:pb-0 no-scrollbar snap-x">
-              {exploreList.map((item) => {
+            <div className="grid grid-cols-1 md:grid-cols-4 gap-4 md:gap-6 auto-rows-[250px]">
+              {exploreList.map((item, index) => {
                 const findCategoryPath = (cats, targetName) => {
                   for (const cat of cats) {
                     if (cat.name.toLowerCase() === targetName.toLowerCase()) return cat.fullPath;
@@ -434,31 +434,39 @@ export default function Home() {
                 };
                 const path = findCategoryPath(allCategories, item.title);
 
+                // Dynamic bento box sizing pattern
+                const pos = index % 4;
+                let spanClass = "col-span-1 md:col-span-2 md:row-span-1"; // default wide
+                if (pos === 0) spanClass = "col-span-1 md:col-span-2 md:row-span-2"; // Large tall
+                else if (pos === 1) spanClass = "col-span-1 md:col-span-2 md:row-span-1"; // Wide
+                else if (pos === 2) spanClass = "col-span-1 md:col-span-1 md:row-span-1"; // Square
+                else if (pos === 3) spanClass = "col-span-1 md:col-span-1 md:row-span-1"; // Square
+
                 return (
                   <motion.div
                     key={item.title}
                     initial={{ opacity: 0, y: 20 }}
                     whileInView={{ opacity: 1, y: 0 }}
                     viewport={{ once: true }}
-                    whileHover={{ y: -8 }}
-                    className="relative group flex flex-col items-center flex-shrink-0 w-[110px] md:w-[150px] transition-all duration-500 snap-center"
+                    className={`relative group overflow-hidden rounded-3xl block shadow-sm hover:shadow-2xl transition-all duration-500 ${spanClass}`}
                   >
-                    {/* Circular Image Container */}
-                    <div className="relative w-24 h-24 md:w-32 md:h-32 rounded-full overflow-hidden p-1 bg-white border-2 border-brand-orange/5 group-hover:border-brand-orange transition-all duration-500 shadow-sm group-hover:shadow-2xl group-hover:shadow-brand-orange/10 mb-4">
-                      <div className="w-full h-full rounded-full overflow-hidden relative">
-                        <img
-                          src={item.imageUrl}
-                          alt={item.title}
-                          className="w-full h-full object-cover transition-transform duration-1000 group-hover:scale-115"
-                        />
-                        <div className="absolute inset-0 bg-brand-orange/0 group-hover:bg-brand-orange/10 transition-colors duration-500" />
-                      </div>
+                    {/* Background Image */}
+                    <div className="absolute inset-0 bg-gray-100">
+                      <img src={item.imageUrl} alt={item.title} className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-700 ease-out" />
                     </div>
-
-                    {/* Category Title below */}
-                    <h3 className="text-[10px] md:text-[12px] font-bold text-center text-text-main uppercase tracking-[0.2em] transition-colors duration-300 group-hover:text-brand-orange px-2 line-clamp-2">
-                      {item.title}
-                    </h3>
+                    
+                    {/* Gradient Overlay for Text Readability */}
+                    <div className="absolute inset-0 bg-gradient-to-t from-black/90 via-black/20 to-transparent opacity-80 group-hover:opacity-100 transition-opacity duration-500"></div>
+                    
+                    {/* Text Content */}
+                    <div className="absolute bottom-0 left-0 right-0 p-6 md:p-8 transform translate-y-2 group-hover:translate-y-0 transition-transform duration-500">
+                      <h4 className="text-white text-2xl md:text-3xl font-bold font-fashion mb-1 md:mb-2 leading-tight">
+                        {item.title}
+                      </h4>
+                      <p className="text-white/80 text-xs md:text-sm tracking-wide font-medium">
+                        Explore the finest {item.title.toLowerCase()} collections
+                      </p>
+                    </div>
 
                     {/* Interactive Link */}
                     <Link
@@ -466,9 +474,6 @@ export default function Home() {
                       className="absolute inset-0 z-10"
                       aria-label={`Shop ${item.title}`}
                     />
-
-                    {/* Subtle underline on hover */}
-                    <div className="w-0 h-[2px] bg-brand-orange mt-2 transition-all duration-500 group-hover:w-1/2 rounded-full opacity-50" />
                   </motion.div>
                 );
               })}
