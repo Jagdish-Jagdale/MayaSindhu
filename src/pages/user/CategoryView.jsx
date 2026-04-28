@@ -11,7 +11,7 @@ export default function CategoryView() {
   const params = useParams();
   const pathSegments = params['*'] ? params['*'].split('/') : [];
   const { categories, loading: categoriesLoading } = useCategories();
-  
+
   const [products, setProducts] = useState([]);
   const [productsLoading, setProductsLoading] = useState(true);
   const [currentCategory, setCurrentCategory] = useState(null);
@@ -76,15 +76,15 @@ export default function CategoryView() {
       }
       return names;
     };
-    
+
     const allTargets = [...targetNames, ...getChildNames(currentCategory)];
 
     return products.filter(p => {
       const pCol = p.collection?.toLowerCase() || '';
       const pCat = p.categoryId?.toLowerCase() || '';
       const pName = p.name?.toLowerCase() || '';
-      
-      return allTargets.some(t => 
+
+      return allTargets.some(t =>
         pCol.includes(t) || pCat.includes(t) || pName.includes(t)
       );
     });
@@ -110,7 +110,7 @@ export default function CategoryView() {
   }
 
   return (
-    <div className="bg-white min-h-screen pt-24 md:pt-32 pb-20">
+    <div className="bg-white min-h-screen pt-6 md:pt-10 pb-20">
       {/* Category Header & Breadcrumbs */}
       <section className="px-6 md:px-12 lg:px-24 mb-16">
         <nav className="flex items-center space-x-2 text-[10px] md:text-[11px] font-bold uppercase tracking-[0.2em] text-gray-400 mb-8 overflow-x-auto no-scrollbar whitespace-nowrap pb-2">
@@ -120,8 +120,8 @@ export default function CategoryView() {
           {breadcrumbs.map((crumb, idx) => (
             <React.Fragment key={crumb.id}>
               <ChevronRight size={12} />
-              <Link 
-                to={crumb.fullPath} 
+              <Link
+                to={crumb.fullPath}
                 className={`transition-colors ${idx === breadcrumbs.length - 1 ? 'text-brand-orange' : 'hover:text-brand-orange'}`}
               >
                 {crumb.name}
@@ -151,8 +151,8 @@ export default function CategoryView() {
             <h3 className="text-[10px] font-black tracking-[0.3em] uppercase text-brand-black mb-10">Explore Subranges</h3>
             <div className="flex flex-nowrap gap-8 md:gap-12 overflow-x-auto no-scrollbar pb-6 snap-x">
               {currentCategory.children.map((child) => (
-                <Link 
-                  key={child.id} 
+                <Link
+                  key={child.id}
                   to={child.fullPath}
                   className="flex flex-col items-center flex-shrink-0 w-24 md:w-32 snap-start group"
                 >
@@ -181,8 +181,8 @@ export default function CategoryView() {
           <span className="text-[10px] font-black tracking-[0.2em] uppercase text-gray-400">
             {filteredProducts.length} Treasures Found
           </span>
-          
-          <button 
+
+          <button
             onClick={() => setIsMobileFiltersOpen(true)}
             className="md:hidden flex items-center gap-2 text-[10px] font-black tracking-[0.2em] uppercase text-brand-black"
           >
