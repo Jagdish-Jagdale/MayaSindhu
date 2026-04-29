@@ -60,42 +60,49 @@ export default function ProfileInfo({ user }) {
   if (loading) return <div className="flex justify-center p-20"><Loader2 className="animate-spin text-brand-orange" size={40} /></div>;
 
   return (
-    <div className="bg-white p-10 md:p-14 rounded-[4rem] shadow-sm border border-gray-50">
-      <div className="flex items-center gap-4 mb-12">
-        <User className="text-brand-orange underline decoration-2 underline-offset-8" size={28} />
-        <h2 className="text-3xl font-fashion font-bold text-[#1A1A1A]">Personal Information</h2>
+    <div className="bg-white p-6 md:p-8 rounded-[2rem] shadow-xl shadow-gray-200/40 border border-white relative overflow-hidden">
+      <div className="absolute top-0 left-0 w-32 h-32 bg-brand-orange/5 rounded-full blur-3xl -z-10" />
+      
+      <div className="flex items-center gap-3 mb-6">
+        <div className="p-2.5 bg-brand-orange/10 rounded-lg">
+          <User className="text-brand-orange" size={20} />
+        </div>
+        <div>
+          <h2 className="text-xl font-fashion font-bold text-[#1A1A1A] uppercase tracking-tight">Personal Information</h2>
+          <p className="text-[8px] text-gray-400 font-black uppercase tracking-[0.2em]">Account details</p>
+        </div>
       </div>
 
       <form onSubmit={handleSubmit} className="space-y-8">
-        <div className="grid grid-cols-1 md:grid-cols-2 gap-8">
+        <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
           <FormInput 
             label="Full Name" 
-            icon={<User size={18} />} 
+            icon={<User size={16} />} 
             value={formData.fullName}
             onChange={(v) => setFormData({...formData, fullName: v})}
           />
           <FormInput 
             label="Email Address" 
-            icon={<Mail size={18} />} 
+            icon={<Mail size={16} />} 
             value={formData.email}
             disabled
           />
           <FormInput 
             label="Phone Number" 
-            icon={<Phone size={18} />} 
+            icon={<Phone size={16} />} 
             value={formData.phone}
             onChange={(v) => setFormData({...formData, phone: v})}
             type="tel"
           />
-          <div className="space-y-3">
-            <label className="text-[10px] uppercase font-bold tracking-[0.2em] text-gray-400 block px-2">Gender</label>
-            <div className="flex gap-4 p-2 bg-[#FAF9F6] rounded-2xl">
+          <div className="space-y-2">
+            <label className="text-[9px] uppercase font-bold tracking-[0.2em] text-gray-400 block px-2">Gender</label>
+            <div className="flex gap-3 p-1.5 bg-[#FAF9F6] rounded-xl">
               {['Male', 'Female', 'Other'].map(g => (
                 <button
                   key={g}
                   type="button"
                   onClick={() => setFormData({...formData, gender: g})}
-                  className={`flex-1 py-3 rounded-xl text-xs font-bold transition-all ${
+                  className={`flex-1 py-2 rounded-lg text-[10px] font-bold transition-all ${
                     formData.gender === g 
                     ? 'bg-brand-orange text-white shadow-lg shadow-brand-orange/20' 
                     : 'text-gray-400 hover:text-text-main'
@@ -108,21 +115,21 @@ export default function ProfileInfo({ user }) {
           </div>
           <FormInput 
             label="Date of Birth" 
-            icon={<Calendar size={18} />} 
+            icon={<Calendar size={16} />} 
             value={formData.dob}
             onChange={(v) => setFormData({...formData, dob: v})}
             type="date"
           />
         </div>
 
-        <div className="pt-8 border-t border-gray-50 flex justify-end">
+        <div className="pt-6 border-t border-gray-50 flex justify-end">
           <button 
             type="submit" 
             disabled={saving}
-            className="btn btn-primary px-12 py-5 rounded-2xl flex items-center gap-3 transition-transform active:scale-95 disabled:opacity-50"
+            className="btn btn-primary px-8 py-3.5 rounded-xl flex items-center gap-2 transition-transform active:scale-95 disabled:opacity-50"
           >
-            {saving ? <Loader2 className="animate-spin" size={20} /> : <Save size={20} />}
-            <span className="uppercase tracking-widest text-sm font-bold">Save Changes</span>
+            {saving ? <Loader2 className="animate-spin" size={18} /> : <Save size={18} />}
+            <span className="uppercase tracking-widest text-xs font-bold">Save Changes</span>
           </button>
         </div>
       </form>
@@ -132,10 +139,10 @@ export default function ProfileInfo({ user }) {
 
 function FormInput({ label, icon, value, onChange, type = 'text', disabled = false }) {
   return (
-    <div className="space-y-3">
-      <label className="text-[10px] uppercase font-bold tracking-[0.2em] text-gray-400 block px-2">{label}</label>
+    <div className="space-y-2">
+      <label className="text-[9px] uppercase font-bold tracking-[0.2em] text-gray-400 block px-2">{label}</label>
       <div className="relative group">
-        <div className="absolute left-6 top-1/2 -translate-y-1/2 text-gray-300 group-focus-within:text-brand-orange transition-colors">
+        <div className="absolute left-5 top-1/2 -translate-y-1/2 text-gray-300 group-focus-within:text-brand-orange transition-colors">
           {icon}
         </div>
         <input 
@@ -144,8 +151,8 @@ function FormInput({ label, icon, value, onChange, type = 'text', disabled = fal
           disabled={disabled}
           onChange={(e) => onChange?.(e.target.value)}
           className={`
-            w-full bg-[#FAF9F6] pl-14 pr-6 py-5 rounded-2xl border border-transparent 
-            focus:outline-none focus:border-brand-orange/20 focus:bg-white transition-all font-medium text-sm
+            w-full bg-[#FAF9F6] pl-12 pr-5 py-3.5 rounded-xl border border-transparent 
+            focus:outline-none focus:border-brand-orange/20 focus:bg-white transition-all font-medium text-[13px]
             ${disabled ? 'opacity-50 cursor-not-allowed' : ''}
           `}
         />

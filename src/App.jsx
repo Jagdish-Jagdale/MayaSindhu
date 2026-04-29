@@ -97,8 +97,10 @@ function App() {
             <Route path="contact" element={<Contact />} />
             <Route path="profile" element={<Profile />} />
             <Route path="checkout" element={<Checkout />} />
-            <Route path="login" element={<Login />} />
           </Route>
+
+          {/* Standalone User Routes */}
+          <Route path="/login" element={<Login />} />
 
           {/* Admin Login Route (Standalone) */}
           <Route path="/admin/login" element={

@@ -1,7 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import { useParams, Link } from 'react-router-dom';
 import { motion, AnimatePresence } from 'framer-motion';
-import { ChevronRight, ChevronDown, SlidersHorizontal, X, Loader2 } from 'lucide-react';
+import { ChevronRight, ChevronDown, SlidersHorizontal, X, Loader2, ArrowLeft } from 'lucide-react';
 import ProductCard from '../../components/user/ProductCard';
 import useCategories from '../../hooks/useCategories';
 import { db } from '../../firebase';
@@ -110,9 +110,14 @@ export default function CategoryView() {
   }
 
   return (
-    <div className="bg-white min-h-screen pt-6 md:pt-10 pb-20">
-      {/* Category Header & Breadcrumbs */}
-      <section className="px-6 md:px-12 lg:px-24 mb-16">
+    <div className="bg-white min-h-screen pt-12 pb-24 font-sans">
+      <div className="max-w-[1400px] mx-auto px-6">
+        <Link to="/" className="flex items-center gap-2 text-sm font-medium text-gray-500 hover:text-black transition-all group mb-4 w-fit">
+          <ArrowLeft size={18} className="transition-transform group-hover:-translate-x-1" />
+          Back to Store
+        </Link>
+        {/* Breadcrumbs */}
+      <section className="px-6 md:px-12 lg:px-24 mb-8">
         <nav className="flex items-center space-x-2 text-[10px] md:text-[11px] font-bold uppercase tracking-[0.2em] text-gray-400 mb-8 overflow-x-auto no-scrollbar whitespace-nowrap pb-2">
           <Link to="/" className="hover:text-brand-orange transition-colors">Home</Link>
           <ChevronRight size={12} />
@@ -204,6 +209,7 @@ export default function CategoryView() {
           )}
         </div>
       </section>
+      </div>
     </div>
   );
 }

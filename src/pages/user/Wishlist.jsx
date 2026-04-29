@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
-import { Heart, ShoppingBag, X, Trash2 } from 'lucide-react';
+import { Heart, ShoppingBag, X, Trash2, ArrowLeft } from 'lucide-react';
 import { Link } from 'react-router-dom';
 import ProductCard from '../../components/user/ProductCard';
 import { db } from '../../firebase';
@@ -71,8 +71,12 @@ export default function Wishlist() {
   }
 
   return (
-    <div className="bg-white min-h-screen py-16 md:py-24">
+    <div className="bg-white min-h-screen pt-16 pb-24">
       <div className="max-w-[1400px] mx-auto px-6">
+        <Link to="/" className="flex items-center gap-2 text-sm font-medium text-gray-500 hover:text-black transition-all group mb-8 w-fit">
+          <ArrowLeft size={18} className="transition-transform group-hover:-translate-x-1" />
+          Back to Store
+        </Link>
         <div className="mb-16">
           <h1 className="text-4xl md:text-5xl font-fashion font-bold text-[#1A1A1A] mb-4">My Wishlist</h1>
           <p className="text-gray-500">{items.length} treasures saved</p>

@@ -11,22 +11,35 @@ export default function ProductCard({ id, slug, name, price, image, images, rati
   const [isAdded, setIsAdded] = useState(false);
   const { user } = useAuth();
   const [isWishlisted, setIsWishlisted] = useState(false);
+  const [isInCart, setIsInCart] = useState(false);
   const navigate = useNavigate();
   const location = useLocation();
 
-  // Listen for wishlist status
+  // Listen for wishlist and cart status
   useEffect(() => {
     if (!user) {
       setIsWishlisted(false);
+      setIsInCart(false);
       return;
     }
 
-    const wishItemRef = doc(db, 'users', user.uid, 'wishlist', id.toString());
-    const unsubscribe = onSnapshot(wishItemRef, (doc) => {
+    const productId = id?.toString();
+    if (!productId) return;
+
+    const wishItemRef = doc(db, 'users', user.uid, 'wishlist', productId);
+    const unsubWishlist = onSnapshot(wishItemRef, (doc) => {
       setIsWishlisted(doc.exists());
     });
 
-    return () => unsubscribe();
+    const cartItemRef = doc(db, 'users', user.uid, 'cart', productId);
+    const unsubCart = onSnapshot(cartItemRef, (doc) => {
+      setIsInCart(doc.exists());
+    });
+
+    return () => {
+      unsubWishlist();
+      unsubCart();
+    };
   }, [user, id]);
 
   const handleAddToCart = async (e) => {
@@ -125,34 +138,38 @@ export default function ProductCard({ id, slug, name, price, image, images, rati
       viewport={{ once: true }}
       className="group relative"
     >
-      <div className="relative aspect-[1/1.1] overflow-hidden bg-brand-gray rounded-[3rem]">
+      <div className="relative aspect-[1/1.1] overflow-hidden bg-brand-gray rounded-2xl shadow-sm hover:shadow-xl transition-shadow duration-500">
         <Link to={`/product/${slug || id}`}>
           <img
             src={displayImage}
             alt={name}
-            className="w-full h-full object-cover transition-transform duration-1000 group-hover:scale-105"
+            className="w-full h-full object-cover transition-transform duration-[2000ms] ease-out group-hover:scale-110"
           />
         </Link>
 
         {/* Wishlist Icon */}
         <button
           onClick={handleWishlist}
-          className={`absolute top-6 right-6 p-2.5 rounded-full shadow-md transition-all duration-300 z-20 ${isWishlisted
-            ? 'bg-red-50 text-red-500'
-            : 'bg-white text-text-main hover:bg-brand-orange hover:text-white'
+          className={`absolute top-4 right-4 md:top-6 md:right-6 p-2.5 rounded-full transition-all duration-500 z-20 shadow-sm hover:scale-110 ${isWishlisted
+            ? 'bg-white text-red-500 shadow-md'
+            : 'bg-white/70 backdrop-blur-md text-brand-black hover:bg-white'
             }`}
         >
           <Heart size={18} strokeWidth={2} fill={isWishlisted ? "currentColor" : "none"} />
         </button>
 
-        {/* Add to Cart - Orange Pill (Always visible on mobile, hover on desktop) */}
-        <div className="absolute bottom-6 md:bottom-8 left-1/2 -translate-x-1/2 md:translate-y-12 md:opacity-0 group-hover:translate-y-0 group-hover:opacity-100 transition-all duration-500 z-10 w-full px-4 md:px-8">
+        {/* Add to Cart - Frosted Glass Pill (Always visible on mobile, hover on desktop) */}
+        <div className="absolute bottom-4 md:bottom-6 left-1/2 -translate-x-1/2 md:translate-y-10 md:opacity-0 group-hover:translate-y-0 group-hover:opacity-100 transition-all duration-700 ease-out z-10 w-full px-6">
           <button
-            onClick={handleAddToCart}
-            className="w-full flex items-center justify-center space-x-2 md:space-x-3 bg-brand-orange text-white py-3 md:py-4 rounded-full shadow-xl hover:bg-brand-orange-dark active:scale-95 transition-all duration-300"
+            onClick={isInCart ? (e) => { e.preventDefault(); e.stopPropagation(); navigate('/cart'); } : handleAddToCart}
+            className={`w-full flex items-center justify-center space-x-2 backdrop-blur-md border border-white/30 text-white py-3.5 rounded-full shadow-2xl active:scale-95 transition-all duration-500 ${
+              isInCart ? 'bg-brand-orange hover:bg-brand-orange-dark' : 'bg-black/30 hover:bg-white hover:text-brand-black'
+            }`}
           >
-            <ShoppingBag size={18} className="md:w-5 md:h-5" strokeWidth={2.5} />
-            <span className="text-[9px] md:text-[12px] font-bold uppercase tracking-widest whitespace-nowrap">Add to Cart</span>
+            <ShoppingBag size={16} strokeWidth={2} />
+            <span className="text-[10px] md:text-[11px] font-bold uppercase tracking-[0.2em] whitespace-nowrap">
+              {isInCart ? "Go to Cart" : "Add to Cart"}
+            </span>
           </button>
         </div>
 
@@ -193,9 +210,9 @@ export default function ProductCard({ id, slug, name, price, image, images, rati
         </AnimatePresence>
       </div>
 
-      <div className="mt-6 px-2">
+      <div className="mt-5 px-1">
         <Link to={`/product/${slug || id}`}>
-          <h3 className="text-sm md:text-base font-fashion font-semibold text-text-main hover:text-brand-orange transition-colors line-clamp-1 mb-1 md:mb-2">{name}</h3>
+          <h3 className="text-sm md:text-[15px] tracking-wide font-fashion text-text-main hover:text-brand-orange transition-colors line-clamp-1 mb-1.5">{name}</h3>
         </Link>
         <div className="flex items-center justify-between">
           <p className="text-brand-orange font-bold text-lg md:text-xl">

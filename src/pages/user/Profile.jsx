@@ -2,9 +2,9 @@ import React, { useState, useEffect } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { 
   Package, User, Heart, Settings, LogOut, ChevronRight, 
-  MapPin, CreditCard, Bell, RotateCcw, HelpCircle, Menu, X, ShoppingBag
+  MapPin, CreditCard, Bell, RotateCcw, HelpCircle, Menu, X, ShoppingBag, ArrowLeft 
 } from 'lucide-react';
-import { useNavigate } from 'react-router-dom';
+import { useNavigate, Link } from 'react-router-dom';
 import { useAuth } from '../../context/AuthContext';
 
 // Import sections
@@ -60,8 +60,16 @@ export default function Profile() {
   const ActiveComponent = TABS.find(t => t.id === activeTab)?.component || ProfileInfo;
 
   return (
-    <div className="bg-[#FAF9F6] min-h-screen pt-32 pb-24 font-sans focus-within:scroll-smooth">
-      <div className="max-w-[1536px] mx-auto px-6 lg:px-12">
+    <div className="bg-[#FAF9F6] min-h-screen pt-16 pb-20 font-sans focus-within:scroll-smooth relative overflow-hidden">
+      {/* Premium Background Accents */}
+      <div className="absolute top-0 right-0 w-[500px] h-[500px] bg-brand-orange/5 rounded-full blur-[120px] -z-10 pointer-events-none" />
+      <div className="absolute bottom-0 left-0 w-[400px] h-[400px] bg-brand-orange/3 rounded-full blur-[100px] -z-10 pointer-events-none" />
+
+      <div className="max-w-6xl mx-auto px-6 relative">
+        <Link to="/" className="flex items-center gap-2 text-[10px] font-bold text-gray-400 hover:text-black transition-all group mb-4 w-fit uppercase tracking-[0.2em]">
+          <ArrowLeft size={14} className="transition-transform group-hover:-translate-x-1" />
+          Back to Store
+        </Link>
         
         {/* Mobile Sidebar Toggle */}
         <div className="lg:hidden mb-8 flex items-center justify-between bg-white p-6 rounded-3xl shadow-sm">
@@ -84,15 +92,15 @@ export default function Profile() {
           </button>
         </div>
 
-        <div className="flex flex-col lg:flex-row gap-12 relative">
+        <div className="flex flex-col lg:flex-row gap-8 relative">
           
           {/* Dashboard Sidebar */}
           <aside className={`
-            lg:w-80 flex-shrink-0 z-40 transition-all duration-500
+            lg:w-64 flex-shrink-0 z-40 transition-all duration-500
             ${isSidebarOpen ? 'fixed inset-0 bg-white p-12 overflow-y-auto' : 'hidden lg:block'}
           `}>
-            <div className="bg-white p-10 rounded-[3.5rem] shadow-sm flex flex-col items-center text-center mb-8 hidden lg:flex">
-              <div className="w-24 h-24 bg-brand-orange rounded-[2rem] flex items-center justify-center text-white font-fashion font-bold text-3xl mb-6 shadow-xl shadow-brand-orange/20 overflow-hidden">
+            <div className="bg-white p-8 rounded-[2.5rem] shadow-xl shadow-gray-200/50 flex flex-col items-center text-center mb-6 border border-white/50 backdrop-blur-sm">
+              <div className="w-20 h-20 bg-brand-orange rounded-[1.8rem] flex items-center justify-center text-white font-fashion font-bold text-2xl mb-4 shadow-2xl shadow-brand-orange/30 overflow-hidden border-4 border-white">
                 {user.photoURL ? (
                   <img src={user.photoURL} alt="Profile" className="w-full h-full object-cover" />
                 ) : (
@@ -100,13 +108,15 @@ export default function Profile() {
                 )}
               </div>
               <div>
-                <h2 className="text-xl font-fashion font-bold text-[#1A1A1A] leading-tight mb-1">{user.displayName || 'Guest User'}</h2>
-                <p className="text-gray-400 text-xs font-medium">{user.email}</p>
+                <h2 className="text-xl font-fashion font-bold text-[#1A1A1A] leading-tight mb-1.5 uppercase tracking-tight">{user.displayName || 'Guest User'}</h2>
+                <div className="inline-block px-3 py-1 bg-gray-50 rounded-full">
+                  <p className="text-gray-400 text-[10px] font-black uppercase tracking-widest">{user.email}</p>
+                </div>
               </div>
             </div>
 
-            <nav className="bg-white rounded-[3.5rem] overflow-hidden p-4 shadow-sm border border-gray-50">
-              <div className="space-y-2">
+            <nav className="bg-white/80 backdrop-blur-md rounded-[3rem] overflow-hidden p-3 shadow-xl shadow-gray-200/50 border border-white">
+              <div className="space-y-1.5">
                 {TABS.map((tab) => (
                   <button
                     key={tab.id}
@@ -122,23 +132,25 @@ export default function Profile() {
                       }
                     `}
                   >
-                    <div className="flex items-center gap-4">
+                    <div className="flex items-center gap-3">
                       <span className={`${activeTab === tab.id ? 'text-white' : 'text-gray-400 group-hover:text-brand-orange'} transition-colors`}>
                         {tab.icon}
                       </span>
-                      <span className="text-[14px] font-bold tracking-wide">{tab.label}</span>
+                      <span className="text-[13px] font-bold tracking-wide">{tab.label}</span>
                     </div>
                     <ChevronRight size={16} className={`${activeTab === tab.id ? 'opacity-100' : 'opacity-0'} transition-opacity`} />
                   </button>
                 ))}
                 
-                <div className="border-t border-gray-50 mt-4 pt-4">
+                <div className="mt-2 pt-2 border-t border-gray-50">
                   <button 
                     onClick={handleLogout}
-                    className="w-full flex items-center gap-4 p-5 rounded-2xl text-red-400 hover:bg-red-50 transition-all font-bold"
+                    className="w-full flex items-center justify-between p-4 rounded-xl text-red-500 hover:bg-red-50 transition-all font-black uppercase tracking-widest text-[10px] group"
                   >
-                    <LogOut size={20} />
-                    <span className="text-[14px]">Logout</span>
+                    <div className="flex items-center gap-3">
+                      <LogOut size={16} className="group-hover:translate-x-1 transition-transform" />
+                      <span>Sign Out</span>
+                    </div>
                   </button>
                 </div>
               </div>
