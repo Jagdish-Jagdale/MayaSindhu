@@ -101,7 +101,7 @@ export default function CartTab({ user }) {
               className="bg-white p-6 rounded-[2.5rem] shadow-sm border border-gray-50 flex items-center gap-6 group hover:shadow-md transition-all duration-500"
             >
               <div className="w-24 h-32 rounded-3xl overflow-hidden flex-shrink-0 bg-gray-50">
-                <img src={item.image} alt={item.name} className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-700" />
+                <img src={item.image || null} alt={item.name} className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-700" />
               </div>
 
               <div className="flex-grow min-w-0">

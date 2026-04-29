@@ -24,15 +24,18 @@ export default function OrderHistory({ user }) {
 
     const q = query(
       collection(db, 'orders'),
-      where('customerUid', '==', user.uid),
-      orderBy('createdAt', 'desc')
+      where('customerUid', '==', user.uid)
     );
 
     const unsubscribe = onSnapshot(q, (snapshot) => {
       const orderData = snapshot.docs.map(doc => ({
         id: doc.id,
         ...doc.data()
-      }));
+      })).sort((a, b) => {
+        const dateA = a.createdAt?.toDate ? a.createdAt.toDate() : new Date(a.createdAt);
+        const dateB = b.createdAt?.toDate ? b.createdAt.toDate() : new Date(b.createdAt);
+        return dateB - dateA;
+      });
       setOrders(orderData);
       setLoading(false);
     }, (error) => {

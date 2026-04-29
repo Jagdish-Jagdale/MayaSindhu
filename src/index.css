@@ -8,15 +8,15 @@
   /* Brand Palette */
   --color-primary: #1A1A1A;
   --color-accent: #D4AF37;
-  --color-brand-orange: #FF6B00;
-  --color-brand-orange-dark: #E66000;
-  --color-brand-orange-light: #FFF5EB;
+  --color-brand-orange: #F99C00;
+  --color-brand-orange-dark: #D98600;
+  --color-brand-orange-light: #FFF8EB;
 
   /* Functional Palette */
   --color-text-main: #1A1A1A;
   --color-text-muted: #666666;
   --color-bg-alt: #FCFBF9;
-  --color-brand-gray: #F5F5F7;
+  --color-brand-gray: #F7F7F7;
   
   --color-brand-white: #FFFFFF;
   --color-brand-black: #1A1A1A;
@@ -28,7 +28,8 @@
   }
 
   h1, h2, h3, h4, h5, h6 {
-    @apply font-fashion font-bold text-text-main;
+    @apply font-fashion text-text-main tracking-tight;
+    font-weight: 500 !important;
   }
 
   button, 
@@ -41,16 +42,16 @@
 
 @layer components {
   .btn {
-    @apply px-10 py-4 transition-all duration-500 font-medium rounded-full uppercase text-[12px] tracking-widest text-center cursor-pointer;
+    @apply px-10 py-3.5 transition-all duration-500 font-semibold rounded-full uppercase text-[11px] tracking-[0.2em] text-center cursor-pointer;
   }
 
 
   .btn-primary {
-    @apply bg-brand-orange text-white hover:bg-brand-orange-dark shadow-lg shadow-brand-orange/20;
+    @apply bg-brand-orange text-white hover:bg-brand-orange-dark shadow-[0_8px_30px_rgb(249,156,0,0.3)] hover:shadow-[0_8px_40px_rgb(249,156,0,0.5)];
   }
 
   .btn-outline {
-    @apply border border-brand-black/10 text-brand-black hover:bg-brand-black hover:text-white backdrop-blur-sm;
+    @apply border border-brand-black/20 text-brand-black hover:bg-brand-black hover:text-white backdrop-blur-sm transition-colors;
   }
 
   /* Utility to hide scrollbar */

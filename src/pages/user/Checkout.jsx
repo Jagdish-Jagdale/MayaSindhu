@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
-import { Check, ChevronRight, Lock, CreditCard, Truck, ShoppingBag, MapPin, MapPinned } from 'lucide-react';
+import { Check, ChevronRight, Lock, CreditCard, Truck, ShoppingBag, MapPin, MapPinned, ArrowLeft } from 'lucide-react';
 import { Link, useNavigate } from 'react-router-dom';
 import { db } from '../../firebase';
 import { collection, addDoc, serverTimestamp, query, onSnapshot, getDocs, deleteDoc, doc } from 'firebase/firestore';
@@ -132,8 +132,12 @@ export default function Checkout() {
   const prevStep = () => setActiveStep((prev) => Math.max(prev - 1, 0));
 
   return (
-    <div className="bg-[#FAF9F6] min-h-screen py-16 md:py-24 font-sans focus-within:scroll-smooth">
+    <div className="bg-[#FAF9F6] min-h-screen pt-16 pb-24 font-sans focus-within:scroll-smooth">
       <div className="max-w-[1200px] mx-auto px-6">
+        <Link to="/" className="flex items-center gap-2 text-sm font-medium text-gray-500 hover:text-black transition-all group mb-12 w-fit">
+          <ArrowLeft size={18} className="transition-transform group-hover:-translate-x-1" />
+          Back to Store
+        </Link>
         
         {/* Stepper Header */}
         <div className="flex justify-between items-center mb-16 relative">
@@ -332,7 +336,7 @@ function FormInput({ label, type = 'text', placeholder = '', value = '', onChang
         type={type} 
         placeholder={placeholder}
         value={value}
-        onChange={(e) => onChange(e.target.value)}
+        onChange={(e) => onChange?.(e.target.value)}
         className="w-full bg-[#FAF9F6] px-6 py-4 rounded-2xl border border-transparent focus:outline-none focus:bg-white focus:border-brand-orange/20 focus:ring-4 focus:ring-brand-orange/5 transition-all font-medium text-sm"
       />
     </div>

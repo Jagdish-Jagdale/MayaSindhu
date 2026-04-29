@@ -1,7 +1,7 @@
 import { useState, useEffect } from 'react';
-import { useParams, useNavigate, useLocation, Navigate } from 'react-router-dom';
+import { useParams, useNavigate, useLocation, Navigate, Link } from 'react-router-dom';
 import { motion, AnimatePresence } from 'framer-motion';
-import { ShoppingBag, ChevronRight, Star, Heart, CheckCircle2, Loader2 } from 'lucide-react';
+import { ShoppingBag, ChevronRight, Star, Heart, CheckCircle2, Loader2, ArrowLeft, ArrowRight } from 'lucide-react';
 import { useAuth } from '../../context/AuthContext';
 import { db } from '../../firebase';
 import { doc, getDoc, setDoc, updateDoc, deleteDoc, serverTimestamp, onSnapshot, collection, query, where, getDocs } from 'firebase/firestore';
@@ -14,8 +14,10 @@ export default function ProductDetail() {
 
   const [product, setProduct] = useState(null);
   const [loading, setLoading] = useState(true);
-  const [isAdded, setIsAdded] = useState(false);
   const [isWishlisted, setIsWishlisted] = useState(false);
+  const [isAdded, setIsAdded] = useState(false);
+  const [alreadyInBag, setAlreadyInBag] = useState(false);
+  const [adding, setAdding] = useState(false);
 
   // Fetch Product by Slug
   useEffect(() => {
@@ -61,6 +63,18 @@ export default function ProductDetail() {
     return () => unsubscribe();
   }, [user, product]);
 
+  useEffect(() => {
+    if (!user || !product) {
+      setAlreadyInBag(false);
+      return;
+    }
+    const cartItemRef = doc(db, 'users', user.uid, 'cart', product.id.toString());
+    const unsubscribe = onSnapshot(cartItemRef, (docSnap) => {
+      setAlreadyInBag(docSnap.exists());
+    });
+    return () => unsubscribe();
+  }, [user, product]);
+
   const handleAddToCart = async () => {
     if (!user || !product) {
       navigate('/login', { state: { from: location } });
@@ -89,7 +103,7 @@ export default function ProductDetail() {
       }
 
       setIsAdded(true);
-      setTimeout(() => setIsAdded(false), 2000);
+      // Remove auto-hide to let user see "Go to Bag" option
     } catch (error) {
       console.error("Cart Error:", error);
       alert(`Database Vault Error: ${error.code || error.message}. Please check your Firebase permissions.`);
@@ -142,10 +156,14 @@ export default function ProductDetail() {
   }
 
   return (
-    <div className="bg-[#FAF9F6] min-h-screen pt-32 pb-24 font-sans">
+    <div className="bg-[#FAF9F6] min-h-screen pt-16 pb-24 font-sans">
       <div className="max-w-7xl mx-auto px-6 lg:px-12">
+        <Link to="/" className="flex items-center gap-2 text-sm font-medium text-gray-500 hover:text-black transition-all group mb-6 w-fit">
+          <ArrowLeft size={18} className="transition-transform group-hover:-translate-x-1" />
+          Back to Store
+        </Link>
         {/* Breadcrumbs */}
-        <nav className="flex items-center space-x-2 text-[10px] tracking-[0.4em] uppercase font-bold text-gray-400 mb-12">
+        <nav className="flex items-center space-x-2 text-[10px] tracking-[0.4em] uppercase font-bold text-gray-400 mb-10">
           <a href="/" className="hover:text-brand-orange transition-colors">Home</a>
           <ChevronRight size={10} />
           <a href="/shop" className="hover:text-brand-orange transition-colors">The Collection</a>
@@ -160,9 +178,15 @@ export default function ProductDetail() {
             animate={{ opacity: 1, x: 0 }}
             className="space-y-4 relative"
           >
-            <div className="aspect-[4/5] overflow-hidden bg-brand-gray rounded-[4rem] shadow-2xl relative group">
-              <img src={product.image || (product.images && product.images[0])} alt={product.name} className="w-full h-full object-cover transition-transform duration-1000 group-hover:scale-105" />
-              <div className="absolute inset-0 bg-black/5 pointer-events-none" />
+            <div className="w-full max-w-[500px] mx-auto flex items-center justify-center">
+              <div className="relative group shadow-2xl rounded-[2.5rem] overflow-hidden bg-white/40 border border-gray-100">
+                <img 
+                  src={product.image || (product.images && product.images[0]) || null} 
+                  alt={product.name} 
+                  className="w-auto h-auto max-h-[65vh] max-w-full object-contain transition-transform duration-1000 group-hover:scale-105 block" 
+                />
+                <div className="absolute inset-0 bg-black/5 pointer-events-none" />
+              </div>
             </div>
 
             {/* Success Animation Overlay */}
@@ -197,6 +221,28 @@ export default function ProductDetail() {
                   >
                     {product.name} added successfully.
                   </motion.p>
+                  
+                  <div className="flex flex-col gap-3 mt-8 w-full max-w-[240px]">
+                    <motion.button
+                      initial={{ y: 10, opacity: 0 }}
+                      animate={{ y: 0, opacity: 1 }}
+                      transition={{ delay: 0.4 }}
+                      onClick={() => navigate('/cart')}
+                      className="w-full px-8 py-4 bg-[#1A1A1A] text-white rounded-2xl flex items-center justify-center gap-3 hover:bg-black transition-all font-bold text-xs uppercase tracking-widest active:scale-95 group"
+                    >
+                      Go to Bag
+                      <ArrowRight size={16} className="group-hover:translate-x-1 transition-transform" />
+                    </motion.button>
+                    <motion.button
+                      initial={{ y: 10, opacity: 0 }}
+                      animate={{ y: 0, opacity: 1 }}
+                      transition={{ delay: 0.5 }}
+                      onClick={() => setIsAdded(false)}
+                      className="w-full px-8 py-4 bg-gray-50 text-gray-500 rounded-2xl hover:bg-gray-100 transition-all font-bold text-[10px] uppercase tracking-widest active:scale-95"
+                    >
+                      Continue Shopping
+                    </motion.button>
+                  </div>
                 </motion.div>
               )}
             </AnimatePresence>
@@ -244,11 +290,22 @@ export default function ProductDetail() {
 
             <div className="flex flex-col sm:flex-row gap-6">
               <button
-                onClick={handleAddToCart}
-                className="flex-grow bg-brand-orange text-white px-12 py-5 rounded-3xl flex items-center justify-center space-x-4 hover:shadow-2xl hover:shadow-brand-orange/20 transition-all active:scale-95 group shadow-xl shadow-brand-orange/10"
+                onClick={alreadyInBag ? () => navigate('/cart') : handleAddToCart}
+                disabled={adding}
+                className={`flex-grow px-12 py-5 rounded-3xl flex items-center justify-center space-x-4 transition-all active:scale-95 group shadow-xl ${
+                  alreadyInBag 
+                  ? 'bg-[#1A1A1A] text-white hover:bg-black shadow-black/10' 
+                  : 'bg-brand-orange text-white hover:shadow-2xl hover:shadow-brand-orange/20 shadow-brand-orange/10'
+                }`}
               >
-                <ShoppingBag size={20} strokeWidth={2.5} className="group-hover:-translate-y-0.5 transition-transform" />
-                <span className="tracking-[0.2em] font-black uppercase text-xs">Add to Bag</span>
+                {adding ? (
+                  <Loader2 className="animate-spin" size={20} />
+                ) : (
+                  <ShoppingBag size={20} strokeWidth={2.5} className="group-hover:-translate-y-0.5 transition-transform" />
+                )}
+                <span className="tracking-[0.2em] font-black uppercase text-xs">
+                  {alreadyInBag ? 'Go to Bag' : adding ? 'Adding...' : 'Add to Bag'}
+                </span>
               </button>
 
               <button

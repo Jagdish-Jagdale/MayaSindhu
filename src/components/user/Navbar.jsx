@@ -95,8 +95,23 @@ export default function Navbar() {
 
           {/* 1. Logo (Left) */}
           <div className="flex-1 md:w-[200px] lg:w-[300px] flex justify-start items-center">
-            <Link to="/" className="flex items-center">
-              <img src={navLogo} alt="MayaSindhu" className="h-8 md:h-12 lg:h-16 w-auto object-contain" />
+            <Link to="/" className="flex items-center relative inline-block group">
+              {/* Invisible image to maintain intrinsic dimensions */}
+              <img src={navLogo} alt="MayaSindhu" className="h-8 md:h-12 lg:h-16 w-auto object-contain opacity-0" />
+              {/* Mask overlay for solid brand color */}
+              <div 
+                className="absolute inset-0 bg-[#F99C00] transition-opacity duration-300 group-hover:opacity-80"
+                style={{
+                  WebkitMaskImage: `url(${navLogo})`,
+                  WebkitMaskSize: 'contain',
+                  WebkitMaskRepeat: 'no-repeat',
+                  WebkitMaskPosition: 'left center',
+                  maskImage: `url(${navLogo})`,
+                  maskSize: 'contain',
+                  maskRepeat: 'no-repeat',
+                  maskPosition: 'left center',
+                }}
+              />
             </Link>
           </div>
 

@@ -335,38 +335,36 @@ export default function Home() {
       </AnimatePresence>
 
       {/* Cinematic Banner Slider */}
-      <section className="relative h-[35vh] sm:h-[45vh] md:h-[600px] w-full flex items-center overflow-hidden bg-white">
+      <section className="relative w-full overflow-hidden bg-white">
         {bannersLoading ? (
           <div className="aspect-[5/2] w-full flex items-center justify-center bg-brand-gray/50 animate-pulse">
             <Loader2 className="w-8 h-8 animate-spin text-brand-orange" />
           </div>
         ) : (
-          <div className="relative aspect-[5/2] w-full overflow-hidden">
-            <div className="absolute inset-0 w-full h-full">
-              {/* Full Width Hero Image */}
-              <img
-                src={displaySlides[currentSlide]?.imageUrl}
-                alt={displaySlides[currentSlide]?.title || "Banner"}
-                className="w-full h-full object-cover object-center"
-              />
+          <div className="relative w-full overflow-hidden">
+            {/* Full Width Hero Image (No Cropping) */}
+            <img
+              src={displaySlides[currentSlide]?.imageUrl}
+              alt={displaySlides[currentSlide]?.title || "Banner"}
+              className="w-full h-auto block"
+            />
 
-              {/* Hero Overlay (Static) */}
-              <div className="absolute inset-0 bg-brand-black/10 flex items-center px-[5%] md:px-[8%] pointer-events-none">
-                <div className="max-w-2xl md:max-w-4xl">
-                  {displaySlides[currentSlide]?.accent && (
-                    <span className="inline-block text-white text-[10px] md:text-[14px] font-bold tracking-[0.4em] uppercase mb-2 md:mb-4">
-                      {displaySlides[currentSlide].accent}
-                    </span>
-                  )}
-                  {displaySlides[currentSlide]?.title && (
-                    <h1
-                      className="text-white font-fashion font-bold leading-[1.1] md:leading-tight"
-                      style={{ fontSize: 'clamp(18px, 4.5vw, 56px)' }}
-                    >
-                      {displaySlides[currentSlide].title}
-                    </h1>
-                  )}
-                </div>
+            {/* Hero Overlay (Cinematic Gradient) */}
+            <div className="absolute inset-0 bg-gradient-to-r from-black/70 via-black/30 to-transparent flex items-center px-[5%] md:px-[8%] pointer-events-none">
+              <div className="max-w-2xl md:max-w-4xl">
+                {displaySlides[currentSlide]?.accent && (
+                  <span className="inline-block text-white text-[10px] md:text-[14px] font-bold tracking-[0.4em] uppercase mb-2 md:mb-4">
+                    {displaySlides[currentSlide].accent}
+                  </span>
+                )}
+                {displaySlides[currentSlide]?.title && (
+                  <h1
+                    className="text-white font-fashion font-medium leading-[1.1] md:leading-tight"
+                    style={{ fontSize: 'clamp(18px, 4.5vw, 56px)' }}
+                  >
+                    {displaySlides[currentSlide].title}
+                  </h1>
+                )}
               </div>
             </div>
 
@@ -404,11 +402,11 @@ export default function Home() {
 
 
       {/* 3. Explore Category (Responsive Grid) */}
-      <section className="py-10 md:py-16 max-w-[1536px] mx-auto px-4 md:px-8 lg:px-[60px] bg-white">
+      <section className="py-12 md:py-16 max-w-[1536px] mx-auto px-4 md:px-8 lg:px-[60px] bg-white">
         <div className="mb-12 md:mb-20 text-center">
-          <span className="text-[10px] md:text-[12px] uppercase font-bold tracking-[0.4em] text-brand-orange mb-3 md:mb-4 block">Curated Realms</span>
-          <h2 className="font-fashion font-bold text-brand-black tracking-tight mb-4" style={{ fontSize: 'clamp(24px, 4vw, 48px)' }}>Explore Category</h2>
-          <div className="w-16 md:w-24 h-1.5 bg-brand-orange opacity-20 rounded-full mx-auto" />
+          <span className="text-[10px] md:text-[11px] uppercase font-bold tracking-[0.5em] text-brand-orange mb-4 block">Curated Realms</span>
+          <h2 className="font-fashion text-brand-black tracking-normal mb-6" style={{ fontSize: 'clamp(28px, 4vw, 52px)' }}>Explore Category</h2>
+          <div className="w-16 md:w-24 h-[1px] bg-brand-orange opacity-40 mx-auto" />
         </div>
 
         {(() => {
@@ -420,63 +418,65 @@ export default function Home() {
           ];
 
           return (
-            <div className="grid grid-cols-1 md:grid-cols-4 gap-4 md:gap-6 auto-rows-[250px]">
-              {exploreList.map((item, index) => {
-                const findCategoryPath = (cats, targetName) => {
-                  for (const cat of cats) {
-                    if (cat.name.toLowerCase() === targetName.toLowerCase()) return cat.fullPath;
-                    if (cat.children) {
-                      const path = findCategoryPath(cat.children, targetName);
-                      if (path) return path;
+            <div className="max-w-5xl mx-auto">
+              <div className="grid grid-cols-1 md:grid-cols-4 gap-4 md:gap-6 auto-rows-[250px]">
+                {exploreList.map((item, index) => {
+                  const findCategoryPath = (cats, targetName) => {
+                    for (const cat of cats) {
+                      if (cat.name.toLowerCase() === targetName.toLowerCase()) return cat.fullPath;
+                      if (cat.children) {
+                        const path = findCategoryPath(cat.children, targetName);
+                        if (path) return path;
+                      }
                     }
-                  }
-                  return `/shop`;
-                };
-                const path = findCategoryPath(allCategories, item.title);
+                    return `/shop`;
+                  };
+                  const path = findCategoryPath(allCategories, item.title);
 
-                // Dynamic bento box sizing pattern
-                const pos = index % 4;
-                let spanClass = "col-span-1 md:col-span-2 md:row-span-1"; // default wide
-                if (pos === 0) spanClass = "col-span-1 md:col-span-2 md:row-span-2"; // Large tall
-                else if (pos === 1) spanClass = "col-span-1 md:col-span-2 md:row-span-1"; // Wide
-                else if (pos === 2) spanClass = "col-span-1 md:col-span-1 md:row-span-1"; // Square
-                else if (pos === 3) spanClass = "col-span-1 md:col-span-1 md:row-span-1"; // Square
+                  // Dynamic bento box sizing pattern
+                  const pos = index % 4;
+                  let spanClass = "col-span-1 md:col-span-2 md:row-span-1"; // default wide
+                  if (pos === 0) spanClass = "col-span-1 md:col-span-2 md:row-span-2"; // Large tall
+                  else if (pos === 1) spanClass = "col-span-1 md:col-span-2 md:row-span-1"; // Wide
+                  else if (pos === 2) spanClass = "col-span-1 md:col-span-1 md:row-span-1"; // Square
+                  else if (pos === 3) spanClass = "col-span-1 md:col-span-1 md:row-span-1"; // Square
 
-                return (
-                  <motion.div
-                    key={item.title}
-                    initial={{ opacity: 0, y: 20 }}
-                    whileInView={{ opacity: 1, y: 0 }}
-                    viewport={{ once: true }}
-                    className={`relative group overflow-hidden rounded-3xl block shadow-sm hover:shadow-2xl transition-all duration-500 ${spanClass}`}
-                  >
-                    {/* Background Image */}
-                    <div className="absolute inset-0 bg-gray-100">
-                      <img src={item.imageUrl} alt={item.title} className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-700 ease-out" />
-                    </div>
-                    
-                    {/* Gradient Overlay for Text Readability */}
-                    <div className="absolute inset-0 bg-gradient-to-t from-black/90 via-black/20 to-transparent opacity-80 group-hover:opacity-100 transition-opacity duration-500"></div>
-                    
-                    {/* Text Content */}
-                    <div className="absolute bottom-0 left-0 right-0 p-6 md:p-8 transform translate-y-2 group-hover:translate-y-0 transition-transform duration-500">
-                      <h4 className="text-white text-2xl md:text-3xl font-bold font-fashion mb-1 md:mb-2 leading-tight">
-                        {item.title}
-                      </h4>
-                      <p className="text-white/80 text-xs md:text-sm tracking-wide font-medium">
-                        Explore the finest {item.title.toLowerCase()} collections
-                      </p>
-                    </div>
+                  return (
+                    <motion.div
+                      key={item.title}
+                      initial={{ opacity: 0, y: 20 }}
+                      whileInView={{ opacity: 1, y: 0 }}
+                      viewport={{ once: true }}
+                      className={`relative group overflow-hidden rounded-3xl block shadow-sm hover:shadow-2xl transition-all duration-500 ${spanClass}`}
+                    >
+                      {/* Background Image */}
+                      <div className="absolute inset-0 bg-gray-100">
+                        <img src={item.imageUrl} alt={item.title} className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-700 ease-out" />
+                      </div>
 
-                    {/* Interactive Link */}
-                    <Link
-                      to={path}
-                      className="absolute inset-0 z-10"
-                      aria-label={`Shop ${item.title}`}
-                    />
-                  </motion.div>
-                );
-              })}
+                      {/* Gradient Overlay for Text Readability */}
+                      <div className="absolute inset-0 bg-gradient-to-t from-black/90 via-black/20 to-transparent opacity-80 group-hover:opacity-100 transition-opacity duration-500"></div>
+
+                      {/* Text Content */}
+                      <div className="absolute bottom-0 left-0 right-0 p-6 md:p-8 transform translate-y-2 group-hover:translate-y-0 transition-transform duration-500">
+                        <h4 className="text-white text-2xl md:text-3xl font-bold font-fashion mb-1 md:mb-2 leading-tight">
+                          {item.title}
+                        </h4>
+                        <p className="text-white/80 text-xs md:text-sm tracking-wide font-medium">
+                          Explore the finest {item.title.toLowerCase()} collections
+                        </p>
+                      </div>
+
+                      {/* Interactive Link */}
+                      <Link
+                        to={path}
+                        className="absolute inset-0 z-10"
+                        aria-label={`Shop ${item.title}`}
+                      />
+                    </motion.div>
+                  );
+                })}
+              </div>
             </div>
           );
         })()}
@@ -485,27 +485,11 @@ export default function Home() {
 
       {/* Featured Treasures Section */}
       {featuredTreasures.length > 0 && (
-        <section className="pt-10 md:pt-16 pb-6 md:pb-8 max-w-[1536px] mx-auto px-6 lg:px-24">
-          <div className="flex flex-col md:flex-row md:items-end justify-between mb-12 md:mb-16 space-y-4 md:space-y-0 text-center md:text-left">
-            <div>
-              <span className="text-[10px] md:text-[12px] uppercase font-bold tracking-[0.4em] text-brand-orange mb-3 md:mb-4 block">The Selection</span>
-              <h2 className="text-3xl md:text-6xl font-fashion font-bold text-text-main tracking-tight leading-tight">Customer Favourites</h2>
-            </div>
-
-            <div className="flex space-x-3">
-              <button
-                onClick={() => scroll(featuredRef, 'left')}
-                className="p-3 border border-gray-200 rounded-full bg-white hover:bg-brand-orange hover:text-white transition-all shadow-sm active:scale-90"
-              >
-                <ChevronLeft size={24} />
-              </button>
-              <button
-                onClick={() => scroll(featuredRef, 'right')}
-                className="p-3 border border-gray-200 rounded-full bg-white hover:bg-brand-orange hover:text-white transition-all shadow-sm active:scale-90"
-              >
-                <ChevronRight size={24} />
-              </button>
-            </div>
+        <section className="py-12 md:py-16 max-w-[1536px] mx-auto px-6 lg:px-24">
+          <div className="mb-12 md:mb-20 text-center">
+            <span className="text-[10px] md:text-[11px] uppercase font-bold tracking-[0.5em] text-[#825e5c] mb-4 block">The Selection</span>
+            <h2 className="text-3xl md:text-[52px] font-fashion font-medium text-[#111c2d] tracking-normal leading-tight mb-6">Customer Favourites</h2>
+            <div className="w-16 md:w-24 h-[1px] bg-brand-orange opacity-40 mx-auto" />
           </div>
 
           <div
@@ -525,22 +509,9 @@ export default function Home() {
       {trends.length > 0 && (
         <section className="py-6 md:py-8 bg-bg-alt">
           <div className="max-w-[1536px] mx-auto px-6 lg:px-24">
-            <div className="flex flex-col md:flex-row md:justify-between md:items-center mb-12 md:mb-16 space-y-6 md:space-y-0 text-center md:text-left">
-              <h2 className="text-3xl md:text-5xl font-fashion font-bold text-text-main tracking-tight">Shop By Trend</h2>
-              <div className="flex space-x-4">
-                <button
-                  onClick={() => scroll(artisanRef, 'left')}
-                  className="p-3 border border-gray-200 rounded-full bg-white hover:bg-text-main hover:text-white transition-all shadow-sm active:scale-90"
-                >
-                  <ChevronLeft size={20} />
-                </button>
-                <button
-                  onClick={() => scroll(artisanRef, 'right')}
-                  className="p-3 border border-gray-200 rounded-full bg-white hover:bg-text-main hover:text-white transition-all shadow-sm active:scale-90"
-                >
-                  <ChevronRight size={20} />
-                </button>
-              </div>
+            <div className="mb-12 md:mb-20 text-center">
+              <h2 className="text-3xl md:text-5xl font-fashion font-medium text-text-main tracking-tight mb-6">Shop By Trend</h2>
+              <div className="w-16 md:w-24 h-[1px] bg-brand-orange opacity-40 mx-auto" />
             </div>
 
             <div
@@ -578,11 +549,12 @@ export default function Home() {
 
       {/* Stories in Motion Section - Video Section */}
       {looks.length > 0 && (
-        <section className="pt-6 md:pt-8 pb-10 md:pb-16 bg-white overflow-hidden">
+        <section className="py-12 md:py-16 bg-white overflow-hidden">
           <div className="max-w-[1536px] mx-auto px-6 lg:px-24">
             <div className="text-center mb-12 md:mb-16">
-              <h2 className="text-3xl md:text-5xl font-fashion font-bold text-text-main tracking-tight">Shop The Look</h2>
-              <div className="mx-auto w-16 h-1 bg-brand-orange mt-4 rounded-full opacity-30" />
+              <span className="text-[10px] md:text-[11px] uppercase font-bold tracking-[0.5em] text-brand-orange mb-4 block">Stories in Motion</span>
+              <h2 className="text-3xl md:text-[56px] font-fashion text-text-main tracking-normal leading-tight">Shop The Look</h2>
+              <div className="mx-auto w-16 md:w-24 h-[1px] bg-brand-orange opacity-40 mt-6" />
             </div>
 
             <div
@@ -615,7 +587,7 @@ export default function Home() {
 
       {/* Our Purpose / Impact Section */}
       {purpose && (
-        <section className="py-10 md:py-16 bg-white overflow-hidden">
+        <section className="py-12 md:py-16 bg-white overflow-hidden">
           <div className="max-w-[1536px] mx-auto px-6 lg:px-24">
             <div className="flex flex-col lg:flex-row items-center gap-16 lg:gap-32">
               {/* Left Column: Artistic Image Framing */}
@@ -652,7 +624,7 @@ export default function Home() {
                     {purpose.accent}
                   </span>
 
-                  <h2 className="text-2xl md:text-4xl lg:text-5xl font-fashion font-bold text-text-main leading-tight mb-6 tracking-tight">
+                  <h2 className="text-2xl md:text-4xl lg:text-5xl font-fashion font-medium text-text-main leading-tight mb-6 tracking-tight">
                     {purpose.title}
                   </h2>
 
@@ -698,7 +670,7 @@ export default function Home() {
               viewport={{ once: true }}
               className="mb-20"
             >
-              <h2 className="text-3xl md:text-6xl font-fashion font-bold text-text-main tracking-tight">Speaking from their hearts</h2>
+              <h2 className="text-3xl md:text-6xl font-fashion font-medium text-text-main tracking-tight">Speaking from their hearts</h2>
               <div className="mx-auto w-16 md:w-24 h-1 bg-brand-orange mt-4 md:mt-6 rounded-none opacity-30" />
             </motion.div>
 

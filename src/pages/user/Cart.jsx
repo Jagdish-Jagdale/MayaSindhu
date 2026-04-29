@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
-import { Trash2, Plus, Minus, ShoppingBag, ArrowRight, Loader2 } from 'lucide-react';
+import { Trash2, Plus, Minus, ShoppingBag, ArrowRight, Loader2, ArrowLeft } from 'lucide-react';
 import { Link } from 'react-router-dom';
 import { db } from '../../firebase';
 import { collection, query, orderBy, onSnapshot, doc, updateDoc, deleteDoc, serverTimestamp } from 'firebase/firestore';
@@ -86,8 +86,12 @@ export default function Cart() {
   }
 
   return (
-    <div className="bg-[#FAF9F6] min-h-screen py-16 md:py-24">
+    <div className="bg-[#FAF9F6] min-h-screen pt-16 pb-24">
       <div className="max-w-[1400px] mx-auto px-6">
+        <Link to="/" className="flex items-center gap-2 text-sm font-medium text-gray-500 hover:text-black transition-all group mb-8 w-fit">
+          <ArrowLeft size={18} className="transition-transform group-hover:-translate-x-1" />
+          Back to Store
+        </Link>
         <h1 className="text-4xl md:text-5xl font-fashion font-bold text-[#1A1A1A] mb-12">Shopping Bag</h1>
 
         <div className="grid grid-cols-1 lg:grid-cols-3 gap-12">
