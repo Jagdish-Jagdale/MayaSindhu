@@ -4,6 +4,7 @@ import { db } from '../../firebase';
 import { collection, addDoc, updateDoc, doc, serverTimestamp } from 'firebase/firestore';
 import useCategories from '../../hooks/useCategories';
 import toast from 'react-hot-toast';
+import { uploadToCloudinary, deleteMultipleFromCloudinary } from '../../utils/cloudinary';
 
 export default function ProductFormModal({ isOpen, onClose, product = null }) {
   const { categories: heirarchy } = useCategories();
@@ -18,13 +19,14 @@ export default function ProductFormModal({ isOpen, onClose, product = null }) {
     stock: '',
     isAvailable: true,
     description: '',
-    images: [] // Will store Base64 strings
+    images: [] // Will store Cloudinary URLs
   });
 
   const [selectedPathIds, setSelectedPathIds] = useState([]);
 
   const [imageFiles, setImageFiles] = useState([]);
   const [previews, setPreviews] = useState([]);
+  const [removedImageUrls, setRemovedImageUrls] = useState([]);
   const fileInputRef = useRef(null);
 
   // Helper to find the full path of category IDs for a given leaf category ID
@@ -76,6 +78,7 @@ export default function ProductFormModal({ isOpen, onClose, product = null }) {
       setSelectedPathIds([]);
       setPreviews([]);
       setImageFiles([]);
+      setRemovedImageUrls([]);
     }
   }, [product, isOpen, heirarchy]);
 
@@ -164,10 +167,10 @@ export default function ProductFormModal({ isOpen, onClose, product = null }) {
     const files = Array.from(e.target.files);
     if (files.length === 0) return;
 
-    // Filter out files that are too large (limit to 200KB for Base64 storage in Firestore)
-    const validFiles = files.filter(file => file.size <= 200 * 1024);
+    // Filter out files that are too large (limit to 5MB for Cloudinary)
+    const validFiles = files.filter(file => file.size <= 5 * 1024 * 1024);
     if (validFiles.length < files.length) {
-      toast.error('Some images were skipped as they exceed 200KB (Firestore limit)');
+      toast.error('Some images were skipped as they exceed 5MB');
     }
 
     const newPreviews = validFiles.map(file => URL.createObjectURL(file));
@@ -180,6 +183,10 @@ export default function ProductFormModal({ isOpen, onClose, product = null }) {
     const isExistingImage = formData.images.includes(previewToRemove);
 
     if (isExistingImage) {
+      // Track Cloudinary URLs for deletion on save
+      if (previewToRemove.includes('res.cloudinary.com')) {
+        setRemovedImageUrls(prev => [...prev, previewToRemove]);
+      }
       setFormData(prev => ({
         ...prev,
         images: prev.images.filter((_, i) => prev.images[i] !== previewToRemove)
@@ -196,14 +203,6 @@ export default function ProductFormModal({ isOpen, onClose, product = null }) {
     }
   };
 
-  const convertToBase64 = (file) => {
-    return new Promise((resolve, reject) => {
-      const reader = new FileReader();
-      reader.readAsDataURL(file);
-      reader.onload = () => resolve(reader.result);
-      reader.onerror = error => reject(error);
-    });
-  };
 
   const handleSubmit = async (e) => {
     e.preventDefault();
@@ -214,17 +213,11 @@ export default function ProductFormModal({ isOpen, onClose, product = null }) {
 
     setLoading(true);
     try {
-      // Convert all new image files to Base64
-      const newBase64Images = await Promise.all(imageFiles.map(convertToBase64));
-      const finalImages = [...formData.images, ...newBase64Images];
-
-      // Check total payload size (approximate)
-      const payloadSize = JSON.stringify(finalImages).length;
-      if (payloadSize > 800 * 1024) { // Leaving some room for other fields under 1MB
-        toast.error('Total image size too large for Firestore. Please use fewer/smaller images.');
-        setLoading(false);
-        return;
-      }
+      // Upload new image files to Cloudinary
+      const uploadPromises = imageFiles.map(file => uploadToCloudinary(file, 'Products'));
+      const uploadedImageUrls = await Promise.all(uploadPromises);
+      
+      const finalImages = [...formData.images, ...uploadedImageUrls];
 
       const productData = {
         ...formData,
@@ -253,9 +246,15 @@ export default function ProductFormModal({ isOpen, onClose, product = null }) {
       onClose();
     } catch (error) {
       console.error('Error saving product:', error);
-      toast.error('Failed to save product');
+      toast.error(error.message || 'Failed to save product');
     } finally {
       setLoading(false);
+    }
+
+    // Delete removed images from Cloudinary (best-effort, after save)
+    if (removedImageUrls.length > 0) {
+      deleteMultipleFromCloudinary(removedImageUrls);
+      setRemovedImageUrls([]);
     }
   };
 

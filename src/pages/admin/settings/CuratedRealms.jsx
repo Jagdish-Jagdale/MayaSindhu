@@ -25,6 +25,7 @@ import {
 } from 'lucide-react';
 import toast from 'react-hot-toast';
 import useCategories from '../../../hooks/useCategories';
+import { uploadToCloudinary } from '../../../utils/cloudinary';
 
 const SLOT_TYPES = [
   { id: 1, label: 'Large Vertical (Slot 1)', gridClass: 'md:col-span-1 md:row-span-2 h-[400px] md:h-full' },
@@ -41,6 +42,7 @@ export default function CuratedRealms() {
   const [isSaving, setIsSaving] = useState(false);
   const [hasChanges, setHasChanges] = useState(false);
   const [editingSlotId, setEditingSlotId] = useState(null);
+  const [pendingFiles, setPendingFiles] = useState({});  // slotId -> File
   
   const fileInputRef = useRef(null);
 
@@ -77,17 +79,15 @@ export default function CuratedRealms() {
       return;
     }
 
-    const reader = new FileReader();
-    reader.onloadend = () => {
-      setRealms(prev => prev.map(r => 
-        r.slotId === editingSlotId 
-          ? { ...r, imageUrl: reader.result, isModified: true, isEmpty: false } 
-          : r
-      ));
-      setHasChanges(true);
-      setEditingSlotId(null);
-    };
-    reader.readAsDataURL(file);
+    const previewUrl = URL.createObjectURL(file);
+    setPendingFiles(prev => ({ ...prev, [editingSlotId]: file }));
+    setRealms(prev => prev.map(r => 
+      r.slotId === editingSlotId 
+        ? { ...r, imageUrl: previewUrl, isModified: true, isEmpty: false } 
+        : r
+    ));
+    setHasChanges(true);
+    setEditingSlotId(null);
     e.target.value = null;
   };
 
@@ -124,17 +124,33 @@ export default function CuratedRealms() {
         return;
       }
 
+      // Upload pending images to Cloudinary
+      const uploadedUrls = {};
+      for (const [slotId, file] of Object.entries(pendingFiles)) {
+        try {
+          const url = await uploadToCloudinary(file, 'CuratedRealms');
+          uploadedUrls[slotId] = url;
+        } catch (err) {
+          toast.error('Failed to upload realm image');
+          setIsSaving(false);
+          return;
+        }
+      }
+
       modifiedRealms.forEach(realm => {
         const docId = `slot_${realm.slotId}`;
         const docRef = doc(db, 'curatedRealms', docId);
         const { isModified, isEmpty, ...saveData } = realm;
+        const finalImageUrl = uploadedUrls[realm.slotId] || saveData.imageUrl;
         batch.set(docRef, {
           ...saveData,
+          imageUrl: finalImageUrl,
           updatedAt: serverTimestamp()
         });
       });
 
       await batch.commit();
+      setPendingFiles({});
       setHasChanges(false);
       toast.success("Curated Realms updated successfully");
     } catch (err) {

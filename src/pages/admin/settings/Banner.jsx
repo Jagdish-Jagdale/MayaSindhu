@@ -24,6 +24,7 @@ import {
   Pencil
 } from 'lucide-react';
 import toast from 'react-hot-toast';
+import { uploadToCloudinary, deleteMultipleFromCloudinary } from '../../../utils/cloudinary';
 
 export default function Banner() {
   const { isCollapsed } = useAdminUI();
@@ -32,9 +33,11 @@ export default function Banner() {
   const [isSaving, setIsSaving] = useState(false);
   const [hasChanges, setHasChanges] = useState(false);
   const [deletedBannerIds, setDeletedBannerIds] = useState([]);
+  const [deletedImageUrls, setDeletedImageUrls] = useState([]);
   
   const fileInputRef = useRef(null);
   const [editingBannerId, setEditingBannerId] = useState(null);
+  const [pendingFiles, setPendingFiles] = useState({});  // bannerId -> File
 
   // Load Banners
   useEffect(() => {
@@ -59,27 +62,27 @@ export default function Banner() {
       return;
     }
 
-    const reader = new FileReader();
-    reader.onloadend = () => {
-      if (editingBannerId) {
-        setBanners(prev => prev.map(b => 
-          b.id === editingBannerId 
-            ? { ...b, imageUrl: reader.result, isModified: true } 
-            : b
-        ));
-      } else {
-        const newBanner = {
-          id: 'temp-' + Date.now(),
-          imageUrl: reader.result,
-          order: banners.length + 1,
-          isNew: true
-        };
-        setBanners(prev => [...prev, newBanner]);
-      }
-      setHasChanges(true);
-      setEditingBannerId(null);
-    };
-    reader.readAsDataURL(file);
+    const previewUrl = URL.createObjectURL(file);
+    if (editingBannerId) {
+      setPendingFiles(prev => ({ ...prev, [editingBannerId]: file }));
+      setBanners(prev => prev.map(b => 
+        b.id === editingBannerId 
+          ? { ...b, imageUrl: previewUrl, isModified: true } 
+          : b
+      ));
+    } else {
+      const tempId = 'temp-' + Date.now();
+      setPendingFiles(prev => ({ ...prev, [tempId]: file }));
+      const newBanner = {
+        id: tempId,
+        imageUrl: previewUrl,
+        order: banners.length + 1,
+        isNew: true
+      };
+      setBanners(prev => [...prev, newBanner]);
+    }
+    setHasChanges(true);
+    setEditingBannerId(null);
     e.target.value = null;
   };
 
@@ -87,6 +90,10 @@ export default function Banner() {
     setBanners(prev => prev.filter(b => b.id !== banner.id));
     if (!banner.isNew) {
       setDeletedBannerIds(prev => [...prev, banner.id]);
+      // Track image URL for Cloudinary cleanup
+      if (banner.imageUrl && banner.imageUrl.includes('res.cloudinary.com')) {
+        setDeletedImageUrls(prev => [...prev, banner.imageUrl]);
+      }
     }
     setHasChanges(true);
   };
@@ -109,19 +116,33 @@ export default function Banner() {
         batch.delete(doc(db, 'banners', id));
       });
 
+      // Upload pending images to Cloudinary
+      const uploadedUrls = {};
+      for (const [id, file] of Object.entries(pendingFiles)) {
+        try {
+          const url = await uploadToCloudinary(file, 'Banners');
+          uploadedUrls[id] = url;
+        } catch (err) {
+          toast.error('Failed to upload banner image');
+          setIsSaving(false);
+          return;
+        }
+      }
+
       // Handle Adds and Updates
       banners.forEach(banner => {
+        const finalImageUrl = uploadedUrls[banner.id] || banner.imageUrl;
         if (banner.isNew) {
           const docRef = doc(collection(db, 'banners'));
           batch.set(docRef, {
-            imageUrl: banner.imageUrl,
+            imageUrl: finalImageUrl,
             order: banner.order || 0,
             createdAt: serverTimestamp()
           });
         } else if (banner.isModified) {
           const docRef = doc(db, 'banners', banner.id);
           batch.update(docRef, {
-            imageUrl: banner.imageUrl,
+            imageUrl: finalImageUrl,
             order: banner.order || 0,
             updatedAt: serverTimestamp()
           });
@@ -129,7 +150,15 @@ export default function Banner() {
       });
 
       await batch.commit();
+
+      // Delete images from Cloudinary (best-effort)
+      if (deletedImageUrls.length > 0) {
+        deleteMultipleFromCloudinary(deletedImageUrls);
+      }
+
       setDeletedBannerIds([]);
+      setDeletedImageUrls([]);
+      setPendingFiles({});
       setHasChanges(false);
       toast.success("Banners updated successfully");
     } catch (err) {

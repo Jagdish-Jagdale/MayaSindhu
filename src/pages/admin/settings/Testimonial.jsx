@@ -25,6 +25,7 @@ import {
   Quote
 } from 'lucide-react';
 import toast from 'react-hot-toast';
+import { uploadToCloudinary, deleteMultipleFromCloudinary } from '../../../utils/cloudinary';
 
 export default function Testimonial() {
   const { isCollapsed } = useAdminUI();
@@ -33,9 +34,11 @@ export default function Testimonial() {
   const [isSaving, setIsSaving] = useState(false);
   const [hasChanges, setHasChanges] = useState(false);
   const [deletedIds, setDeletedIds] = useState([]);
+  const [deletedImageUrls, setDeletedImageUrls] = useState([]);
   
   const fileInputRef = useRef(null);
   const [currentFileIndex, setCurrentFileIndex] = useState(null);
+  const [pendingFiles, setPendingFiles] = useState({});  // index -> File
 
   // Load Testimonials
   useEffect(() => {
@@ -62,18 +65,16 @@ export default function Testimonial() {
       return;
     }
 
-    const reader = new FileReader();
-    reader.onloadend = () => {
-      if (currentFileIndex !== null) {
-        setTestimonials(prev => prev.map((t, idx) => 
-          idx === currentFileIndex 
-            ? { ...t, imageUrl: reader.result, isModified: true } 
-            : t
-        ));
-        setHasChanges(true);
-      }
-    };
-    reader.readAsDataURL(file);
+    if (currentFileIndex !== null) {
+      const previewUrl = URL.createObjectURL(file);
+      setPendingFiles(prev => ({ ...prev, [currentFileIndex]: file }));
+      setTestimonials(prev => prev.map((t, idx) => 
+        idx === currentFileIndex 
+          ? { ...t, imageUrl: previewUrl, isModified: true } 
+          : t
+      ));
+      setHasChanges(true);
+    }
     e.target.value = null;
   };
 
@@ -100,6 +101,9 @@ export default function Testimonial() {
     setTestimonials(prev => prev.filter(t => t.id !== testimonial.id));
     if (!testimonial.isNew) {
       setDeletedIds(prev => [...prev, testimonial.id]);
+      if (testimonial.imageUrl && testimonial.imageUrl.includes('res.cloudinary.com')) {
+        setDeletedImageUrls(prev => [...prev, testimonial.imageUrl]);
+      }
     }
     setHasChanges(true);
   };
@@ -121,8 +125,24 @@ export default function Testimonial() {
         batch.delete(doc(db, 'testimonials', id));
       });
 
+      // Upload pending images to Cloudinary
+      const uploadedUrls = {};
+      for (const [index, file] of Object.entries(pendingFiles)) {
+        try {
+          const url = await uploadToCloudinary(file, 'Testimonials');
+          uploadedUrls[index] = url;
+        } catch (err) {
+          toast.error(`Failed to upload image for testimonial ${Number(index) + 1}`);
+          setIsSaving(false);
+          return;
+        }
+      }
+
       // Handle Adds and Updates
-      for (const t of testimonials) {
+      for (let i = 0; i < testimonials.length; i++) {
+        const t = testimonials[i];
+        const finalImageUrl = uploadedUrls[i] || t.imageUrl;
+
         if (t.isNew) {
           const docRef = doc(collection(db, 'testimonials'));
           batch.set(docRef, {
@@ -130,7 +150,7 @@ export default function Testimonial() {
             location: t.location || '',
             text: t.text || '',
             rating: t.rating || 5,
-            imageUrl: t.imageUrl,
+            imageUrl: finalImageUrl,
             createdAt: serverTimestamp()
           });
         } else if (t.isModified) {
@@ -140,14 +160,22 @@ export default function Testimonial() {
             location: t.location,
             text: t.text,
             rating: t.rating,
-            imageUrl: t.imageUrl,
+            imageUrl: finalImageUrl,
             updatedAt: serverTimestamp()
           });
         }
       }
 
       await batch.commit();
+
+      // Delete images from Cloudinary (best-effort)
+      if (deletedImageUrls.length > 0) {
+        deleteMultipleFromCloudinary(deletedImageUrls);
+      }
+
       setDeletedIds([]);
+      setDeletedImageUrls([]);
+      setPendingFiles({});
       setHasChanges(false);
       toast.success("Testimonials updated successfully");
     } catch (err) {
