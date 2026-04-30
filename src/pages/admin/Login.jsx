@@ -104,7 +104,7 @@ const AdminLogin = () => {
                 initial={{ opacity: 0, x: -20 }}
                 animate={{ opacity: 1, x: 0 }}
                 exit={{ opacity: 0, x: -20 }}
-                className="px-8 pt-8 pb-14"
+                className="px-8 pt-8 pb-10"
               >
                 {/* Brand Logo Header */}
                 <div className="flex flex-col items-center mb-10 text-center">
@@ -162,6 +162,17 @@ const AdminLogin = () => {
                     {loginLoading || authLoading ? <Loader2 className="w-5 h-5 animate-spin" /> : <> <span className="text-[15px] font-bold">Sign In</span> <ArrowRight className="w-4 h-4" /> </>}
                   </button>
                 </form>
+
+                <div className="mt-8 text-center">
+                  <button 
+                    type="button"
+                    onClick={() => navigate('/')}
+                    className="text-[12px] font-bold text-white/40 hover:text-[#1BAFAF] uppercase tracking-[0.15em] transition-colors inline-flex items-center gap-2 group"
+                  >
+                    <ArrowRight className="w-3.5 h-3.5 rotate-180 group-hover:-translate-x-1 transition-transform" />
+                    Back to Website
+                  </button>
+                </div>
               </motion.div>
             ) : (
               <motion.div 

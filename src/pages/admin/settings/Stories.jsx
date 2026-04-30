@@ -22,6 +22,7 @@ import {
   Image as ImageIcon
 } from 'lucide-react';
 import toast from 'react-hot-toast';
+import { uploadToCloudinary, deleteMultipleFromCloudinary } from '../../../utils/cloudinary';
 
 export default function Stories() {
   const { isCollapsed } = useAdminUI();
@@ -30,11 +31,13 @@ export default function Stories() {
   const [isSaving, setIsSaving] = useState(false);
   const [hasChanges, setHasChanges] = useState(false);
   const [deletedIds, setDeletedIds] = useState([]);
+  const [deletedImageUrls, setDeletedImageUrls] = useState([]);
   
   const [editingLookId, setEditingLookId] = useState(null);
   const [editingType, setEditingType] = useState(null); // 'thumbnail' or 'productImage'
   
   const fileInputRef = useRef(null);
+  const [pendingFiles, setPendingFiles] = useState({});  // lookId_type -> File
 
   // Load Looks
   useEffect(() => {
@@ -65,31 +68,36 @@ export default function Stories() {
       return;
     }
 
-    const reader = new FileReader();
-    reader.onloadend = () => {
-      if (editingLookId) {
-        setLooks(prev => prev.map(l => 
-          l.id === editingLookId 
-            ? { ...l, [editingType]: reader.result, isModified: true } 
-            : l
-        ));
-      } else {
-        const newLook = {
-          id: 'temp-' + Date.now(),
-          title: '',
-          category: '',
-          url: '',
-          thumbnail: reader.result,
-          productImage: reader.result,
-          order: looks.length,
-          isNew: true
-        };
-        setLooks(prev => [...prev, newLook]);
-      }
-      setHasChanges(true);
-      setEditingLookId(null);
-    };
-    reader.readAsDataURL(file);
+    const previewUrl = URL.createObjectURL(file);
+    if (editingLookId) {
+      const fileKey = `${editingLookId}_${editingType}`;
+      setPendingFiles(prev => ({ ...prev, [fileKey]: file }));
+      setLooks(prev => prev.map(l => 
+        l.id === editingLookId 
+          ? { ...l, [editingType]: previewUrl, isModified: true } 
+          : l
+      ));
+    } else {
+      const tempId = 'temp-' + Date.now();
+      setPendingFiles(prev => ({ 
+        ...prev, 
+        [`${tempId}_thumbnail`]: file,
+        [`${tempId}_productImage`]: file 
+      }));
+      const newLook = {
+        id: tempId,
+        title: '',
+        category: '',
+        url: '',
+        thumbnail: previewUrl,
+        productImage: previewUrl,
+        order: looks.length,
+        isNew: true
+      };
+      setLooks(prev => [...prev, newLook]);
+    }
+    setHasChanges(true);
+    setEditingLookId(null);
     e.target.value = null;
   };
 
@@ -116,6 +124,11 @@ export default function Stories() {
     setLooks(prev => prev.filter(l => l.id !== look.id));
     if (!look.isNew) {
       setDeletedIds(prev => [...prev, look.id]);
+      // Track Cloudinary image URLs for cleanup
+      const urls = [look.thumbnail, look.productImage].filter(u => u && u.includes('res.cloudinary.com'));
+      if (urls.length > 0) {
+        setDeletedImageUrls(prev => [...prev, ...urls]);
+      }
     }
     setHasChanges(true);
   };
@@ -130,16 +143,32 @@ export default function Stories() {
         batch.delete(doc(db, 'shopTheLook', id));
       });
 
+      // Upload pending images to Cloudinary
+      const uploadedUrls = {};
+      for (const [key, file] of Object.entries(pendingFiles)) {
+        try {
+          const url = await uploadToCloudinary(file, 'Stories');
+          uploadedUrls[key] = url;
+        } catch (err) {
+          toast.error('Failed to upload story image');
+          setIsSaving(false);
+          return;
+        }
+      }
+
       // Handle Adds and Updates
       looks.forEach((look, index) => {
+        const thumbUrl = uploadedUrls[`${look.id}_thumbnail`] || look.thumbnail;
+        const prodImgUrl = uploadedUrls[`${look.id}_productImage`] || look.productImage;
+
         if (look.isNew) {
           const docRef = doc(collection(db, 'shopTheLook'));
           batch.set(docRef, {
             title: look.title || '',
             category: look.category || '',
             url: look.url || '',
-            thumbnail: look.thumbnail || '',
-            productImage: look.productImage || '',
+            thumbnail: thumbUrl || '',
+            productImage: prodImgUrl || '',
             order: index,
             createdAt: serverTimestamp()
           });
@@ -149,8 +178,8 @@ export default function Stories() {
             title: look.title || '',
             category: look.category || '',
             url: look.url || '',
-            thumbnail: look.thumbnail || '',
-            productImage: look.productImage || '',
+            thumbnail: thumbUrl || '',
+            productImage: prodImgUrl || '',
             order: index,
             updatedAt: serverTimestamp()
           });
@@ -158,7 +187,15 @@ export default function Stories() {
       });
 
       await batch.commit();
+
+      // Delete images from Cloudinary (best-effort)
+      if (deletedImageUrls.length > 0) {
+        deleteMultipleFromCloudinary(deletedImageUrls);
+      }
+
       setDeletedIds([]);
+      setDeletedImageUrls([]);
+      setPendingFiles({});
       setHasChanges(false);
       toast.success("Stories configuration saved");
     } catch (err) {

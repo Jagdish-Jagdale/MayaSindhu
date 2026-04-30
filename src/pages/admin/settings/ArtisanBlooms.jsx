@@ -22,6 +22,7 @@ import {
   ChevronRight
 } from 'lucide-react';
 import toast from 'react-hot-toast';
+import { uploadToCloudinary, deleteMultipleFromCloudinary } from '../../../utils/cloudinary';
 
 export default function ArtisanBlooms() {
   const { isCollapsed } = useAdminUI();
@@ -30,9 +31,11 @@ export default function ArtisanBlooms() {
   const [isSaving, setIsSaving] = useState(false);
   const [hasChanges, setHasChanges] = useState(false);
   const [deletedIds, setDeletedIds] = useState([]);
+  const [deletedImageUrls, setDeletedImageUrls] = useState([]);
   
   const fileInputRef = useRef(null);
   const [editingTrendId, setEditingTrendId] = useState(null);
+  const [pendingFiles, setPendingFiles] = useState({});  // trendId -> File
 
   // Load Trends
   useEffect(() => {
@@ -59,31 +62,31 @@ export default function ArtisanBlooms() {
       return;
     }
 
-    const reader = new FileReader();
-    reader.onloadend = () => {
-      if (editingTrendId) {
-        setTrends(prev => prev.map(t => 
-          t.id === editingTrendId 
-            ? { ...t, imageUrl: reader.result, isModified: true } 
-            : t
-        ));
-      } else {
-        const newTrend = {
-          id: 'temp-' + Date.now(),
-          imageUrl: reader.result,
-          accent: '',
-          title: '',
-          description: '',
-          link: '/shop',
-          order: trends.length,
-          isNew: true
-        };
-        setTrends(prev => [...prev, newTrend]);
-      }
-      setHasChanges(true);
-      setEditingTrendId(null);
-    };
-    reader.readAsDataURL(file);
+    const previewUrl = URL.createObjectURL(file);
+    if (editingTrendId) {
+      setPendingFiles(prev => ({ ...prev, [editingTrendId]: file }));
+      setTrends(prev => prev.map(t => 
+        t.id === editingTrendId 
+          ? { ...t, imageUrl: previewUrl, isModified: true } 
+          : t
+      ));
+    } else {
+      const tempId = 'temp-' + Date.now();
+      setPendingFiles(prev => ({ ...prev, [tempId]: file }));
+      const newTrend = {
+        id: tempId,
+        imageUrl: previewUrl,
+        accent: '',
+        title: '',
+        description: '',
+        link: '/shop',
+        order: trends.length,
+        isNew: true
+      };
+      setTrends(prev => [...prev, newTrend]);
+    }
+    setHasChanges(true);
+    setEditingTrendId(null);
     e.target.value = null;
   };
 
@@ -108,6 +111,9 @@ export default function ArtisanBlooms() {
     setTrends(prev => prev.filter(t => t.id !== trend.id));
     if (!trend.isNew) {
       setDeletedIds(prev => [...prev, trend.id]);
+      if (trend.imageUrl && trend.imageUrl.includes('res.cloudinary.com')) {
+        setDeletedImageUrls(prev => [...prev, trend.imageUrl]);
+      }
     }
     setHasChanges(true);
   };
@@ -122,12 +128,26 @@ export default function ArtisanBlooms() {
         batch.delete(doc(db, 'shopByTrend', id));
       });
 
+      // Upload pending images to Cloudinary
+      const uploadedUrls = {};
+      for (const [id, file] of Object.entries(pendingFiles)) {
+        try {
+          const url = await uploadToCloudinary(file, 'ShopByTrend');
+          uploadedUrls[id] = url;
+        } catch (err) {
+          toast.error('Failed to upload trend image');
+          setIsSaving(false);
+          return;
+        }
+      }
+
       // Handle Adds and Updates
       trends.forEach((trend, index) => {
+        const finalImageUrl = uploadedUrls[trend.id] || trend.imageUrl;
         if (trend.isNew) {
           const docRef = doc(collection(db, 'shopByTrend'));
           batch.set(docRef, {
-            imageUrl: trend.imageUrl,
+            imageUrl: finalImageUrl,
             accent: trend.accent || '',
             title: trend.title || '',
             description: trend.description || '',
@@ -137,7 +157,7 @@ export default function ArtisanBlooms() {
         } else if (trend.isModified) {
           const docRef = doc(db, 'shopByTrend', trend.id);
           batch.update(docRef, {
-            imageUrl: trend.imageUrl,
+            imageUrl: finalImageUrl,
             accent: trend.accent || '',
             title: trend.title || '',
             description: trend.description || '',
@@ -148,7 +168,15 @@ export default function ArtisanBlooms() {
       });
 
       await batch.commit();
+
+      // Delete images from Cloudinary (best-effort)
+      if (deletedImageUrls.length > 0) {
+        deleteMultipleFromCloudinary(deletedImageUrls);
+      }
+
       setDeletedIds([]);
+      setDeletedImageUrls([]);
+      setPendingFiles({});
       setHasChanges(false);
       toast.success("Trend configurations saved");
     } catch (err) {

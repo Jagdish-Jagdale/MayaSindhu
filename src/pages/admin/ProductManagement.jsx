@@ -27,6 +27,7 @@ import useCategories from '../../hooks/useCategories';
 import ProductFormModal from '../../components/admin/ProductFormModal';
 import DeleteConfirmationModal from '../../components/admin/DeleteConfirmationModal';
 import toast from 'react-hot-toast';
+import { deleteMultipleFromCloudinary } from '../../utils/cloudinary';
 
 export default function ProductManagement() {
   const { isCollapsed } = useAdminUI();
@@ -113,6 +114,10 @@ export default function ProductManagement() {
     if (!productToDelete) return;
     try {
       setIsDeleting(true);
+      // Delete images from Cloudinary
+      if (productToDelete.images && productToDelete.images.length > 0) {
+        await deleteMultipleFromCloudinary(productToDelete.images);
+      }
       await deleteDoc(doc(db, 'products', productToDelete.id));
       toast.success(`"${productToDelete.name}" deleted successfully`);
       setIsDeleteModalOpen(false);

@@ -17,6 +17,7 @@ import {
   Quote
 } from 'lucide-react';
 import toast from 'react-hot-toast';
+import { uploadToCloudinary } from '../../../utils/cloudinary';
 
 export default function Purpose() {
   const { isCollapsed } = useAdminUI();
@@ -36,6 +37,7 @@ export default function Purpose() {
   const [hasChanges, setHasChanges] = useState(false);
   
   const fileInputRef = useRef(null);
+  const [pendingFile, setPendingFile] = useState(null);
 
   // Load Data
   useEffect(() => {
@@ -62,12 +64,10 @@ export default function Purpose() {
       return;
     }
 
-    const reader = new FileReader();
-    reader.onloadend = () => {
-      setData(prev => ({ ...prev, image: reader.result }));
-      setHasChanges(true);
-    };
-    reader.readAsDataURL(file);
+    const previewUrl = URL.createObjectURL(file);
+    setPendingFile(file);
+    setData(prev => ({ ...prev, image: previewUrl }));
+    setHasChanges(true);
     e.target.value = null;
   };
 
@@ -107,10 +107,24 @@ export default function Purpose() {
   const handleSave = async () => {
     try {
       setIsSaving(true);
+      
+      let finalImageUrl = data.image;
+      if (pendingFile) {
+        try {
+          finalImageUrl = await uploadToCloudinary(pendingFile, 'Purpose');
+        } catch (err) {
+          toast.error('Failed to upload image');
+          setIsSaving(false);
+          return;
+        }
+      }
+
       await setDoc(doc(db, 'ourPurpose', 'main'), {
         ...data,
+        image: finalImageUrl,
         updatedAt: serverTimestamp()
       });
+      setPendingFile(null);
       setHasChanges(false);
       toast.success("Our Purpose updated successfully");
     } catch (err) {
