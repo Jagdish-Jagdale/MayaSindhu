@@ -4,14 +4,16 @@ export const uploadToCloudinary = async (file, folder = '') => {
   formData.append('upload_preset', import.meta.env.VITE_CLOUDINARY_UPLOAD_PRESET || 'ml_default'); 
   formData.append('cloud_name', import.meta.env.VITE_CLOUDINARY_CLOUD_NAME);
 
-  // Organize images into folders inside Cloudinary
+  const resourceType = file.type.startsWith('video/') ? 'video' : 'image';
+
+  // Organize items into folders inside Cloudinary
   if (folder) {
     formData.append('folder', `MayaSindhu/${folder}`);
   }
 
   try {
     const response = await fetch(
-      `https://api.cloudinary.com/v1_1/${import.meta.env.VITE_CLOUDINARY_CLOUD_NAME}/image/upload`,
+      `https://api.cloudinary.com/v1_1/${import.meta.env.VITE_CLOUDINARY_CLOUD_NAME}/${resourceType}/upload`,
       {
         method: 'POST',
         body: formData,
@@ -40,11 +42,22 @@ export const extractPublicId = (url) => {
   if (!url || !url.includes('res.cloudinary.com')) return null;
   try {
     // Match everything after /upload/vXXXXX/ and remove file extension
-    const match = url.match(/\/upload\/(?:v\d+\/)?(.+)\.\w+$/);
-    return match ? match[1] : null;
+    // Handles image/upload, video/upload, etc.
+    const match = url.match(/\/(image|video|raw)\/upload\/(?:v\d+\/)?(.+)\.\w+$/);
+    return match ? match[2] : null;
   } catch {
     return null;
   }
+};
+
+/**
+ * Detect resource type from Cloudinary URL
+ */
+export const getResourceType = (url) => {
+  if (!url) return 'image';
+  if (url.includes('/video/upload/')) return 'video';
+  if (url.includes('/raw/upload/')) return 'raw';
+  return 'image';
 };
 
 /**
@@ -58,18 +71,18 @@ const generateSHA1 = async (message) => {
 };
 
 /**
- * Delete a single image from Cloudinary using the destroy API (signed request)
+ * Delete a single item from Cloudinary using the destroy API (signed request)
  */
-export const deleteFromCloudinary = async (imageUrl) => {
-  const publicId = extractPublicId(imageUrl);
-  if (!publicId) return; // Not a Cloudinary URL, skip silently
+export const deleteFromCloudinary = async (url) => {
+  const publicId = extractPublicId(url);
+  if (!publicId) return;
 
+  const resourceType = getResourceType(url);
   const timestamp = Math.round(Date.now() / 1000);
   const apiSecret = import.meta.env.VITE_CLOUDINARY_API_SECRET;
   const apiKey = import.meta.env.VITE_CLOUDINARY_API_KEY;
   const cloudName = import.meta.env.VITE_CLOUDINARY_CLOUD_NAME;
 
-  // Generate signature: SHA1(public_id=xxx&timestamp=xxx + api_secret)
   const signature = await generateSHA1(`public_id=${publicId}&timestamp=${timestamp}${apiSecret}`);
 
   const formData = new FormData();
@@ -80,7 +93,7 @@ export const deleteFromCloudinary = async (imageUrl) => {
 
   try {
     const response = await fetch(
-      `https://api.cloudinary.com/v1_1/${cloudName}/image/destroy`,
+      `https://api.cloudinary.com/v1_1/${cloudName}/${resourceType}/destroy`,
       { method: 'POST', body: formData }
     );
     const data = await response.json();
@@ -89,7 +102,6 @@ export const deleteFromCloudinary = async (imageUrl) => {
     }
   } catch (error) {
     console.error('Cloudinary delete error:', error);
-    // Don't throw — deletion from Cloudinary is best-effort
   }
 };
 

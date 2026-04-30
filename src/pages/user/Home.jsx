@@ -318,16 +318,6 @@ export default function Home() {
     return () => clearInterval(timer);
   }, [displaySlides.length]);
 
-  const getSlotClasses = (slotId) => {
-    switch (slotId) {
-      case 1: return "md:col-span-1 md:row-span-2 relative group overflow-hidden rounded-[2rem] md:rounded-[2.5rem] shadow-md hover:shadow-xl transition-all duration-500 h-[320px] md:h-full";
-      case 2: return "md:col-span-1 md:row-span-1 relative group overflow-hidden rounded-[2.5rem] shadow-lg h-[220px] md:h-full";
-      case 3: return "md:col-span-1 md:row-span-1 relative group overflow-hidden rounded-[2.5rem] shadow-lg h-[220px] md:h-full";
-      case 4: return "md:col-span-2 md:row-span-1 relative group overflow-hidden rounded-[2.5rem] shadow-lg h-[220px] md:h-full";
-      default: return "";
-    }
-  };
-
   return (
     <div className="bg-white min-h-screen relative">
       <AnimatePresence>
@@ -350,7 +340,7 @@ export default function Home() {
             />
 
             {/* Hero Overlay (Cinematic Gradient) */}
-            <div className="absolute inset-0 bg-gradient-to-r from-black/70 via-black/30 to-transparent flex items-center px-[5%] md:px-[8%] pointer-events-none">
+            <div className="absolute inset-0 flex items-center px-[5%] md:px-[8%] pointer-events-none">
               <div className="max-w-2xl md:max-w-4xl">
                 {displaySlides[currentSlide]?.accent && (
                   <span className="inline-block text-white text-[10px] md:text-[14px] font-bold tracking-[0.4em] uppercase mb-2 md:mb-4">
@@ -410,29 +400,42 @@ export default function Home() {
         </div>
 
         {(() => {
-          const exploreList = [
-            { title: 'Apparels', categoryId: 'apparels-id', imageUrl: 'https://images.unsplash.com/photo-1610030469983-98e550d6193c?q=80&w=800' },
-            { title: 'Jewellery', categoryId: 'jewellery-id', imageUrl: 'https://images.unsplash.com/photo-1515562141207-7a88fb7ce338?q=80&w=800' },
-            { title: 'Festive', categoryId: 'festive-id', imageUrl: 'https://images.unsplash.com/photo-1582730147924-d92b4f00d860?q=80&w=800' },
-            { title: 'Others', categoryId: 'others-id', imageUrl: 'https://images.unsplash.com/photo-1554092970-176bc485890b?q=80&w=800' }
-          ];
+          if (realmsLoading) {
+            return (
+              <div className="flex justify-center py-20">
+                <Loader2 className="w-10 h-10 animate-spin text-brand-orange" />
+              </div>
+            );
+          }
+
+          // Helper to find category by ID in the hierarchy
+          const findCategoryById = (cats, targetId) => {
+            for (const cat of cats) {
+              if (cat.id === targetId) return cat;
+              if (cat.children) {
+                const found = findCategoryById(cat.children, targetId);
+                if (found) return found;
+              }
+            }
+            return null;
+          };
+
+          const listToDisplay = realms.map(realm => {
+            const category = findCategoryById(allCategories, realm.categoryId);
+            return {
+              title: realm.title || (category ? category.name : ''),
+              subtitle: realm.subtitle || '',
+              path: category ? category.fullPath : '/shop',
+              imageUrl: realm.imageUrl
+            };
+          });
+
+          if (listToDisplay.length === 0) return null;
 
           return (
             <div className="max-w-5xl mx-auto">
               <div className="grid grid-cols-1 md:grid-cols-4 gap-4 md:gap-6 auto-rows-[250px]">
-                {exploreList.map((item, index) => {
-                  const findCategoryPath = (cats, targetName) => {
-                    for (const cat of cats) {
-                      if (cat.name.toLowerCase() === targetName.toLowerCase()) return cat.fullPath;
-                      if (cat.children) {
-                        const path = findCategoryPath(cat.children, targetName);
-                        if (path) return path;
-                      }
-                    }
-                    return `/shop`;
-                  };
-                  const path = findCategoryPath(allCategories, item.title);
-
+                {listToDisplay.map((item, index) => {
                   // Dynamic bento box sizing pattern
                   const pos = index % 4;
                   let spanClass = "col-span-1 md:col-span-2 md:row-span-1"; // default wide
@@ -443,7 +446,7 @@ export default function Home() {
 
                   return (
                     <motion.div
-                      key={item.title}
+                      key={index}
                       initial={{ opacity: 0, y: 20 }}
                       whileInView={{ opacity: 1, y: 0 }}
                       viewport={{ once: true }}
@@ -451,25 +454,35 @@ export default function Home() {
                     >
                       {/* Background Image */}
                       <div className="absolute inset-0 bg-gray-100">
-                        <img src={item.imageUrl} alt={item.title} className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-700 ease-out" />
+                        <img 
+                          src={item.imageUrl} 
+                          alt={item.title} 
+                          className="w-full h-full object-cover object-top group-hover:scale-105 transition-transform duration-700 ease-out" 
+                        />
                       </div>
 
                       {/* Gradient Overlay for Text Readability */}
                       <div className="absolute inset-0 bg-gradient-to-t from-black/90 via-black/20 to-transparent opacity-80 group-hover:opacity-100 transition-opacity duration-500"></div>
 
                       {/* Text Content */}
-                      <div className="absolute bottom-0 left-0 right-0 p-6 md:p-8 transform translate-y-2 group-hover:translate-y-0 transition-transform duration-500">
-                        <h4 className="text-white text-2xl md:text-3xl font-bold font-fashion mb-1 md:mb-2 leading-tight">
-                          {item.title}
-                        </h4>
-                        <p className="text-white/80 text-xs md:text-sm tracking-wide font-medium">
-                          Explore the finest {item.title.toLowerCase()} collections
-                        </p>
-                      </div>
+                      {(item.title || item.subtitle) && (
+                        <div className="absolute bottom-0 left-0 right-0 p-6 md:p-8 transform translate-y-2 group-hover:translate-y-0 transition-transform duration-500">
+                          {item.title && (
+                            <h4 className="text-white text-2xl md:text-3xl font-bold font-fashion mb-1 md:mb-2 leading-tight">
+                              {item.title}
+                            </h4>
+                          )}
+                          {item.subtitle && (
+                            <p className="text-white/80 text-xs md:text-sm tracking-wide font-medium">
+                              {item.subtitle}
+                            </p>
+                          )}
+                        </div>
+                      )}
 
                       {/* Interactive Link */}
                       <Link
-                        to={path}
+                        to={item.path}
                         className="absolute inset-0 z-10"
                         aria-label={`Shop ${item.title}`}
                       />
@@ -569,6 +582,7 @@ export default function Home() {
                     category={video.category}
                     thumbnail={video.thumbnail}
                     productImage={video.productImage}
+                    productId={video.productId}
                   />
                 </div>
               ))}
@@ -581,8 +595,19 @@ export default function Home() {
       <VideoModal
         isOpen={isVideoModalOpen}
         onClose={() => setIsVideoModalOpen(false)}
-        videoUrl={selectedVideo?.url}
-        title={selectedVideo?.title}
+        look={selectedVideo}
+        onNext={() => {
+          const currentIndex = looks.findIndex(l => l.id === selectedVideo?.id);
+          const nextIndex = (currentIndex + 1) % looks.length;
+          const nextLook = looks[nextIndex];
+          setSelectedVideo({ ...nextLook, url: resolveVideoUrl(nextLook.url) });
+        }}
+        onPrev={() => {
+          const currentIndex = looks.findIndex(l => l.id === selectedVideo?.id);
+          const prevIndex = (currentIndex - 1 + looks.length) % looks.length;
+          const prevLook = looks[prevIndex];
+          setSelectedVideo({ ...prevLook, url: resolveVideoUrl(prevLook.url) });
+        }}
       />
 
       {/* Our Purpose / Impact Section */}
@@ -756,5 +781,3 @@ export default function Home() {
     </div>
   );
 }
-
-

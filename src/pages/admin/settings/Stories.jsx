@@ -1,6 +1,7 @@
 import React, { useState, useEffect, useRef } from 'react';
 import { useAdminUI } from '../../../context/AdminUIContext';
 import { db } from '../../../firebase';
+import { motion, AnimatePresence } from 'framer-motion';
 import { 
   collection, 
   onSnapshot, 
@@ -19,7 +20,9 @@ import {
   Camera,
   Layout,
   Video,
-  Image as ImageIcon
+  Image as  ImageIcon,
+  Search,
+  Repeat
 } from 'lucide-react';
 import toast from 'react-hot-toast';
 import { uploadToCloudinary, deleteMultipleFromCloudinary } from '../../../utils/cloudinary';
@@ -27,22 +30,36 @@ import { uploadToCloudinary, deleteMultipleFromCloudinary } from '../../../utils
 export default function Stories() {
   const { isCollapsed } = useAdminUI();
   const [looks, setLooks] = useState([]);
+  const [allProducts, setAllProducts] = useState([]);
   const [loading, setLoading] = useState(true);
   const [isSaving, setIsSaving] = useState(false);
   const [hasChanges, setHasChanges] = useState(false);
+  const [flippedLooks, setFlippedLooks] = useState(new Set());
+
+  const toggleFlip = (id) => {
+    setFlippedLooks(prev => {
+      const next = new Set(prev);
+      if (next.has(id)) next.delete(id);
+      else next.add(id);
+      return next;
+    });
+  };
   const [deletedIds, setDeletedIds] = useState([]);
   const [deletedImageUrls, setDeletedImageUrls] = useState([]);
   
   const [editingLookId, setEditingLookId] = useState(null);
-  const [editingType, setEditingType] = useState(null); // 'thumbnail' or 'productImage'
+  const [editingType, setEditingType] = useState(null); // 'thumbnail', 'productImage', or 'video'
+  const [productSearch, setProductSearch] = useState('');
+  const [activeProductSearchId, setActiveProductSearchId] = useState(null);
   
   const fileInputRef = useRef(null);
+  const videoInputRef = useRef(null);
   const [pendingFiles, setPendingFiles] = useState({});  // lookId_type -> File
 
-  // Load Looks
+  // Load Looks and Products
   useEffect(() => {
-    const q = query(collection(db, 'shopTheLook'), orderBy('order', 'asc'));
-    const unsubscribe = onSnapshot(q, (snapshot) => {
+    const qStories = query(collection(db, 'shopTheLook'), orderBy('order', 'asc'));
+    const unsubscribeStories = onSnapshot(qStories, (snapshot) => {
       const data = snapshot.docs.map(doc => ({
         id: doc.id,
         ...doc.data()
@@ -56,41 +73,60 @@ export default function Stories() {
       setLoading(false);
       toast.error("Failed to load stories");
     });
-    return () => unsubscribe();
+
+    const qProducts = query(collection(db, 'products'), orderBy('name', 'asc'));
+    const unsubscribeProducts = onSnapshot(qProducts, (snapshot) => {
+      const data = snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() }));
+      setAllProducts(data);
+    });
+
+    return () => {
+      unsubscribeStories();
+      unsubscribeProducts();
+    };
   }, []);
 
-  const handleFileSelect = (e) => {
+  const handleFileSelect = (e, type) => {
     const file = e.target.files[0];
     if (!file) return;
 
-    if (!file.type.startsWith('image/')) {
-      toast.error("Please select an image file");
-      return;
+    // Validate type
+    if (type === 'video') {
+      if (!file.type.startsWith('video/')) {
+        toast.error("Please select a video file");
+        return;
+      }
+    } else {
+      if (!file.type.startsWith('image/')) {
+        toast.error("Please select an image file");
+        return;
+      }
     }
 
     const previewUrl = URL.createObjectURL(file);
+    const targetType = type || editingType;
+    
     if (editingLookId) {
-      const fileKey = `${editingLookId}_${editingType}`;
+      const fileKey = `${editingLookId}_${targetType}`;
       setPendingFiles(prev => ({ ...prev, [fileKey]: file }));
       setLooks(prev => prev.map(l => 
         l.id === editingLookId 
-          ? { ...l, [editingType]: previewUrl, isModified: true } 
+          ? { ...l, [targetType]: previewUrl, isModified: true } 
           : l
       ));
     } else {
       const tempId = 'temp-' + Date.now();
       setPendingFiles(prev => ({ 
         ...prev, 
-        [`${tempId}_thumbnail`]: file,
-        [`${tempId}_productImage`]: file 
+        [`${tempId}_${targetType}`]: file
       }));
       const newLook = {
         id: tempId,
         title: '',
         category: '',
-        url: '',
-        thumbnail: previewUrl,
-        productImage: previewUrl,
+        url: targetType === 'video' ? previewUrl : '',
+        thumbnail: targetType === 'thumbnail' ? previewUrl : '',
+        productImage: targetType === 'productImage' ? previewUrl : '',
         order: looks.length,
         isNew: true
       };
@@ -98,19 +134,24 @@ export default function Stories() {
     }
     setHasChanges(true);
     setEditingLookId(null);
+    setEditingType(null);
     e.target.value = null;
   };
 
-  const triggerEditImage = (id, type) => {
+  const triggerEditMedia = (id, type) => {
     setEditingLookId(id);
     setEditingType(type);
-    fileInputRef.current?.click();
+    if (type === 'video') {
+      videoInputRef.current?.click();
+    } else {
+      fileInputRef.current?.click();
+    }
   };
 
   const triggerAdd = () => {
     setEditingLookId(null);
-    setEditingType('thumbnail');
-    fileInputRef.current?.click();
+    setEditingType('video');
+    videoInputRef.current?.click();
   };
 
   const updateField = (id, field, value) => {
@@ -124,8 +165,8 @@ export default function Stories() {
     setLooks(prev => prev.filter(l => l.id !== look.id));
     if (!look.isNew) {
       setDeletedIds(prev => [...prev, look.id]);
-      // Track Cloudinary image URLs for cleanup
-      const urls = [look.thumbnail, look.productImage].filter(u => u && u.includes('res.cloudinary.com'));
+      // Track Cloudinary URLs for cleanup
+      const urls = [look.thumbnail, look.productImage, look.url].filter(u => u && u.includes('res.cloudinary.com'));
       if (urls.length > 0) {
         setDeletedImageUrls(prev => [...prev, ...urls]);
       }
@@ -143,14 +184,14 @@ export default function Stories() {
         batch.delete(doc(db, 'shopTheLook', id));
       });
 
-      // Upload pending images to Cloudinary
+      // Upload pending files to Cloudinary
       const uploadedUrls = {};
       for (const [key, file] of Object.entries(pendingFiles)) {
         try {
           const url = await uploadToCloudinary(file, 'Stories');
           uploadedUrls[key] = url;
         } catch (err) {
-          toast.error('Failed to upload story image');
+          toast.error(`Failed to upload ${file.type.startsWith('video/') ? 'video' : 'image'}`);
           setIsSaving(false);
           return;
         }
@@ -160,27 +201,28 @@ export default function Stories() {
       looks.forEach((look, index) => {
         const thumbUrl = uploadedUrls[`${look.id}_thumbnail`] || look.thumbnail;
         const prodImgUrl = uploadedUrls[`${look.id}_productImage`] || look.productImage;
+        const videoUrl = uploadedUrls[`${look.id}_video`] || look.url;
+
+        const data = {
+          title: look.title || '',
+          category: look.category || '',
+          url: videoUrl || '',
+          thumbnail: thumbUrl || '',
+          productImage: prodImgUrl || '',
+          productId: look.productId || '',
+          order: index,
+        };
 
         if (look.isNew) {
           const docRef = doc(collection(db, 'shopTheLook'));
           batch.set(docRef, {
-            title: look.title || '',
-            category: look.category || '',
-            url: look.url || '',
-            thumbnail: thumbUrl || '',
-            productImage: prodImgUrl || '',
-            order: index,
+            ...data,
             createdAt: serverTimestamp()
           });
         } else if (look.isModified) {
           const docRef = doc(db, 'shopTheLook', look.id);
           batch.update(docRef, {
-            title: look.title || '',
-            category: look.category || '',
-            url: look.url || '',
-            thumbnail: thumbUrl || '',
-            productImage: prodImgUrl || '',
-            order: index,
+            ...data,
             updatedAt: serverTimestamp()
           });
         }
@@ -188,7 +230,7 @@ export default function Stories() {
 
       await batch.commit();
 
-      // Delete images from Cloudinary (best-effort)
+      // Delete from Cloudinary (best-effort)
       if (deletedImageUrls.length > 0) {
         deleteMultipleFromCloudinary(deletedImageUrls);
       }
@@ -218,7 +260,8 @@ export default function Stories() {
   return (
     <div className={`mx-auto space-y-8 animate-in fade-in slide-in-from-bottom-2 duration-500 transition-all duration-300 ${isCollapsed ? 'max-w-[1600px]' : 'max-w-[1280px]'}`} style={{ fontFamily: "'Inter', -apple-system, sans-serif" }}>
       
-      <input type="file" ref={fileInputRef} className="hidden" accept="image/*" onChange={handleFileSelect} />
+      <input type="file" ref={fileInputRef} className="hidden" accept="image/*" onChange={(e) => handleFileSelect(e)} />
+      <input type="file" ref={videoInputRef} className="hidden" accept="video/*" onChange={(e) => handleFileSelect(e, 'video')} />
 
       {/* Header Section */}
       <div className="space-y-4 py-2">
@@ -270,88 +313,212 @@ export default function Stories() {
           </div>
         </div>
       ) : (
-        <div className="grid grid-cols-1 lg:grid-cols-2 gap-8 pb-12">
+        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-x-12 gap-y-20 pb-12">
           {looks.map((look) => (
-            <div key={look.id} className="bg-white border border-gray-100 rounded-[3rem] p-8 flex flex-col sm:flex-row gap-8 shadow-sm hover:shadow-xl transition-all group relative">
+            <div key={look.id} className="group relative w-full flex flex-col items-center" style={{ perspective: '1200px' }}>
               
-              {/* Media Preview Stack */}
-              <div className="flex-shrink-0 space-y-4 flex flex-col items-center">
-                <div className="relative w-40 h-56 rounded-[2rem] overflow-hidden bg-gray-100 border-4 border-white shadow-md group/thumb">
-                   <img src={look.thumbnail} className="w-full h-full object-cover" alt="" />
-                   <button 
-                    onClick={() => triggerEditImage(look.id, 'thumbnail')}
-                    className="absolute inset-0 bg-black/40 opacity-0 group-hover/thumb:opacity-100 flex flex-col items-center justify-center text-white transition-all backdrop-blur-[2px]"
-                   >
-                     <Camera size={24} className="mb-1" />
-                     <span className="text-[9px] font-bold uppercase">Poster</span>
-                   </button>
-                </div>
-                <div className="relative w-16 h-16 rounded-full overflow-hidden bg-gray-50 border-2 border-white shadow-sm group/prod">
-                   <img src={look.productImage} className="w-full h-full object-cover" alt="" />
-                   <button 
-                    onClick={() => triggerEditImage(look.id, 'productImage')}
-                    className="absolute inset-0 bg-black/40 opacity-0 group-hover/prod:opacity-100 flex items-center justify-center text-white transition-all"
-                   >
-                     <ImageIcon size={14} />
-                   </button>
-                </div>
-              </div>
-
-              {/* Form Fields */}
-              <div className="flex-1 space-y-4">
-                <div className="space-y-1">
-                  <label className="text-[10px] font-bold text-gray-400 uppercase tracking-[0.2em] mb-1.5 block ml-1">Narrative Title</label>
-                  <input 
-                    type="text"
-                    placeholder="Hand-painted Madhubani Heritage"
-                    value={look.title || ''}
-                    onChange={(e) => updateField(look.id, 'title', e.target.value)}
-                    className="w-full bg-gray-50 border-none px-5 py-2.5 text-[13px] font-bold text-gray-900 rounded-2xl focus:ring-2 focus:ring-[#1BAFAF]/20 focus:bg-white transition-all outline-none"
-                  />
-                </div>
-
-                <div className="space-y-1">
-                  <label className="text-[10px] font-bold text-gray-400 uppercase tracking-[0.2em] mb-1.5 block ml-1">Artisan Category</label>
-                  <input 
-                    type="text"
-                    placeholder="Artisan Jewelry"
-                    value={look.category || ''}
-                    onChange={(e) => updateField(look.id, 'category', e.target.value)}
-                    className="w-full bg-gray-50 border-none px-5 py-2.5 text-[11px] font-bold text-gray-500 rounded-2xl focus:ring-2 focus:ring-[#1BAFAF]/20 focus:bg-white transition-all outline-none"
-                  />
-                </div>
-
-                <div className="space-y-1">
-                  <label className="text-[10px] font-bold text-gray-400 uppercase tracking-[0.2em] mb-1.5 block ml-1">Video URL (Mixkit/YouTube/Direct)</label>
-                  <div className="relative">
-                    <Video size={12} className="absolute left-4 top-1/2 -translate-y-1/2 text-gray-300" />
-                    <input 
-                      type="text"
-                      placeholder="https://assets.mixkit.co/..."
-                      value={look.url || ''}
-                      onChange={(e) => updateField(look.id, 'url', e.target.value)}
-                      className="w-full bg-gray-50 border-none pl-9 pr-5 py-2.5 text-[11px] font-medium text-gray-600 rounded-2xl focus:ring-2 focus:ring-[#1BAFAF]/20 focus:bg-white transition-all outline-none"
+              <motion.div 
+                className="relative w-60 h-80"
+                style={{ transformStyle: 'preserve-3d' }}
+                animate={{ rotateY: flippedLooks.has(look.id) ? 180 : 0 }}
+                transition={{ type: "tween", duration: 0.8, ease: "easeInOut" }}
+              >
+                {/* Front Side: Video Preview */}
+                <div 
+                  className="absolute inset-0 rounded-[1.5rem] overflow-hidden bg-gray-100 shadow-xl border-4 border-white"
+                  style={{ 
+                    backfaceVisibility: 'hidden', 
+                    WebkitBackfaceVisibility: 'hidden',
+                    zIndex: flippedLooks.has(look.id) ? 0 : 1 
+                  }}
+                >
+                  {look.url ? (
+                    <video 
+                      src={look.url} 
+                      className="w-full h-full object-cover" 
+                      muted 
+                      autoPlay 
+                      loop 
+                      playsInline
                     />
+                  ) : (
+                    <div className="w-full h-full flex flex-col items-center justify-center bg-gray-50 text-gray-300">
+                      <Video size={32} />
+                      <p className="text-[10px] font-bold mt-2 uppercase tracking-widest">No Video</p>
+                    </div>
+                  )}
+
+                  {/* Top Actions (Trash & Flip) */}
+                  <div className="absolute top-4 left-4 right-4 flex justify-between items-center z-20 opacity-0 group-hover:opacity-100 transition-all">
+                    <button 
+                      onClick={() => removeLook(look)}
+                      className="p-2.5 bg-black/30 hover:bg-red-500 text-white rounded-full backdrop-blur-md transition-all"
+                      title="Remove Story"
+                    >
+                      <Trash2 size={16} />
+                    </button>
+                    <button 
+                      onClick={(e) => { e.stopPropagation(); toggleFlip(look.id); }}
+                      className="p-2.5 bg-black/30 hover:bg-[#1BAFAF] text-white rounded-full backdrop-blur-md transition-all"
+                      title="Show Poster"
+                    >
+                      <Repeat size={18} />
+                    </button>
+                  </div>
+
+                  {/* Status Badge (Top Right Inside) */}
+                  {(look.isNew || look.isModified) && (
+                    <div className="absolute top-4 right-4 z-10 group-hover:opacity-0 transition-opacity">
+                      <span className="px-2.5 py-1 bg-black/40 backdrop-blur-md text-white text-[8px] font-black uppercase tracking-widest rounded-full border border-white/20">
+                        {look.isNew ? 'New' : 'Draft'}
+                      </span>
+                    </div>
+                  )}
+
+                  {/* Media Edit Overlay */}
+                  <div className="absolute inset-0 bg-black/40 opacity-0 group-hover:opacity-100 flex flex-col items-center justify-center text-white transition-all backdrop-blur-[2px] gap-2 z-10">
+                     <button 
+                      onClick={() => triggerEditMedia(look.id, 'thumbnail')}
+                      className="flex items-center gap-2 bg-white/20 hover:bg-white/40 px-3 py-1 rounded-full text-[10px] font-bold transition-all"
+                     >
+                       <Camera size={14} /> POSTER
+                     </button>
+                     <button 
+                      onClick={() => triggerEditMedia(look.id, 'video')}
+                      className="flex items-center gap-2 bg-[#1BAFAF] hover:bg-[#17a0a0] px-3 py-1 rounded-full text-[10px] font-bold transition-all"
+                     >
+                       <Video size={14} /> VIDEO
+                     </button>
+                  </div>
+
+                  {/* Integrated Product Overlay (If Linked) */}
+                  {look.productId ? (
+                    <div className="absolute bottom-2 left-2 right-2 bg-white/95 backdrop-blur-md rounded-2xl p-2.5 flex items-center gap-3 shadow-lg z-20 group/prod transition-all hover:bg-white border border-gray-100">
+                      {(() => {
+                        const p = allProducts.find(prod => prod.id === look.productId);
+                        if (!p) return null;
+                        return (
+                          <>
+                            <img src={p.images?.[0]} alt="" className="w-10 h-12 rounded-lg object-cover flex-shrink-0" />
+                            <div className="flex-1 min-w-0 text-left">
+                              <p className="text-[10px] font-bold text-gray-900 truncate uppercase tracking-tight">{p.name}</p>
+                              <p className="text-[11px] text-[#1BAFAF] font-black">₹{p.price}</p>
+                            </div>
+                            
+                            <div className="flex flex-col gap-1">
+                              <button 
+                                onClick={() => setActiveProductSearchId(look.id)}
+                                className="p-1 text-gray-400 hover:text-[#1BAFAF] transition-colors"
+                                title="Change Product"
+                              >
+                                <Search size={12} />
+                              </button>
+                              <button 
+                                onClick={() => updateField(look.id, 'productId', '')}
+                                className="p-1 text-gray-400 hover:text-red-500 transition-colors"
+                                title="Unlink Product"
+                              >
+                                <Trash2 size={12} />
+                              </button>
+                            </div>
+                          </>
+                        );
+                      })()}
+                    </div>
+                  ) : (
+                    /* Integrated Search Bar (If NOT linked) */
+                    <div className="absolute bottom-2 left-2 right-2 z-20">
+                      <div className="relative">
+                        <Search size={10} className="absolute left-3 top-1/2 -translate-y-1/2 text-white/60" />
+                        <input 
+                          type="text"
+                          placeholder="Link Product..."
+                          value={activeProductSearchId === look.id ? productSearch : ''}
+                          onFocus={() => {
+                            setActiveProductSearchId(look.id);
+                            setProductSearch('');
+                          }}
+                          onChange={(e) => setProductSearch(e.target.value)}
+                          className="w-full bg-black/30 backdrop-blur-md border border-white/20 pl-8 pr-3 py-2 text-[10px] font-bold text-white placeholder:text-white/60 rounded-xl focus:ring-2 focus:ring-white/20 focus:bg-black/50 transition-all outline-none"
+                        />
+                      </div>
+                    </div>
+                  )}
+                </div>
+
+                {/* Back Side: Poster Preview */}
+                <div 
+                  className="absolute inset-0 rounded-[1.5rem] overflow-hidden bg-gray-100 shadow-xl border-4 border-white group/poster"
+                  style={{ 
+                    backfaceVisibility: 'hidden', 
+                    WebkitBackfaceVisibility: 'hidden',
+                    transform: 'rotateY(180deg)',
+                    zIndex: flippedLooks.has(look.id) ? 1 : 0
+                  }}
+                >
+                  {look.thumbnail ? (
+                    <img src={look.thumbnail} className="w-full h-full object-cover" alt="" />
+                  ) : (
+                    <div className="w-full h-full flex flex-col items-center justify-center bg-gray-50 text-gray-400 p-6 text-center">
+                      <ImageIcon size={32} className="mb-2 opacity-20" />
+                      <p className="text-[10px] font-bold uppercase tracking-widest leading-relaxed">No saved poster<br/>found</p>
+                    </div>
+                  )}
+
+                  {/* Poster Actions Overlay (Center) */}
+                  <div className="absolute inset-0 bg-black/40 opacity-0 group-hover/poster:opacity-100 flex flex-col items-center justify-center text-white transition-all backdrop-blur-[2px] gap-2 z-10">
+                     <button 
+                      onClick={() => triggerEditMedia(look.id, 'thumbnail')}
+                      className="flex items-center gap-2 bg-white/20 hover:bg-white/40 px-3 py-1.5 rounded-full text-[10px] font-bold transition-all"
+                     >
+                       <Camera size={14} /> EDIT POSTER
+                     </button>
+                     <button 
+                      onClick={() => updateField(look.id, 'thumbnail', '')}
+                      className="flex items-center gap-2 bg-red-500/80 hover:bg-red-500 px-3 py-1.5 rounded-full text-[10px] font-bold transition-all"
+                     >
+                       <Trash2 size={14} /> REMOVE
+                     </button>
+                  </div>
+
+                  {/* Top Actions (Back Side) */}
+                  <div className="absolute top-4 right-4 z-20">
+                    <button 
+                      onClick={(e) => { e.stopPropagation(); toggleFlip(look.id); }}
+                      className="p-2.5 bg-black/30 hover:bg-[#1BAFAF] text-white rounded-full backdrop-blur-md transition-all"
+                      title="Show Video"
+                    >
+                      <Repeat size={18} />
+                    </button>
                   </div>
                 </div>
+              </motion.div>
 
-                <div className="pt-2">
-                  <button 
-                    onClick={() => removeLook(look)}
-                    className="w-full py-3 bg-red-50 text-red-500 rounded-2xl flex items-center justify-center hover:bg-red-500 hover:text-white transition-all active:scale-95 text-[12px] font-bold gap-2"
-                  >
-                    <Trash2 size={16} />
-                    Remove Story
-                  </button>
-                </div>
-              </div>
-
-              {/* Status Badge */}
-              {(look.isNew || look.isModified) && (
-                <div className="absolute top-6 right-8">
-                  <span className="px-3 py-1 bg-[#1BAFAF]/10 text-[#1BAFAF] text-[9px] font-black uppercase tracking-widest rounded-full">
-                    {look.isNew ? 'New Story' : 'Draft'}
-                  </span>
+              {/* Search Results Dropdown (Shared) */}
+              {activeProductSearchId === look.id && (
+                <div className="absolute z-[50] top-full mt-3 bg-white border border-gray-100 rounded-2xl shadow-2xl w-64 py-2 animate-in fade-in zoom-in-95">
+                  <div className="max-h-64 overflow-y-auto no-scrollbar">
+                    {allProducts
+                      .filter(p => !productSearch || p.name.toLowerCase().includes(productSearch.toLowerCase()))
+                      .map(p => (
+                        <button
+                          key={p.id}
+                          onClick={() => {
+                            updateField(look.id, 'productId', p.id);
+                            setActiveProductSearchId(null);
+                            setProductSearch('');
+                          }}
+                          className={`w-full flex items-center gap-3 px-4 py-2.5 hover:bg-gray-50 transition-colors text-left ${look.productId === p.id ? 'bg-[#1BAFAF]/5' : ''}`}
+                        >
+                          <img src={p.images?.[0]} alt="" className="w-9 h-9 rounded-lg object-cover bg-gray-100" />
+                          <div className="flex-1 min-w-0">
+                            <p className="text-[10px] font-bold text-gray-900 truncate">{p.name}</p>
+                            <p className="text-[9px] text-[#1BAFAF] font-bold">₹{p.price}</p>
+                          </div>
+                        </button>
+                      ))}
+                  </div>
+                  <div className="fixed inset-0 z-[-1]" onClick={() => setActiveProductSearchId(null)} />
                 </div>
               )}
             </div>
