@@ -5,6 +5,7 @@ import { useState, useEffect } from 'react';
 import { useAuth } from '../../context/AuthContext';
 import { db } from '../../firebase';
 import { doc, getDoc, setDoc, updateDoc, deleteDoc, serverTimestamp, onSnapshot } from 'firebase/firestore';
+import { addToCart } from '../../utils/cartUtils';
 
 export default function ProductCard({ id, slug, name, price, image, images, rating = 4.8 }) {
   const displayImage = image || (images && images.length > 0 ? images[0] : '');
@@ -59,29 +60,7 @@ export default function ProductCard({ id, slug, name, price, image, images, rati
     }
 
     try {
-      console.log(`Cart: Attempting to add Product [${productId}] for User [${user.uid}]`);
-      const cartItemRef = doc(db, 'users', user.uid, 'cart', productId);
-      const cartItemSnap = await getDoc(cartItemRef);
-
-      if (cartItemSnap.exists()) {
-        await updateDoc(cartItemRef, {
-          qty: cartItemSnap.data().qty + 1,
-          updatedAt: serverTimestamp()
-        });
-        console.log("Cart: Incremented quantity successfully.");
-      } else {
-        await setDoc(cartItemRef, {
-          id: productId,
-          slug: slug || productId,
-          name: name || 'Handcrafted Treasure',
-          price: price || 0,
-          image: image || '',
-          qty: 1,
-          addedAt: serverTimestamp()
-        });
-        console.log("Cart: Created new item successfully.");
-      }
-
+      await addToCart(user, { id, slug, name, price, image, images });
       setIsAdded(true);
       setTimeout(() => setIsAdded(false), 2000);
     } catch (error) {

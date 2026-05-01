@@ -5,6 +5,7 @@ import { ShoppingBag, ChevronRight, Star, Heart, CheckCircle2, Loader2, ArrowLef
 import { useAuth } from '../../context/AuthContext';
 import { db } from '../../firebase';
 import { doc, getDoc, setDoc, updateDoc, deleteDoc, serverTimestamp, onSnapshot, collection, query, where, getDocs } from 'firebase/firestore';
+import { addToCart } from '../../utils/cartUtils';
 
 export default function ProductDetail() {
   const { slug } = useParams();
@@ -82,26 +83,7 @@ export default function ProductDetail() {
     }
 
     try {
-      const cartItemRef = doc(db, 'users', user.uid, 'cart', product.id.toString());
-      const cartItemSnap = await getDoc(cartItemRef);
-
-      if (cartItemSnap.exists()) {
-        await updateDoc(cartItemRef, {
-          qty: cartItemSnap.data().qty + 1,
-          updatedAt: serverTimestamp()
-        });
-      } else {
-        await setDoc(cartItemRef, {
-          id: product.id,
-          slug: product.slug || product.id,
-          name: product.name || 'Handcrafted Treasure',
-          price: product.price || 0,
-          image: product.image || '',
-          qty: 1,
-          addedAt: serverTimestamp()
-        });
-      }
-
+      await addToCart(user, product);
       setIsAdded(true);
       // Remove auto-hide to let user see "Go to Bag" option
     } catch (error) {

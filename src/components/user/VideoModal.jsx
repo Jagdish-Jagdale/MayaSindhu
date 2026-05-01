@@ -1,11 +1,16 @@
 import { motion, AnimatePresence } from 'framer-motion';
 import { useEffect, useState } from 'react';
+import { useNavigate } from 'react-router-dom';
+import { useAuth } from '../../context/AuthContext';
+import { addToCart } from '../../utils/cartUtils';
 import { db } from '../../firebase';
 import { doc, getDoc } from 'firebase/firestore';
 import { X, ChevronLeft, ChevronRight, ShoppingBag, Volume2, VolumeX, Share2, Loader2 } from 'lucide-react';
 import toast from 'react-hot-toast';
 
 export default function VideoModal({ isOpen, onClose, look, onNext, onPrev }) {
+  const { user } = useAuth();
+  const navigate = useNavigate();
   const [productData, setProductData] = useState(null);
   const [loadingProduct, setLoadingProduct] = useState(false);
   const [isMuted, setIsMuted] = useState(false);
@@ -181,16 +186,25 @@ export default function VideoModal({ isOpen, onClose, look, onNext, onPrev }) {
                     {addedToCart ? (
                       <button
                         className="flex-1 bg-brand-orange hover:bg-brand-orange-dark text-white font-bold py-4 rounded-md transition-all active:scale-[0.98] text-[14px]"
-                        onClick={() => window.location.href = '/cart'}
+                        onClick={() => navigate('/cart')}
                       >
                         Go to cart
                       </button>
                     ) : (
                       <button
                         className="flex-1 bg-brand-orange hover:bg-brand-orange-dark text-white font-bold py-4 rounded-md transition-all active:scale-[0.98] text-[14px]"
-                        onClick={() => {
-                          setAddedToCart(true);
-                          toast.success('Added to Bag');
+                        onClick={async () => {
+                          if (!user) {
+                            navigate('/login');
+                            return;
+                          }
+                          try {
+                            await addToCart(user, productData);
+                            setAddedToCart(true);
+                            toast.success('Added to Bag');
+                          } catch (error) {
+                            toast.error('Failed to add to bag');
+                          }
                         }}
                       >
                         Add to cart

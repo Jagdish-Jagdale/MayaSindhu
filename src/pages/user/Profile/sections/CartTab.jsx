@@ -14,15 +14,18 @@ export default function CartTab({ user }) {
     if (!user) return;
 
     const q = query(
-      collection(db, 'users', user.uid, 'cart'),
-      orderBy('addedAt', 'desc')
+      collection(db, 'users', user.uid, 'cart')
     );
 
     const unsubscribe = onSnapshot(q, (snapshot) => {
       const cartItems = snapshot.docs.map(doc => ({
         docId: doc.id,
         ...doc.data()
-      }));
+      })).sort((a, b) => {
+        const timeA = a.addedAt?.seconds || a.addedAt?.getTime?.() || 0;
+        const timeB = b.addedAt?.seconds || b.addedAt?.getTime?.() || 0;
+        return timeB - timeA;
+      });
       setItems(cartItems);
       setLoading(false);
     }, (error) => {

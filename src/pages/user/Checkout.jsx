@@ -17,6 +17,7 @@ export default function Checkout() {
   const [shipping] = useState(500);
   const [savedAddresses, setSavedAddresses] = useState([]);
   const [selectedAddressId, setSelectedAddressId] = useState(null);
+  const [paymentMethod, setPaymentMethod] = useState('card');
 
   // Form states
   const [formData, setFormData] = useState({
@@ -97,7 +98,8 @@ export default function Checkout() {
         orderId: orderId,
         customerUid: user.uid,
         customerName: `${formData.firstName} ${formData.lastName}`,
-        email: user.email,
+        totalAmount: total,
+        paymentMethod: paymentMethod,
         items: items.map(i => ({ name: i.name, qty: i.qty, price: i.price })),
         subtotal,
         shipping: subtotal > 25000 ? 0 : shipping,
@@ -249,19 +251,62 @@ export default function Checkout() {
                   </div>
 
                   <div className="space-y-4 mb-10">
-                    <PaymentOption label="Credit / Debit Card" icon={<CreditCard size={20} />} active />
-                    <PaymentOption label="UPI / Net Banking" icon={<ShoppingBag size={20} />} />
-                    <PaymentOption label="Cash on Delivery (Heritage)" icon={<Truck size={20} />} />
+                    <PaymentOption 
+                      label="Credit / Debit Card" 
+                      icon={<CreditCard size={20} />} 
+                      active={paymentMethod === 'card'} 
+                      onClick={() => setPaymentMethod('card')}
+                    />
+                    <PaymentOption 
+                      label="UPI / Net Banking" 
+                      icon={<ShoppingBag size={20} />} 
+                      active={paymentMethod === 'upi'} 
+                      onClick={() => setPaymentMethod('upi')}
+                    />
+                    <PaymentOption 
+                      label="Cash on Delivery (Heritage)" 
+                      icon={<Truck size={20} />} 
+                      active={paymentMethod === 'cod'} 
+                      onClick={() => setPaymentMethod('cod')}
+                    />
                   </div>
 
-                  <form className="space-y-6">
-                    <FormInput label="Cardholder Name" />
-                    <FormInput label="Card Number" placeholder="**** **** **** ****" />
-                    <div className="grid grid-cols-2 gap-6">
-                      <FormInput label="Expiry Date" placeholder="MM / YY" />
-                      <FormInput label="CVV" placeholder="***" type="password" />
-                    </div>
-                  </form>
+                  {paymentMethod === 'card' && (
+                    <motion.form 
+                      initial={{ opacity: 0, y: 10 }}
+                      animate={{ opacity: 1, y: 0 }}
+                      className="space-y-6"
+                    >
+                      <FormInput label="Cardholder Name" />
+                      <FormInput label="Card Number" placeholder="**** **** **** ****" />
+                      <div className="grid grid-cols-2 gap-6">
+                        <FormInput label="Expiry Date" placeholder="MM / YY" />
+                        <FormInput label="CVV" placeholder="***" type="password" />
+                      </div>
+                    </motion.form>
+                  )}
+
+                  {paymentMethod === 'upi' && (
+                    <motion.div 
+                      initial={{ opacity: 0, y: 10 }}
+                      animate={{ opacity: 1, y: 0 }}
+                      className="p-8 bg-[#FAF9F6] rounded-3xl border border-dashed border-gray-200 text-center"
+                    >
+                      <p className="text-sm text-gray-500 mb-2">You will be redirected to our secure payment gateway to complete your UPI/Net Banking transaction.</p>
+                      <span className="text-[10px] uppercase font-bold tracking-widest text-brand-orange">Fast & Secure Heritage Payments</span>
+                    </motion.div>
+                  )}
+
+                  {paymentMethod === 'cod' && (
+                    <motion.div 
+                      initial={{ opacity: 0, y: 10 }}
+                      animate={{ opacity: 1, y: 0 }}
+                      className="p-8 bg-[#FAF9F6] rounded-3xl border border-dashed border-gray-200 text-center"
+                    >
+                      <p className="text-sm text-gray-500 mb-2">Pay in cash when your heritage treasure arrives at your doorstep.</p>
+                      <span className="text-[10px] uppercase font-bold tracking-widest text-brand-orange">Heritage Delivery Service</span>
+                    </motion.div>
+                  )}
 
                   <div className="mt-12 flex justify-between">
                     <button onClick={prevStep} className="text-sm font-bold text-gray-400 hover:text-[#1A1A1A] transition-colors">Back to Shipping</button>
@@ -343,11 +388,14 @@ function FormInput({ label, type = 'text', placeholder = '', value = '', onChang
   );
 }
 
-function PaymentOption({ label, icon, active }) {
+function PaymentOption({ label, icon, active, onClick }) {
   return (
-    <div className={`flex items-center justify-between p-6 rounded-2xl border-2 transition-all cursor-pointer ${
-      active ? 'bg-brand-orange/[0.02] border-brand-orange/20 text-brand-orange' : 'bg-[#FAF9F6]/50 border-gray-50 text-gray-400 hover:border-gray-200 hover:text-[#1A1A1A]'
-    }`}>
+    <div 
+      onClick={onClick}
+      className={`flex items-center justify-between p-6 rounded-2xl border-2 transition-all cursor-pointer ${
+        active ? 'border-brand-orange bg-brand-orange/[0.02] text-brand-orange shadow-lg shadow-brand-orange/5' : 'bg-[#FAF9F6]/50 border-gray-50 text-gray-400 hover:border-gray-200 hover:text-[#1A1A1A]'
+      }`}
+    >
       <div className="flex items-center gap-4">
         {icon}
         <span className="font-bold text-xs uppercase tracking-widest leading-none">{label}</span>
