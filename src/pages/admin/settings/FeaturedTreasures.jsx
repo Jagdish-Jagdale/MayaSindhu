@@ -203,7 +203,7 @@ export default function FeaturedTreasures() {
                       className="w-full flex items-center gap-3 px-4 py-3 hover:bg-gray-50 transition-all text-left group"
                     >
                       <div className="w-10 h-10 rounded-xl bg-gray-50 overflow-hidden flex-shrink-0">
-                        <img src={product.image} className="w-full h-full object-cover" alt="" />
+                        <img src={product.images?.[0] || product.image} className="w-full h-full object-cover" alt="" />
                       </div>
                       <div className="flex-1 min-w-0">
                         <p className="text-[13px] font-semibold text-gray-900 truncate group-hover:text-brand-orange transition-colors">{product.name}</p>
@@ -257,7 +257,7 @@ export default function FeaturedTreasures() {
               <div key={product.id} className="group relative animate-in fade-in zoom-in duration-500">
                 <div className="relative aspect-[1/1.1] overflow-hidden bg-white border border-gray-100 rounded-[2.5rem] shadow-sm hover:shadow-xl transition-all duration-500">
                   <img
-                    src={product.image}
+                    src={product.images?.[0] || product.image}
                     alt={product.name}
                     className="w-full h-full object-cover transition-transform duration-1000 group-hover:scale-105"
                   />

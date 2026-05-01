@@ -11,7 +11,8 @@ import {
   Loader2,
   Package,
   AlertCircle,
-  Image
+  Image,
+  Star
 } from 'lucide-react';
 import { useAdminUI } from '../../context/AdminUIContext';
 import { db } from '../../firebase';
@@ -21,7 +22,9 @@ import {
   query, 
   orderBy, 
   doc, 
-  deleteDoc 
+  deleteDoc,
+  setDoc,
+  serverTimestamp
 } from 'firebase/firestore';
 import useCategories from '../../hooks/useCategories';
 import ProductFormModal from '../../components/admin/ProductFormModal';
@@ -53,6 +56,9 @@ export default function ProductManagement() {
   const filterRef = useRef(null);
   const rowsRef = useRef(null);
 
+  const [featuredProductIds, setFeaturedProductIds] = useState(new Set());
+  const [featuredDocMap, setFeaturedDocMap] = useState({}); // productId -> featuredDocId
+
   // Real-time listener for products
   useEffect(() => {
     const q = query(collection(db, 'products'), orderBy('updatedAt', 'desc'));
@@ -71,6 +77,51 @@ export default function ProductManagement() {
 
     return () => unsubscribe();
   }, []);
+
+  // Real-time listener for featured treasures
+  useEffect(() => {
+    const q = query(collection(db, 'featuredTreasures'));
+    const unsubscribe = onSnapshot(q, (snapshot) => {
+      const ids = new Set();
+      const map = {};
+      snapshot.docs.forEach(doc => {
+        const data = doc.data();
+        ids.add(data.productId);
+        map[data.productId] = doc.id;
+      });
+      setFeaturedProductIds(ids);
+      setFeaturedDocMap(map);
+    });
+    return () => unsubscribe();
+  }, []);
+
+  const toggleFeatured = async (product) => {
+    const isFeatured = featuredProductIds.has(product.id);
+    try {
+      if (isFeatured) {
+        const docId = featuredDocMap[product.id];
+        if (docId) {
+          await deleteDoc(doc(db, 'featuredTreasures', docId));
+          toast.success(`Removed "${product.name}" from favorites`);
+        }
+      } else {
+        if (featuredProductIds.size >= 8) {
+          toast.error("Limit reached: You can only feature up to 8 products");
+          return;
+        }
+        const newRef = doc(collection(db, 'featuredTreasures'));
+        await setDoc(newRef, {
+          productId: product.id,
+          order: featuredProductIds.size,
+          updatedAt: serverTimestamp()
+        });
+        toast.success(`Added "${product.name}" to favorites`);
+      }
+    } catch (error) {
+      console.error("Error toggling featured:", error);
+      toast.error("Action failed");
+    }
+  };
 
   // Flatten categories for ID -> Name mapping
   const categoryMap = (() => {
@@ -318,11 +369,8 @@ export default function ProductManagement() {
                     Stock <SortIcon colKey="stock" />
                   </button>
                 </th>
-                <th className="px-6 py-4 text-left text-[14px] font-bold text-[#1BAFAF]">
-                  <button onClick={() => handleSort('isAvailable')} className="flex items-center gap-1 hover:opacity-75 transition-opacity">
-                    Status <SortIcon colKey="isAvailable" />
-                  </button>
-                </th>
+                <th className="px-6 py-4 text-left text-[14px] font-bold text-[#1BAFAF]">Status</th>
+                <th className="px-6 py-4 text-left text-[14px] font-bold text-[#1BAFAF]">Featured</th>
                 <th className="px-6 py-4 text-left text-[14px] font-bold text-[#1BAFAF]">
                   <button onClick={() => handleSort('updatedAt')} className="flex items-center gap-1 hover:opacity-75 transition-opacity">
                     Modified <SortIcon colKey="updatedAt" />
@@ -377,6 +425,19 @@ export default function ProductManagement() {
                       }`}>
                         {product.isAvailable ? 'Available' : 'Hidden'}
                       </span>
+                    </td>
+                    <td className="px-6 py-4 whitespace-nowrap">
+                      <button 
+                        onClick={() => toggleFeatured(product)}
+                        className={`w-8 h-8 flex items-center justify-center rounded-lg transition-all active:scale-90 ${
+                          featuredProductIds.has(product.id) 
+                            ? 'text-brand-orange bg-brand-orange/10 shadow-sm' 
+                            : 'text-gray-300 hover:text-brand-orange hover:bg-gray-50'
+                        }`}
+                        title={featuredProductIds.has(product.id) ? "Remove from favorites" : "Add to favorites"}
+                      >
+                        <Star size={16} fill={featuredProductIds.has(product.id) ? "currentColor" : "none"} strokeWidth={2.5} />
+                      </button>
                     </td>
                     <td className="px-6 py-4 whitespace-nowrap text-[13px] text-gray-400 font-medium">
                       {(() => {

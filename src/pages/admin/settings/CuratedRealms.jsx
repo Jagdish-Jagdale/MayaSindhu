@@ -28,10 +28,10 @@ import useCategories from '../../../hooks/useCategories';
 import { uploadToCloudinary } from '../../../utils/cloudinary';
 
 const SLOT_TYPES = [
-  { id: 1, label: 'Large Vertical (Slot 1)', gridClass: 'md:col-span-1 md:row-span-2 h-[400px] md:h-full' },
-  { id: 2, label: 'Small Square (Slot 2)', gridClass: 'md:col-span-1 md:row-span-1 h-[190px] md:h-full' },
-  { id: 3, label: 'Small Square (Slot 3)', gridClass: 'md:col-span-1 md:row-span-1 h-[190px] md:h-full' },
-  { id: 4, label: 'Wide Landscape (Slot 4)', gridClass: 'md:col-span-2 md:row-span-1 h-[190px] md:h-full' },
+  { id: 1, label: 'Large Vertical (Slot 1)', gridClass: 'col-span-1 md:col-span-2 md:row-span-2 h-[400px] md:h-full' },
+  { id: 2, label: 'Wide Landscape (Slot 2)', gridClass: 'col-span-1 md:col-span-2 md:row-span-1 h-[200px] md:h-full' },
+  { id: 3, label: 'Small Square (Slot 3)', gridClass: 'col-span-1 md:col-span-1 md:row-span-1 h-[200px] md:h-full' },
+  { id: 4, label: 'Small Square (Slot 4)', gridClass: 'col-span-1 md:col-span-1 md:row-span-1 h-[200px] md:h-full' },
 ];
 
 export default function CuratedRealms() {
@@ -208,7 +208,7 @@ export default function CuratedRealms() {
           <span className="text-[11px] text-gray-400 font-medium">4 Required Slots</span>
         </div>
 
-        <div className="grid grid-cols-1 md:grid-cols-[1.4fr_0.8fr_0.8fr] gap-6 h-auto md:h-[650px]">
+        <div className="grid grid-cols-1 md:grid-cols-4 gap-6 h-auto md:h-[600px]">
           {realms.map((realm) => {
             const slotConfig = SLOT_TYPES.find(s => s.id === realm.slotId);
             return (
@@ -218,7 +218,7 @@ export default function CuratedRealms() {
               >
                 {realm.imageUrl ? (
                   <div className="absolute inset-0 w-full h-full">
-                    <img src={realm.imageUrl} alt={realm.title} className="w-full h-full object-cover" />
+                    <img src={realm.imageUrl} alt={realm.title} className="w-full h-full object-cover object-top" />
                     <div className="absolute inset-0 bg-gradient-to-t from-black/80 via-black/20 to-transparent" />
                   </div>
                 ) : (
