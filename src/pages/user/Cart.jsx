@@ -2,6 +2,7 @@ import React, { useState, useEffect } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { Trash2, Plus, Minus, ShoppingBag, ArrowRight, Loader2, ArrowLeft } from 'lucide-react';
 import { Link, useNavigate } from 'react-router-dom';
+import { useGoBack } from '../../hooks/useGoBack';
 import { db } from '../../firebase';
 import { collection, query, orderBy, onSnapshot, doc, updateDoc, deleteDoc, serverTimestamp } from 'firebase/firestore';
 import { useAuth } from '../../context/AuthContext';
@@ -9,6 +10,7 @@ import { useAuth } from '../../context/AuthContext';
 export default function Cart() {
   const { user } = useAuth();
   const navigate = useNavigate();
+  const goBack = useGoBack();
   const [items, setItems] = useState([]);
   const [loading, setLoading] = useState(true);
 
@@ -92,7 +94,7 @@ export default function Cart() {
   return (
     <div className="bg-[#FAF9F6] min-h-screen pt-16 pb-24">
       <div className="max-w-[1400px] mx-auto px-6">
-        <button onClick={() => navigate(-1)} className="flex items-center gap-2 text-sm font-medium text-gray-500 hover:text-black transition-all group mb-8 w-fit">
+        <button onClick={goBack} className="flex items-center gap-2 text-sm font-medium text-gray-500 hover:text-black transition-all group mb-8 w-fit">
           <ArrowLeft size={18} className="transition-transform group-hover:-translate-x-1" />
           Back
         </button>

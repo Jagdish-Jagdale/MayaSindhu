@@ -5,12 +5,14 @@ import { collection, onSnapshot, query, orderBy } from 'firebase/firestore';
 import { Loader2, ArrowLeft } from 'lucide-react';
 
 import { useSearchParams, Link, useNavigate } from 'react-router-dom';
+import { useGoBack } from '../../hooks/useGoBack';
 import { motion } from 'framer-motion';
 import useCategories from '../../hooks/useCategories';
 
 export default function Shop() {
   const [searchParams, setSearchParams] = useSearchParams();
   const navigate = useNavigate();
+  const goBack = useGoBack();
   const filter = searchParams.get('category') || 'All';
   const { categories: allCategories } = useCategories();
 
@@ -94,7 +96,7 @@ export default function Shop() {
   return (
     <div className="bg-[#FAF9F6] min-h-screen pt-12 pb-24 font-sans">
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-        <button onClick={() => navigate(-1)} className="flex items-center gap-2 text-sm font-medium text-gray-500 hover:text-black transition-all group mb-4 w-fit">
+        <button onClick={goBack} className="flex items-center gap-2 text-sm font-medium text-gray-500 hover:text-black transition-all group mb-4 w-fit">
           <ArrowLeft size={18} className="transition-transform group-hover:-translate-x-1" />
           Back
         </button>
@@ -111,12 +113,12 @@ export default function Shop() {
           {/* Filters - Sidebar */}
           <aside className="w-full md:w-64 space-y-10">
             <div className="bg-white p-8 rounded-[2.5rem] shadow-sm border border-gray-50">
-              <h3 className="text-[12px] font-fashion font-black tracking-tight uppercase text-gray-400 mb-8 border-b border-gray-50 pb-4">Collections</h3>
+              <h3 className="text-[12px] font-sans font-bold tracking-[0.1em] uppercase text-gray-400 mb-8 border-b border-gray-50 pb-4">Collections</h3>
               <ul className="space-y-4 text-sm font-bold">
                 <li>
                   <button
                     onClick={() => setFilter('All')}
-                    className={`w-full text-left py-2 transition-all flex items-center justify-between group text-[11px] font-fashion font-bold uppercase tracking-tight ${filter === 'All' ? 'text-brand-orange translate-x-2' : 'text-gray-400 hover:text-brand-orange'
+                    className={`w-full text-left py-2 transition-all flex items-center justify-between group text-[11px] font-sans font-bold uppercase tracking-[0.05em] ${filter === 'All' ? 'text-brand-orange translate-x-2' : 'text-gray-400 hover:text-brand-orange'
                       }`}
                   >
                     All Pieces
@@ -127,7 +129,7 @@ export default function Shop() {
                   <li key={catName}>
                     <button
                       onClick={() => setFilter(catName)}
-                      className={`w-full text-left py-2 transition-all flex items-center justify-between group text-[11px] font-fashion font-bold uppercase tracking-tight ${filter.toLowerCase() === catName.toLowerCase() ? 'text-brand-orange translate-x-2' : 'text-gray-400 hover:text-brand-orange'
+                      className={`w-full text-left py-2 transition-all flex items-center justify-between group text-[11px] font-sans font-bold uppercase tracking-[0.05em] ${filter.toLowerCase() === catName.toLowerCase() ? 'text-brand-orange translate-x-2' : 'text-gray-400 hover:text-brand-orange'
                         }`}
                     >
                       <span className="capitalize">{catName}</span>

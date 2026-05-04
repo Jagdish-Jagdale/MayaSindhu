@@ -5,6 +5,7 @@ import {
   MapPin, CreditCard, Bell, RotateCcw, HelpCircle, Menu, X, ShoppingBag, ArrowLeft 
 } from 'lucide-react';
 import { useNavigate, Link } from 'react-router-dom';
+import { useGoBack } from '../../hooks/useGoBack';
 import { useAuth } from '../../context/AuthContext';
 
 // Import sections
@@ -33,6 +34,7 @@ const TABS = [
 export default function Profile() {
   const { user, logout } = useAuth();
   const navigate = useNavigate();
+  const goBack = useGoBack();
   const [activeTab, setActiveTab] = useState('profile');
   const [isSidebarOpen, setIsSidebarOpen] = useState(false);
 
@@ -66,7 +68,7 @@ export default function Profile() {
       <div className="absolute bottom-0 left-0 w-[400px] h-[400px] bg-brand-orange/3 rounded-full blur-[100px] -z-10 pointer-events-none" />
 
       <div className="max-w-6xl mx-auto px-6 relative">
-        <button onClick={() => navigate(-1)} className="flex items-center gap-2 text-[10px] font-bold text-gray-400 hover:text-black transition-all group mb-4 w-fit uppercase tracking-[0.2em]">
+        <button onClick={goBack} className="flex items-center gap-2 text-[10px] font-bold text-gray-400 hover:text-black transition-all group mb-4 w-fit uppercase tracking-[0.2em]">
           <ArrowLeft size={14} className="transition-transform group-hover:-translate-x-1" />
           Back
         </button>
