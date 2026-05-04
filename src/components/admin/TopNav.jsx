@@ -90,6 +90,9 @@ export default function TopNav({ sidebarOpen, onToggleSidebar, isMobile }) {
     if (!searchValue.trim()) return [];
     const term = searchValue.toLowerCase();
     
+    const isOffline = location.pathname.startsWith('/admin-offline');
+    const base = isOffline ? '/admin-offline' : '/admin';
+
     const matchedProducts = products
       .filter(p => p.name.toLowerCase().includes(term))
       .slice(0, 5)
@@ -99,7 +102,7 @@ export default function TopNav({ sidebarOpen, onToggleSidebar, isMobile }) {
         type: 'product',
         subtext: `in ${categories.find(c => c.id === p.categoryId)?.name || 'General'}`,
         image: p.images?.[0] || null,
-        path: '/admin/products'
+        path: `${base}/products`
       }));
 
     const matchedCats = categories
@@ -110,8 +113,12 @@ export default function TopNav({ sidebarOpen, onToggleSidebar, isMobile }) {
         name: c.name,
         type: 'category',
         subtext: 'Collection',
-        path: '/admin/categories'
+        path: `${base}/categories`
       }));
+
+    if (isOffline) {
+      return [...matchedProducts, ...matchedCats];
+    }
 
     const matchedUsers = users
       .filter(u => u.name?.toLowerCase().includes(term) || u.email?.toLowerCase().includes(term))

@@ -25,27 +25,38 @@ import LogoutConfirmationModal from './LogoutConfirmationModal';
 function getMenuItems(pathname) {
   const isOffline = pathname.startsWith('/admin-offline');
   const base = isOffline ? '/admin-offline' : '/admin';
-  const eBase = '/admin'; // Original admin base for shared resources
+
+  if (isOffline) {
+    return [
+      { title: 'Dashboard', icon: LayoutDashboard, path: `${base}/dashboard` },
+      { title: 'Orders', icon: ShoppingBag, path: `${base}/orders` },
+      { title: 'Inventory Logs', icon: ScrollText, path: `${base}/inventory-logs` },
+      { title: 'Products', icon: Package, path: `${base}/products` },
+      { title: 'Categories', icon: Grid2X2, path: `${base}/categories` },
+      { title: 'Reports', icon: BarChart3, path: `${base}/reports` },
+    ];
+  }
 
   return [
     { title: 'Dashboard', icon: LayoutDashboard, path: `${base}/dashboard` },
-    { title: 'Users', icon: Users, path: `${eBase}/users` },
-    { title: 'Products', icon: Package, path: `${eBase}/products` },
-    { title: 'Categories', icon: Grid2X2, path: `${eBase}/categories` },
+    { title: 'Users', icon: Users, path: `${base}/users` },
+    { title: 'Products', icon: Package, path: `${base}/products` },
+    { title: 'Categories', icon: Grid2X2, path: `${base}/categories` },
     { title: 'Orders', icon: ShoppingBag, path: `${base}/orders` },
-    { title: 'Reports', icon: BarChart3, path: `${eBase}/reports` },
+    { title: 'Reports', icon: BarChart3, path: `${base}/reports` },
     {
       title: 'Settings',
       icon: Settings,
-      path: `${eBase}/settings`,
+      path: `${base}/settings`,
       subItems: [
-        { title: 'Banner', icon: Image, path: `${eBase}/settings/banner` },
-        { title: 'Explore Category', icon: ScrollText, path: `${eBase}/settings/curated-realms` },
-        { title: 'Customer Favorite', icon: Gem, path: `${eBase}/settings/featured-treasures` },
-        { title: 'Shop by Trend', icon: Flower2, path: `${eBase}/settings/artisan-blooms` },
-        { title: 'Shop the Look', icon: Tv, path: `${eBase}/settings/stories` },
-        { title: 'Our Purpose', icon: Heart, path: `${eBase}/settings/purpose` },
-        { title: 'Testimonial', icon: MessageSquareQuote, path: `${eBase}/settings/testimonial` },
+        { title: 'Banner', icon: Image, path: `${base}/settings/banner` },
+        { title: 'Explore Category', icon: ScrollText, path: `${base}/settings/curated-realms` },
+        { title: 'Customer Favorite', icon: Gem, path: `${base}/settings/featured-treasures` },
+        { title: 'Shop by Trend', icon: Flower2, path: `${base}/settings/artisan-blooms` },
+        { title: 'Shop the Look', icon: Tv, path: `${base}/settings/stories` },
+        { title: 'Our Purpose', icon: Heart, path: `${base}/settings/purpose` },
+        { title: 'Testimonial', icon: MessageSquareQuote, path: `${base}/settings/testimonial` },
+        { title: 'About Us', icon: Users, path: `${base}/settings/about-us` },
       ]
     },
   ];

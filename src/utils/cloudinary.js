@@ -1,15 +1,9 @@
 export const uploadToCloudinary = async (file, folder = '') => {
   const formData = new FormData();
   formData.append('file', file);
-  formData.append('upload_preset', import.meta.env.VITE_CLOUDINARY_UPLOAD_PRESET || 'ml_default'); 
-  formData.append('cloud_name', import.meta.env.VITE_CLOUDINARY_CLOUD_NAME);
+  formData.append('upload_preset', import.meta.env.VITE_CLOUDINARY_UPLOAD_PRESET); 
 
   const resourceType = file.type.startsWith('video/') ? 'video' : 'image';
-
-  // Organize items into folders inside Cloudinary
-  if (folder) {
-    formData.append('folder', `MayaSindhu/${folder}`);
-  }
 
   try {
     const response = await fetch(

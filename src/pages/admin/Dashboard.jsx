@@ -305,7 +305,7 @@ export default function Dashboard() {
                 </div>
                 <div className="flex-1 min-w-0">
                   <p className="text-[13px] font-black text-gray-900 truncate">{user.fullName}</p>
-                  <p className="text-[10px] text-gray-400 font-medium truncate font-inter uppercase tracking-widest">{user.email}</p>
+                  <p className="text-[10px] text-gray-400 font-medium truncate font-inter lowercase tracking-widest">{user.email}</p>
                 </div>
                 <div className="text-[10px] font-black px-2.5 py-1 bg-[#1BAFAF]/10 text-[#1BAFAF] rounded-lg uppercase tracking-wider">Active</div>
               </div>

@@ -3,7 +3,8 @@ import {
   Users,
   ShieldAlert,
   LogOut,
-  ChevronDown
+  ChevronDown,
+  BarChart3
 } from 'lucide-react';
 import { Link, useLocation, useNavigate } from 'react-router-dom';
 import { auth } from '../../firebase';
@@ -16,6 +17,7 @@ const menuItems = [
   { title: 'Super Admin', icon: ShieldAlert, path: '/superadmin/superadmins' },
   { title: 'Admins', icon: ShieldAlert, path: '/superadmin/admins' },
   { title: 'Users', icon: Users, path: '/superadmin/users' },
+  { title: 'Reports', icon: BarChart3, path: '/superadmin/reports' },
 ];
 
 export default function Sidebar({ isCollapsed }) {

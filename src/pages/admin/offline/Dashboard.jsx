@@ -55,8 +55,8 @@ export default function OfflineDashboard() {
   const [stats, setStats] = useState({
     revenue: 0,
     orders: 0,
-    customers: 0,
-    inventory: 0
+    products: 0,
+    categories: 0
   });
   
   const [recentOrders, setRecentOrders] = useState([]);
@@ -64,12 +64,10 @@ export default function OfflineDashboard() {
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
-    // Note: We use 'offline_orders' for the offline store
+    // 1. Fetch Offline Orders
     const ordersQuery = query(collection(db, 'offline_orders'), orderBy('createdAt', 'desc'));
-    
-    const unsubscribe = onSnapshot(ordersQuery, (snapshot) => {
+    const unsubOrders = onSnapshot(ordersQuery, (snapshot) => {
       const orders = snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() }));
-      
       const totalRev = orders.reduce((sum, order) => sum + parseCurrency(order.total), 0);
       
       setStats(prev => ({
@@ -97,10 +95,24 @@ export default function OfflineDashboard() {
         };
       });
       setSalesData(trend);
+    });
+
+    // 2. Fetch Products
+    const unsubProducts = onSnapshot(collection(db, 'products'), (snapshot) => {
+      setStats(prev => ({ ...prev, products: snapshot.docs.length }));
+    });
+
+    // 3. Fetch Categories
+    const unsubCategories = onSnapshot(collection(db, 'categories'), (snapshot) => {
+      setStats(prev => ({ ...prev, categories: snapshot.docs.length }));
       setLoading(false);
     });
 
-    return () => unsubscribe();
+    return () => {
+      unsubOrders();
+      unsubProducts();
+      unsubCategories();
+    };
   }, []);
 
   if (loading) {
@@ -115,8 +127,8 @@ export default function OfflineDashboard() {
   const STAT_CARDS = [
     { name: 'Shop Revenue', value: formatIndianCurrency(stats.revenue), icon: Store, color: 'text-[#1BAFAF]', bg: 'bg-[#E8F7F7]' },
     { name: 'Manual Orders', value: stats.orders, icon: ShoppingBag, color: 'text-amber-500', bg: 'bg-amber-50' },
-    { name: 'Walk-ins', value: stats.orders ? Math.ceil(stats.orders * 1.2) : 0, icon: Users, color: 'text-blue-500', bg: 'bg-blue-50' },
-    { name: 'Cash Flow', value: formatIndianCurrency(stats.revenue * 0.95), icon: Wallet, color: 'text-purple-500', bg: 'bg-purple-50' },
+    { name: 'Total Products', value: stats.products, icon: Package, color: 'text-blue-500', bg: 'bg-blue-50' },
+    { name: 'Total Categories', value: stats.categories, icon: Layers, color: 'text-purple-500', bg: 'bg-purple-50' },
   ];
 
   return (

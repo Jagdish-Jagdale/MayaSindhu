@@ -31,6 +31,7 @@ import Settings from './pages/admin/Settings';
 import NotFound from './components/common/NotFound';
 import OfflineDashboard from './pages/admin/offline/Dashboard';
 import OfflineOrders from './pages/admin/offline/Orders';
+import OfflineInventoryLogs from './pages/admin/offline/InventoryLogs';
 
 // Super Admin Pages
 import SuperAdminLayout from './layouts/SuperAdminLayout';
@@ -48,6 +49,7 @@ import ArtisanBlooms from './pages/admin/settings/ArtisanBlooms';
 import Stories from './pages/admin/settings/Stories';
 import Purpose from './pages/admin/settings/Purpose';
 import Testimonial from './pages/admin/settings/Testimonial';
+import AboutUs from './pages/admin/settings/AboutUs';
 
 import './App.css';
 
@@ -130,6 +132,7 @@ function App() {
             <Route path="settings/stories" element={<Stories />} />
             <Route path="settings/purpose" element={<Purpose />} />
             <Route path="settings/testimonial" element={<Testimonial />} />
+            <Route path="settings/about-us" element={<AboutUs />} />
           </Route>
 
           {/* Offline Store Route */}
@@ -141,8 +144,10 @@ function App() {
             <Route index element={<Navigate to="/admin-offline/dashboard" replace />} />
             <Route path="dashboard" element={<OfflineDashboard />} />
             <Route path="orders" element={<OfflineOrders />} />
-            <Route path="users" element={<Users />} />
             <Route path="products" element={<ProductManagement />} />
+            <Route path="categories" element={<Categories />} />
+            <Route path="reports" element={<Reports />} />
+            <Route path="inventory-logs" element={<OfflineInventoryLogs />} />
           </Route>
 
           {/* Super Admin Route */}
@@ -156,6 +161,7 @@ function App() {
             <Route path="superadmins" element={<SuperAdminSuperAdmins />} />
             <Route path="admins" element={<SuperAdminAdmins />} />
             <Route path="users" element={<SuperAdminUsers />} />
+            <Route path="reports" element={<Reports />} />
           </Route>
 
           {/* Catch-all Route for 404 - Page Not Found */}
