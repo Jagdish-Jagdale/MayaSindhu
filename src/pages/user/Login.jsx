@@ -2,6 +2,7 @@ import React, { useState } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { useAuth } from '../../context/AuthContext';
 import { useNavigate, useLocation, Link } from 'react-router-dom';
+import { useGoBack } from '../../hooks/useGoBack';
 import { Mail, Lock, User, ArrowRight, Loader2, AlertCircle, ArrowLeft, Eye, EyeOff } from 'lucide-react';
 
 export default function Login() {
@@ -15,6 +16,7 @@ export default function Login() {
 
   const { login, signup } = useAuth();
   const navigate = useNavigate();
+  const goBack = useGoBack();
   const location = useLocation();
 
   const from = location.state?.from?.pathname || '/';
@@ -58,7 +60,7 @@ export default function Login() {
   };
   return (
     <div className="min-h-screen w-full bg-[#FDFBF7] flex flex-col items-center justify-between p-4 md:p-8 font-sans relative">
-      <button onClick={() => navigate(-1)} className="absolute top-8 left-8 hidden md:flex items-center gap-2 text-sm font-medium text-gray-500 hover:text-black transition-all group z-20">
+      <button onClick={goBack} className="absolute top-8 left-8 hidden md:flex items-center gap-2 text-sm font-medium text-gray-500 hover:text-black transition-all group z-20">
         <ArrowLeft size={18} className="transition-transform group-hover:-translate-x-1" />
         Back
       </button>

@@ -1,5 +1,6 @@
 import { useState, useEffect } from 'react';
 import { useParams, useNavigate, useLocation, Navigate, Link } from 'react-router-dom';
+import { useGoBack } from '../../hooks/useGoBack';
 import { motion, AnimatePresence } from 'framer-motion';
 import { ShoppingBag, ChevronRight, Star, Heart, CheckCircle2, Loader2, ArrowLeft, ArrowRight } from 'lucide-react';
 import { useAuth } from '../../context/AuthContext';
@@ -10,6 +11,7 @@ import { addToCart } from '../../utils/cartUtils';
 export default function ProductDetail() {
   const { slug } = useParams();
   const navigate = useNavigate();
+  const goBack = useGoBack();
   const location = useLocation();
   const { user } = useAuth();
 
@@ -109,7 +111,7 @@ export default function ProductDetail() {
           slug: product.slug || product.id,
           name: product.name || 'Handcrafted Treasure',
           price: product.price || 0,
-          image: product.image || '',
+          image: product.image || product.imageUrl || (product.images && product.images[0]) || '',
           rating: product.rating || 4.8,
           addedAt: serverTimestamp()
         });
@@ -140,7 +142,7 @@ export default function ProductDetail() {
   return (
     <div className="bg-[#FAF9F6] min-h-screen pt-16 pb-24 font-sans">
       <div className="max-w-7xl mx-auto px-6 lg:px-12">
-        <button onClick={() => navigate(-1)} className="flex items-center gap-2 text-sm font-medium text-gray-500 hover:text-black transition-all group mb-6 w-fit">
+        <button onClick={goBack} className="flex items-center gap-2 text-sm font-medium text-gray-500 hover:text-black transition-all group mb-6 w-fit">
           <ArrowLeft size={18} className="transition-transform group-hover:-translate-x-1" />
           Back
         </button>

@@ -7,8 +7,8 @@ import { db } from '../../firebase';
 import { doc, getDoc, setDoc, updateDoc, deleteDoc, serverTimestamp, onSnapshot } from 'firebase/firestore';
 import { addToCart } from '../../utils/cartUtils';
 
-export default function ProductCard({ id, slug, name, price, image, images, rating = 4.8 }) {
-  const displayImage = image || (images && images.length > 0 ? images[0] : '');
+export default function ProductCard({ id, slug, name, price, image, imageUrl, images, rating = 4.8, showWishlist = true }) {
+  const displayImage = image || imageUrl || (images && images.length > 0 ? images[0] : '');
   const [isAdded, setIsAdded] = useState(false);
   const { user } = useAuth();
   const [isWishlisted, setIsWishlisted] = useState(false);
@@ -98,7 +98,7 @@ export default function ProductCard({ id, slug, name, price, image, images, rati
           slug: slug || productId,
           name: name || 'Handcrafted Treasure',
           price: price || 0,
-          image: image || '',
+          image: image || imageUrl || (images && images[0]) || '',
           rating: rating || 4.8,
           addedAt: serverTimestamp()
         });
@@ -126,16 +126,17 @@ export default function ProductCard({ id, slug, name, price, image, images, rati
           />
         </Link>
 
-        {/* Wishlist Icon */}
-        <button
-          onClick={handleWishlist}
-          className={`absolute top-4 right-4 md:top-6 md:right-6 p-2.5 rounded-full transition-all duration-500 z-20 shadow-sm hover:scale-110 ${isWishlisted
-            ? 'bg-white text-red-500 shadow-md'
-            : 'bg-white/70 backdrop-blur-md text-brand-black hover:bg-white'
-            }`}
-        >
-          <Heart size={18} strokeWidth={2} fill={isWishlisted ? "currentColor" : "none"} />
-        </button>
+        {showWishlist && (
+          <button
+            onClick={handleWishlist}
+            className={`absolute top-3 right-3 md:top-5 md:right-5 p-2.5 rounded-full transition-all duration-300 z-20 shadow-md active:scale-90 group/wishlist ${isWishlisted
+              ? 'bg-white text-red-500'
+              : 'bg-white/90 backdrop-blur-sm text-[#1A1A1A] hover:bg-white hover:shadow-lg'
+              }`}
+          >
+            <Heart size={16} strokeWidth={2.5} fill={isWishlisted ? "currentColor" : "none"} className="transition-transform group-hover/wishlist:scale-110" />
+          </button>
+        )}
 
         {/* Add to Cart - Frosted Glass Pill (Always visible on mobile, hover on desktop) */}
         <div className="absolute bottom-4 md:bottom-6 left-1/2 -translate-x-1/2 md:translate-y-10 md:opacity-0 group-hover:translate-y-0 group-hover:opacity-100 transition-all duration-700 ease-out z-10 w-full px-6">

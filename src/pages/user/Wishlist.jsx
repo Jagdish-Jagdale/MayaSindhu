@@ -2,16 +2,19 @@ import React, { useState, useEffect } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { Heart, ShoppingBag, X, Trash2, ArrowLeft } from 'lucide-react';
 import { Link, useNavigate } from 'react-router-dom';
+import { useGoBack } from '../../hooks/useGoBack';
 import ProductCard from '../../components/user/ProductCard';
 import { db } from '../../firebase';
-import { collection, query, orderBy, onSnapshot, doc, deleteDoc } from 'firebase/firestore';
+import { collection, query, orderBy, onSnapshot, doc, deleteDoc, getDoc } from 'firebase/firestore';
 import { useAuth } from '../../context/AuthContext';
 import { Loader2 } from 'lucide-react';
 
 export default function Wishlist() {
   const { user } = useAuth();
   const navigate = useNavigate();
+  const goBack = useGoBack();
   const [items, setItems] = useState([]);
+  const [fullProducts, setFullProducts] = useState([]);
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
@@ -26,12 +29,29 @@ export default function Wishlist() {
       orderBy('addedAt', 'desc')
     );
 
-    const unsubscribe = onSnapshot(q, (snapshot) => {
+    const unsubscribe = onSnapshot(q, async (snapshot) => {
       const wishlistItems = snapshot.docs.map(doc => ({
         docId: doc.id,
         ...doc.data()
       }));
       setItems(wishlistItems);
+
+      // Fetch full product details for each item to ensure images are correct
+      try {
+        const productPromises = wishlistItems.map(async (item) => {
+          const pDoc = await getDoc(doc(db, 'products', item.id));
+          if (pDoc.exists()) {
+            return { docId: item.docId, ...pDoc.data(), id: pDoc.id };
+          }
+          return item; // Fallback to saved snapshot if full product not found
+        });
+        const resolvedProducts = await Promise.all(productPromises);
+        setFullProducts(resolvedProducts);
+      } catch (error) {
+        console.error("Error fetching full products for wishlist:", error);
+        setFullProducts(wishlistItems);
+      }
+      
       setLoading(false);
     }, (error) => {
       console.error("Wishlist real-time error:", error);
@@ -74,7 +94,7 @@ export default function Wishlist() {
   return (
     <div className="bg-white min-h-screen pt-16 pb-24">
       <div className="max-w-[1400px] mx-auto px-6">
-        <button onClick={() => navigate(-1)} className="flex items-center gap-2 text-sm font-medium text-gray-500 hover:text-black transition-all group mb-8 w-fit">
+        <button onClick={goBack} className="flex items-center gap-2 text-sm font-medium text-gray-500 hover:text-black transition-all group mb-8 w-fit">
           <ArrowLeft size={18} className="transition-transform group-hover:-translate-x-1" />
           Back
         </button>
@@ -85,7 +105,7 @@ export default function Wishlist() {
 
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-x-10 gap-y-16">
           <AnimatePresence>
-            {items.map((item) => (
+            {fullProducts.map((item) => (
               <motion.div
                 key={item.docId}
                 layout
@@ -96,13 +116,13 @@ export default function Wishlist() {
               >
                 <button
                   onClick={() => removeItem(item.docId)}
-                  className="absolute top-4 right-4 z-20 w-10 h-10 bg-white shadow-lg rounded-full flex items-center justify-center text-gray-400 hover:text-red-500 transition-all active:scale-90 group/remove"
+                  className="absolute top-3 right-3 md:top-5 md:right-5 z-20 w-10 h-10 bg-white shadow-lg rounded-full flex items-center justify-center text-red-500 transition-all active:scale-90 group/remove"
                   title="Remove from wishlist"
                 >
-                  <X size={20} strokeWidth={2.5} className="group-hover/remove:rotate-90 transition-transform duration-300" />
+                  <Heart size={18} strokeWidth={2.5} fill="currentColor" className="transition-transform group-hover/remove:scale-110" />
                 </button>
                 <div className="flex flex-col h-full">
-                  <ProductCard {...item} />
+                  <ProductCard {...item} showWishlist={false} />
                   <button 
                     onClick={() => removeItem(item.docId)}
                     className="mt-4 text-[11px] font-bold uppercase tracking-widest text-gray-400 hover:text-red-500 transition-colors flex items-center justify-center gap-2"

@@ -5,12 +5,13 @@ import { ChevronRight, ChevronDown, SlidersHorizontal, X, Loader2, ArrowLeft } f
 import ProductCard from '../../components/user/ProductCard';
 import FilterSidebar from '../../components/user/FilterSidebar';
 import useCategories from '../../hooks/useCategories';
+import { useGoBack } from '../../hooks/useGoBack';
 import { db } from '../../firebase';
 import { collection, onSnapshot, query, orderBy } from 'firebase/firestore';
 
 export default function CategoryView() {
   const params = useParams();
-  const navigate = useNavigate();
+  const goBack = useGoBack();
   const pathSegments = params['*'] ? params['*'].split('/') : [];
   const { categories, loading: categoriesLoading } = useCategories();
 
@@ -113,7 +114,7 @@ export default function CategoryView() {
         {/* Sidebar - Desktop */}
         <aside className="hidden md:block w-72 lg:w-80 flex-shrink-0 bg-[#F9F9F9] border-r border-gray-100 min-h-screen">
           <div className="sticky top-24 p-8 lg:p-10">
-            <button onClick={() => navigate(-1)} className="flex items-center gap-2 text-sm font-medium text-gray-500 hover:text-brand-orange transition-all group mb-10 w-fit">
+            <button onClick={goBack} className="flex items-center gap-2 text-sm font-medium text-gray-500 hover:text-brand-orange transition-all group mb-10 w-fit">
               <ArrowLeft size={18} className="transition-transform group-hover:-translate-x-1" />
               Back
             </button>
