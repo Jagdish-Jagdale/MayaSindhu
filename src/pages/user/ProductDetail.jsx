@@ -140,10 +140,10 @@ export default function ProductDetail() {
   return (
     <div className="bg-[#FAF9F6] min-h-screen pt-16 pb-24 font-sans">
       <div className="max-w-7xl mx-auto px-6 lg:px-12">
-        <Link to="/" className="flex items-center gap-2 text-sm font-medium text-gray-500 hover:text-black transition-all group mb-6 w-fit">
+        <button onClick={() => navigate(-1)} className="flex items-center gap-2 text-sm font-medium text-gray-500 hover:text-black transition-all group mb-6 w-fit">
           <ArrowLeft size={18} className="transition-transform group-hover:-translate-x-1" />
-          Back to Store
-        </Link>
+          Back
+        </button>
         {/* Breadcrumbs */}
         <nav className="flex items-center space-x-2 text-[10px] tracking-[0.4em] uppercase font-bold text-gray-400 mb-10">
           <a href="/" className="hover:text-brand-orange transition-colors">Home</a>

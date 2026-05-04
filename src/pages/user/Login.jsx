@@ -58,10 +58,10 @@ export default function Login() {
   };
   return (
     <div className="min-h-screen w-full bg-[#FDFBF7] flex flex-col items-center justify-between p-4 md:p-8 font-sans relative">
-      <Link to="/" className="absolute top-8 left-8 hidden md:flex items-center gap-2 text-sm font-medium text-gray-500 hover:text-black transition-all group z-20">
+      <button onClick={() => navigate(-1)} className="absolute top-8 left-8 hidden md:flex items-center gap-2 text-sm font-medium text-gray-500 hover:text-black transition-all group z-20">
         <ArrowLeft size={18} className="transition-transform group-hover:-translate-x-1" />
-        Back to Store
-      </Link>
+        Back
+      </button>
       <div className="w-full flex-1 flex items-center justify-center">
         <div className="w-full max-w-[420px] bg-white rounded-xl shadow-xl shadow-black/5 border border-white/50 p-8 md:p-10 relative z-10 flex flex-col">
 

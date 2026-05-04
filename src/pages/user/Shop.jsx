@@ -4,12 +4,13 @@ import { db } from '../../firebase';
 import { collection, onSnapshot, query, orderBy } from 'firebase/firestore';
 import { Loader2, ArrowLeft } from 'lucide-react';
 
-import { useSearchParams, Link } from 'react-router-dom';
+import { useSearchParams, Link, useNavigate } from 'react-router-dom';
 import { motion } from 'framer-motion';
 import useCategories from '../../hooks/useCategories';
 
 export default function Shop() {
   const [searchParams, setSearchParams] = useSearchParams();
+  const navigate = useNavigate();
   const filter = searchParams.get('category') || 'All';
   const { categories: allCategories } = useCategories();
 
@@ -93,10 +94,10 @@ export default function Shop() {
   return (
     <div className="bg-[#FAF9F6] min-h-screen pt-12 pb-24 font-sans">
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-        <Link to="/" className="flex items-center gap-2 text-sm font-medium text-gray-500 hover:text-black transition-all group mb-4 w-fit">
+        <button onClick={() => navigate(-1)} className="flex items-center gap-2 text-sm font-medium text-gray-500 hover:text-black transition-all group mb-4 w-fit">
           <ArrowLeft size={18} className="transition-transform group-hover:-translate-x-1" />
-          Back to Store
-        </Link>
+          Back
+        </button>
         <header className="mb-12 text-center">
           <h1 className="text-4xl md:text-5xl font-fashion text-[#1A1A1A] mb-4 capitalize">
             {filter === 'All' ? 'The Collection' : filter}
@@ -110,12 +111,12 @@ export default function Shop() {
           {/* Filters - Sidebar */}
           <aside className="w-full md:w-64 space-y-10">
             <div className="bg-white p-8 rounded-[2.5rem] shadow-sm border border-gray-50">
-              <h3 className="text-[10px] font-black tracking-[0.2em] uppercase text-gray-400 mb-8 border-b border-gray-50 pb-4">Collections</h3>
+              <h3 className="text-[12px] font-fashion font-black tracking-tight uppercase text-gray-400 mb-8 border-b border-gray-50 pb-4">Collections</h3>
               <ul className="space-y-4 text-sm font-bold">
                 <li>
                   <button
                     onClick={() => setFilter('All')}
-                    className={`w-full text-left py-2 transition-all flex items-center justify-between group ${filter === 'All' ? 'text-brand-orange translate-x-2' : 'text-gray-400 hover:text-[#1A1A1A]'
+                    className={`w-full text-left py-2 transition-all flex items-center justify-between group text-[11px] font-fashion font-bold uppercase tracking-tight ${filter === 'All' ? 'text-brand-orange translate-x-2' : 'text-gray-400 hover:text-brand-orange'
                       }`}
                   >
                     All Pieces
@@ -126,7 +127,7 @@ export default function Shop() {
                   <li key={catName}>
                     <button
                       onClick={() => setFilter(catName)}
-                      className={`w-full text-left py-2 transition-all flex items-center justify-between group ${filter.toLowerCase() === catName.toLowerCase() ? 'text-brand-orange translate-x-2' : 'text-gray-400 hover:text-[#1A1A1A]'
+                      className={`w-full text-left py-2 transition-all flex items-center justify-between group text-[11px] font-fashion font-bold uppercase tracking-tight ${filter.toLowerCase() === catName.toLowerCase() ? 'text-brand-orange translate-x-2' : 'text-gray-400 hover:text-brand-orange'
                         }`}
                     >
                       <span className="capitalize">{catName}</span>

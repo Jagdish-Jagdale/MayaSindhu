@@ -66,10 +66,10 @@ export default function Profile() {
       <div className="absolute bottom-0 left-0 w-[400px] h-[400px] bg-brand-orange/3 rounded-full blur-[100px] -z-10 pointer-events-none" />
 
       <div className="max-w-6xl mx-auto px-6 relative">
-        <Link to="/" className="flex items-center gap-2 text-[10px] font-bold text-gray-400 hover:text-black transition-all group mb-4 w-fit uppercase tracking-[0.2em]">
+        <button onClick={() => navigate(-1)} className="flex items-center gap-2 text-[10px] font-bold text-gray-400 hover:text-black transition-all group mb-4 w-fit uppercase tracking-[0.2em]">
           <ArrowLeft size={14} className="transition-transform group-hover:-translate-x-1" />
-          Back to Store
-        </Link>
+          Back
+        </button>
         
         {/* Mobile Sidebar Toggle */}
         <div className="lg:hidden mb-8 flex items-center justify-between bg-white p-6 rounded-3xl shadow-sm">
@@ -128,7 +128,7 @@ export default function Profile() {
                       w-full flex items-center justify-between p-5 rounded-2xl transition-all group
                       ${activeTab === tab.id 
                         ? 'bg-brand-orange text-white shadow-lg shadow-brand-orange/20' 
-                        : 'text-gray-400 hover:bg-gray-50 hover:text-[#1A1A1A]'
+                        : 'text-gray-400 hover:bg-brand-orange/5 hover:text-brand-orange'
                       }
                     `}
                   >

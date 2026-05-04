@@ -136,10 +136,10 @@ export default function Checkout() {
   return (
     <div className="bg-[#FAF9F6] min-h-screen pt-16 pb-24 font-sans focus-within:scroll-smooth">
       <div className="max-w-[1200px] mx-auto px-6">
-        <Link to="/" className="flex items-center gap-2 text-sm font-medium text-gray-500 hover:text-black transition-all group mb-12 w-fit">
+        <button onClick={() => navigate(-1)} className="flex items-center gap-2 text-sm font-medium text-gray-500 hover:text-black transition-all group mb-12 w-fit">
           <ArrowLeft size={18} className="transition-transform group-hover:-translate-x-1" />
-          Back to Store
-        </Link>
+          Back
+        </button>
         
         {/* Stepper Header */}
         <div className="flex justify-between items-center mb-16 relative">
