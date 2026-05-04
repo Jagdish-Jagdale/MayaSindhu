@@ -17,17 +17,19 @@ const useCategories = () => {
         .replace(/--+/g, '-');      // Replace multiple - with single -
     };
 
-    const buildHierarchy = (items, parentId = null, parentPath = '/c') => {
+    const buildHierarchy = (items, parentId = null, parentPath = '/c', inheritedTrendy = false) => {
       return items
         .filter(item => item.parentId === parentId)
         .map(item => {
           const slug = item.slug || slugify(item.name);
           const fullPath = `${parentPath}/${slug}`;
+          const isTrendy = item.isTrendy || inheritedTrendy;
           return {
             ...item,
             slug,
             fullPath,
-            children: buildHierarchy(items, item.id, fullPath)
+            isTrendy,
+            children: buildHierarchy(items, item.id, fullPath, isTrendy)
           };
         });
     };

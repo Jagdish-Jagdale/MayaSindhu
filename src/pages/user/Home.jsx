@@ -537,16 +537,13 @@ export default function Home() {
                     <img src={trend.imageUrl} alt={trend.title} className="w-full h-full object-cover transition-transform duration-700 group-hover:scale-110" />
                   </div>
                   <div className="text-center md:text-left flex-1">
-                    <span className="text-[9px] md:text-[10px] uppercase font-bold tracking-[0.2em] text-accent mb-2 md:mb-3 block">
-                      {trend.accent}
-                    </span>
                     <h3 className="text-lg md:text-xl font-fashion font-bold text-text-main mb-2 md:mb-3">
                       {trend.title}
                     </h3>
                     <p className="text-text-muted text-[12px] md:text-sm leading-relaxed mb-4 md:mb-6 line-clamp-2 md:line-clamp-none">
                       {trend.description}
                     </p>
-                    <Link to="/shop" className="text-[11px] md:text-[12px] font-bold text-text-main border-b-2 border-text-main/20 pb-0.5 hover:text-brand-orange hover:border-brand-orange transition-all duration-300 inline-flex items-center gap-1 group/link">
+                    <Link to={trend.link || "/shop"} className="text-[11px] md:text-[12px] font-bold text-text-main border-b-2 border-text-main/20 pb-0.5 hover:text-brand-orange hover:border-brand-orange transition-all duration-300 inline-flex items-center gap-1 group/link">
                       Discover More
                       <ChevronRight size={14} className="group-hover/link:translate-x-0.5 transition-transform" />
                     </Link>

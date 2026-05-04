@@ -320,7 +320,9 @@ function RecursiveMenuItem({ item, side }) {
         className={`flex items-center justify-between w-full px-5 py-3 rounded-xl text-[15px] font-normal tracking-normal font-sans whitespace-nowrap gap-4 transition-all ${isHovered ? 'bg-brand-orange/5 text-brand-orange' : 'text-gray-600 hover:bg-gray-50 hover:text-brand-black'
           }`}
       >
-        <span>{item.name}</span>
+        <div className="flex items-center gap-1.5">
+          <span>{item.name}</span>
+        </div>
         {hasSubCategories && (
           side === 'right' ? (
             <ChevronRight size={14} className="opacity-40 rotate-180" />
@@ -427,7 +429,7 @@ function MobileAccordion({ item, onClose, depth = 0 }) {
         <Link
           to={item.fullPath}
           onClick={onClose}
-          className={`text-sm font-bold tracking-widest ${depth === 0 ? 'text-brand-black' : 'text-brand-black/70'}`}
+          className={`text-sm font-bold tracking-widest flex items-center gap-1.5 ${depth === 0 ? 'text-brand-black' : 'text-brand-black/70'}`}
         >
           {item.name}
         </Link>
