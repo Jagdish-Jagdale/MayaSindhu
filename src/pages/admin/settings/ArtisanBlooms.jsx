@@ -23,9 +23,21 @@ import {
 } from 'lucide-react';
 import toast from 'react-hot-toast';
 import { uploadToCloudinary, deleteMultipleFromCloudinary } from '../../../utils/cloudinary';
+import useCategories from '../../../hooks/useCategories';
+
+const slugify = (text) => {
+  return text
+    .toString()
+    .toLowerCase()
+    .trim()
+    .replace(/\s+/g, '-')      // Replace spaces with -
+    .replace(/[^\w-]+/g, '')     // Remove all non-word chars
+    .replace(/--+/g, '-');      // Replace multiple - with single -
+};
 
 export default function ArtisanBlooms() {
   const { isCollapsed } = useAdminUI();
+  const { categories, loading: catsLoading } = useCategories();
   const [trends, setTrends] = useState([]);
   const [loading, setLoading] = useState(true);
   const [isSaving, setIsSaving] = useState(false);
@@ -36,6 +48,8 @@ export default function ArtisanBlooms() {
   const fileInputRef = useRef(null);
   const [editingTrendId, setEditingTrendId] = useState(null);
   const [pendingFiles, setPendingFiles] = useState({});  // trendId -> File
+
+  const trendyMainCategories = categories.filter(cat => cat.isTrendy);
 
   // Load Trends
   useEffect(() => {
@@ -76,10 +90,9 @@ export default function ArtisanBlooms() {
       const newTrend = {
         id: tempId,
         imageUrl: previewUrl,
-        accent: '',
         title: '',
         description: '',
-        link: '/shop',
+        link: '',
         order: trends.length,
         isNew: true
       };
@@ -101,9 +114,12 @@ export default function ArtisanBlooms() {
   };
 
   const updateField = (id, field, value) => {
-    setTrends(prev => prev.map(t => 
-      t.id === id ? { ...t, [field]: value, isModified: true } : t
-    ));
+    setTrends(prev => prev.map(t => {
+      if (t.id === id) {
+        return { ...t, [field]: value, isModified: true };
+      }
+      return t;
+    }));
     setHasChanges(true);
   };
 
@@ -148,9 +164,9 @@ export default function ArtisanBlooms() {
           const docRef = doc(collection(db, 'shopByTrend'));
           batch.set(docRef, {
             imageUrl: finalImageUrl,
-            accent: trend.accent || '',
             title: trend.title || '',
             description: trend.description || '',
+            link: trend.link || `/c/${slugify(trend.title || '')}`,
             order: index,
             createdAt: serverTimestamp()
           });
@@ -158,9 +174,9 @@ export default function ArtisanBlooms() {
           const docRef = doc(db, 'shopByTrend', trend.id);
           batch.update(docRef, {
             imageUrl: finalImageUrl,
-            accent: trend.accent || '',
             title: trend.title || '',
             description: trend.description || '',
+            link: trend.link || `/c/${slugify(trend.title || '')}`,
             order: index,
             updatedAt: serverTimestamp()
           });
@@ -274,19 +290,6 @@ export default function ArtisanBlooms() {
 
               {/* Form Fields */}
               <div className="flex-1 space-y-4">
-                <div className="flex items-center justify-between">
-                  <div className="w-full">
-                    <label className="text-[10px] font-bold text-gray-400 uppercase tracking-[0.2em] mb-1.5 block ml-1">Accent Text (e.g. Fine Textiles)</label>
-                    <input 
-                      type="text"
-                      placeholder="BOUTIQUE SELECTION"
-                      value={trend.accent || ''}
-                      onChange={(e) => updateField(trend.id, 'accent', e.target.value)}
-                      className="w-full bg-gray-50 border-none px-5 py-2.5 text-[12px] font-bold rounded-2xl focus:ring-2 focus:ring-[#1BAFAF]/20 focus:bg-white transition-all outline-none"
-                    />
-                  </div>
-                </div>
-
                 <div className="space-y-1">
                   <label className="text-[10px] font-bold text-gray-400 uppercase tracking-[0.2em] mb-1.5 block ml-1">Trend Title</label>
                   <input 
@@ -307,6 +310,24 @@ export default function ArtisanBlooms() {
                     onChange={(e) => updateField(trend.id, 'description', e.target.value)}
                     className="w-full bg-gray-50 border-none px-5 py-3 text-[12px] font-medium text-gray-500 rounded-2xl focus:ring-2 focus:ring-[#1BAFAF]/20 focus:bg-white transition-all outline-none resize-none leading-relaxed"
                   />
+                </div>
+
+                <div className="space-y-1">
+                  <label className="text-[10px] font-bold text-gray-400 uppercase tracking-[0.2em] mb-1.5 block ml-1">Route</label>
+                  <select 
+                    value={trend.link || ''}
+                    onChange={(e) => updateField(trend.id, 'link', e.target.value)}
+                    className="w-full bg-gray-50 border-none px-5 py-2.5 text-[12px] font-bold text-gray-900 rounded-2xl focus:ring-2 focus:ring-[#1BAFAF]/20 focus:bg-white transition-all outline-none appearance-none cursor-pointer"
+                  >
+                    <option value="" disabled>Select Trending Category</option>
+                    {trendyMainCategories.length > 0 ? (
+                      trendyMainCategories.map(cat => (
+                        <option key={cat.id} value={cat.fullPath}>{cat.name}</option>
+                      ))
+                    ) : (
+                      <option value="" disabled>No Trendy Categories Found</option>
+                    )}
+                  </select>
                 </div>
 
                 <div className="flex items-center gap-4">

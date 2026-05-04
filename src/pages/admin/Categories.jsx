@@ -16,7 +16,8 @@ import {
   Layers,
   Loader2,
   ExternalLink,
-  ChevronLeft
+  ChevronLeft,
+  Star
 } from 'lucide-react';
 import { useAdminUI } from '../../context/AdminUIContext';
 import { db } from '../../firebase';
@@ -162,6 +163,7 @@ export default function Categories() {
           name: categoryDraft.name,
           parentId: parentId,
           level: currentPath.length,
+          isTrendy: false,
           createdAt: serverTimestamp(),
           updatedAt: serverTimestamp()
         };
@@ -214,6 +216,20 @@ export default function Categories() {
       toast.error("Failed to prune category branch");
     } finally {
       setIsDeleting(false);
+    }
+  };
+
+  const toggleTrendy = async (e, category) => {
+    e.stopPropagation();
+    try {
+      await updateDoc(doc(db, 'categories', category.id), {
+        isTrendy: !category.isTrendy,
+        updatedAt: serverTimestamp()
+      });
+      toast.success(`${category.name} ${!category.isTrendy ? 'marked as trendy' : 'removed from trendy'}`);
+    } catch (err) {
+      console.error("Error toggling trendy status:", err);
+      toast.error("Failed to update trendy status");
     }
   };
 
@@ -323,6 +339,7 @@ export default function Categories() {
                 <tr className="border-b border-gray-50 bg-white text-[#1BAFAF]">
                   <th className="px-6 py-4 text-left text-[14px] font-bold w-20">Sr No</th>
                   <th className="px-6 py-4 text-left text-[14px] font-bold">Category</th>
+                  <th className="px-6 py-4 text-left text-[14px] font-bold">Trendy</th>
                   <th className="px-6 py-4 text-left text-[14px] font-bold">Layer</th>
                   {visibleCategories.some(cat => !cat.children || cat.children.length === 0) && (
                     <th className="px-6 py-4 text-left text-[14px] font-bold">Products</th>
@@ -356,6 +373,19 @@ export default function Categories() {
                             <p className="text-[10px] text-gray-400 font-bold uppercase tracking-widest">{hasChildren ? 'Discover Layers' : 'View Products'}</p>
                           </div>
                         </div>
+                      </td>
+                      <td className="px-6 py-4 whitespace-nowrap">
+                        {currentPath.length === 0 ? (
+                          <button 
+                            onClick={(e) => toggleTrendy(e, cat)}
+                            className={`transition-all duration-300 hover:scale-125 ${cat.isTrendy ? 'text-amber-400 fill-amber-400' : 'text-gray-200 hover:text-amber-200'}`}
+                            title={cat.isTrendy ? "Remove from Trendy" : "Mark as Trendy"}
+                          >
+                            <Star size={18} strokeWidth={cat.isTrendy ? 2 : 2.5} />
+                          </button>
+                        ) : (
+                          <span className="text-gray-200">---</span>
+                        )}
                       </td>
                       <td className="px-6 py-4 whitespace-nowrap">
                         <span className={`text-[10px] font-bold uppercase tracking-wider px-2.5 py-1 rounded-lg ${currentPath.length === 0 ? 'text-[#1BAFAF] bg-[#eaf6f6]' : 'text-gray-400 bg-gray-100'
