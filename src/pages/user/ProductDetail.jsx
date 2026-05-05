@@ -2,11 +2,24 @@ import { useState, useEffect } from 'react';
 import { useParams, useNavigate, useLocation, Navigate, Link } from 'react-router-dom';
 import { useGoBack } from '../../hooks/useGoBack';
 import { motion, AnimatePresence } from 'framer-motion';
-import { ShoppingBag, ChevronRight, Star, Heart, CheckCircle2, Loader2, ArrowLeft, ArrowRight } from 'lucide-react';
+import { 
+  ShoppingBag, 
+  ChevronRight, 
+  Star, 
+  Heart, 
+  CheckCircle2, 
+  Loader2, 
+  ArrowLeft, 
+  ArrowRight,
+  Share2,
+  Minus,
+  Plus
+} from 'lucide-react';
 import { useAuth } from '../../context/AuthContext';
 import { db } from '../../firebase';
-import { doc, getDoc, setDoc, updateDoc, deleteDoc, serverTimestamp, onSnapshot, collection, query, where, getDocs } from 'firebase/firestore';
+import { doc, getDoc, setDoc, updateDoc, deleteDoc, serverTimestamp, onSnapshot, collection, query, where, getDocs, orderBy, limit } from 'firebase/firestore';
 import { addToCart } from '../../utils/cartUtils';
+import ProductCard from '../../components/user/ProductCard';
 
 export default function ProductDetail() {
   const { slug } = useParams();
@@ -21,6 +34,11 @@ export default function ProductDetail() {
   const [isAdded, setIsAdded] = useState(false);
   const [alreadyInBag, setAlreadyInBag] = useState(false);
   const [adding, setAdding] = useState(false);
+  const [relatedProducts, setRelatedProducts] = useState([]);
+  const [relatedLoading, setRelatedLoading] = useState(true);
+  
+  const [activeImage, setActiveImage] = useState(0);
+  const [quantity, setQuantity] = useState(1);
 
   // Fetch Product by Slug
   useEffect(() => {
@@ -34,7 +52,6 @@ export default function ProductDetail() {
           const doc = querySnapshot.docs[0];
           setProduct({ id: doc.id, ...doc.data() });
         } else {
-          // Attempt to fetch by ID (fallback for old system)
           const docRef = doc(db, 'products', slug);
           const docSnap = await getDoc(docRef);
           if (docSnap.exists()) {
@@ -78,19 +95,47 @@ export default function ProductDetail() {
     return () => unsubscribe();
   }, [user, product]);
 
+  // Fetch Related Products
+  useEffect(() => {
+    if (!product) return;
+
+    const fetchRelated = async () => {
+      setRelatedLoading(true);
+      try {
+        const qCat = query(
+          collection(db, 'products'),
+          where('categoryId', '==', product.categoryId || '')
+        );
+        const snapCat = await getDocs(qCat);
+        let related = snapCat.docs
+          .map(doc => ({ id: doc.id, ...doc.data() }))
+          .filter(p => p.id !== product.id);
+
+        setRelatedProducts(related.slice(0, 4));
+      } catch (error) {
+        console.error("Error fetching related products:", error);
+      } finally {
+        setRelatedLoading(false);
+      }
+    };
+
+    fetchRelated();
+  }, [product]);
+
   const handleAddToCart = async () => {
     if (!user || !product) {
       navigate('/login', { state: { from: location } });
       return;
     }
 
+    setAdding(true);
     try {
       await addToCart(user, product);
       setIsAdded(true);
-      // Remove auto-hide to let user see "Go to Bag" option
     } catch (error) {
       console.error("Cart Error:", error);
-      alert(`Database Vault Error: ${error.code || error.message}. Please check your Firebase permissions.`);
+    } finally {
+      setAdding(false);
     }
   };
 
@@ -102,16 +147,15 @@ export default function ProductDetail() {
 
     try {
       const wishItemRef = doc(db, 'users', user.uid, 'wishlist', product.id.toString());
-
       if (isWishlisted) {
         await deleteDoc(wishItemRef);
       } else {
         await setDoc(wishItemRef, {
           id: product.id,
           slug: product.slug || product.id,
-          name: product.name || 'Handcrafted Treasure',
-          price: product.price || 0,
-          image: product.image || product.imageUrl || (product.images && product.images[0]) || '',
+          name: product.name,
+          price: product.price,
+          image: product.image || (product.images && product.images[0]) || '',
           rating: product.rating || 4.8,
           addedAt: serverTimestamp()
         });
@@ -123,7 +167,7 @@ export default function ProductDetail() {
 
   if (loading) {
     return (
-      <div className="min-h-screen flex items-center justify-center bg-[#FAF9F6]">
+      <div className="h-screen flex items-center justify-center bg-[#FDFBF7]">
         <Loader2 className="w-12 h-12 animate-spin text-brand-orange" />
       </div>
     );
@@ -131,179 +175,168 @@ export default function ProductDetail() {
 
   if (!product) {
     return (
-      <div className="min-h-screen flex flex-col items-center justify-center bg-[#FAF9F6] p-6 text-center">
+      <div className="h-screen flex flex-col items-center justify-center bg-[#FDFBF7] p-6 text-center">
         <h2 className="text-3xl font-fashion font-bold text-[#1A1A1A] mb-4">Treasure Not Found</h2>
-        <p className="text-gray-500 mb-8">The artisanal piece you are looking for may have been moved or archived.</p>
         <button onClick={() => navigate('/shop')} className="btn btn-primary px-12">Return to Shop</button>
       </div>
     );
   }
 
+  const images = product.images || [product.image];
+
   return (
-    <div className="bg-[#FAF9F6] min-h-screen pt-16 pb-24 font-sans">
-      <div className="max-w-7xl mx-auto px-6 lg:px-12">
-        <button onClick={goBack} className="flex items-center gap-2 text-sm font-medium text-gray-500 hover:text-black transition-all group mb-6 w-fit">
-          <ArrowLeft size={18} className="transition-transform group-hover:-translate-x-1" />
-          Back
-        </button>
-        {/* Breadcrumbs */}
-        <nav className="flex items-center space-x-2 text-[10px] tracking-[0.4em] uppercase font-bold text-gray-400 mb-10">
-          <a href="/" className="hover:text-brand-orange transition-colors">Home</a>
-          <ChevronRight size={10} />
-          <a href="/shop" className="hover:text-brand-orange transition-colors">The Collection</a>
-          <ChevronRight size={10} />
-          <span className="text-[#1A1A1A]">{product.name}</span>
-        </nav>
-
-        <div className="grid grid-cols-1 lg:grid-cols-2 gap-16 lg:gap-24">
-          {/* Gallery */}
-          <motion.div
-            initial={{ opacity: 0, x: -20 }}
-            animate={{ opacity: 1, x: 0 }}
-            className="space-y-4 relative"
-          >
-            <div className="w-full max-w-[500px] mx-auto flex items-center justify-center">
-              <div className="relative group shadow-2xl rounded-[2.5rem] overflow-hidden bg-white/40 border border-gray-100">
-                <img 
-                  src={product.image || (product.images && product.images[0]) || null} 
-                  alt={product.name} 
-                  className="w-auto h-auto max-h-[65vh] max-w-full object-contain transition-transform duration-1000 group-hover:scale-105 block" 
-                />
-                <div className="absolute inset-0 bg-black/5 pointer-events-none" />
-              </div>
-            </div>
-
-            {/* Success Animation Overlay */}
-            <AnimatePresence>
-              {isAdded && (
-                <motion.div
-                  initial={{ opacity: 0 }}
-                  animate={{ opacity: 1 }}
-                  exit={{ opacity: 0 }}
-                  className="absolute inset-0 bg-white/95 backdrop-blur-sm z-30 flex flex-col items-center justify-center text-center p-6 rounded-[4rem]"
-                >
-                  <motion.div
-                    initial={{ scale: 0.5, opacity: 0 }}
-                    animate={{ scale: 1, opacity: 1 }}
-                    transition={{ type: "spring", stiffness: 300, damping: 20 }}
-                  >
-                    <CheckCircle2 size={72} className="text-brand-orange mb-6" />
-                  </motion.div>
-                  <motion.h4
-                    initial={{ y: 10, opacity: 0 }}
-                    animate={{ y: 0, opacity: 1 }}
-                    transition={{ delay: 0.2 }}
-                    className="text-[#1A1A1A] font-fashion font-bold text-3xl mb-2"
-                  >
-                    In Your Bag!
-                  </motion.h4>
-                  <motion.p
-                    initial={{ y: 10, opacity: 0 }}
-                    animate={{ y: 0, opacity: 1 }}
-                    transition={{ delay: 0.3 }}
-                    className="text-gray-500 font-medium"
-                  >
-                    {product.name} added successfully.
-                  </motion.p>
-                  
-                  <div className="flex flex-col gap-3 mt-8 w-full max-w-[240px]">
-                    <motion.button
-                      initial={{ y: 10, opacity: 0 }}
-                      animate={{ y: 0, opacity: 1 }}
-                      transition={{ delay: 0.4 }}
-                      onClick={() => navigate('/cart')}
-                      className="w-full px-8 py-4 bg-[#1A1A1A] text-white rounded-2xl flex items-center justify-center gap-3 hover:bg-black transition-all font-bold text-xs uppercase tracking-widest active:scale-95 group"
-                    >
-                      Go to Bag
-                      <ArrowRight size={16} className="group-hover:translate-x-1 transition-transform" />
-                    </motion.button>
-                    <motion.button
-                      initial={{ y: 10, opacity: 0 }}
-                      animate={{ y: 0, opacity: 1 }}
-                      transition={{ delay: 0.5 }}
-                      onClick={() => setIsAdded(false)}
-                      className="w-full px-8 py-4 bg-gray-50 text-gray-500 rounded-2xl hover:bg-gray-100 transition-all font-bold text-[10px] uppercase tracking-widest active:scale-95"
-                    >
-                      Continue Shopping
-                    </motion.button>
-                  </div>
-                </motion.div>
-              )}
-            </AnimatePresence>
-          </motion.div>
-
-          {/* Info */}
-          <motion.div
-            initial={{ opacity: 0, x: 20 }}
-            animate={{ opacity: 1, x: 0 }}
-            transition={{ delay: 0.2 }}
-            className="flex flex-col justify-center"
-          >
-            <span className="text-[12px] font-bold tracking-[0.4em] uppercase text-brand-orange mb-6 block">
-              {product.collection || 'Heritage Series'}
-            </span>
-            <h1 className="text-4xl md:text-6xl font-fashion font-bold text-[#1A1A1A] mb-8 leading-[1.1] tracking-tight">
-              {product.name}
-            </h1>
-
-            <div className="flex items-center space-x-6 mb-10 pb-10 border-b border-gray-100">
-              <span className="text-3xl font-bold text-[#1A1A1A]">₹{product.price.toLocaleString('en-IN')}</span>
-              <div className="h-6 w-px bg-gray-200" />
-              <div className="flex items-center gap-2">
-                <div className="flex text-brand-orange">
-                  {[...Array(5)].map((_, i) => <Star key={i} size={14} fill="currentColor" />)}
-                </div>
-                <span className="text-[10px] font-black uppercase tracking-widest text-[#1A1A1A]">4.9 (12 reviews)</span>
-              </div>
-            </div>
-
-            <p className="text-gray-500 text-lg leading-relaxed mb-12">
-              {product.description || "A masterpiece of artisanal craftsmanship, hand-finished with meticulous attention to detail."}
-            </p>
-
-            {product.details && (
-              <ul className="grid grid-cols-1 md:grid-cols-2 gap-4 mb-16">
-                {product.details.map((detail, i) => (
-                  <li key={i} className="flex items-center text-xs font-bold text-gray-400 tracking-wide">
-                    <div className="w-1.5 h-1.5 bg-brand-orange rounded-full mr-3 opacity-60" />
-                    {detail}
-                  </li>
-                ))}
-              </ul>
-            )}
-
-            <div className="flex flex-col sm:flex-row gap-6">
-              <button
-                onClick={alreadyInBag ? () => navigate('/cart') : handleAddToCart}
-                disabled={adding}
-                className={`flex-grow px-12 py-5 rounded-3xl flex items-center justify-center space-x-4 transition-all active:scale-95 group shadow-xl ${
-                  alreadyInBag 
-                  ? 'bg-[#1A1A1A] text-white hover:bg-black shadow-black/10' 
-                  : 'bg-brand-orange text-white hover:shadow-2xl hover:shadow-brand-orange/20 shadow-brand-orange/10'
-                }`}
-              >
-                {adding ? (
-                  <Loader2 className="animate-spin" size={20} />
-                ) : (
-                  <ShoppingBag size={20} strokeWidth={2.5} className="group-hover:-translate-y-0.5 transition-transform" />
-                )}
-                <span className="tracking-[0.2em] font-black uppercase text-xs">
-                  {alreadyInBag ? 'Go to Bag' : adding ? 'Adding...' : 'Add to Bag'}
-                </span>
-              </button>
-
-              <button
-                onClick={handleWishlist}
-                className={`p-5 rounded-3xl border-2 transition-all active:scale-90 flex items-center justify-center ${isWishlisted
-                    ? 'bg-red-50 border-red-100 text-red-500'
-                    : 'border-gray-100 text-gray-400 hover:border-gray-200 hover:text-[#1A1A1A]'
-                  }`}
-              >
-                <Heart size={24} strokeWidth={2} fill={isWishlisted ? "currentColor" : "none"} />
-              </button>
-            </div>
-          </motion.div>
+    <div className="bg-[#FDFBF7] h-screen overflow-hidden font-sans">
+      <div className="max-w-[1500px] mx-auto px-8 h-full flex flex-col py-6">
+        
+        {/* Navigation - Ultra Clean */}
+        <div className="flex items-center justify-between mb-6">
+          <button onClick={goBack} className="flex items-center gap-2 text-[10px] font-bold text-gray-400 hover:text-black transition-all group uppercase tracking-[0.2em]">
+            <ArrowLeft size={14} className="transition-transform group-hover:-translate-x-1" />
+            Back
+          </button>
+          <nav className="flex items-center space-x-2 text-[8px] tracking-[0.3em] uppercase font-bold text-gray-400">
+            <Link to="/" className="hover:text-brand-orange transition-colors">Home</Link>
+            <ChevronRight size={8} className="text-gray-300" />
+            <span className="text-[#1A1A1A]">{product.name}</span>
+          </nav>
         </div>
+
+        {/* Unified One-Row Layout */}
+        <div className="flex-1 min-h-0 flex gap-12 bg-white p-10 rounded-[3rem] shadow-sm border border-gray-100/50 overflow-hidden">
+          
+          {/* Section 1: Thumbnails (Left) */}
+          <div className="flex flex-col gap-4 w-20 flex-shrink-0 py-2">
+            <div className="flex-1 overflow-y-auto no-scrollbar space-y-4 pr-1">
+              {images.map((img, idx) => (
+                <button 
+                  key={idx}
+                  onClick={() => setActiveImage(idx)}
+                  className={`relative aspect-[3/4] rounded-2xl overflow-hidden border-2 transition-all ${
+                    activeImage === idx ? 'border-brand-orange shadow-md scale-105' : 'border-gray-50 opacity-60 hover:opacity-100'
+                  }`}
+                >
+                  <img src={img} alt="" className="w-full h-full object-cover" />
+                </button>
+              ))}
+            </div>
+          </div>
+
+          {/* Section 2: Main Image (Middle) */}
+          <div className="relative w-[40%] flex-shrink-0 h-full rounded-[2.5rem] overflow-hidden bg-[#F9F8F6] border border-gray-100 group shadow-lg flex items-center justify-center p-6">
+            <motion.img 
+              key={activeImage}
+              initial={{ opacity: 0 }}
+              animate={{ opacity: 1 }}
+              src={images[activeImage]} 
+              alt={product.name} 
+              className="w-full h-full object-contain" 
+            />
+
+            <button 
+              onClick={handleWishlist}
+              className={`absolute top-8 right-8 p-4 rounded-full shadow-2xl transition-all active:scale-90 ${
+                isWishlisted ? 'bg-white text-red-500' : 'bg-white/80 backdrop-blur-sm text-gray-400 hover:text-red-500'
+              }`}
+            >
+              <Heart size={20} fill={isWishlisted ? "currentColor" : "none"} />
+            </button>
+          </div>
+
+          {/* Section 3: Details (Right) */}
+          <div className="flex-1 flex flex-col h-full overflow-y-auto no-scrollbar pt-2">
+            <div className="mb-8">
+              <h1 className="text-3xl font-fashion font-bold text-[#1A1A1A] mb-2 leading-tight tracking-tight">
+                {product.name}
+              </h1>
+              <p className="text-xs italic font-medium text-gray-500 mb-6 font-fashion">
+                {product.subtitle || 'with Unstitched Blouse Piece'}
+              </p>
+              
+              <div className="flex items-center gap-6 mb-8">
+                <div className="flex items-center gap-1.5 bg-[#FDFBF7] px-3 py-1 rounded-full border border-orange-100">
+                  <Star size={12} fill="#F97316" className="text-brand-orange" />
+                  <span className="text-xs font-black text-[#1A1A1A]">{product.rating || 4.8}</span>
+                </div>
+                <div className="h-4 w-px bg-gray-200" />
+                <span className="text-[9px] font-bold uppercase tracking-widest text-green-600">Premium Stock</span>
+                <div className="h-4 w-px bg-gray-200" />
+                <button className="text-[9px] font-bold uppercase tracking-widest text-gray-400 hover:text-black transition-colors flex items-center gap-2">
+                  <Share2 size={10} /> Share
+                </button>
+              </div>
+
+              <div className="flex items-baseline gap-4 mb-8">
+                <span className="text-4xl font-bold text-[#1A1A1A]">₹{product.price.toLocaleString('en-IN')}</span>
+                <span className="text-base text-gray-400 line-through font-medium">₹{(product.price * 2).toLocaleString('en-IN')}</span>
+                <span className="text-[9px] font-black text-red-500 uppercase tracking-[0.2em] ml-2">Flat 50% Off</span>
+              </div>
+
+              <p className="text-gray-500 text-sm leading-relaxed mb-8 font-medium">
+                {product.description || "A masterpiece of artisanal craftsmanship, each thread tells a story of heritage and handcrafted excellence."}
+              </p>
+
+              {/* Specs Grid */}
+              <div className="grid grid-cols-3 gap-4 py-6 border-y border-gray-100 mb-10">
+                <div>
+                  <p className="text-[8px] font-black uppercase text-gray-400 mb-1">Fabric</p>
+                  <p className="text-xs font-bold text-[#1A1A1A]">{product.fabric || 'Pure Silk'}</p>
+                </div>
+                <div>
+                  <p className="text-[8px] font-black uppercase text-gray-400 mb-1">Craft</p>
+                  <p className="text-xs font-bold text-[#1A1A1A]">{product.craft || 'Woven'}</p>
+                </div>
+                <div>
+                  <p className="text-[8px] font-black uppercase text-gray-400 mb-1">Occasion</p>
+                  <p className="text-xs font-bold text-[#1A1A1A]">{product.occasion || 'Festive'}</p>
+                </div>
+              </div>
+            </div>
+
+            {/* Sticky Actions - Updated to Brand Orange */}
+            <div className="mt-auto space-y-6">
+              <div className="flex items-center justify-between bg-[#FDFBF7] p-4 rounded-2xl">
+                <span className="text-[10px] font-black uppercase tracking-[0.2em] text-[#1A1A1A]">Quantity</span>
+                <div className="flex items-center bg-white rounded-xl shadow-sm p-1 border border-gray-100">
+                  <button onClick={() => setQuantity(Math.max(1, quantity - 1))} className="p-1.5 text-gray-400 hover:text-black"><Minus size={14} /></button>
+                  <span className="w-10 text-center font-bold text-base">{quantity}</span>
+                  <button onClick={() => setQuantity(quantity + 1)} className="p-1.5 text-gray-400 hover:text-black"><Plus size={14} /></button>
+                </div>
+              </div>
+
+              <div className="grid grid-cols-2 gap-4">
+                <button
+                  onClick={handleAddToCart}
+                  disabled={adding}
+                  className="flex items-center justify-center gap-2 bg-white border-2 border-brand-orange text-brand-orange py-4 rounded-2xl font-black text-[10px] uppercase tracking-[0.2em] hover:bg-brand-orange-light transition-all active:scale-95"
+                >
+                  {adding ? <Loader2 className="animate-spin" size={14} /> : <ShoppingBag size={16} />}
+                  Add to Bag
+                </button>
+                <button className="py-4 bg-brand-orange text-white rounded-2xl font-black text-[10px] uppercase tracking-[0.2em] hover:bg-brand-orange-dark transition-all active:scale-95 shadow-lg shadow-brand-orange/10">
+                  Buy Now
+                </button>
+              </div>
+            </div>
+          </div>
+        </div>
+
+        {/* Minimal Success Msg */}
+        <AnimatePresence>
+          {isAdded && (
+            <motion.div
+              initial={{ opacity: 0, scale: 0.9 }}
+              animate={{ opacity: 1, scale: 1 }}
+              exit={{ opacity: 0 }}
+              className="fixed bottom-12 right-12 z-50 p-4 bg-white shadow-2xl rounded-3xl border border-gray-100 flex items-center gap-4"
+            >
+              <div className="w-10 h-10 bg-green-100 rounded-full flex items-center justify-center text-green-600">
+                <CheckCircle2 size={20} />
+              </div>
+              <p className="text-[10px] font-bold text-[#1A1A1A] uppercase tracking-widest pr-4">Added to Bag</p>
+              <button onClick={() => navigate('/cart')} className="px-4 py-2 bg-[#1A1A1A] text-white rounded-xl text-[8px] font-black uppercase">View</button>
+            </motion.div>
+          )}
+        </AnimatePresence>
       </div>
     </div>
   );
