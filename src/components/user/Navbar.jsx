@@ -238,6 +238,10 @@ function NavItem({ category, location, side }) {
   const [rect, setRect] = useState(null);
   const [calculatedSide, setCalculatedSide] = useState(side);
 
+  useEffect(() => {
+    setIsHovered(false);
+  }, [location.pathname]);
+
   const handleMouseEnter = () => {
     if (liRef.current) {
       const currentRect = liRef.current.getBoundingClientRect();
@@ -252,7 +256,7 @@ function NavItem({ category, location, side }) {
     setIsHovered(false);
   };
 
-  const isActive = location.pathname.includes(`/category/${category.id}`);
+  const isActive = location.pathname.startsWith(category.fullPath) || location.pathname === category.fullPath;
   const hasSubCategories = category.children && category.children.length > 0;
 
   return (
@@ -294,7 +298,7 @@ function NavItem({ category, location, side }) {
             <div className="bg-white shadow-2xl border border-gray-100 rounded-2xl min-w-max py-2">
               <ul className="space-y-0.5">
                 {category.children.map((child) => (
-                  <RecursiveMenuItem key={child.id} item={child} side={calculatedSide} />
+                  <RecursiveMenuItem key={child.id} item={child} side={calculatedSide} location={location} />
                 ))}
               </ul>
             </div>
@@ -305,8 +309,13 @@ function NavItem({ category, location, side }) {
   );
 }
 
-function RecursiveMenuItem({ item, side }) {
+function RecursiveMenuItem({ item, side, location }) {
   const [isHovered, setIsHovered] = useState(false);
+  
+  useEffect(() => {
+    setIsHovered(false);
+  }, [location.pathname]);
+  const isActive = location.pathname.startsWith(item.fullPath) || location.pathname === item.fullPath;
   const hasSubCategories = item.children && item.children.length > 0;
 
   return (
@@ -317,7 +326,7 @@ function RecursiveMenuItem({ item, side }) {
     >
       <Link
         to={item.fullPath}
-        className={`flex items-center justify-between w-full px-5 py-3 rounded-xl text-[15px] font-normal tracking-normal font-sans whitespace-nowrap gap-4 transition-all ${isHovered ? 'bg-brand-orange/5 text-brand-orange' : 'text-gray-600 hover:bg-gray-50 hover:text-brand-black'
+        className={`flex items-center justify-between w-full px-5 py-3 rounded-xl text-[15px] font-normal tracking-normal font-sans whitespace-nowrap gap-4 transition-all ${isHovered || isActive ? 'bg-brand-orange/5 text-brand-orange' : 'text-gray-600 hover:bg-gray-50 hover:text-brand-black'
           }`}
       >
         <div className="flex items-center gap-1.5">
@@ -344,7 +353,7 @@ function RecursiveMenuItem({ item, side }) {
             <div className="bg-white shadow-2xl border border-gray-100 rounded-2xl min-w-max py-2">
               <ul className="space-y-0.5">
                 {item.children.map((child) => (
-                  <RecursiveMenuItem key={child.id} item={child} side={side} />
+                  <RecursiveMenuItem key={child.id} item={child} side={side} location={location} />
                 ))}
               </ul>
             </div>
