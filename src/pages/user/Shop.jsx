@@ -130,8 +130,8 @@ export default function Shop() {
         <div className="flex flex-col md:flex-row gap-8">
           {/* Filters - Sidebar */}
           <aside className="w-full md:w-80">
-            <FilterSidebar 
-              categories={allCategories} 
+            <FilterSidebar
+              categories={allCategories}
               onFilterChange={handleFilterChange}
               className="rounded-[2.5rem] shadow-sm border border-gray-50"
             />
