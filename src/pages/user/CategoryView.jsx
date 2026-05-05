@@ -120,7 +120,7 @@ export default function CategoryView() {
             </button>
             <FilterSidebar
               className="bg-transparent p-0"
-              subranges={currentCategory.children || []}
+              categories={breadcrumbs.length > 0 ? [breadcrumbs[0]] : []}
             />
           </div>
         </aside>
@@ -201,7 +201,7 @@ export default function CategoryView() {
               </div>
               <FilterSidebar
                 className="bg-transparent"
-                subranges={currentCategory.children || []}
+                categories={breadcrumbs.length > 0 ? [breadcrumbs[0]] : []}
               />
             </motion.div>
           </>
