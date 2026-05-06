@@ -8,7 +8,6 @@ import { useSearchParams, Link, useNavigate } from 'react-router-dom';
 import { useGoBack } from '../../hooks/useGoBack';
 import { motion } from 'framer-motion';
 import useCategories from '../../hooks/useCategories';
-import FilterSidebar from '../../components/user/FilterSidebar';
 
 export default function Shop() {
   const [searchParams, setSearchParams] = useSearchParams();
@@ -19,7 +18,6 @@ export default function Shop() {
 
   const [products, setProducts] = useState([]);
   const [loading, setLoading] = useState(true);
-  const [activeFilters, setActiveFilters] = useState({});
 
   // Strict mapping of what terms belong to which main category
   const ALLOWED_MAPPING = {
@@ -27,11 +25,6 @@ export default function Shop() {
     'jewellery': ['fabric', 'clay', 'tribal', 'jewellery', 'jewel'],
     'festive': ['toran', 'rakhi', 'diya', 'banana leaf', 'festive', 'naivedya'],
     'others': ['keychain', 'diar', 'pouch', 'coaster', 'sleeve', 'other', 'bag', 'accessory']
-  };
-
-  const handleFilterChange = (filters) => {
-    setActiveFilters(filters);
-    console.log('Shop Page Filters:', filters);
   };
 
   const setFilter = (newFilter) => {
@@ -58,7 +51,7 @@ export default function Shop() {
 
   const filteredProducts = (() => {
     // 1. Get ALL products that belong to our 4 approved categories
-    let result = products.filter(p => {
+    const approvedProducts = products.filter(p => {
       const pCol = p.collection?.toLowerCase() || '';
       const pCat = p.categoryId?.toLowerCase() || '';
       const pName = p.name?.toLowerCase() || '';
@@ -70,37 +63,26 @@ export default function Shop() {
       });
     });
 
-    // 2. Filter by main category if selected
-    if (filter !== 'All') {
-      const searchStr = filter.toLowerCase();
-      let targetTerms = [searchStr];
-      if (ALLOWED_MAPPING[searchStr]) {
-        targetTerms = [...targetTerms, ...ALLOWED_MAPPING[searchStr]];
-      }
+    if (filter === 'All') return approvedProducts;
 
-      result = result.filter(p => {
-        const pCol = p.collection?.toLowerCase() || '';
-        const pCat = p.categoryId?.toLowerCase() || '';
-        const pName = p.name?.toLowerCase() || '';
+    // 2. If a specific filter is selected, drill down
+    const searchStr = filter.toLowerCase();
 
-        return targetTerms.some(term =>
-          pCol.includes(term) || pCat.includes(term) || pName.includes(term)
-        );
-      });
+    // Find relevant terms for the selected filter
+    let targetTerms = [searchStr];
+    if (ALLOWED_MAPPING[searchStr]) {
+      targetTerms = [...targetTerms, ...ALLOWED_MAPPING[searchStr]];
     }
 
-    // 3. Filter by Active Filters (Sidebar selections)
-    if (activeFilters.availability?.length > 0) {
-      result = result.filter(p => activeFilters.availability.includes(p.availability));
-    }
-    if (activeFilters.price?.length > 0) {
-      // Logic for price filtering would go here based on product.price
-    }
-    if (activeFilters.size?.length > 0) {
-      result = result.filter(p => p.sizes?.some(s => activeFilters.size.includes(s)));
-    }
+    return approvedProducts.filter(p => {
+      const pCol = p.collection?.toLowerCase() || '';
+      const pCat = p.categoryId?.toLowerCase() || '';
+      const pName = p.name?.toLowerCase() || '';
 
-    return result;
+      return targetTerms.some(term =>
+        pCol.includes(term) || pCat.includes(term) || pName.includes(term)
+      );
+    });
   })();
 
   if (loading) {
@@ -129,12 +111,34 @@ export default function Shop() {
 
         <div className="flex flex-col md:flex-row gap-8">
           {/* Filters - Sidebar */}
-          <aside className="w-full md:w-80">
-            <FilterSidebar
-              categories={allCategories}
-              onFilterChange={handleFilterChange}
-              className="rounded-[2.5rem] shadow-sm border border-gray-50"
-            />
+          <aside className="w-full md:w-64 space-y-10">
+            <div className="bg-white p-8 rounded-[2.5rem] shadow-sm border border-gray-50">
+              <h3 className="text-[12px] font-sans font-bold tracking-[0.1em] uppercase text-gray-400 mb-8 border-b border-gray-50 pb-4">Collections</h3>
+              <ul className="space-y-4 text-sm font-bold">
+                <li>
+                  <button
+                    onClick={() => setFilter('All')}
+                    className={`w-full text-left py-2 transition-all flex items-center justify-between group text-[11px] font-sans font-bold uppercase tracking-[0.05em] ${filter === 'All' ? 'text-brand-orange translate-x-2' : 'text-gray-400 hover:text-brand-orange'
+                      }`}
+                  >
+                    All Pieces
+                    <span className={`w-1.5 h-1.5 rounded-full bg-brand-orange transition-all ${filter === 'All' ? 'scale-100' : 'scale-0'}`} />
+                  </button>
+                </li>
+                {Object.keys(ALLOWED_MAPPING).map((catName) => (
+                  <li key={catName}>
+                    <button
+                      onClick={() => setFilter(catName)}
+                      className={`w-full text-left py-2 transition-all flex items-center justify-between group text-[11px] font-sans font-bold uppercase tracking-[0.05em] ${filter.toLowerCase() === catName.toLowerCase() ? 'text-brand-orange translate-x-2' : 'text-gray-400 hover:text-brand-orange'
+                        }`}
+                    >
+                      <span className="capitalize">{catName}</span>
+                      <span className={`w-1.5 h-1.5 rounded-full bg-brand-orange transition-all ${filter.toLowerCase() === catName.toLowerCase() ? 'scale-100' : 'scale-0'}`} />
+                    </button>
+                  </li>
+                ))}
+              </ul>
+            </div>
           </aside>
 
           {/* Product Grid Area */}
