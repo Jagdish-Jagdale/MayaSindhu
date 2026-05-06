@@ -17,12 +17,15 @@ import {
   Loader2,
   ExternalLink,
   ChevronLeft,
-  Star
+  Star,
+  MoreVertical,
+  AlertCircle
 } from 'lucide-react';
 import { useAdminUI } from '../../context/AdminUIContext';
 import { db } from '../../firebase';
 import { collection, onSnapshot, query, orderBy, doc, deleteDoc, addDoc, updateDoc, serverTimestamp } from 'firebase/firestore';
 import useCategories from '../../hooks/useCategories';
+import ProductFormModal from '../../components/admin/ProductFormModal';
 import DeleteConfirmationModal from '../../components/admin/DeleteConfirmationModal';
 import toast from 'react-hot-toast';
 
@@ -51,6 +54,7 @@ export default function Categories() {
   const [categoryToDelete, setCategoryToDelete] = useState(null);
   const [isDeleting, setIsDeleting] = useState(false);
   const [deleteMessage, setDeleteMessage] = useState("");
+  const [isProductModalOpen, setIsProductModalOpen] = useState(false);
 
   const rowsRef = useRef(null);
 
@@ -255,6 +259,15 @@ export default function Categories() {
             <p className="text-[12px] text-gray-400 font-medium">Manage your multi-level heritage collections and products</p>
           </div>
           <div className="flex items-center gap-3">
+            {currentPath.length > 0 && (
+              <button
+                onClick={() => setIsProductModalOpen(true)}
+                className="flex items-center gap-2 bg-white border border-[#1BAFAF] text-[#1BAFAF] hover:bg-[#1BAFAF]/5 px-4 py-2 rounded-xl text-[13px] font-semibold transition-all active:scale-95"
+              >
+                <Package size={16} strokeWidth={2.5} />
+                Add Product
+              </button>
+            )}
             <button
               onClick={() => { setEditingCategory(null); setCategoryDraft({ name: '' }); setIsModalOpen(true); }}
               className="flex items-center gap-2 bg-[#1BAFAF] hover:bg-[#17a0a0] text-white px-4 py-2 rounded-xl text-[13px] font-semibold transition-all shadow-sm shadow-[#1BAFAF]/10 active:scale-95"
@@ -435,84 +448,110 @@ export default function Categories() {
             </table>
           ) : (
             currentPath.length > 0 ? (
-              <table className="w-full border-collapse">
-                <thead>
-                  <tr className="border-b border-gray-50 bg-white">
-                    <th className="px-6 py-4 text-left text-[14px] font-bold text-[#1BAFAF] w-20">Sr No</th>
-                    <th className="px-6 py-4 text-left text-[14px] font-bold text-[#1BAFAF]">Product</th>
-                    <th className="px-6 py-4 text-left text-[14px] font-bold text-[#1BAFAF]">Price</th>
-                    <th className="px-6 py-4 text-left text-[14px] font-bold text-[#1BAFAF]">Stock</th>
-                    <th className="px-6 py-4 text-left text-[14px] font-bold text-[#1BAFAF]">Status</th>
-                    <th className="px-6 py-4 text-right text-[14px] font-bold text-[#1BAFAF]">Actions</th>
-                  </tr>
-                </thead>
-                <tbody className="divide-y divide-gray-50/50">
-                  {(() => {
-                    const activeCatId = currentPath[currentPath.length - 1].id;
-                    const catProducts = products.filter(p =>
-                      p.categoryId === activeCatId &&
-                      (searchTerm ? p.name.toLowerCase().includes(searchTerm.toLowerCase()) : true)
-                    );
+          <div className="p-6">
+            {(() => {
+              const activeCatId = currentPath[currentPath.length - 1];
+              const catProducts = products.filter(p =>
+                p.categoryId === activeCatId &&
+                (searchTerm ? p.name.toLowerCase().includes(searchTerm.toLowerCase()) : true)
+              );
 
-                    if (catProducts.length === 0) {
-                      return (
-                        <tr>
-                          <td colSpan="6" className="px-6 py-20 text-center">
-                            <div className="flex flex-col items-center gap-3">
-                              <div className="w-16 h-16 bg-gray-50 rounded-full flex items-center justify-center text-gray-200 border border-gray-100">
-                                <Diamond size={32} />
-                              </div>
-                              <p className="text-gray-500 font-bold text-[14px]">No products found in this collection</p>
-                            </div>
-                          </td>
-                        </tr>
-                      );
-                    }
+              if (catProducts.length === 0) {
+                return (
+                  <div className="py-20 text-center bg-gray-50/50 rounded-[32px] border-2 border-dashed border-gray-100">
+                    <div className="flex flex-col items-center gap-3">
+                      <div className="w-16 h-16 bg-white rounded-full flex items-center justify-center text-gray-200 shadow-sm">
+                        <Diamond size={32} />
+                      </div>
+                      <div className="space-y-1">
+                        <p className="text-gray-500 font-bold text-[15px]">No products found in this collection</p>
+                        <p className="text-gray-400 text-[12px] font-medium">Add a new product to see it appear here</p>
+                      </div>
+                    </div>
+                  </div>
+                );
+              }
 
-                    return catProducts.slice(0, rowsPerPage).map((p, idx) => (
-                      <tr key={p.id} className="hover:bg-gray-50 group transition-all duration-200">
-                        <td className="px-6 py-4 whitespace-nowrap text-[14px] text-gray-400 font-medium">
-                          {(idx + 1).toString().padStart(2, '0')}
-                        </td>
-                        <td className="px-6 py-4">
-                          <div className="flex items-center gap-3">
-                            <div className="w-12 h-12 rounded-xl overflow-hidden bg-gray-50 border border-gray-100 shrink-0 flex items-center justify-center">
-                              {p.images?.[0] ? (
-                                <img src={p.images[0]} alt="" className="w-full h-full object-cover" />
-                              ) : (
-                                <Diamond size={18} className="text-gray-200" />
-                              )}
+              return (
+                <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-6">
+                  {catProducts.slice(0, rowsPerPage).map((p) => (
+                    <div key={p.id} className="group bg-white rounded-[28px] border border-gray-100 overflow-hidden hover:shadow-2xl hover:shadow-[#1BAFAF]/5 hover:-translate-y-1 transition-all duration-300 flex flex-col">
+                      {/* Image Container */}
+                      <div className="relative aspect-[4/5] overflow-hidden bg-gray-50">
+                        {(() => {
+                          const displayImage = p.image || p.imageUrl || (p.images && p.images.length > 0 ? p.images[0] : null);
+                          return displayImage ? (
+                            <img src={displayImage} alt={p.name} className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-700" />
+                          ) : (
+                            <div className="w-full h-full flex items-center justify-center text-gray-200">
+                              <Diamond size={48} strokeWidth={1} />
                             </div>
-                            <div>
-                              <span className="text-[14px] font-bold text-gray-900 line-clamp-1">{p.name}</span>
-                              <span className="text-[10px] font-bold text-gray-400 uppercase tracking-wider">{p.productType}</span>
-                            </div>
-                          </div>
-                        </td>
-                        <td className="px-6 py-4 whitespace-nowrap text-[14px] text-[#1BAFAF] font-bold">
-                          ₹{Number(p.price).toLocaleString()}
-                        </td>
-                        <td className="px-6 py-4 whitespace-nowrap text-[14px] text-gray-500 font-medium tabular-nums font-semibold">
-                          {p.stock} Units
-                        </td>
-                        <td className="px-6 py-4 whitespace-nowrap">
-                          <span className={`text-[10px] font-bold uppercase tracking-wider px-2.5 py-1 rounded-lg ${p.isAvailable ? 'text-[#1BAFAF] bg-[#eaf6f6]' : 'text-gray-400 bg-gray-100'
-                            }`}>
-                            {p.isAvailable ? 'Available' : 'Hidden'}
+                          );
+                        })()}
+                        
+                        {/* Status Badge */}
+                        <div className="absolute top-4 left-4 z-10">
+                          <span className={`text-[9px] font-bold uppercase tracking-[0.1em] px-2.5 py-1.5 rounded-lg backdrop-blur-md shadow-sm flex items-center gap-1.5 ${
+                            p.isAvailable 
+                              ? (Number(p.stock) < 5 ? 'bg-rose-500/90 text-white' : 'bg-emerald-500/90 text-white')
+                              : 'bg-gray-900/60 text-white'
+                          }`}>
+                            <div className={`w-1.5 h-1.5 rounded-full animate-pulse ${
+                              p.isAvailable 
+                                ? (Number(p.stock) < 5 ? 'bg-white' : 'bg-white')
+                                : 'bg-gray-300'
+                            }`} />
+                            {p.isAvailable 
+                              ? (Number(p.stock) < 5 ? 'Low Stock' : 'Active') 
+                              : 'Archived'}
                           </span>
-                        </td>
-                        <td className="px-6 py-4 text-right">
-                          <div className="flex items-center justify-end gap-2">
-                            <button className="w-8 h-8 flex items-center justify-center text-gray-400 hover:text-[#1BAFAF] hover:bg-gray-50 rounded-lg transition-all active:scale-95">
-                              <ArrowUpRight size={16} />
+                        </div>
+                      </div>
+
+                      {/* Content Section */}
+                      <div className="p-5 flex-1 flex flex-col gap-3">
+                        <div className="flex items-center justify-between gap-2">
+                          <span className="text-[10px] font-bold text-gray-400 uppercase tracking-widest truncate">
+                            ID: {p.id.slice(-6).toUpperCase()}
+                          </span>
+                          <span className="text-[16px] font-bold text-[#1BAFAF]">
+                            ₹{Number(p.price).toLocaleString()}
+                          </span>
+                        </div>
+
+                        <div className="space-y-1">
+                          <h3 className="text-[17px] font-bold text-gray-900 leading-tight line-clamp-2 group-hover:text-[#1BAFAF] transition-colors">
+                            {p.name}
+                          </h3>
+                          <p className="text-[12px] font-medium text-gray-400 line-clamp-1 italic">
+                            {p.productType} • {p.description || 'Heritage Collection'}
+                          </p>
+                        </div>
+
+                        <div className="mt-auto pt-4 flex items-center justify-between border-t border-gray-50">
+                          <div className="flex flex-col">
+                            <span className="text-[9px] font-bold text-gray-300 uppercase tracking-widest">Inventory</span>
+                            <span className={`text-[13px] font-bold flex items-center gap-1.5 ${Number(p.stock) < 5 ? 'text-rose-500' : 'text-gray-700'}`}>
+                              {p.stock} Units
+                              {Number(p.stock) < 5 && <AlertCircle size={12} />}
+                            </span>
+                          </div>
+                          <div className="flex items-center gap-1">
+                            <button className="p-2 text-gray-400 hover:text-emerald-600 hover:bg-emerald-50 rounded-xl transition-all active:scale-90" title="Edit Product">
+                              <Pencil size={16} strokeWidth={2.5} />
+                            </button>
+                            <button className="p-2 text-gray-400 hover:text-gray-900 hover:bg-gray-100 rounded-xl transition-all active:scale-90">
+                              <MoreVertical size={16} strokeWidth={2.5} />
                             </button>
                           </div>
-                        </td>
-                      </tr>
-                    ));
-                  })()}
-                </tbody>
-              </table>
+                        </div>
+                      </div>
+                    </div>
+                  ))}
+                </div>
+              );
+            })()}
+          </div>
             ) : (
               <div className="px-6 py-20 text-center">
                 <div className="flex flex-col items-center gap-3">
@@ -612,6 +651,11 @@ export default function Categories() {
         itemName={categoryToDelete?.name}
         message={deleteMessage}
         loading={isDeleting}
+      />
+      <ProductFormModal 
+        isOpen={isProductModalOpen}
+        onClose={() => setIsProductModalOpen(false)}
+        initialCategoryId={currentPath.length > 0 ? currentPath[currentPath.length - 1] : null}
       />
     </div>
   );
