@@ -8,6 +8,7 @@ import { useSearchParams, Link, useNavigate } from 'react-router-dom';
 import { useGoBack } from '../../hooks/useGoBack';
 import { motion } from 'framer-motion';
 import useCategories from '../../hooks/useCategories';
+import FilterSidebar from '../../components/user/FilterSidebar';
 
 export default function Shop() {
   const [searchParams, setSearchParams] = useSearchParams();
@@ -18,6 +19,11 @@ export default function Shop() {
 
   const [products, setProducts] = useState([]);
   const [loading, setLoading] = useState(true);
+  const [activeFilters, setActiveFilters] = useState({});
+
+  const handleFilterChange = (filters) => {
+    setActiveFilters(filters);
+  };
 
   // Strict mapping of what terms belong to which main category
   const ALLOWED_MAPPING = {
@@ -63,26 +69,50 @@ export default function Shop() {
       });
     });
 
-    if (filter === 'All') return approvedProducts;
+    // 2. Filter by main category if selected
+    let result = approvedProducts;
+    if (filter !== 'All') {
+      const searchStr = filter.toLowerCase();
+      let targetTerms = [searchStr];
+      if (ALLOWED_MAPPING[searchStr]) {
+        targetTerms = [...targetTerms, ...ALLOWED_MAPPING[searchStr]];
+      }
 
-    // 2. If a specific filter is selected, drill down
-    const searchStr = filter.toLowerCase();
+      result = result.filter(p => {
+        const pCol = p.collection?.toLowerCase() || '';
+        const pCat = p.categoryId?.toLowerCase() || '';
+        const pName = p.name?.toLowerCase() || '';
 
-    // Find relevant terms for the selected filter
-    let targetTerms = [searchStr];
-    if (ALLOWED_MAPPING[searchStr]) {
-      targetTerms = [...targetTerms, ...ALLOWED_MAPPING[searchStr]];
+        return targetTerms.some(term =>
+          pCol.includes(term) || pCat.includes(term) || pName.includes(term)
+        );
+      });
     }
 
-    return approvedProducts.filter(p => {
-      const pCol = p.collection?.toLowerCase() || '';
-      const pCat = p.categoryId?.toLowerCase() || '';
-      const pName = p.name?.toLowerCase() || '';
+    // 3. Filter by Active Filters (Sidebar selections)
+    if (activeFilters.availability?.length > 0) {
+      result = result.filter(p => {
+        const pStatus = (p.availability || 'In Stock').toLowerCase();
+        return activeFilters.availability.some(a => a.toLowerCase() === pStatus);
+      });
+    }
 
-      return targetTerms.some(term =>
-        pCol.includes(term) || pCat.includes(term) || pName.includes(term)
-      );
-    });
+    if (activeFilters.priceRange) {
+      const { min, max } = activeFilters.priceRange;
+      result = result.filter(p => {
+        const price = Number(p.price) || 0;
+        return price >= min && price <= max;
+      });
+    }
+
+    if (activeFilters.size?.length > 0) {
+      result = result.filter(p => {
+        const pSizes = p.sizes || [];
+        return activeFilters.size.some(s => pSizes.includes(s));
+      });
+    }
+
+    return result;
   })();
 
   if (loading) {
@@ -100,45 +130,20 @@ export default function Shop() {
           <ArrowLeft size={18} className="transition-transform group-hover:-translate-x-1" />
           Back
         </button>
-        <header className="mb-12 text-center">
-          <h1 className="text-4xl md:text-5xl font-fashion text-[#1A1A1A] mb-4 capitalize">
+        <header className="mb-6 text-center">
+          <h1 className="text-xl md:text-2xl font-fashion text-[#1A1A1A] capitalize tracking-wide">
             {filter === 'All' ? 'The Collection' : filter}
           </h1>
-          <p className="text-gray-400 font-sans tracking-[0.4em] uppercase text-[10px] font-bold">
-            {filter === 'All' ? 'Carefully curated handmade textiles' : `Discover our finest ${filter}`}
-          </p>
         </header>
 
-        <div className="flex flex-col md:flex-row gap-8">
+        <div className="flex flex-col md:flex-row gap-10">
           {/* Filters - Sidebar */}
-          <aside className="w-full md:w-64 space-y-10">
-            <div className="bg-white p-8 rounded-[2.5rem] shadow-sm border border-gray-50">
-              <h3 className="text-[12px] font-sans font-bold tracking-[0.1em] uppercase text-gray-400 mb-8 border-b border-gray-50 pb-4">Collections</h3>
-              <ul className="space-y-4 text-sm font-bold">
-                <li>
-                  <button
-                    onClick={() => setFilter('All')}
-                    className={`w-full text-left py-2 transition-all flex items-center justify-between group text-[11px] font-sans font-bold uppercase tracking-[0.05em] ${filter === 'All' ? 'text-brand-orange translate-x-2' : 'text-gray-400 hover:text-brand-orange'
-                      }`}
-                  >
-                    All Pieces
-                    <span className={`w-1.5 h-1.5 rounded-full bg-brand-orange transition-all ${filter === 'All' ? 'scale-100' : 'scale-0'}`} />
-                  </button>
-                </li>
-                {Object.keys(ALLOWED_MAPPING).map((catName) => (
-                  <li key={catName}>
-                    <button
-                      onClick={() => setFilter(catName)}
-                      className={`w-full text-left py-2 transition-all flex items-center justify-between group text-[11px] font-sans font-bold uppercase tracking-[0.05em] ${filter.toLowerCase() === catName.toLowerCase() ? 'text-brand-orange translate-x-2' : 'text-gray-400 hover:text-brand-orange'
-                        }`}
-                    >
-                      <span className="capitalize">{catName}</span>
-                      <span className={`w-1.5 h-1.5 rounded-full bg-brand-orange transition-all ${filter.toLowerCase() === catName.toLowerCase() ? 'scale-100' : 'scale-0'}`} />
-                    </button>
-                  </li>
-                ))}
-              </ul>
-            </div>
+          <aside className="w-full md:w-96">
+            <FilterSidebar
+              categories={allCategories}
+              onFilterChange={handleFilterChange}
+              className="rounded-[2.5rem] shadow-sm border border-gray-50"
+            />
           </aside>
 
           {/* Product Grid Area */}

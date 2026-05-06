@@ -99,7 +99,7 @@ export default function Navbar() {
               {/* Invisible image to maintain intrinsic dimensions */}
               <img src={navLogo} alt="MayaSindhu" className="h-8 md:h-12 lg:h-16 w-auto object-contain opacity-0" />
               {/* Mask overlay for solid brand color */}
-              <div 
+              <div
                 className="absolute inset-0 bg-[#F99C00] transition-opacity duration-300 group-hover:opacity-80"
                 style={{
                   WebkitMaskImage: `url(${navLogo})`,
@@ -117,7 +117,7 @@ export default function Navbar() {
 
           {/* 2 & 3. Search Bar and Icons (Right Aligned) */}
           <div className="flex-[2] flex justify-end items-center gap-2 lg:gap-6">
-            
+
             {/* Search Bar (Hidden on Mobile) */}
             <div className="hidden md:block w-64 lg:w-80 relative group">
               <input
@@ -148,7 +148,7 @@ export default function Navbar() {
                   </span>
                 )}
               </Link>
-              
+
               <Link to="/cart" className="p-2 text-brand-black hover:text-brand-orange transition-colors relative flex items-center justify-center min-w-[40px]">
                 <ShoppingBag size={22} strokeWidth={2} />
                 {cartCount > 0 && (
@@ -157,7 +157,7 @@ export default function Navbar() {
                   </span>
                 )}
               </Link>
-              
+
               <Link
                 to={user ? "/profile" : "/login"}
                 className="p-2 text-brand-black hover:text-brand-orange transition-colors relative flex items-center justify-center min-w-[40px]"
@@ -246,8 +246,8 @@ function NavItem({ category, location, side }) {
     if (liRef.current) {
       const currentRect = liRef.current.getBoundingClientRect();
       setRect(currentRect);
-      // Dynamically determine side: if it's on the right half of the screen, open leftwards.
-      setCalculatedSide(currentRect.left > window.innerWidth / 2 ? 'right' : 'left');
+      // If the item is in the right 40% of the screen, open the menu to the left
+      setCalculatedSide(currentRect.right > window.innerWidth * 0.6 ? 'right' : 'left');
     }
     setIsHovered(true);
   };
@@ -290,8 +290,9 @@ function NavItem({ category, location, side }) {
             style={{
               position: 'fixed',
               top: rect.bottom,
-              left: calculatedSide === 'left' ? rect.left : 'auto',
-              right: calculatedSide === 'right' ? window.innerWidth - rect.right : 'auto'
+              left: calculatedSide === 'left' ? Math.max(16, rect.left) : 'auto',
+              right: calculatedSide === 'right' ? Math.max(16, window.innerWidth - rect.right) : 'auto',
+              maxWidth: 'calc(100vw - 32px)'
             }}
             className={`pt-2 z-[1100]`}
           >
@@ -311,7 +312,7 @@ function NavItem({ category, location, side }) {
 
 function RecursiveMenuItem({ item, side, location }) {
   const [isHovered, setIsHovered] = useState(false);
-  
+
   useEffect(() => {
     setIsHovered(false);
   }, [location.pathname]);
