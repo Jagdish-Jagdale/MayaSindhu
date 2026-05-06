@@ -6,7 +6,7 @@ import useCategories from '../../hooks/useCategories';
 import toast from 'react-hot-toast';
 import { uploadToCloudinary, deleteMultipleFromCloudinary } from '../../utils/cloudinary';
 
-export default function ProductFormModal({ isOpen, onClose, product = null }) {
+export default function ProductFormModal({ isOpen, onClose, product = null, initialCategoryId = null }) {
   const { categories: heirarchy } = useCategories();
   const [loading, setLoading] = useState(false);
   
@@ -66,7 +66,7 @@ export default function ProductFormModal({ isOpen, onClose, product = null }) {
     } else {
       setFormData({
         name: '',
-        categoryId: '',
+        categoryId: initialCategoryId || '',
         productType: 'Repeat',
         price: '',
         costPrice: '',
@@ -75,12 +75,19 @@ export default function ProductFormModal({ isOpen, onClose, product = null }) {
         description: '',
         images: []
       });
-      setSelectedPathIds([]);
+      
+      if (initialCategoryId) {
+        const path = findPathToCategory(initialCategoryId, heirarchy);
+        setSelectedPathIds(path || []);
+      } else {
+        setSelectedPathIds([]);
+      }
+
       setPreviews([]);
       setImageFiles([]);
       setRemovedImageUrls([]);
     }
-  }, [product, isOpen, heirarchy]);
+  }, [product, isOpen, heirarchy, initialCategoryId]);
 
   const handleInputChange = (e) => {
     const { name, value, type, checked } = e.target;
