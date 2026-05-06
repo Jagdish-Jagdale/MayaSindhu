@@ -20,6 +20,11 @@ export default function CategoryView() {
   const [currentCategory, setCurrentCategory] = useState(null);
   const [breadcrumbs, setBreadcrumbs] = useState([]);
   const [isMobileFiltersOpen, setIsMobileFiltersOpen] = useState(false);
+  const [activeFilters, setActiveFilters] = useState({});
+
+  const handleFilterChange = (filters) => {
+    setActiveFilters(filters);
+  };
 
   // 1. Fetch ALL products from Firestore
   useEffect(() => {
@@ -75,18 +80,43 @@ export default function CategoryView() {
 
     const targetCategoryIds = getAllCategoryIds(currentCategory);
 
-    return products.filter(p => {
+    let result = products.filter(p => {
       const pCatId = p.categoryId || '';
       const pCol = p.collection?.toLowerCase() || '';
 
       // Match by category ID
       const matchesCategory = targetCategoryIds.includes(pCatId);
 
-      // Fallback: match by collection name if it contains any of the target category names
+      // Fallback: match by collection name
       const matchesCollection = currentCategory.name && pCol.includes(currentCategory.name.toLowerCase());
 
       return matchesCategory || matchesCollection;
     });
+
+    // Apply Active Filters
+    if (activeFilters.availability?.length > 0) {
+      result = result.filter(p => {
+        const pStatus = (p.availability || 'In Stock').toLowerCase();
+        return activeFilters.availability.some(a => a.toLowerCase() === pStatus);
+      });
+    }
+
+    if (activeFilters.priceRange) {
+      const { min, max } = activeFilters.priceRange;
+      result = result.filter(p => {
+        const price = Number(p.price) || 0;
+        return price >= min && price <= max;
+      });
+    }
+
+    if (activeFilters.size?.length > 0) {
+      result = result.filter(p => {
+        const pSizes = p.sizes || [];
+        return activeFilters.size.some(s => pSizes.includes(s));
+      });
+    }
+
+    return result;
   })();
 
   if (categoriesLoading || productsLoading) {
@@ -112,7 +142,7 @@ export default function CategoryView() {
     <div className="bg-white min-h-screen font-sans">
       <div className="flex flex-col md:flex-row">
         {/* Sidebar - Desktop */}
-        <aside className="hidden md:block w-72 lg:w-80 flex-shrink-0 bg-[#F9F9F9] border-r border-gray-100 min-h-screen">
+        <aside className="hidden md:block w-80 lg:w-96 flex-shrink-0 bg-[#F9F9F9] border-r border-gray-100 min-h-screen">
           <div className="sticky top-24 p-8 lg:p-10">
             <button onClick={goBack} className="flex items-center gap-2 text-sm font-medium text-gray-500 hover:text-brand-orange transition-all group mb-10 w-fit">
               <ArrowLeft size={18} className="transition-transform group-hover:-translate-x-1" />
@@ -121,6 +151,7 @@ export default function CategoryView() {
             <FilterSidebar
               className="bg-transparent p-0"
               categories={breadcrumbs.length > 0 ? [breadcrumbs[0]] : []}
+              onFilterChange={handleFilterChange}
             />
           </div>
         </aside>
@@ -130,23 +161,16 @@ export default function CategoryView() {
           <motion.div
             initial={{ opacity: 0, y: 20 }}
             animate={{ opacity: 1, y: 0 }}
-            className="mb-12"
+            className="mb-6"
           >
-            <h1 className="text-4xl md:text-7xl font-fashion font-bold text-brand-black mb-6 leading-[1.1]">
+            <h1 className="text-2xl md:text-3xl font-fashion font-bold text-brand-black leading-tight tracking-wide">
               {currentCategory.name}
             </h1>
-            <p className="text-gray-500 text-sm md:text-lg leading-relaxed max-w-2xl italic font-medium">
-              {currentCategory.description || `Exploring the finest handcrafted heritage ${currentCategory.name.toLowerCase()} treasures, curated for your timeless elegance.`}
-            </p>
           </motion.div>
 
           {/* Product Grid Area */}
           <section className="mb-24">
-            <div className="flex items-center justify-between mb-12 pb-6 border-b border-gray-100">
-              <span className="text-[10px] font-black tracking-[0.2em] uppercase text-gray-400">
-                {filteredProducts.length} Treasures Found
-              </span>
-
+            <div className="flex items-center justify-end mb-8 pb-4 border-b border-gray-100">
               <button
                 onClick={() => setIsMobileFiltersOpen(true)}
                 className="md:hidden flex items-center gap-2 text-[10px] font-black tracking-[0.2em] uppercase text-brand-black"
