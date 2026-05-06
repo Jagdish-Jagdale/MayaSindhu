@@ -138,19 +138,47 @@ export default function ProductCard({ id, slug, name, price, image, imageUrl, im
           </button>
         )}
 
-        {/* Add to Cart - Frosted Glass Pill (Always visible on mobile, hover on desktop) */}
-        <div className="absolute bottom-4 md:bottom-6 left-1/2 -translate-x-1/2 md:translate-y-10 md:opacity-0 group-hover:translate-y-0 group-hover:opacity-100 transition-all duration-700 ease-out z-10 w-full px-6">
-          <button
-            onClick={isInCart ? (e) => { e.preventDefault(); e.stopPropagation(); navigate('/cart'); } : handleAddToCart}
-            className={`w-full flex items-center justify-center space-x-2 backdrop-blur-md border border-white/30 text-white py-3.5 rounded-full shadow-2xl active:scale-95 transition-all duration-500 ${
-              isInCart ? 'bg-brand-orange hover:bg-brand-orange-dark' : 'bg-black/30 hover:bg-white hover:text-brand-black'
-            }`}
-          >
-            <ShoppingBag size={16} strokeWidth={2} />
-            <span className="text-[10px] md:text-[11px] font-bold uppercase tracking-[0.2em] whitespace-nowrap">
-              {isInCart ? "Go to Cart" : "Add to Cart"}
-            </span>
-          </button>
+        {/* Actions - Buy Now & Add to Cart */}
+        <div className="absolute bottom-4 md:bottom-6 left-0 right-0 md:translate-y-10 md:opacity-0 group-hover:translate-y-0 group-hover:opacity-100 transition-all duration-700 ease-out z-10 px-4 md:px-6">
+          <div className="flex flex-col sm:flex-row gap-2">
+            <button
+              onClick={isInCart ? (e) => { e.preventDefault(); e.stopPropagation(); navigate('/cart'); } : handleAddToCart}
+              className={`flex-1 flex items-center justify-center space-x-2 backdrop-blur-md border border-white/30 text-white py-3 rounded-full shadow-2xl active:scale-95 transition-all duration-500 ${
+                isInCart ? 'bg-brand-orange hover:bg-brand-orange-dark' : 'bg-black/30 hover:bg-white hover:text-brand-black'
+              }`}
+            >
+              <ShoppingBag size={14} strokeWidth={2} />
+              <span className="text-[9px] md:text-[10px] font-bold uppercase tracking-[0.1em] whitespace-nowrap">
+                {isInCart ? "In Bag" : "Add"}
+              </span>
+            </button>
+            <button
+              onClick={(e) => {
+                e.preventDefault();
+                e.stopPropagation();
+                if (!user) {
+                  navigate('/login', { state: { from: location } });
+                  return;
+                }
+                navigate('/checkout', { 
+                  state: { 
+                    buyNowItem: {
+                      id: id,
+                      slug: slug || id,
+                      name: name,
+                      price: price,
+                      image: displayImage,
+                      qty: 1,
+                      isDirectBuy: true
+                    } 
+                  } 
+                });
+              }}
+              className="flex-1 flex items-center justify-center space-x-2 bg-brand-orange hover:bg-brand-orange-dark text-white py-3 rounded-full shadow-2xl active:scale-95 transition-all duration-500 border border-brand-orange/30"
+            >
+              <span className="text-[9px] md:text-[10px] font-bold uppercase tracking-[0.1em] whitespace-nowrap">Buy Now</span>
+            </button>
+          </div>
         </div>
 
         {/* Success Animation Overlay */}
