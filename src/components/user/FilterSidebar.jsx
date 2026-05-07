@@ -100,10 +100,10 @@ export default function FilterSidebar({ className = "", categories = [], onFilte
   const location = useLocation();
 
   const [openSections, setOpenSections] = useState({
-    categories: true,
-    availability: true,
-    price: true,
-    size: true
+    categories: false,
+    availability: false,
+    price: false,
+    size: false
   });
 
   const [selectedFilters, setSelectedFilters] = useState({
@@ -143,7 +143,7 @@ export default function FilterSidebar({ className = "", categories = [], onFilte
   };
 
   return (
-    <div className={`w-full bg-[#F9F9F9] p-8 md:p-10 min-h-fit ${className}`}>
+    <div className={`w-full bg-[#F9F9F9] p-4 md:p-6 min-h-fit ${className}`}>
       <div className="space-y-2">
         <FilterAccordion
           title="EXPLORE SUBRANGES"

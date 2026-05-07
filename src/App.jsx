@@ -16,6 +16,7 @@ import About from './pages/user/About';
 import Contact from './pages/user/Contact';
 import Profile from './pages/user/Profile';
 import Checkout from './pages/user/Checkout';
+import Blog from './pages/user/Blog';
 
 // Admin Pages
 import Dashboard from './pages/admin/Dashboard';
@@ -99,6 +100,7 @@ function App() {
             <Route path="contact" element={<Contact />} />
             <Route path="profile" element={<Profile />} />
             <Route path="checkout" element={<Checkout />} />
+            <Route path="blog" element={<Blog />} />
           </Route>
 
           {/* Standalone User Routes */}

@@ -142,8 +142,8 @@ export default function CategoryView() {
     <div className="bg-white min-h-screen font-sans">
       <div className="flex flex-col md:flex-row">
         {/* Sidebar - Desktop */}
-        <aside className="hidden md:block w-80 lg:w-96 flex-shrink-0 bg-[#F9F9F9] border-r border-gray-100 min-h-screen">
-          <div className="sticky top-24 p-8 lg:p-10">
+        <aside className="hidden md:block w-64 lg:w-72 flex-shrink-0 bg-[#F9F9F9] border-r border-gray-100 min-h-screen">
+          <div className="sticky top-28 p-4 lg:p-6 h-[calc(100vh-140px)] overflow-y-auto no-scrollbar overscroll-contain">
             <FilterSidebar
               className="bg-transparent p-0"
               categories={breadcrumbs.length > 0 ? [breadcrumbs[0]] : []}
@@ -151,6 +151,7 @@ export default function CategoryView() {
             />
           </div>
         </aside>
+
 
         <div className="flex-1 py-12 px-6 md:px-12 lg:px-20">
           {/* Category Header */}

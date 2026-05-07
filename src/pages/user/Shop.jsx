@@ -2,7 +2,7 @@ import { useState, useEffect } from 'react';
 import ProductCard from '../../components/user/ProductCard';
 import { db } from '../../firebase';
 import { collection, onSnapshot, query, orderBy } from 'firebase/firestore';
-import { Loader2, ArrowLeft } from 'lucide-react';
+import { Loader2, ArrowLeft, X } from 'lucide-react';
 
 import { useSearchParams, Link, useNavigate } from 'react-router-dom';
 import { useGoBack } from '../../hooks/useGoBack';
@@ -15,11 +15,13 @@ export default function Shop() {
   const navigate = useNavigate();
   const goBack = useGoBack();
   const filter = searchParams.get('category') || 'All';
+  const searchQuery = searchParams.get('q') || '';
   const { categories: allCategories } = useCategories();
 
   const [products, setProducts] = useState([]);
   const [loading, setLoading] = useState(true);
   const [activeFilters, setActiveFilters] = useState({});
+  const [isMobileFiltersOpen, setIsMobileFiltersOpen] = useState(false);
 
   const handleFilterChange = (filters) => {
     setActiveFilters(filters);
@@ -42,6 +44,11 @@ export default function Shop() {
     setSearchParams(searchParams);
   };
 
+  const clearSearch = () => {
+    searchParams.delete('q');
+    setSearchParams(searchParams);
+  };
+
   useEffect(() => {
     const q = query(collection(db, 'products'), orderBy('createdAt', 'desc'));
     const unsubscribe = onSnapshot(q, (snapshot) => {
@@ -56,8 +63,10 @@ export default function Shop() {
   }, []);
 
   const filteredProducts = (() => {
-    // 1. Get ALL products that belong to our 4 approved categories
-    const approvedProducts = products.filter(p => {
+    // 1. Initial Filtering Logic
+    // If there is a search query, we want to be as inclusive as possible, so we start with all products.
+    // If no search query, we apply the "approved" category mapping for the default shop view.
+    let baseProducts = searchQuery ? products : products.filter(p => {
       const pCol = p.collection?.toLowerCase() || '';
       const pCat = p.categoryId?.toLowerCase() || '';
       const pName = p.name?.toLowerCase() || '';
@@ -69,8 +78,9 @@ export default function Shop() {
       });
     });
 
-    // 2. Filter by main category if selected
-    let result = approvedProducts;
+    let result = baseProducts;
+
+    // 2. Category Filter (Apply if selected and not overridden by a global search, or as a secondary filter)
     if (filter !== 'All') {
       const searchStr = filter.toLowerCase();
       let targetTerms = [searchStr];
@@ -86,6 +96,27 @@ export default function Shop() {
         return targetTerms.some(term =>
           pCol.includes(term) || pCat.includes(term) || pName.includes(term)
         );
+      });
+    }
+
+    // 3. Search Query Filter (Powerful & Fuzzy)
+    if (searchQuery) {
+      const q = searchQuery.toLowerCase().trim();
+      result = result.filter(p => {
+        const pCol = (p.collection || '').toLowerCase();
+        const pCat = (p.categoryId || '').toLowerCase();
+        const pName = (p.name || '').toLowerCase();
+        const pDesc = (p.description || '').toLowerCase();
+        // Also check tags if they exist (supports both array and string tags)
+        const pTags = Array.isArray(p.tags) 
+          ? p.tags.join(' ').toLowerCase() 
+          : (typeof p.tags === 'string' ? p.tags.toLowerCase() : '');
+
+        return pName.includes(q) || 
+               pDesc.includes(q) || 
+               pCol.includes(q) || 
+               pCat.includes(q) || 
+               pTags.includes(q);
       });
     }
 
@@ -124,17 +155,48 @@ export default function Shop() {
   }
 
   return (
-    <div className="bg-[#FAF9F6] min-h-screen pt-12 pb-24 font-sans">
+    <div className="bg-[#FAF9F6] min-h-screen pt-4 pb-24 font-sans">
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-        <header className="mb-6 text-center">
-          <h1 className="text-xl md:text-2xl font-fashion text-[#1A1A1A] capitalize tracking-wide">
-            {filter === 'All' ? 'The Collection' : filter}
+
+        <header className="mb-8 text-center px-4">
+          <h1 className="text-2xl md:text-3xl font-fashion text-[#1A1A1A] capitalize tracking-wide">
+            {searchQuery ? (
+              <div className="flex flex-col items-center gap-3">
+                <span className="text-gray-400 text-xs font-sans uppercase tracking-widest">Search results for</span>
+                <div className="flex items-center gap-3 text-brand-orange">
+                  "{searchQuery}"
+                  <button 
+                    onClick={clearSearch}
+                    className="p-1.5 hover:bg-orange-50 rounded-full transition-colors"
+                    title="Clear search"
+                  >
+                    <X size={18} />
+                  </button>
+                </div>
+              </div>
+            ) : (
+              filter === 'All' ? 'The Collection' : filter
+            )}
           </h1>
         </header>
 
-        <div className="flex flex-col md:flex-row gap-10">
-          {/* Filters - Sidebar */}
-          <aside className="w-full md:w-96">
+        <div className="flex flex-col md:flex-row gap-8 lg:gap-12">
+          {/* Mobile Filter Trigger */}
+          <div className="md:hidden flex justify-between items-center mb-6 px-2">
+            <button 
+              onClick={() => setIsMobileFiltersOpen(true)}
+              className="flex items-center gap-2 px-6 py-3 bg-white border border-gray-200 rounded-full text-[10px] font-black uppercase tracking-[0.2em] shadow-sm active:scale-95 transition-all"
+            >
+              <Loader2 className="w-3 h-3 text-brand-orange" /> {/* Using Loader2 as a placeholder icon or Sliders from lucide */}
+              Refine Selection
+            </button>
+            <span className="text-[10px] font-bold text-gray-400 uppercase tracking-widest">
+              {filteredProducts.length} Items
+            </span>
+          </div>
+
+          {/* Filters - Sidebar (Desktop) */}
+          <aside className="hidden md:block w-72 sticky top-28 self-start h-[calc(100vh-140px)] overflow-y-auto no-scrollbar overscroll-contain">
             <FilterSidebar
               categories={allCategories}
               onFilterChange={handleFilterChange}
@@ -205,6 +267,51 @@ export default function Shop() {
               )}
             </div>
           </div>
+
+      {/* Mobile Filters Drawer */}
+      <AnimatePresence>
+        {isMobileFiltersOpen && (
+          <>
+            <motion.div
+              initial={{ opacity: 0 }}
+              animate={{ opacity: 1 }}
+              exit={{ opacity: 0 }}
+              onClick={() => setIsMobileFiltersOpen(false)}
+              className="fixed inset-0 bg-black/40 backdrop-blur-sm z-[1000]"
+            />
+            <motion.div
+              initial={{ x: '100%' }}
+              animate={{ x: 0 }}
+              exit={{ x: '100%' }}
+              transition={{ type: 'spring', damping: 25, stiffness: 200 }}
+              className="fixed inset-y-0 right-0 w-[85%] max-w-sm bg-white z-[1001] shadow-2xl overflow-y-auto"
+            >
+              <div className="p-6 border-b border-gray-100 flex items-center justify-between bg-white sticky top-0 z-10">
+                <h3 className="text-xs font-black uppercase tracking-[0.3em]">Filter & Sort</h3>
+                <button
+                  onClick={() => setIsMobileFiltersOpen(false)}
+                  className="w-10 h-10 flex items-center justify-center hover:bg-gray-50 rounded-full transition-all"
+                >
+                  <X size={20} />
+                </button>
+              </div>
+              <FilterSidebar
+                categories={allCategories}
+                onFilterChange={handleFilterChange}
+                className="bg-transparent"
+              />
+              <div className="sticky bottom-0 p-4 bg-white border-t border-gray-100">
+                <button 
+                  onClick={() => setIsMobileFiltersOpen(false)}
+                  className="w-full py-4 bg-[#1A1A1A] text-white text-[10px] font-bold uppercase tracking-[0.2em] rounded-xl"
+                >
+                  Show Results ({filteredProducts.length})
+                </button>
+              </div>
+            </motion.div>
+          </>
+        )}
+      </AnimatePresence>
         </div>
       </div>
     </div>
