@@ -1,12 +1,13 @@
 import React, { useState, useEffect } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { 
-  Package, User, Heart, Settings, LogOut, ChevronRight, 
-  MapPin, CreditCard, Bell, RotateCcw, HelpCircle, Menu, X, ShoppingBag, ArrowLeft 
+  Package, User, Heart, LogOut, ChevronRight, 
+  MapPin, CreditCard, Bell, RotateCcw, HelpCircle, Menu, ShoppingBag
 } from 'lucide-react';
-import { useNavigate, Link } from 'react-router-dom';
-import { useGoBack } from '../../hooks/useGoBack';
+import { useNavigate } from 'react-router-dom';
 import { useAuth } from '../../context/AuthContext';
+import { db } from '../../firebase';
+import { doc, onSnapshot } from 'firebase/firestore';
 
 // Import sections
 import ProfileInfo from './Profile/sections/ProfileInfo';
@@ -20,28 +21,38 @@ import SupportTab from './Profile/sections/SupportTab';
 import CartTab from './Profile/sections/CartTab';
 
 const TABS = [
-  { id: 'profile', label: 'My Profile', icon: <User size={20} />, component: ProfileInfo },
-  { id: 'orders', label: 'My Orders', icon: <Package size={20} />, component: OrderHistory },
-  { id: 'addresses', label: 'Address Book', icon: <MapPin size={20} />, component: AddressBook },
-  { id: 'wishlist', label: 'Wishlist', icon: <Heart size={20} />, component: WishlistTab },
-  { id: 'payments', label: 'Saved Payments', icon: <CreditCard size={20} />, component: PaymentMethods },
-  { id: 'notifications', label: 'Notifications', icon: <Bell size={20} />, component: NotificationSettings },
-  { id: 'returns', label: 'Returns & Refunds', icon: <RotateCcw size={20} />, component: ReturnsRefunds },
-  { id: 'cart', label: 'Shopping Bag', icon: <ShoppingBag size={20} />, component: CartTab },
-  { id: 'support', label: 'Help & Support', icon: <HelpCircle size={20} />, component: SupportTab },
+  { id: 'profile', label: 'My Profile', icon: <User size={18} />, component: ProfileInfo },
+  { id: 'orders', label: 'My Orders', icon: <Package size={18} />, component: OrderHistory },
+  { id: 'addresses', label: 'Address Book', icon: <MapPin size={18} />, component: AddressBook },
+  { id: 'wishlist', label: 'Wishlist', icon: <Heart size={18} />, component: WishlistTab },
+  { id: 'payments', label: 'Saved Payments', icon: <CreditCard size={18} />, component: PaymentMethods },
+  { id: 'notifications', label: 'Notifications', icon: <Bell size={18} />, component: NotificationSettings },
+  { id: 'returns', label: 'Returns & Refunds', icon: <RotateCcw size={18} />, component: ReturnsRefunds },
+  { id: 'cart', label: 'Shopping Bag', icon: <ShoppingBag size={18} />, component: CartTab },
+  { id: 'support', label: 'Help & Support', icon: <HelpCircle size={18} />, component: SupportTab },
 ];
 
 export default function Profile() {
   const { user, logout } = useAuth();
   const navigate = useNavigate();
-  const goBack = useGoBack();
   const [activeTab, setActiveTab] = useState('profile');
   const [isSidebarOpen, setIsSidebarOpen] = useState(false);
+  const [profileData, setProfileData] = useState(null);
 
   useEffect(() => {
     if (!user) {
       navigate('/login');
+      return;
     }
+
+    // Real-time listener for profile data (to sync name/photo across sidebar and content)
+    const unsubscribe = onSnapshot(doc(db, 'users', user.uid), (docSnap) => {
+      if (docSnap.exists()) {
+        setProfileData(docSnap.data());
+      }
+    });
+
+    return () => unsubscribe();
   }, [user, navigate]);
 
   useEffect(() => {
@@ -49,6 +60,8 @@ export default function Profile() {
   }, [activeTab]);
 
   if (!user) return null;
+
+  const displayName = profileData?.fullName || user.displayName || 'Guest User';
 
   const handleLogout = async () => {
     try {
@@ -62,63 +75,41 @@ export default function Profile() {
   const ActiveComponent = TABS.find(t => t.id === activeTab)?.component || ProfileInfo;
 
   return (
-    <div className="bg-[#FAF9F6] min-h-screen pt-16 pb-20 font-sans focus-within:scroll-smooth relative overflow-hidden">
-      {/* Premium Background Accents */}
-      <div className="absolute top-0 right-0 w-[500px] h-[500px] bg-brand-orange/5 rounded-full blur-[120px] -z-10 pointer-events-none" />
-      <div className="absolute bottom-0 left-0 w-[400px] h-[400px] bg-brand-orange/3 rounded-full blur-[100px] -z-10 pointer-events-none" />
-
-      <div className="max-w-6xl mx-auto px-6 relative">
-        <button onClick={goBack} className="flex items-center gap-2 text-[10px] font-bold text-gray-400 hover:text-black transition-all group mb-4 w-fit uppercase tracking-[0.2em]">
-          <ArrowLeft size={14} className="transition-transform group-hover:-translate-x-1" />
-          Back
-        </button>
-        
-        {/* Mobile Sidebar Toggle */}
-        <div className="lg:hidden mb-8 flex items-center justify-between bg-white p-6 rounded-3xl shadow-sm">
-          <div className="flex items-center gap-4">
-            <div className="w-12 h-12 bg-brand-orange text-white rounded-2xl flex items-center justify-center font-fashion font-bold text-xl uppercase">
-              {user.displayName?.charAt(0) || user.email?.charAt(0)}
-            </div>
-            <div>
-              <h3 className="font-fashion font-bold text-[#1A1A1A] leading-none mb-1">
-                {TABS.find(t => t.id === activeTab)?.label}
-              </h3>
-              <p className="text-[10px] text-gray-400 uppercase tracking-widest font-bold">Menu</p>
-            </div>
+    <div className="bg-white min-h-screen font-sans">
+      {/* Mobile Navigation Header */}
+      <div className="lg:hidden p-4 bg-white border-b border-gray-100 flex items-center justify-between sticky top-0 z-50">
+        <div className="flex items-center gap-3">
+          <div className="w-8 h-8 rounded-full bg-brand-orange text-white flex items-center justify-center font-bold text-xs">
+            {user.photoURL ? <img src={user.photoURL} alt="" className="w-full h-full rounded-full object-cover" /> : displayName.charAt(0)}
           </div>
-          <button 
-            onClick={() => setIsSidebarOpen(!isSidebarOpen)}
-            className="p-3 bg-gray-50 text-text-main rounded-2xl active:scale-90 transition-all"
-          >
-            {isSidebarOpen ? <X size={24} /> : <Menu size={24} />}
-          </button>
+          <h3 className="font-bold text-sm text-[#1A1A1A]">{TABS.find(t => t.id === activeTab)?.label}</h3>
         </div>
+        <button onClick={() => setIsSidebarOpen(!isSidebarOpen)} className="p-2 text-brand-orange"><Menu size={24} /></button>
+      </div>
 
-        <div className="flex flex-col lg:flex-row gap-8 relative">
-          
-          {/* Dashboard Sidebar */}
-          <aside className={`
-            lg:w-64 flex-shrink-0 z-40 transition-all duration-500
-            ${isSidebarOpen ? 'fixed inset-0 bg-white p-12 overflow-y-auto' : 'hidden lg:block'}
-          `}>
-            <div className="bg-white p-8 rounded-[2.5rem] shadow-xl shadow-gray-200/50 flex flex-col items-center text-center mb-6 border border-white/50 backdrop-blur-sm">
-              <div className="w-20 h-20 bg-brand-orange rounded-[1.8rem] flex items-center justify-center text-white font-fashion font-bold text-2xl mb-4 shadow-2xl shadow-brand-orange/30 overflow-hidden border-4 border-white">
-                {user.photoURL ? (
-                  <img src={user.photoURL} alt="Profile" className="w-full h-full object-cover" />
-                ) : (
-                  user.displayName?.charAt(0) || user.email?.charAt(0).toUpperCase()
-                )}
-              </div>
-              <div>
-                <h2 className="text-xl font-fashion font-bold text-[#1A1A1A] leading-tight mb-1.5 uppercase tracking-tight">{user.displayName || 'Guest User'}</h2>
-                <div className="inline-block px-3 py-1 bg-gray-50 rounded-full">
-                  <p className="text-gray-400 text-[10px] font-black uppercase tracking-widest">{user.email}</p>
+      <div className="flex flex-col lg:flex-row min-h-[calc(100vh-80px)]">
+        {/* Sidebar Column */}
+        <aside className={`
+          lg:w-[320px] bg-white lg:border-r border-gray-100 z-40 transition-all duration-300
+          ${isSidebarOpen ? 'fixed inset-0 overflow-y-auto' : 'hidden lg:block lg:sticky lg:top-20 lg:h-[calc(100vh-80px)]'}
+        `}>
+          <div className="flex flex-col h-full overscroll-contain">
+            {/* Sidebar Profile Header */}
+            <div className="flex flex-col items-center py-12 px-6 text-center">
+              <div className="relative mb-6">
+                <div className="w-28 h-28 rounded-full bg-brand-orange/5 p-1">
+                  <div className="w-full h-full rounded-full bg-brand-orange border-4 border-white shadow-xl flex items-center justify-center text-white text-4xl font-bold overflow-hidden">
+                    {user.photoURL ? <img src={user.photoURL} alt="" className="w-full h-full rounded-full object-cover" /> : displayName.charAt(0)}
+                  </div>
                 </div>
               </div>
+              <h3 className="text-xl font-bold text-[#1A1A1A] mb-1 leading-tight">{displayName}</h3>
+              <p className="text-[10px] text-gray-400 font-bold uppercase tracking-widest">Premium Member</p>
             </div>
 
-            <nav className="bg-white/80 backdrop-blur-md rounded-[3rem] overflow-hidden p-3 shadow-xl shadow-gray-200/50 border border-white">
-              <div className="space-y-1.5">
+            {/* Navigation List */}
+            <nav className="flex-grow px-4 pb-8 overflow-y-auto no-scrollbar">
+              <div className="space-y-1">
                 {TABS.map((tab) => (
                   <button
                     key={tab.id}
@@ -127,54 +118,50 @@ export default function Profile() {
                       setIsSidebarOpen(false);
                     }}
                     className={`
-                      w-full flex items-center justify-between p-5 rounded-2xl transition-all group
+                      w-full flex items-center gap-4 px-6 py-4 rounded-xl transition-all font-bold text-[13px]
                       ${activeTab === tab.id 
                         ? 'bg-brand-orange text-white shadow-lg shadow-brand-orange/20' 
-                        : 'text-gray-400 hover:bg-brand-orange/5 hover:text-brand-orange'
-                      }
+                        : 'text-gray-400 hover:text-[#1A1A1A] hover:bg-gray-50'}
                     `}
                   >
-                    <div className="flex items-center gap-3">
-                      <span className={`${activeTab === tab.id ? 'text-white' : 'text-gray-400 group-hover:text-brand-orange'} transition-colors`}>
-                        {tab.icon}
-                      </span>
-                      <span className="text-[13px] font-bold tracking-wide">{tab.label}</span>
-                    </div>
-                    <ChevronRight size={16} className={`${activeTab === tab.id ? 'opacity-100' : 'opacity-0'} transition-opacity`} />
+                    <span className={activeTab === tab.id ? 'text-white' : 'text-gray-400'}>
+                      {tab.icon}
+                    </span>
+                    <span className="uppercase tracking-widest">{tab.label}</span>
+                    {activeTab === tab.id && <ChevronRight size={14} className="ml-auto" />}
                   </button>
                 ))}
-                
-                <div className="mt-2 pt-2 border-t border-gray-50">
-                  <button 
-                    onClick={handleLogout}
-                    className="w-full flex items-center justify-between p-4 rounded-xl text-red-500 hover:bg-red-50 transition-all font-black uppercase tracking-widest text-[10px] group"
-                  >
-                    <div className="flex items-center gap-3">
-                      <LogOut size={16} className="group-hover:translate-x-1 transition-transform" />
-                      <span>Sign Out</span>
-                    </div>
-                  </button>
-                </div>
+              </div>
+
+              {/* Bottom Actions */}
+              <div className="mt-8 pt-8 border-t border-gray-50 px-6">
+                <button 
+                  onClick={handleLogout}
+                  className="flex items-center gap-3 text-red-500 hover:text-red-600 transition-colors font-bold text-[11px] uppercase tracking-widest"
+                >
+                  <LogOut size={16} />
+                  <span>Sign Out</span>
+                </button>
               </div>
             </nav>
-          </aside>
+          </div>
+        </aside>
 
-          {/* Main Display Area */}
-          <main className="flex-grow min-w-0">
-            <AnimatePresence mode="wait">
-              <motion.div
-                key={activeTab}
-                initial={{ opacity: 0, y: 20 }}
-                animate={{ opacity: 1, y: 0 }}
-                exit={{ opacity: 0, y: -20 }}
-                transition={{ duration: 0.4, ease: "easeOut" }}
-              >
-                <ActiveComponent user={user} />
-              </motion.div>
-            </AnimatePresence>
-          </main>
-
-        </div>
+        {/* Main Content Column */}
+        <main className="flex-grow bg-[#FBFBFB] p-6 md:p-12 lg:p-16 min-h-full">
+          <AnimatePresence mode="wait">
+            <motion.div
+              key={activeTab}
+              initial={{ opacity: 0, y: 10 }}
+              animate={{ opacity: 1, y: 0 }}
+              exit={{ opacity: 0, y: -10 }}
+              transition={{ duration: 0.3 }}
+              className="max-w-6xl mx-auto"
+            >
+              <ActiveComponent user={user} />
+            </motion.div>
+          </AnimatePresence>
+        </main>
       </div>
     </div>
   );

@@ -46,55 +46,60 @@ export default function NotificationSettings({ user }) {
     }
   };
 
-  if (loading) return <div className="flex justify-center p-20"><Loader2 className="animate-spin text-brand-orange" size={40} /></div>;
+  if (loading) return <div className="flex justify-center p-20"><Loader2 className="animate-spin text-[#f5aa00]" size={40} /></div>;
 
   return (
-    <div className="bg-white p-10 md:p-14 rounded-[4rem] shadow-sm border border-gray-50">
-      <div className="flex items-center gap-4 mb-12">
-        <Bell className="text-brand-orange" size={28} />
-        <h2 className="text-3xl font-fashion font-bold text-[#1A1A1A]">Notification Preferences</h2>
+    <div className="bg-white p-6 md:p-10 rounded-[3rem] shadow-xl shadow-gray-200/20 border border-[#f0dda0]/20">
+      <div className="flex items-center gap-4 mb-8">
+        <div className="w-12 h-12 bg-gradient-to-br from-[#f5aa00] to-[#e07a00] rounded-2xl flex items-center justify-center text-white shadow-lg shadow-[#f5aa00]/20">
+          <Bell size={24} strokeWidth={1.5} />
+        </div>
+        <div>
+          <h2 className="text-2xl font-fashion font-bold text-[#1A1A1A] tracking-tight">Notification Settings</h2>
+          <p className="text-[10px] text-[#f5aa00] font-bold uppercase tracking-[0.2em] mt-0.5">Manage Alerts</p>
+        </div>
       </div>
 
-      <div className="space-y-8">
-        <div className="grid grid-cols-1 md:grid-cols-2 gap-8">
+      <div className="space-y-6">
+        <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
           <ToggleCard 
-            icon={<Mail size={20} />} 
-            label="Email Notifications" 
-            sub="Order updates and weekly newsletter"
+            icon={<Mail size={18} />} 
+            label="Email Alerts" 
+            sub="Orders & Style Guide"
             active={prefs.email} 
             onToggle={() => setPrefs({...prefs, email: !prefs.email})} 
           />
           <ToggleCard 
-            icon={<Phone size={20} />} 
+            icon={<Phone size={18} />} 
             label="SMS Alerts" 
-            sub="Immediate shipping updates"
+            sub="Live Shipping Status"
             active={prefs.sms} 
             onToggle={() => setPrefs({...prefs, sms: !prefs.sms})} 
           />
           <ToggleCard 
-            icon={<MessageSquare size={20} />} 
-            label="WhatsApp Updates" 
-            sub="Personal styling and delivery alerts"
+            icon={<MessageSquare size={18} />} 
+            label="WhatsApp" 
+            sub="Concierge Assistance"
             active={prefs.whatsapp} 
             onToggle={() => setPrefs({...prefs, whatsapp: !prefs.whatsapp})} 
           />
           <ToggleCard 
-            icon={<Bell size={20} />} 
-            label="Order Status" 
-            sub="Tracking and milestone alerts"
+            icon={<Bell size={18} />} 
+            label="Milestones" 
+            sub="Order Track & Bag"
             active={prefs.orders} 
             onToggle={() => setPrefs({...prefs, orders: !prefs.orders})} 
           />
         </div>
 
-        <div className="pt-10 border-t border-gray-50 flex justify-end">
+        <div className="pt-8 border-t border-[#f0dda0]/10 flex justify-end">
           <button 
             onClick={handleSave} 
             disabled={saving}
-            className="btn btn-primary px-12 py-5 rounded-2xl flex items-center gap-3 transition-transform active:scale-95"
+            className="bg-gradient-to-r from-[#f5aa00] to-[#e07a00] hover:shadow-xl hover:shadow-[#f5aa00]/20 text-white px-10 py-4 rounded-xl flex items-center gap-3 active:scale-95 transition-all text-[11px] font-bold uppercase tracking-widest shadow-lg shadow-[#f5aa00]/10"
           >
-            {saving ? <Loader2 className="animate-spin" size={20} /> : <Save size={20} />}
-            <span className="uppercase tracking-widest text-sm font-bold">Save Preferences</span>
+            {saving ? <Loader2 className="animate-spin" size={18} /> : <Save size={18} />}
+            <span>Save Preferences</span>
           </button>
         </div>
       </div>
@@ -104,22 +109,22 @@ export default function NotificationSettings({ user }) {
 
 function ToggleCard({ icon, label, sub, active, onToggle }) {
   return (
-    <div className={`p-8 rounded-[2.5rem] border-2 transition-all flex items-center justify-between gap-6 cursor-pointer ${
-      active ? 'border-brand-orange/20 bg-brand-orange/[0.02]' : 'border-gray-50 bg-[#FAF9F6]/50'
+    <div className={`p-5 rounded-[2rem] border-2 transition-all flex items-center justify-between gap-4 cursor-pointer group ${
+      active ? 'border-[#f5aa00]/20 bg-[#fffbf2]/40 shadow-sm' : 'border-[#f0dda0]/10 bg-white'
     }`} onClick={onToggle}>
-      <div className="flex items-center gap-5">
-        <div className={`w-12 h-12 rounded-2xl flex items-center justify-center transition-colors ${
-          active ? 'bg-brand-orange text-white' : 'bg-white text-gray-300'
+      <div className="flex items-center gap-4">
+        <div className={`w-10 h-10 rounded-xl flex items-center justify-center transition-all ${
+          active ? 'bg-[#f5aa00] text-white shadow-lg shadow-[#f5aa00]/20' : 'bg-[#fffbf2] text-gray-300'
         }`}>
           {icon}
         </div>
         <div>
-          <h4 className={`text-sm font-bold transition-colors ${active ? 'text-[#1A1A1A]' : 'text-gray-400'}`}>{label}</h4>
-          <p className="text-[11px] text-gray-400 font-medium">{sub}</p>
+          <h4 className={`text-[13px] font-bold uppercase tracking-tight transition-colors ${active ? 'text-[#1A1A1A]' : 'text-gray-400'}`}>{label}</h4>
+          <p className="text-[10px] text-gray-400 font-bold uppercase tracking-wide opacity-60">{sub}</p>
         </div>
       </div>
-      <div className={`w-12 h-6 rounded-full relative transition-colors ${active ? 'bg-brand-orange' : 'bg-gray-200'}`}>
-        <div className={`absolute top-1 w-4 h-4 bg-white rounded-full transition-all ${active ? 'left-7' : 'left-1'}`} />
+      <div className={`w-10 h-5 rounded-full relative transition-all ${active ? 'bg-[#f5aa00]' : 'bg-gray-100'}`}>
+        <div className={`absolute top-0.5 w-4 h-4 bg-white rounded-full transition-all shadow-sm ${active ? 'left-[22px]' : 'left-0.5'}`} />
       </div>
     </div>
   );

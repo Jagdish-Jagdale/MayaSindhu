@@ -232,13 +232,15 @@ export default function ProductDetail() {
           
           {/* Section 1: Gallery */}
           <div className="flex flex-col-reverse lg:flex-row gap-4 lg:gap-6 lg:w-[48%] flex-shrink-0">
-            <div className="flex lg:flex-col gap-3 overflow-x-auto lg:overflow-y-auto no-scrollbar lg:w-16 flex-shrink-0 py-1">
+            <div className="flex lg:flex-col gap-3 overflow-x-auto lg:overflow-y-auto custom-scrollbar lg:w-24 lg:max-h-[500px] flex-shrink-0 py-1 scroll-smooth">
               {images.map((img, idx) => (
                 <button 
                   key={idx}
                   onClick={() => setActiveImage(idx)}
-                  className={`relative w-14 lg:w-full aspect-square rounded-xl overflow-hidden border-2 flex-shrink-0 transition-all ${
-                    activeImage === idx ? 'border-brand-orange shadow-md scale-105' : 'border-gray-100 opacity-60 hover:opacity-100'
+                  className={`relative w-20 lg:w-full aspect-[2/3] overflow-hidden transition-all duration-300 flex-shrink-0 ${
+                    activeImage === idx 
+                    ? 'ring-2 ring-brand-orange ring-offset-2 opacity-100 shadow-md' 
+                    : 'opacity-70 hover:opacity-100'
                   }`}
                 >
                   <img src={img} alt="" className="w-full h-full object-cover" />

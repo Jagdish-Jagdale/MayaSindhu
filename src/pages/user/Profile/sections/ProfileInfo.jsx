@@ -1,7 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import { db } from '../../../../firebase';
-import { doc, getDoc, updateDoc, setDoc, serverTimestamp } from 'firebase/firestore';
-import { User, Phone, Mail, Calendar, Save, Loader2 } from 'lucide-react';
+import { doc, getDoc, setDoc } from 'firebase/firestore';
+import { Loader2, Save, Mail, User, Phone, Calendar, Sparkles } from 'lucide-react';
 import toast from 'react-hot-toast';
 
 export default function ProfileInfo({ user }) {
@@ -9,14 +9,15 @@ export default function ProfileInfo({ user }) {
   const [saving, setSaving] = useState(false);
   const [formData, setFormData] = useState({
     fullName: '',
+    email: '',
     phone: '',
-    gender: '',
     dob: '',
-    email: user.email || ''
+    gender: ''
   });
 
   useEffect(() => {
     const fetchProfile = async () => {
+      if (!user) return;
       try {
         const docRef = doc(db, 'users', user.uid);
         const docSnap = await getDoc(docRef);
@@ -24,14 +25,14 @@ export default function ProfileInfo({ user }) {
           const data = docSnap.data();
           setFormData({
             fullName: data.fullName || user.displayName || '',
+            email: data.email || user.email || '',
             phone: data.phone || '',
-            gender: data.gender || '',
             dob: data.dob || '',
-            email: user.email || ''
+            gender: data.gender || ''
           });
         }
       } catch (error) {
-        console.error("Error fetching profile:", error);
+        console.error("Fetch error:", error);
       } finally {
         setLoading(false);
       }
@@ -43,12 +44,12 @@ export default function ProfileInfo({ user }) {
     e.preventDefault();
     setSaving(true);
     try {
-      const docRef = doc(db, 'users', user.uid);
-      await setDoc(docRef, {
+      await setDoc(doc(db, 'users', user.uid), {
         ...formData,
-        updatedAt: serverTimestamp()
+        updatedAt: new Date()
       }, { merge: true });
       toast.success('Profile updated successfully!');
+      setIsEditing(false);
     } catch (error) {
       console.error("Update error:", error);
       toast.error('Failed to update profile');
@@ -57,106 +58,113 @@ export default function ProfileInfo({ user }) {
     }
   };
 
+  const [isEditing, setIsEditing] = useState(false);
+
   if (loading) return <div className="flex justify-center p-20"><Loader2 className="animate-spin text-brand-orange" size={40} /></div>;
 
   return (
-    <div className="bg-white p-6 md:p-8 rounded-[2rem] shadow-xl shadow-gray-200/40 border border-white relative overflow-hidden">
-      <div className="absolute top-0 left-0 w-32 h-32 bg-brand-orange/5 rounded-full blur-3xl -z-10" />
-      
-      <div className="flex items-center gap-3 mb-6">
-        <div className="p-2.5 bg-brand-orange/10 rounded-lg">
-          <User className="text-brand-orange" size={20} />
+    <div className="space-y-8">
+      {/* Personal Information Card */}
+      <div className="bg-white rounded-xl shadow-sm border border-gray-100 overflow-hidden">
+        <div className="px-8 py-6 border-b border-gray-50 flex items-center justify-between">
+          <h2 className="text-xl font-bold text-[#1A1A1A]">Personal Information</h2>
+          <button 
+            onClick={() => setIsEditing(!isEditing)}
+            className="flex items-center gap-2 text-brand-orange hover:text-brand-orange-dark font-bold text-sm transition-colors"
+          >
+            <Sparkles size={16} />
+            <span>{isEditing ? 'Cancel' : 'Edit Details'}</span>
+          </button>
         </div>
-        <div>
-          <h2 className="text-xl font-fashion font-bold text-[#1A1A1A] uppercase tracking-tight">Personal Information</h2>
-          <p className="text-[8px] text-gray-400 font-black uppercase tracking-[0.2em]">Account details</p>
+
+        <div className="p-8">
+          <form onSubmit={handleSubmit} className="space-y-8">
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-x-12 gap-y-10">
+              <InfoField 
+                label="Full Name" 
+                value={formData.fullName} 
+                isEditing={isEditing}
+                onChange={(v) => setFormData({...formData, fullName: v})}
+              />
+              <InfoField 
+                label="Email Address" 
+                value={formData.email} 
+                isEditing={false} 
+              />
+              <InfoField 
+                label="Phone Number" 
+                value={formData.phone} 
+                isEditing={isEditing}
+                onChange={(v) => setFormData({...formData, phone: v})}
+                type="tel"
+              />
+              <InfoField 
+                label="Date of Birth" 
+                value={formData.dob} 
+                isEditing={isEditing}
+                onChange={(v) => setFormData({...formData, dob: v})}
+                type="date"
+              />
+            </div>
+
+            {isEditing && (
+              <div className="pt-6 border-t border-gray-50 flex justify-end">
+                <button 
+                  type="submit" 
+                  disabled={saving}
+                  className="bg-brand-orange text-white px-8 py-3 rounded-xl font-bold text-xs uppercase tracking-widest hover:bg-brand-orange-dark transition-all shadow-lg shadow-brand-orange/20 flex items-center gap-2"
+                >
+                  {saving ? <Loader2 size={14} className="animate-spin" /> : <Save size={14} />}
+                  Save Changes
+                </button>
+              </div>
+            )}
+          </form>
         </div>
       </div>
 
-      <form onSubmit={handleSubmit} className="space-y-8">
-        <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-          <FormInput 
-            label="Full Name" 
-            icon={<User size={16} />} 
-            value={formData.fullName}
-            onChange={(v) => setFormData({...formData, fullName: v})}
-          />
-          <FormInput 
-            label="Email Address" 
-            icon={<Mail size={16} />} 
-            value={formData.email}
-            disabled
-          />
-          <FormInput 
-            label="Phone Number" 
-            icon={<Phone size={16} />} 
-            value={formData.phone}
-            onChange={(v) => setFormData({...formData, phone: v})}
-            type="tel"
-          />
-          <div className="space-y-2">
-            <label className="text-[9px] uppercase font-bold tracking-[0.2em] text-gray-400 block px-2">Gender</label>
-            <div className="flex gap-3 p-1.5 bg-[#FAF9F6] rounded-xl">
-              {['Male', 'Female', 'Other'].map(g => (
-                <button
-                  key={g}
-                  type="button"
-                  onClick={() => setFormData({...formData, gender: g})}
-                  className={`flex-1 py-2 rounded-lg text-[10px] font-bold transition-all ${
-                    formData.gender === g 
-                    ? 'bg-brand-orange text-white shadow-lg shadow-brand-orange/20' 
-                    : 'text-gray-400 hover:text-text-main'
-                  }`}
-                >
-                  {g}
-                </button>
-              ))}
+      {/* Bottom Grid: Account Security & Newsletter */}
+      <div className="grid grid-cols-1 md:grid-cols-2 gap-8">
+        <div className="bg-white p-8 rounded-xl shadow-sm border border-gray-100">
+          <div className="flex items-center gap-3 mb-6">
+            <div className="w-10 h-10 bg-gray-50 rounded-xl flex items-center justify-center text-gray-400">
+              <Sparkles size={20} />
             </div>
+            <h3 className="text-lg font-bold text-[#1A1A1A]">Account Security</h3>
           </div>
-          <FormInput 
-            label="Date of Birth" 
-            icon={<Calendar size={16} />} 
-            value={formData.dob}
-            onChange={(v) => setFormData({...formData, dob: v})}
-            type="date"
-          />
+          <p className="text-xs text-gray-400 mb-6">Manage your password and security settings to keep your account safe.</p>
+          <button className="text-brand-orange font-bold text-sm hover:underline">Change Password</button>
         </div>
 
-        <div className="pt-6 border-t border-gray-50 flex justify-end">
-          <button 
-            type="submit" 
-            disabled={saving}
-            className="btn btn-primary px-8 py-3.5 rounded-xl flex items-center gap-2 transition-transform active:scale-95 disabled:opacity-50"
-          >
-            {saving ? <Loader2 className="animate-spin" size={18} /> : <Save size={18} />}
-            <span className="uppercase tracking-widest text-xs font-bold">Save Changes</span>
-          </button>
+        <div className="bg-white p-8 rounded-xl shadow-sm border border-gray-100">
+          <div className="flex items-center gap-3 mb-6">
+            <div className="w-10 h-10 bg-gray-50 rounded-xl flex items-center justify-center text-gray-400">
+              <Mail size={20} />
+            </div>
+            <h3 className="text-lg font-bold text-[#1A1A1A]">Newsletter</h3>
+          </div>
+          <p className="text-xs text-gray-400 mb-6">Stay updated with our latest collections and exclusive offers.</p>
+          <button className="text-brand-orange font-bold text-sm hover:underline">Manage Subscription</button>
         </div>
-      </form>
+      </div>
     </div>
   );
 }
 
-function FormInput({ label, icon, value, onChange, type = 'text', disabled = false }) {
+function InfoField({ label, value, isEditing, onChange, type = 'text' }) {
   return (
     <div className="space-y-2">
-      <label className="text-[9px] uppercase font-bold tracking-[0.2em] text-gray-400 block px-2">{label}</label>
-      <div className="relative group">
-        <div className="absolute left-5 top-1/2 -translate-y-1/2 text-gray-300 group-focus-within:text-brand-orange transition-colors">
-          {icon}
-        </div>
+      <label className="text-[10px] uppercase font-bold tracking-widest text-gray-400 block px-1">{label}</label>
+      {isEditing ? (
         <input 
-          type={type} 
+          type={type}
           value={value}
-          disabled={disabled}
           onChange={(e) => onChange?.(e.target.value)}
-          className={`
-            w-full bg-[#FAF9F6] pl-12 pr-5 py-3.5 rounded-xl border border-transparent 
-            focus:outline-none focus:border-brand-orange/20 focus:bg-white transition-all font-medium text-[13px]
-            ${disabled ? 'opacity-50 cursor-not-allowed' : ''}
-          `}
+          className="w-full bg-gray-50/50 border border-gray-100 rounded-lg px-4 py-3 text-sm font-bold text-[#1A1A1A] focus:outline-none focus:border-brand-orange focus:bg-white transition-all"
         />
-      </div>
+      ) : (
+        <p className="text-base font-bold text-[#1A1A1A] px-1">{value || 'Not provided'}</p>
+      )}
     </div>
   );
 }

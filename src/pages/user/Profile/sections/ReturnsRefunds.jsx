@@ -24,42 +24,47 @@ export default function ReturnsRefunds({ user }) {
     return () => unsubscribe();
   }, [user]);
 
-  if (loading) return <div className="flex justify-center p-20"><Loader2 className="animate-spin text-brand-orange" size={40} /></div>;
+  if (loading) return <div className="flex justify-center p-20"><Loader2 className="animate-spin text-[#f5aa00]" size={40} /></div>;
 
   return (
-    <div className="bg-white p-10 md:p-14 rounded-[4rem] shadow-sm border border-gray-50">
-      <div className="flex items-center gap-4 mb-12">
-        <RotateCcw className="text-brand-orange" size={28} />
-        <h2 className="text-3xl font-fashion font-bold text-[#1A1A1A]">Returns & Refunds</h2>
+    <div className="bg-white p-6 md:p-10 rounded-[3rem] shadow-xl shadow-gray-200/20 border border-[#f0dda0]/20">
+      <div className="flex items-center gap-4 mb-8">
+        <div className="w-12 h-12 bg-gradient-to-br from-[#f5aa00] to-[#e07a00] rounded-2xl flex items-center justify-center text-white shadow-lg shadow-[#f5aa00]/20">
+          <RotateCcw size={24} strokeWidth={1.5} />
+        </div>
+        <div>
+          <h2 className="text-2xl font-fashion font-bold text-[#1A1A1A] tracking-tight">Returns & Refunds</h2>
+          <p className="text-[10px] text-[#f5aa00] font-bold uppercase tracking-[0.2em] mt-0.5">Track Requests</p>
+        </div>
       </div>
 
       {returns.length === 0 ? (
-        <div className="text-center py-20 bg-[#FAF9F6]/50 rounded-[3rem]">
-          <RotateCcw size={48} className="text-gray-200 mx-auto mb-6" />
-          <p className="text-gray-500 font-medium">No return records found.</p>
+        <div className="text-center py-16 bg-[#fffbf2]/20 rounded-[2.5rem] border border-dashed border-[#f0dda0]/30">
+          <RotateCcw size={40} className="text-[#f5aa00]/20 mx-auto mb-4" />
+          <p className="text-gray-400 font-bold text-[11px] uppercase tracking-widest">No return records found</p>
         </div>
       ) : (
-        <div className="space-y-6">
+        <div className="space-y-4">
           {returns.map((item) => (
-            <div key={item.id} className="p-8 md:p-10 border border-gray-50 rounded-[3rem] bg-[#FAF9F6]/30 flex flex-col md:flex-row items-center justify-between gap-8 transition-all hover:border-brand-orange/10">
-              <div className="flex items-center gap-6">
-                <div className="w-16 h-16 bg-white rounded-2xl flex items-center justify-center text-brand-orange shadow-sm">
-                  <Package size={24} />
+            <div key={item.id} className="p-5 md:p-6 border border-[#f0dda0]/10 rounded-[2rem] bg-[#fffbf2]/10 flex flex-col md:flex-row items-center justify-between gap-6 transition-all hover:border-[#f5aa00]/20 group">
+              <div className="flex items-center gap-5">
+                <div className="w-12 h-12 bg-white rounded-xl flex items-center justify-center text-[#f5aa00] shadow-sm border border-[#f0dda0]/10 group-hover:scale-105 transition-transform">
+                  <Package size={22} />
                 </div>
                 <div>
-                  <h4 className="text-lg font-fashion font-bold text-[#1A1A1A]">{item.orderId}</h4>
-                  <p className="text-xs text-gray-400 font-medium tracking-wide">{item.items?.length} Items • Return Requested</p>
+                  <h4 className="text-[15px] font-fashion font-bold text-[#1A1A1A] uppercase tracking-tight">{item.orderId}</h4>
+                  <p className="text-[11px] text-gray-400 font-bold uppercase tracking-wider">{item.items?.length} Items • Return Requested</p>
                 </div>
               </div>
 
-              <div className="flex flex-col items-end gap-2">
-                <div className={`px-6 py-2 rounded-xl text-[10px] font-black uppercase tracking-widest flex items-center gap-2 ${
-                  item.status === 'Refunded' ? 'bg-green-50 text-green-600' : 'bg-amber-50 text-amber-500'
+              <div className="flex flex-col md:items-end gap-2">
+                <div className={`px-4 py-1.5 rounded-lg text-[9px] font-bold uppercase tracking-widest flex items-center gap-1.5 shadow-sm border ${
+                  item.status === 'Refunded' ? 'bg-green-50 text-green-600 border-green-100' : 'bg-[#fffbf2] text-[#f5aa00] border-[#f5aa00]/20'
                 }`}>
                   {item.status === 'Refunded' ? <CheckCircle2 size={12} /> : <Clock size={12} />}
                   {item.status}
                 </div>
-                <p className="text-sm font-bold text-[#1A1A1A]">₹{item.total?.toLocaleString()}</p>
+                <p className="text-lg font-fashion font-bold text-[#1A1A1A] leading-none">₹{item.total?.toLocaleString()}</p>
               </div>
             </div>
           ))}

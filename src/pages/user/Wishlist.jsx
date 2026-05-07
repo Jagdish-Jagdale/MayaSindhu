@@ -93,15 +93,8 @@ export default function Wishlist() {
 
   return (
     <div className="bg-white min-h-screen pt-16 pb-24">
-      <div className="max-w-[1400px] mx-auto px-6">
-        <button onClick={goBack} className="flex items-center gap-2 text-sm font-medium text-gray-500 hover:text-black transition-all group mb-8 w-fit">
-          <ArrowLeft size={18} className="transition-transform group-hover:-translate-x-1" />
-          Back
-        </button>
-        <div className="mb-16">
-          <h1 className="text-4xl md:text-5xl font-fashion font-bold text-[#1A1A1A] mb-4">My Wishlist</h1>
-          <p className="text-gray-500">{items.length} treasures saved</p>
-        </div>
+      <div className="max-w-[1200px] mx-auto px-6">
+        <h1 className="text-4xl md:text-5xl font-fashion font-bold text-[#1A1A1A] mb-12">Your Wishlist</h1>
 
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-x-10 gap-y-16">
           <AnimatePresence>
@@ -123,12 +116,6 @@ export default function Wishlist() {
                 </button>
                 <div className="flex flex-col h-full">
                   <ProductCard {...item} showWishlist={false} />
-                  <button 
-                    onClick={() => removeItem(item.docId)}
-                    className="mt-4 text-[11px] font-bold uppercase tracking-widest text-gray-400 hover:text-red-500 transition-colors flex items-center justify-center gap-2"
-                  >
-                    <Trash2 size={14} /> Remove Treasure
-                  </button>
                 </div>
               </motion.div>
             ))}
