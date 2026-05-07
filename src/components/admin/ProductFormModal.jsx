@@ -9,16 +9,17 @@ import { uploadToCloudinary, deleteMultipleFromCloudinary } from '../../utils/cl
 export default function ProductFormModal({ isOpen, onClose, product = null, initialCategoryId = null }) {
   const { categories: heirarchy } = useCategories();
   const [loading, setLoading] = useState(false);
-  
+
   const [formData, setFormData] = useState({
     name: '',
     categoryId: '',
     productType: 'Repeat', // Unique or Repeat
-    price: '',
-    costPrice: '',
+    discountedPrice: '',
+    actualPrice: '',
     stock: '',
     isAvailable: true,
     description: '',
+    tagline: '',
     images: [] // Will store Cloudinary URLs
   });
 
@@ -46,11 +47,12 @@ export default function ProductFormModal({ isOpen, onClose, product = null, init
         name: product.name || '',
         categoryId: product.categoryId || '',
         productType: product.productType || 'Repeat',
-        price: product.price || '',
-        costPrice: product.costPrice || '',
+        discountedPrice: product.discountedPrice || product.price || '',
+        actualPrice: product.actualPrice || product.costPrice || '',
         stock: product.stock || '',
         isAvailable: product.isAvailable !== undefined ? product.isAvailable : true,
         description: product.description || '',
+        tagline: product.tagline || '',
         images: product.images || []
       });
 
@@ -68,14 +70,15 @@ export default function ProductFormModal({ isOpen, onClose, product = null, init
         name: '',
         categoryId: initialCategoryId || '',
         productType: 'Repeat',
-        price: '',
-        costPrice: '',
+        discountedPrice: '',
+        actualPrice: '',
         stock: '',
         isAvailable: true,
         description: '',
+        tagline: '',
         images: []
       });
-      
+
       if (initialCategoryId) {
         const path = findPathToCategory(initialCategoryId, heirarchy);
         setSelectedPathIds(path || []);
@@ -91,9 +94,9 @@ export default function ProductFormModal({ isOpen, onClose, product = null, init
 
   const handleInputChange = (e) => {
     const { name, value, type, checked } = e.target;
-    
+
     // Ensure numeric fields are not negative
-    if ((name === 'stock' || name === 'price' || name === 'costPrice') && value < 0) {
+    if ((name === 'stock' || name === 'discountedPrice' || name === 'actualPrice') && value < 0) {
       return;
     }
 
@@ -102,22 +105,22 @@ export default function ProductFormModal({ isOpen, onClose, product = null, init
         ...prev,
         [name]: type === 'checkbox' ? checked : value
       };
-      
+
       // Force stock to 1 if productType is switched to Unique
       if (name === 'productType' && value === 'Unique') {
         newData.stock = '1';
       }
-      
+
       return newData;
     });
   };
 
   const handleKeyPress = (e) => {
     const { name } = e.target;
-    
+
     // List of allowed control keys
     const controlKeys = ['Backspace', 'Tab', 'ArrowLeft', 'ArrowRight', 'Delete', 'Enter'];
-    
+
     if (controlKeys.includes(e.key)) return;
 
     if (name === 'stock') {
@@ -125,7 +128,7 @@ export default function ProductFormModal({ isOpen, onClose, product = null, init
       if (!/[0-9]/.test(e.key)) {
         e.preventDefault();
       }
-    } else if (name === 'price' || name === 'costPrice') {
+    } else if (name === 'discountedPrice' || name === 'actualPrice') {
       // Digits and one decimal point for pricing
       if (!/[0-9.]/.test(e.key)) {
         e.preventDefault();
@@ -203,7 +206,7 @@ export default function ProductFormModal({ isOpen, onClose, product = null, init
       const newFileIndex = previews.slice(0, index).filter(p => !formData.images.includes(p)).length;
       setImageFiles(prev => prev.filter((_, i) => i !== newFileIndex));
     }
-    
+
     setPreviews(prev => prev.filter((_, i) => i !== index));
     if (previewToRemove.startsWith('blob:')) {
       URL.revokeObjectURL(previewToRemove);
@@ -211,10 +214,36 @@ export default function ProductFormModal({ isOpen, onClose, product = null, init
   };
 
 
+  const createSlug = (name) => {
+    return name
+      .toLowerCase()
+      .trim()
+      .replace(/[^\w\s-]/g, '') // Remove special characters
+      .replace(/[\s_-]+/g, '-') // Replace spaces and underscores with a single hyphen
+      .replace(/^-+|-+$/g, ''); // Remove leading and trailing hyphens
+  };
+
+  const generateProductId = () => {
+    const chars = 'ABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789';
+    let result = '';
+    for (let i = 0; i < 12; i++) {
+      result += chars.charAt(Math.floor(Math.random() * chars.length));
+    }
+    return result;
+  };
+
   const handleSubmit = async (e) => {
     e.preventDefault();
-    if (!formData.name || !formData.categoryId || !formData.price) {
-      toast.error('Please fill required fields (Name, Category, Price)');
+    if (!formData.name || !formData.categoryId || !formData.discountedPrice) {
+      toast.error('Please fill required fields (Name, Category, Discounted Price)');
+      return;
+    }
+
+    const dPrice = Number(formData.discountedPrice);
+    const aPrice = Number(formData.actualPrice || 0);
+
+    if (aPrice > 0 && dPrice > aPrice) {
+      toast.error('Discounted Price cannot be higher than Original Price');
       return;
     }
 
@@ -223,15 +252,16 @@ export default function ProductFormModal({ isOpen, onClose, product = null, init
       // Upload new image files to Cloudinary
       const uploadPromises = imageFiles.map(file => uploadToCloudinary(file, 'Products'));
       const uploadedImageUrls = await Promise.all(uploadPromises);
-      
+
       const finalImages = [...formData.images, ...uploadedImageUrls];
 
       const productData = {
         ...formData,
+        slug: createSlug(formData.name),
         images: finalImages,
         stock: formData.productType === 'Unique' ? 1 : Number(formData.stock),
-        price: Number(formData.price),
-        costPrice: Number(formData.costPrice || 0),
+        discountedPrice: Number(formData.discountedPrice),
+        actualPrice: Number(formData.actualPrice || 0),
         updatedAt: serverTimestamp()
       };
 
@@ -244,11 +274,13 @@ export default function ProductFormModal({ isOpen, onClose, product = null, init
         await updateDoc(doc(db, 'products', product.id), productData);
         toast.success("Product updated successfully");
       } else {
-        await addDoc(collection(db, 'products'), {
+        const customId = generateProductId();
+        const docRef = await addDoc(collection(db, 'products'), {
           ...productData,
+          productId: customId,
           createdAt: serverTimestamp()
         });
-        toast.success("Product added to collection");
+        toast.success(`Product added with ID: ${customId}`);
       }
       onClose();
     } catch (error) {
@@ -269,19 +301,29 @@ export default function ProductFormModal({ isOpen, onClose, product = null, init
 
   return (
     <div className="fixed inset-0 z-[100] flex items-center justify-center p-4 bg-black/60 backdrop-blur-sm transition-all animate-in fade-in duration-300">
-      <div 
+      <div
         className="bg-white w-full max-w-4xl max-h-[90vh] rounded-[24px] shadow-2xl flex flex-col overflow-hidden animate-in zoom-in-95 duration-300"
         onClick={(e) => e.stopPropagation()}
       >
         {/* Header */}
         <div className="px-8 py-5 border-b border-gray-100 flex items-center justify-between bg-white sticky top-0 z-10">
           <div>
-            <h2 className="text-[20px] font-bold text-gray-900 tracking-tight">
-              {product ? 'Edit Product' : 'Add New Product'}
+            <h2 className="text-[20px] font-bold text-gray-900 tracking-tight flex items-center">
+              {product ? (
+                <>
+                  <span>Edit Product</span>
+                  <span className="mx-3 text-gray-200 font-light">|</span>
+                  <span className="text-[11px] font-bold text-[#1BAFAF] bg-[#1BAFAF]/10 px-3 py-1 rounded-full border border-[#1BAFAF]/10 tracking-wider">
+                    {product.productId || '---'}
+                  </span>
+                </>
+              ) : (
+                'Add Product'
+              )}
             </h2>
             <p className="text-[12px] text-gray-400 font-medium">Capture the essence of your creation</p>
           </div>
-          <button 
+          <button
             onClick={onClose}
             className="p-2 hover:bg-gray-100 rounded-xl transition-all text-gray-400 hover:text-gray-900 active:scale-95"
           >
@@ -292,14 +334,15 @@ export default function ProductFormModal({ isOpen, onClose, product = null, init
         {/* Form Body */}
         <form onSubmit={handleSubmit} className="flex-1 overflow-y-auto custom-scrollbar bg-[#FAFAFA]">
           <div className="p-8 space-y-8">
-            
+
             <div className="grid grid-cols-1 lg:grid-cols-2 gap-8">
-              
+
               {/* Left Column: Basic Details */}
               <div className="space-y-6">
                 <div className="bg-white p-6 rounded-2xl border border-gray-100 shadow-sm space-y-5">
                   <h3 className="text-[14px] font-bold text-[#1BAFAF] uppercase tracking-wider">Basic Information</h3>
-                  
+                  <hr className="border-gray-200 -mt-2 mb-3" />
+
                   <div className="space-y-1.5">
                     <label className="text-[13px] font-bold text-gray-700 ml-1">Product Name *</label>
                     <input
@@ -313,11 +356,23 @@ export default function ProductFormModal({ isOpen, onClose, product = null, init
                     />
                   </div>
 
-                  <div className="grid grid-cols-2 gap-4">
-                    <div className="space-y-4">
-                      {/* Cascading Selects */}
-                      {[0, ...selectedPathIds].map((selectedId, level) => {
-                        // Get options for this level
+                  <div className="space-y-1.5">
+                    <label className="text-[13px] font-bold text-gray-700 ml-1">Tagline</label>
+                    <input
+                      type="text"
+                      name="tagline"
+                      value={formData.tagline}
+                      onChange={handleInputChange}
+                      placeholder="Short catchy phrase"
+                      className="w-full bg-gray-50 border-none px-4 py-3 rounded-xl text-[14px] outline-none focus:ring-2 focus:ring-[#1BAFAF]/20 focus:bg-white transition-all font-medium"
+                    />
+                  </div>
+
+                  <div className="space-y-4">
+                    {(() => {
+                      const levels = [0, ...selectedPathIds];
+                      const renderSelect = (level) => {
+                        const selectedId = selectedPathIds[level];
                         let options = [];
                         if (level === 0) {
                           options = heirarchy;
@@ -333,45 +388,64 @@ export default function ProductFormModal({ isOpen, onClose, product = null, init
                             }
                             return null;
                           };
-                          options = findChildren(heirarchy, parentId) || [];
+                          options = parentId ? (findChildren(heirarchy, parentId) || []) : [];
                         }
 
-                        // Don't render a new level if previous level has no children
-                        if (level > 0 && options.length === 0) return null;
+                        // Always show level 0 and 1. Hide level 2+ if no options.
+                        if (level > 1 && options.length === 0) return null;
+
+                        const isDisabled = level > 0 && !selectedPathIds[level - 1];
 
                         return (
-                          <div key={level} className="space-y-1.5 animate-in fade-in slide-in-from-top-2 duration-300">
+                          <div 
+                            key={level} 
+                            className="space-y-1.5 animate-in fade-in slide-in-from-top-2 duration-300 relative"
+                            onClick={() => {
+                              if (isDisabled) {
+                                toast.error('Please select Main Category first');
+                              }
+                            }}
+                          >
                             <label className="text-[13px] font-bold text-gray-700 ml-1">
-                              {level === 0 ? 'Main Category *' : `Sub Category ${level} *`}
+                              {level === 0 ? 'Main Category *' : `Sub Category ${level} ${level === 1 ? '*' : ''}`}
                             </label>
-                            <select
-                              required
-                              value={selectedPathIds[level] || ''}
-                              onChange={(e) => handleLevelChange(level, e.target.value)}
-                              className="w-full bg-gray-50 border-none px-4 py-3 rounded-xl text-[14px] outline-none focus:ring-2 focus:ring-[#1BAFAF]/20 focus:bg-white transition-all font-bold text-gray-700 appearance-none"
-                            >
-                              <option value="">Select {level === 0 ? 'Category' : 'Sub Category'}</option>
-                              {options.map(cat => (
-                                <option key={cat.id} value={cat.id}>{cat.name}</option>
-                              ))}
-                            </select>
+                            <div className={`relative ${isDisabled ? 'cursor-pointer' : ''}`}>
+                              <select
+                                required={!isDisabled && (level === 0 || level === 1)}
+                                value={selectedId || ''}
+                                onChange={(e) => handleLevelChange(level, e.target.value)}
+                                className={`w-full bg-gray-50 border-none px-4 py-3 rounded-xl text-[14px] outline-none focus:ring-2 focus:ring-[#1BAFAF]/20 focus:bg-white transition-all font-bold text-gray-700 appearance-none ${
+                                  isDisabled ? 'pointer-events-none' : ''
+                                }`}
+                              >
+                                <option value="">Select {level === 0 ? 'Category' : `Sub Category ${level}`}</option>
+                                {options.map(cat => (
+                                  <option key={cat.id} value={cat.id}>{cat.name}</option>
+                                ))}
+                              </select>
+                            </div>
                           </div>
                         );
-                      })}
-                    </div>
+                      };
 
-                    <div className="space-y-1.5">
-                      <label className="text-[13px] font-bold text-gray-700 ml-1">Product Type</label>
-                      <select
-                        name="productType"
-                        value={formData.productType}
-                        onChange={handleInputChange}
-                        className="w-full bg-gray-50 border-none px-4 py-3 rounded-xl text-[14px] outline-none focus:ring-2 focus:ring-[#1BAFAF]/20 focus:bg-white transition-all font-medium appearance-none"
-                      >
-                        <option value="Repeat">Repeat</option>
-                        <option value="Unique">Unique</option>
-                      </select>
-                    </div>
+                      const mainCat = renderSelect(0);
+                      const sub1 = renderSelect(1);
+                      const remaining = levels.slice(2).map((_, i) => renderSelect(i + 2)).filter(Boolean);
+
+                      return (
+                        <div className="space-y-4">
+                          <div className="grid grid-cols-2 gap-4">
+                            {mainCat}
+                            {sub1}
+                          </div>
+                          {remaining.length > 0 && (
+                            <div className="grid grid-cols-2 gap-4">
+                              {remaining}
+                            </div>
+                          )}
+                        </div>
+                      );
+                    })()}
                   </div>
 
                   <div className="space-y-1.5">
@@ -387,62 +461,80 @@ export default function ProductFormModal({ isOpen, onClose, product = null, init
                   </div>
                 </div>
 
-                {formData.productType !== 'Unique' && (
-                  <div className="bg-white p-6 rounded-2xl border border-gray-100 shadow-sm space-y-5 animate-in fade-in slide-in-from-top-4 duration-300">
+                <div className="bg-white p-6 rounded-2xl border border-gray-100 shadow-sm space-y-5 animate-in fade-in slide-in-from-top-4 duration-300">
+                  <div className="flex items-center justify-between">
                     <h3 className="text-[14px] font-bold text-[#1BAFAF] uppercase tracking-wider">Inventory & Status</h3>
-                    
-                    <div className="grid grid-cols-2 gap-4">
-                      <div className="space-y-1.5">
-                        <label className="text-[13px] font-bold text-gray-700 ml-1">Stock Quantity</label>
+                    <label className="flex items-center gap-3 cursor-pointer group">
+                      <div className="relative">
                         <input
-                          required={formData.productType !== 'Unique'}
-                          type="number"
-                          min="0"
-                          name="stock"
-                          value={formData.stock}
+                          type="checkbox"
+                          name="isAvailable"
+                          checked={formData.isAvailable}
                           onChange={handleInputChange}
-                          onKeyDown={handleKeyPress}
-                          placeholder="0"
-                          className="w-full bg-gray-50 border-none px-4 py-3 rounded-xl text-[14px] outline-none focus:ring-2 focus:ring-[#1BAFAF]/20 focus:bg-white transition-all font-medium"
+                          className="sr-only"
                         />
+                        <div className={`w-11 h-6 rounded-full transition-colors ${formData.isAvailable ? 'bg-[#1BAFAF]' : 'bg-gray-200'}`} />
+                        <div className={`absolute top-1 left-1 bg-white w-4 h-4 rounded-full transition-transform duration-200 ${formData.isAvailable ? 'translate-x-5' : ''}`} />
                       </div>
-                      <div className="flex items-center justify-center pt-6">
-                        <label className="flex items-center gap-3 cursor-pointer group">
-                          <div className="relative">
-                            <input
-                              type="checkbox"
-                              name="isAvailable"
-                              checked={formData.isAvailable}
-                              onChange={handleInputChange}
-                              className="sr-only"
-                            />
-                            <div className={`w-12 h-6 rounded-full transition-colors duration-200 ${formData.isAvailable ? 'bg-[#1BAFAF]' : 'bg-gray-200'}`}></div>
-                            <div className={`absolute left-1 top-1 bg-white w-4 h-4 rounded-full transition-transform duration-200 ${formData.isAvailable ? 'translate-x-6' : ''}`}></div>
-                          </div>
-                          <span className={`text-[13px] font-bold transition-colors ${formData.isAvailable ? 'text-[#1BAFAF]' : 'text-gray-400'}`}>
-                            {formData.isAvailable ? 'Available' : 'Hidden'}
-                          </span>
-                        </label>
-                      </div>
+                      <span className={`text-[13px] font-bold transition-colors ${formData.isAvailable ? 'text-[#1BAFAF]' : 'text-gray-400'}`}>
+                        {formData.isAvailable ? 'Available' : 'Hidden'}
+                      </span>
+                    </label>
+                  </div>
+                  <hr className="border-gray-200 -mt-2 mb-3" />
+
+                  <div className="grid grid-cols-2 gap-4">
+                    <div className="space-y-1.5">
+                      <label className="text-[13px] font-bold text-gray-700 ml-1">Product Type</label>
+                      <select
+                        name="productType"
+                        value={formData.productType}
+                        onChange={handleInputChange}
+                        className="w-full bg-gray-50 border-none px-4 py-3 rounded-xl text-[14px] outline-none focus:ring-2 focus:ring-[#1BAFAF]/20 focus:bg-white transition-all font-bold text-gray-700 appearance-none"
+                      >
+                        <option value="Repeat">Repeat</option>
+                        <option value="Unique">Unique</option>
+                      </select>
+                    </div>
+
+                    <div className="space-y-1.5">
+                      <label className="text-[13px] font-bold text-gray-700 ml-1">Stock Quantity</label>
+                      <input
+                        required={formData.productType !== 'Unique'}
+                        type="number"
+                        min="0"
+                        name="stock"
+                        value={formData.stock}
+                        onChange={handleInputChange}
+                        onKeyDown={handleKeyPress}
+                        disabled={formData.productType === 'Unique'}
+                        placeholder={formData.productType === 'Unique' ? '1' : '0'}
+                        className={`w-full border-none px-4 py-3 rounded-xl text-[14px] outline-none transition-all font-bold ${
+                          formData.productType === 'Unique' 
+                            ? 'bg-gray-100 text-gray-400 cursor-not-allowed' 
+                            : 'bg-gray-50 text-gray-700 focus:ring-2 focus:ring-[#1BAFAF]/20 focus:bg-white'
+                        }`}
+                      />
                     </div>
                   </div>
-                )}
+                </div>
               </div>
 
               {/* Right Column: Pricing & Images */}
               <div className="space-y-6">
                 <div className="bg-white p-6 rounded-2xl border border-gray-100 shadow-sm space-y-5">
                   <h3 className="text-[14px] font-bold text-[#1BAFAF] uppercase tracking-wider">Pricing</h3>
-                  
+                  <hr className="border-gray-200 -mt-2 mb-3" />
+
                   <div className="grid grid-cols-2 gap-4">
                     <div className="space-y-1.5">
-                      <label className="text-[13px] font-bold text-gray-700 ml-1">Price (₹) *</label>
+                      <label className="text-[13px] font-bold text-gray-700 ml-1">Discounted Price (₹) *</label>
                       <input
                         required
                         type="number"
                         min="0"
-                        name="price"
-                        value={formData.price}
+                        name="discountedPrice"
+                        value={formData.discountedPrice}
                         onChange={handleInputChange}
                         onKeyDown={handleKeyPress}
                         placeholder="0.00"
@@ -450,12 +542,12 @@ export default function ProductFormModal({ isOpen, onClose, product = null, init
                       />
                     </div>
                     <div className="space-y-1.5">
-                      <label className="text-[13px] font-bold text-gray-700 ml-1">Cost Price (₹)</label>
+                      <label className="text-[13px] font-bold text-gray-700 ml-1">Original Price (₹)</label>
                       <input
                         type="number"
                         min="0"
-                        name="costPrice"
-                        value={formData.costPrice}
+                        name="actualPrice"
+                        value={formData.actualPrice}
                         onChange={handleInputChange}
                         onKeyDown={handleKeyPress}
                         placeholder="0.00"
@@ -470,9 +562,10 @@ export default function ProductFormModal({ isOpen, onClose, product = null, init
                     <h3 className="text-[14px] font-bold text-[#1BAFAF] uppercase tracking-wider">Product Media</h3>
                     <span className="text-[11px] font-bold text-gray-300 uppercase">{previews.length} Files</span>
                   </div>
-                  
+                  <hr className="border-gray-200 -mt-2 mb-3" />
+
                   {/* Dropzone */}
-                  <div 
+                  <div
                     onClick={() => fileInputRef.current.click()}
                     className="border-2 border-dashed border-gray-100 rounded-2xl p-8 flex flex-col items-center justify-center gap-3 cursor-pointer hover:border-[#1BAFAF]/30 hover:bg-[#1BAFAF]/5 transition-all group"
                   >
@@ -508,7 +601,7 @@ export default function ProductFormModal({ isOpen, onClose, product = null, init
                           </button>
                         </div>
                       ))}
-                      <button 
+                      <button
                         type="button"
                         onClick={() => fileInputRef.current.click()}
                         className="aspect-square rounded-xl border-2 border-dashed border-gray-100 flex items-center justify-center text-gray-300 hover:text-[#1BAFAF] hover:border-[#1BAFAF]/30 transition-all bg-gray-50/50"
@@ -544,7 +637,7 @@ export default function ProductFormModal({ isOpen, onClose, product = null, init
               </>
             ) : (
               <>
-                {product ? 'Save Changes' : 'Publish Product'}
+                {product ? 'Edit Product' : 'Add Product'}
               </>
             )}
           </button>

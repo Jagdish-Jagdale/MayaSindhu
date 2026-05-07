@@ -1,4 +1,5 @@
 import React, { useState, useEffect, useRef } from 'react';
+import { motion, AnimatePresence } from 'framer-motion';
 import { 
   Plus, 
   Search, 
@@ -12,7 +13,15 @@ import {
   Package,
   AlertCircle,
   Image,
-  Star
+  Star,
+  Share2,
+  Minus,
+  Calendar,
+  CreditCard,
+  ShoppingBag,
+  Layers,
+  Info,
+  History
 } from 'lucide-react';
 import { useAdminUI } from '../../context/AdminUIContext';
 import { db } from '../../firebase';
@@ -24,6 +33,7 @@ import {
   doc, 
   deleteDoc,
   setDoc,
+  updateDoc,
   serverTimestamp
 } from 'firebase/firestore';
 import useCategories from '../../hooks/useCategories';
@@ -52,6 +62,9 @@ export default function ProductManagement() {
   const [isDeleteModalOpen, setIsDeleteModalOpen] = useState(false);
   const [productToDelete, setProductToDelete] = useState(null);
   const [isDeleting, setIsDeleting] = useState(false);
+  
+  const [selectedProduct, setSelectedProduct] = useState(null);
+  const [isViewModalOpen, setIsViewModalOpen] = useState(false);
 
   const filterRef = useRef(null);
   const rowsRef = useRef(null);
@@ -94,6 +107,32 @@ export default function ProductManagement() {
     });
     return () => unsubscribe();
   }, []);
+
+  // Migration: Ensure all products have slugs for clean URLs
+  useEffect(() => {
+    if (loading || products.length === 0) return;
+
+    const productsWithoutSlugs = products.filter(p => !p.slug && p.name);
+    if (productsWithoutSlugs.length > 0) {
+      const migrate = async () => {
+        for (const p of productsWithoutSlugs) {
+          const slug = p.name
+            .toLowerCase()
+            .trim()
+            .replace(/[^\w\s-]/g, '')
+            .replace(/[\s_-]+/g, '-')
+            .replace(/^-+|-+$/g, '');
+          
+          try {
+            await updateDoc(doc(db, 'products', p.id), { slug });
+          } catch (err) {
+            console.error(`Slug migration failed for ${p.id}:`, err);
+          }
+        }
+      };
+      migrate();
+    }
+  }, [products, loading]);
 
   const toggleFeatured = async (product) => {
     const isFeatured = featuredProductIds.has(product.id);
@@ -189,6 +228,11 @@ export default function ProductManagement() {
   const openEditModal = (product) => {
     setEditingProduct(product);
     setIsModalOpen(true);
+  };
+
+  const openViewModal = (product) => {
+    setSelectedProduct(product);
+    setIsViewModalOpen(true);
   };
 
   const filteredProducts = (() => {
@@ -349,6 +393,7 @@ export default function ProductManagement() {
             <thead>
               <tr className="border-b border-gray-50 bg-white">
                 <th className="px-6 py-4 text-left text-[14px] font-bold text-[#1BAFAF]">Sr No</th>
+                <th className="px-6 py-4 text-left text-[14px] font-bold text-[#1BAFAF]">Product ID</th>
                 <th className="px-6 py-4 text-left text-[14px] font-bold text-[#1BAFAF]">
                   <button onClick={() => handleSort('name')} className="flex items-center gap-1 hover:opacity-75 transition-opacity">
                     Product <SortIcon colKey="name" />
@@ -382,8 +427,15 @@ export default function ProductManagement() {
             <tbody className="divide-y divide-gray-50/50">
               {filteredProducts.length > 0 ? (
                 filteredProducts.slice(0, rowsPerPage).map((product, idx) => (
-                  <tr key={product.id} className="hover:bg-gray-50 group transition-colors">
+                  <tr 
+                    key={product.id} 
+                    onClick={() => openViewModal(product)}
+                    className="hover:bg-gray-50 group transition-colors cursor-pointer"
+                  >
                     <td className="px-6 py-4 whitespace-nowrap text-[14px] text-gray-400 font-medium">{(idx + 1).toString().padStart(2, '0')}</td>
+                    <td className="px-6 py-4 whitespace-nowrap text-[13px] text-gray-600 font-bold font-mono">
+                      {product.productId || '---'}
+                    </td>
                     <td className="px-6 py-4 max-w-[240px]">
                       <div className="flex items-center gap-3 min-w-0">
                         <div className="w-12 h-12 rounded-xl overflow-hidden bg-gray-50 border border-gray-100 flex-shrink-0 flex items-center justify-center">
@@ -404,12 +456,21 @@ export default function ProductManagement() {
                         {categoryMap[product.categoryId] || 'Uncategorized'}
                       </span>
                     </td>
-                    <td className="px-6 py-4 whitespace-nowrap text-[14px] text-[#1BAFAF] font-bold">₹{Number(product.price).toLocaleString()}</td>
+                    <td className="px-6 py-4 whitespace-nowrap">
+                      <div className="text-[14px] font-bold text-[#1BAFAF]">
+                        ₹{Number(product.discountedPrice || product.price || 0).toLocaleString()}
+                      </div>
+                      {Number(product.actualPrice || 0) > Number(product.discountedPrice || 0) && (
+                        <div className="text-[11px] text-gray-400 line-through">
+                          ₹{Number(product.actualPrice || 0).toLocaleString()}
+                        </div>
+                      )}
+                    </td>
                     <td className="px-6 py-4 whitespace-nowrap">
                       <div className="flex items-center gap-2">
                         <span className={`text-[14px] font-medium ${
                           product.productType === 'Unique' 
-                            ? 'text-gray-500' // No alert for unique items
+                            ? 'text-gray-500' 
                             : (Number(product.stock) < 5 ? 'text-red-500 font-bold' : 'text-gray-500')
                         }`}>
                           {product.stock}
@@ -428,38 +489,36 @@ export default function ProductManagement() {
                     </td>
                     <td className="px-6 py-4 whitespace-nowrap">
                       <button 
-                        onClick={() => toggleFeatured(product)}
+                        onClick={(e) => { e.stopPropagation(); toggleFeatured(product); }}
                         className={`w-8 h-8 flex items-center justify-center rounded-lg transition-all active:scale-90 ${
                           featuredProductIds.has(product.id) 
                             ? 'text-brand-orange bg-brand-orange/10 shadow-sm' 
-                            : 'text-gray-300 hover:text-brand-orange hover:bg-gray-50'
+                            : 'text-gray-200 hover:text-brand-orange hover:bg-gray-50'
                         }`}
                         title={featuredProductIds.has(product.id) ? "Remove from favorites" : "Add to favorites"}
                       >
                         <Star size={16} fill={featuredProductIds.has(product.id) ? "currentColor" : "none"} strokeWidth={2.5} />
                       </button>
                     </td>
-                    <td className="px-6 py-4 whitespace-nowrap text-[13px] text-gray-400 font-medium">
-                      {(() => {
-                        if (!product.updatedAt) return 'New';
-                        const date = product.updatedAt.toDate ? product.updatedAt.toDate() : new Date(product.updatedAt);
-                        const d = String(date.getDate()).padStart(2, '0');
-                        const m = String(date.getMonth() + 1).padStart(2, '0');
-                        const y = date.getFullYear();
-                        return `${d}/${m}/${y}`;
-                      })()}
+                    <td className="px-6 py-4 whitespace-nowrap">
+                      <div className="text-[13px] font-medium text-gray-500">
+                        {product.updatedAt ? (() => {
+                          const date = product.updatedAt.toDate ? product.updatedAt.toDate() : new Date(product.updatedAt);
+                          return `${String(date.getDate()).padStart(2, '0')}/${String(date.getMonth() + 1).padStart(2, '0')}/${date.getFullYear()}`;
+                        })() : '---'}
+                      </div>
                     </td>
-                    <td className="px-6 py-4 text-right">
+                    <td className="px-6 py-4 text-right whitespace-nowrap">
                       <div className="flex items-center justify-end gap-2">
                         <button 
-                          onClick={() => openEditModal(product)}
+                          onClick={(e) => { e.stopPropagation(); openEditModal(product); }}
                           className="w-8 h-8 flex items-center justify-center text-emerald-600 hover:bg-emerald-50 rounded-lg transition-all active:scale-90" 
                           title="Edit"
                         >
                           <Pencil size={14} strokeWidth={2.5} />
                         </button>
                         <button 
-                          onClick={() => handleDelete(product)}
+                          onClick={(e) => { e.stopPropagation(); handleDelete(product); }}
                           className="w-8 h-8 flex items-center justify-center text-red-600 hover:bg-red-50 rounded-lg transition-all active:scale-90" 
                           title="Delete"
                         >
@@ -471,7 +530,7 @@ export default function ProductManagement() {
                 ))
               ) : (
                 <tr>
-                  <td colSpan="8" className="px-6 py-20 text-center">
+                  <td colSpan="10" className="px-6 py-20 text-center">
                     <div className="flex flex-col items-center gap-3">
                       <div className="w-16 h-16 bg-gray-50 rounded-full flex items-center justify-center text-gray-200">
                         <Package size={32} />
@@ -523,6 +582,208 @@ export default function ProductManagement() {
         itemName={productToDelete?.name}
         loading={isDeleting}
       />
+
+      {/* Product View Modal */}
+      <ProductViewModal 
+        isOpen={isViewModalOpen}
+        onClose={() => setIsViewModalOpen(false)}
+        product={selectedProduct}
+        categoryMap={categoryMap}
+        hierarchy={hierarchy}
+      />
     </div>
+  );
+}
+
+// Product View Modal Component
+function ProductViewModal({ isOpen, onClose, product, categoryMap, hierarchy }) {
+  if (!product) return null;
+
+  const [activeImg, setActiveImg] = useState(product.images?.[0] || '');
+
+  useEffect(() => {
+    if (product?.images?.length > 0) {
+      setActiveImg(product.images[0]);
+    }
+  }, [product]);
+
+  const getCategoryPath = (targetId, currentHierarchy) => {
+    if (!currentHierarchy) return null;
+    for (const cat of currentHierarchy) {
+      if (cat.id === targetId) return [cat.name];
+      if (cat.children) {
+        const path = getCategoryPath(targetId, cat.children);
+        if (path) return [cat.name, ...path];
+      }
+    }
+    return null;
+  };
+
+  const fullPath = getCategoryPath(product.categoryId, hierarchy) || [];
+  const displayPath = fullPath.length > 4 
+    ? [...fullPath.slice(0, 3), '...'].join(' > ')
+    : fullPath.join(' > ');
+
+  const actualPrice = Number(product.actualPrice || 0);
+  const discountedPrice = Number(product.discountedPrice || 0);
+
+  const discountPercent = actualPrice > 0
+    ? Math.round(((actualPrice - discountedPrice) / actualPrice) * 100) 
+    : 0;
+
+  const stockStatus = product.stock < 5 ? {
+    label: `Low Stock (${product.stock} Units)`,
+    class: 'text-red-500 bg-red-50 border-red-100'
+  } : {
+    label: `In Stock (${product.stock} Units)`,
+    class: 'text-emerald-500 bg-emerald-50 border-emerald-100'
+  };
+
+  return (
+    <AnimatePresence>
+      {isOpen && (
+        <div className="fixed inset-0 z-[60] flex items-center justify-center p-4">
+          <motion.div
+            initial={{ opacity: 0 }}
+            animate={{ opacity: 1 }}
+            exit={{ opacity: 0 }}
+            onClick={onClose}
+            className="absolute inset-0 bg-black/60 backdrop-blur-md"
+          />
+          <motion.div
+            initial={{ opacity: 0, scale: 0.9, y: 30 }}
+            animate={{ opacity: 1, scale: 1, y: 0 }}
+            exit={{ opacity: 0, scale: 0.9, y: 30 }}
+            className="relative w-full max-w-5xl bg-white rounded-[40px] shadow-2xl overflow-hidden flex flex-col max-h-[95vh]"
+            onClick={e => e.stopPropagation()}
+          >
+            {/* Fixed Header */}
+            <div className="px-10 py-6 flex items-center justify-between bg-white border-b border-gray-50 shrink-0 relative">
+              <div className="flex items-center gap-5">
+                <div className="w-14 h-14 rounded-2xl bg-[#1BAFAF]/10 text-[#1BAFAF] flex items-center justify-center shadow-inner">
+                  <Package size={28} />
+                </div>
+                <div className="flex flex-col gap-1.5">
+                  <div className="flex items-center gap-3">
+                    <h2 className="text-2xl font-bold text-gray-900 leading-none">Product Details</h2>
+                    <span className="text-gray-200 font-light text-xl">|</span>
+                    <span className="px-3 py-1 bg-gray-50 text-[#1BAFAF] text-[10px] font-bold rounded-full border border-gray-100 uppercase tracking-widest">
+                      {product.productId || 'NO-ID'}
+                    </span>
+                  </div>
+                  <div className="flex items-center gap-2 text-[11px] font-medium text-gray-300 uppercase tracking-wider">
+                    <Layers size={13} className="text-[#1BAFAF]/40" />
+                    {displayPath || 'Uncategorized'}
+                  </div>
+                </div>
+              </div>
+              <button onClick={onClose} className="w-10 h-10 rounded-full bg-gray-50 text-gray-400 hover:text-gray-900 transition-colors flex items-center justify-center border border-gray-100 active:scale-90">
+                <X size={20} />
+              </button>
+            </div>
+
+            {/* Scrollable Content */}
+            <div className="flex-1 overflow-y-auto p-10 md:p-14 custom-scrollbar bg-white">
+              <div className="grid grid-cols-1 lg:grid-cols-12 gap-14">
+                
+                {/* Left Side: Image Gallery */}
+                <div className="lg:col-span-6 flex gap-6 h-[400px]">
+                  {/* Square Thumbnails with Scroll */}
+                  <div className="flex flex-col gap-3 shrink-0 py-1 overflow-y-auto overflow-x-hidden custom-scrollbar-thin w-24 h-full pr-2">
+                    {product.images?.map((img, i) => (
+                      <button
+                        key={i}
+                        onClick={() => setActiveImg(img)}
+                        className={`w-20 h-20 shrink-0 rounded-xl overflow-hidden border-2 transition-all active:scale-90 shadow-sm bg-white ${
+                          activeImg === img ? 'border-brand-orange ring-2 ring-brand-orange/20' : 'border-gray-100 opacity-60 hover:opacity-100'
+                        }`}
+                      >
+                        <img src={img} alt="" className="w-full h-full object-contain p-1" />
+                      </button>
+                    ))}
+                  </div>
+
+                  {/* Main Large Image (Aligned Height) */}
+                  <div className="flex-1 relative rounded-[32px] bg-gray-50 overflow-hidden border border-gray-100 group shadow-inner h-full flex items-center justify-center">
+                    <img 
+                      src={activeImg} 
+                      alt={product.name} 
+                      className="max-w-full max-h-full object-contain transition-transform duration-700 group-hover:scale-105 p-4" 
+                    />
+                  </div>
+                </div>
+
+                {/* Right Side: Details */}
+                <div className="lg:col-span-6 space-y-10 py-2">
+                  <div className="space-y-4">
+                    <div className="space-y-1">
+                      <h1 className="text-4xl font-black text-gray-900 tracking-tight leading-tight">{product.name}</h1>
+                      <p className="text-lg font-semibold text-gray-400 italic">{product.tagline || 'Exquisite Artisanal Piece'}</p>
+                    </div>
+
+                    <div className="flex items-center">
+                      <div className={`px-3 py-1 rounded-lg border text-[11px] font-black uppercase tracking-widest ${stockStatus.class}`}>
+                        {stockStatus.label}
+                      </div>
+                    </div>
+                  </div>
+
+                  {/* Pricing */}
+                  <div className="space-y-2">
+                    <div className="flex items-center gap-4">
+                      <span className="text-4xl font-black text-gray-900">₹{discountedPrice.toLocaleString()}</span>
+                      {actualPrice > 0 && actualPrice !== discountedPrice && (
+                        <span className="text-xl font-bold text-gray-300 line-through">₹{actualPrice.toLocaleString()}</span>
+                      )}
+                      {discountPercent > 0 && (
+                        <span className="px-3 py-1 bg-red-50 text-red-500 text-[10px] font-black uppercase tracking-widest rounded-lg border border-red-100">
+                          FLAT {discountPercent}% OFF
+                        </span>
+                      )}
+                    </div>
+                  </div>
+
+                  {/* Attributes */}
+                  <div className="grid grid-cols-3 gap-6 py-8 border-y border-gray-50">
+                    <div className="space-y-1">
+                      <span className="text-[10px] font-black text-gray-300 uppercase tracking-[0.2em]">Fabric</span>
+                      <p className="text-[13px] font-bold text-gray-800">Pure Silk</p>
+                    </div>
+                    <div className="space-y-1">
+                      <span className="text-[10px] font-black text-gray-300 uppercase tracking-[0.2em]">Craft</span>
+                      <p className="text-[13px] font-bold text-gray-800">Hand Woven</p>
+                    </div>
+                    <div className="space-y-1">
+                      <span className="text-[10px] font-black text-gray-300 uppercase tracking-[0.2em]">Occasion</span>
+                      <p className="text-[13px] font-bold text-gray-800">Festive Wear</p>
+                    </div>
+                  </div>
+                </div>
+              </div>
+
+              {/* Description */}
+              <div className="mt-14 space-y-6">
+                <div className="flex items-center justify-between">
+                  <h3 className="text-[11px] font-black text-gray-400 uppercase tracking-[0.2em]">Product Description</h3>
+                  <div className="h-px flex-1 bg-gray-100 ml-6" />
+                </div>
+                <div className="p-8 rounded-[32px] bg-gray-50/50 border border-gray-100 min-h-[160px]">
+                  <p className="text-[15px] font-medium text-gray-600 leading-relaxed italic whitespace-pre-wrap">
+                    {product.description || 'No description provided for this creation.'}
+                  </p>
+                </div>
+              </div>
+            </div>
+
+            {/* Fixed Footer */}
+            <div className="px-10 py-6 bg-gray-50 border-t border-gray-100 flex items-center justify-end shrink-0">
+                <button onClick={onClose} className="px-12 py-3.5 bg-[#1BAFAF] hover:bg-[#17a0a0] text-white text-[13px] font-black uppercase tracking-widest rounded-xl transition-all active:scale-95 shadow-xl shadow-[#1BAFAF]/20">
+                  Done
+                </button>
+            </div>
+          </motion.div>
+        </div>
+      )}
+    </AnimatePresence>
   );
 }
