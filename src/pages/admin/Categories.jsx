@@ -273,7 +273,7 @@ export default function Categories() {
               className="flex items-center gap-2 bg-[#1BAFAF] hover:bg-[#17a0a0] text-white px-4 py-2 rounded-xl text-[13px] font-semibold transition-all shadow-sm shadow-[#1BAFAF]/10 active:scale-95"
             >
               <Plus size={16} strokeWidth={2.5} />
-              {currentPath.length > 0 ? 'New Sub Category' : 'New Category'}
+              {currentPath.length > 0 ? 'Add Sub Category' : 'Add Category'}
             </button>
           </div>
         </div>
@@ -477,7 +477,7 @@ export default function Categories() {
                   {catProducts.slice(0, rowsPerPage).map((p) => (
                     <div key={p.id} className="group bg-white rounded-[28px] border border-gray-100 overflow-hidden hover:shadow-2xl hover:shadow-[#1BAFAF]/5 hover:-translate-y-1 transition-all duration-300 flex flex-col">
                       {/* Image Container */}
-                      <div className="relative aspect-[4/5] overflow-hidden bg-gray-50">
+                      <div className="relative aspect-square overflow-hidden bg-gray-50">
                         {(() => {
                           const displayImage = p.image || p.imageUrl || (p.images && p.images.length > 0 ? p.images[0] : null);
                           return displayImage ? (
@@ -511,12 +511,19 @@ export default function Categories() {
                       {/* Content Section */}
                       <div className="p-5 flex-1 flex flex-col gap-3">
                         <div className="flex items-center justify-between gap-2">
-                          <span className="text-[10px] font-bold text-gray-400 uppercase tracking-widest truncate">
-                            ID: {p.id.slice(-6).toUpperCase()}
+                          <span className="text-[9px] font-bold text-gray-400 uppercase tracking-widest truncate max-w-[120px]" title={p.productId || '---'}>
+                            UID: {p.productId || '---'}
                           </span>
-                          <span className="text-[16px] font-bold text-[#1BAFAF]">
-                            ₹{Number(p.price).toLocaleString()}
-                          </span>
+                          <div className="flex flex-col items-end">
+                            <span className="text-[16px] font-bold text-[#1BAFAF]">
+                              ₹{Number(p.discountedPrice || p.price || 0).toLocaleString()}
+                            </span>
+                            {(p.actualPrice || p.costPrice) && (
+                              <span className="text-[11px] text-gray-400 line-through">
+                                ₹{Number(p.actualPrice || p.costPrice || 0).toLocaleString()}
+                              </span>
+                            )}
+                          </div>
                         </div>
 
                         <div className="space-y-1">
@@ -587,13 +594,13 @@ export default function Categories() {
                 <div>
                   <h2 className="text-xl font-bold text-gray-900">
                     {editingCategory
-                      ? 'Refine Category'
-                      : (currentPath.length > 0 ? 'New Sub Category' : 'New Main Category')
+                      ? (currentPath.length > 0 ? 'Edit Sub Category' : 'Edit Category')
+                      : (currentPath.length > 0 ? 'Add Sub Category' : 'Add Category')
                     }
                   </h2>
                   <p className="text-[12px] text-gray-400 font-medium">
                     {editingCategory
-                      ? `Refining ${currentPath.length > 0 ? 'sub-layer' : 'main layer'} in heritage`
+                      ? `Editing ${currentPath.length > 0 ? 'sub-layer' : 'main layer'} in heritage`
                       : `Adding a new layer under ${currentPath.length > 0 ? breadcrumbs.map(p => p.name).join(' > ') : 'Main'}`
                     }
                   </p>
@@ -633,7 +640,7 @@ export default function Categories() {
                     {isSaving ? (
                       <Loader2 size={18} className="animate-spin" />
                     ) : editingCategory ? (
-                      currentPath.length > 0 ? 'Update Sub Category' : 'Update Category'
+                      currentPath.length > 0 ? 'Edit Sub Category' : 'Edit Category'
                     ) : (
                       currentPath.length > 0 ? 'Add Sub Category' : 'Add Category'
                     )}

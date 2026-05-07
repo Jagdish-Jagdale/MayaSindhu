@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useRef } from 'react';
 import { 
   ShoppingBag, 
   Search, 
@@ -10,23 +10,36 @@ import {
   PackageCheck,
   Calendar,
   Layers,
-  SearchX
+  SearchX,
+  ChevronDown,
+  XCircle,
+  X,
+  Mail,
+  MapPin,
+  Phone,
+  CreditCard,
+  User,
+  ShoppingBag as BagIcon
 } from 'lucide-react';
 import { db } from '../../firebase';
 import { collection, onSnapshot, query, orderBy, doc, deleteDoc, updateDoc } from 'firebase/firestore';
 import { motion, AnimatePresence } from 'framer-motion';
+import toast from 'react-hot-toast';
 
 const STATUS_CONFIG = {
   'Pending': { color: 'text-amber-500 bg-amber-50', icon: Clock },
   'Confirmed': { color: 'text-blue-500 bg-blue-50', icon: PackageCheck },
   'Shipped': { color: 'text-indigo-500 bg-indigo-50', icon: Truck },
   'Delivered': { color: 'text-[#1BAFAF] bg-[#eaf6f6]', icon: CheckCircle2 },
+  'Cancelled': { color: 'text-red-500 bg-red-50', icon: XCircle },
 };
 
 export default function Orders() {
   const [orders, setOrders] = useState([]);
   const [loading, setLoading] = useState(true);
   const [searchTerm, setSearchTerm] = useState('');
+  const [selectedOrder, setSelectedOrder] = useState(null);
+  const [isViewModalOpen, setIsViewModalOpen] = useState(false);
 
   useEffect(() => {
     const q = query(collection(db, 'orders'), orderBy('createdAt', 'desc'));
@@ -46,6 +59,40 @@ export default function Orders() {
     order.customerName?.toLowerCase().includes(searchTerm.toLowerCase())
   );
 
+  const updateStatus = async (orderId, orderNo, newStatus) => {
+    try {
+      const orderRef = doc(db, 'orders', orderId);
+      await updateDoc(orderRef, { status: newStatus });
+      toast.success(
+        (t) => (
+          <div className="flex items-center gap-3">
+            <div className="w-6 h-6 bg-[#1BAFAF] rounded-full flex items-center justify-center shrink-0">
+              <CheckCircle2 size={14} className="text-white" />
+            </div>
+            <p className="text-[13px] font-semibold text-gray-800">
+              Order {orderNo} status successfully updated to {newStatus}
+            </p>
+          </div>
+        ),
+        {
+          duration: 4000,
+          style: {
+            background: '#fff',
+            borderRadius: '20px',
+            padding: '12px 20px',
+            boxShadow: '0 20px 25px -5px rgba(0, 0, 0, 0.1), 0 10px 10px -5px rgba(0, 0, 0, 0.04)',
+            maxWidth: '400px',
+            border: '1px solid rgba(0,0,0,0.05)'
+          },
+          icon: null
+        }
+      );
+    } catch (error) {
+      console.error("Error updating status:", error);
+      toast.error("Failed to update order status");
+    }
+  };
+
   const formatDate = (timestamp) => {
     if (!timestamp) return 'N/A';
     const date = timestamp.toDate();
@@ -54,6 +101,246 @@ export default function Orders() {
       month: '2-digit',
       year: 'numeric'
     });
+  };
+
+  const OrderStatusDropdown = ({ order, currentStatus, onUpdate }) => {
+    const [isOpen, setIsOpen] = useState(false);
+    const containerRef = useRef(null);
+    const config = STATUS_CONFIG[currentStatus] || STATUS_CONFIG['Pending'];
+
+    useEffect(() => {
+      const handleClickOutside = (event) => {
+        if (containerRef.current && !containerRef.current.contains(event.target)) {
+          setIsOpen(false);
+        }
+      };
+      document.addEventListener('mousedown', handleClickOutside);
+      return () => document.removeEventListener('mousedown', handleClickOutside);
+    }, []);
+
+    return (
+      <div className="relative w-fit" ref={containerRef}>
+        <button
+          onClick={(e) => {
+            e.stopPropagation();
+            setIsOpen(!isOpen);
+          }}
+          className={`flex items-center gap-2 text-[9px] font-black uppercase tracking-widest pl-8 pr-6 py-1.5 rounded-xl border transition-all shadow-sm outline-none ${config.color} border-current/10 hover:shadow-md min-w-[105px] relative`}
+        >
+          <div className="absolute left-2.5 top-1/2 -translate-y-1/2 opacity-80">
+            <config.icon size={11} strokeWidth={2.5} className={config.color.split(' ')[0]} />
+          </div>
+          <span>{currentStatus || 'Pending'}</span>
+          <div className="absolute right-2 top-1/2 -translate-y-1/2 opacity-40">
+            <ChevronDown size={8} strokeWidth={3} className={`transition-transform duration-200 ${isOpen ? 'rotate-180' : ''}`} />
+          </div>
+        </button>
+
+        <AnimatePresence>
+          {isOpen && (
+            <motion.div
+              initial={{ opacity: 0, y: -10, scale: 0.95 }}
+              animate={{ opacity: 1, y: 5, scale: 1 }}
+              exit={{ opacity: 0, y: -10, scale: 0.95 }}
+              className="absolute left-0 top-full z-50 w-full min-w-[120px] bg-white border border-gray-100 rounded-xl shadow-xl py-1 overflow-hidden"
+            >
+              {Object.keys(STATUS_CONFIG).map((status) => {
+                const sCfg = STATUS_CONFIG[status];
+                const Icon = sCfg.icon;
+                return (
+                  <button
+                    key={status}
+                    onClick={(e) => {
+                      e.stopPropagation();
+                      onUpdate(order.id, order.orderId, status);
+                      setIsOpen(false);
+                    }}
+                    className={`w-full flex items-center gap-2 px-3 py-2 text-[10px] font-bold uppercase tracking-widest transition-colors text-left
+                      ${currentStatus === status ? 'bg-[#1BAFAF] text-white shadow-sm' : 'text-gray-600 hover:bg-[#1BAFAF]/10 hover:text-[#1BAFAF]'}
+                    `}
+                  >
+                    <Icon size={10} strokeWidth={2.5} />
+                    {status}
+                  </button>
+                );
+              })}
+            </motion.div>
+          )}
+        </AnimatePresence>
+      </div>
+    );
+  };
+
+  const OrderViewModal = ({ order, isOpen, onClose }) => {
+    if (!order) return null;
+    const config = STATUS_CONFIG[order.status] || STATUS_CONFIG['Pending'];
+
+    return (
+      <AnimatePresence>
+        {isOpen && (
+          <div className="fixed inset-0 z-[100] flex items-center justify-center p-4">
+            <motion.div
+              initial={{ opacity: 0 }}
+              animate={{ opacity: 1 }}
+              exit={{ opacity: 0 }}
+              onClick={onClose}
+              className="absolute inset-0 bg-gray-900/40 backdrop-blur-sm"
+            />
+            <motion.div
+              initial={{ opacity: 0, scale: 0.95, y: 20 }}
+              animate={{ opacity: 1, scale: 1, y: 0 }}
+              exit={{ opacity: 0, scale: 0.95, y: 20 }}
+              className="relative w-full max-w-3xl bg-white rounded-[32px] shadow-2xl overflow-hidden flex flex-col max-h-[90vh]"
+              onClick={e => e.stopPropagation()}
+            >
+              {/* Modal Header - Fixed */}
+              <div className="px-8 py-6 flex items-center justify-between bg-white border-b border-gray-50 shrink-0">
+                <div className="flex items-center gap-4">
+                  <div className="w-12 h-12 rounded-2xl bg-[#1BAFAF]/10 text-[#1BAFAF] flex items-center justify-center">
+                    <BagIcon size={24} />
+                  </div>
+                  <div className="flex flex-col gap-1.5">
+                    <div className="flex items-center gap-3">
+                      <h2 className="text-xl font-bold text-gray-900 leading-none">Order Details</h2>
+                      <span className="text-gray-200 font-light text-lg">|</span>
+                      <span className="px-3 py-1 bg-gray-50 text-[#1BAFAF] text-[10px] font-bold rounded-full border border-gray-100 uppercase tracking-widest">
+                        {order.orderId}
+                      </span>
+                    </div>
+                    <div className="flex items-center gap-2 text-[12px] font-medium text-gray-400 pl-1">
+                      <Calendar size={13} className="text-gray-300" />
+                      Order Placed: {formatDate(order.createdAt)}
+                    </div>
+                  </div>
+                </div>
+                <button 
+                  onClick={onClose}
+                  className="w-10 h-10 rounded-xl bg-gray-50 text-gray-400 hover:text-gray-900 transition-colors flex items-center justify-center"
+                >
+                  <X size={20} />
+                </button>
+              </div>
+
+              {/* Modal Content - Scrollable */}
+              <div className="flex-1 overflow-y-auto p-8 space-y-8 custom-scrollbar">
+                {/* Status Section */}
+                <div className="flex items-center justify-between p-4 rounded-2xl bg-gray-50/50 border border-gray-100">
+                  <span className="text-[12px] font-bold text-gray-400 uppercase tracking-widest">Current Status</span>
+                  <div className={`flex items-center gap-2 px-4 py-2 rounded-xl border ${config.color} border-current/10 font-black text-[11px] uppercase tracking-wider`}>
+                    <config.icon size={14} strokeWidth={2.5} />
+                    {order.status}
+                  </div>
+                </div>
+
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-8">
+                  {/* Customer Information */}
+                  <div className="space-y-4">
+                    <h3 className="text-sm font-bold text-[#1BAFAF] uppercase tracking-widest">Customer Info</h3>
+                    <div className="space-y-3">
+                      <div className="flex items-center gap-3 text-gray-600">
+                        <User size={16} className="text-gray-300" />
+                        <span className="text-sm font-semibold">{order.customerName}</span>
+                      </div>
+                      <div className="flex items-center gap-3 text-gray-600">
+                        <Mail size={16} className="text-gray-300" />
+                        <span className="text-sm font-medium">{order.email || 'No email provided'}</span>
+                      </div>
+                      <div className="flex items-center gap-3 text-gray-600">
+                        <Phone size={16} className="text-gray-300" />
+                        <span className="text-sm font-medium">{order.phone || 'No phone provided'}</span>
+                      </div>
+                    </div>
+                  </div>
+
+                  {/* Shipping Address */}
+                  <div className="space-y-4">
+                    <h3 className="text-sm font-bold text-[#1BAFAF] uppercase tracking-widest">Shipping Address</h3>
+                    <div className="flex items-start gap-3 text-gray-600">
+                      <MapPin size={16} className="text-gray-300 mt-1 shrink-0" />
+                      <span className="text-sm font-medium leading-relaxed">
+                        {order.address || 'No address provided'}
+                      </span>
+                    </div>
+                  </div>
+                </div>
+
+                <hr className="border-gray-50" />
+
+                {/* Order Summary */}
+                <div className="space-y-4 pb-4">
+                  <div className="flex items-center justify-between">
+                    <h3 className="text-[11px] font-black text-gray-400 uppercase tracking-[0.2em]">Order Items</h3>
+                    <div className="h-px flex-1 bg-gray-100 ml-4"></div>
+                  </div>
+                  
+                  <div className="overflow-hidden rounded-[28px] border border-gray-100 bg-gray-50/50 shadow-sm">
+                    <div className="overflow-x-auto">
+                      <table className="w-full border-collapse">
+                        <thead>
+                          <tr className="bg-gray-100/30 border-b border-gray-100">
+                            <th className="px-6 py-4 text-left text-[10px] font-black text-gray-400 uppercase tracking-widest w-20">Sr. No</th>
+                            <th className="px-6 py-4 text-left text-[10px] font-black text-gray-400 uppercase tracking-widest">Product Details</th>
+                            <th className="px-6 py-4 text-center text-[10px] font-black text-gray-400 uppercase tracking-widest w-24">Quantity</th>
+                            <th className="px-6 py-4 text-right text-[10px] font-black text-gray-400 uppercase tracking-widest w-32">Price</th>
+                          </tr>
+                        </thead>
+                        <tbody className="divide-y divide-gray-100">
+                          <tr>
+                            <td className="px-6 py-5">
+                              <div className="w-8 h-8 rounded-xl bg-white border border-gray-100 flex items-center justify-center text-[11px] font-black text-[#1BAFAF] shadow-sm">01</div>
+                            </td>
+                            <td className="px-6 py-5">
+                              <span className="text-[13px] font-bold text-gray-900 tracking-tight leading-tight">{order.productName || 'Handmade Creation'}</span>
+                            </td>
+                            <td className="px-6 py-5 text-center">
+                              <span className="text-[12px] font-black text-gray-500">{order.quantity || 1}</span>
+                            </td>
+                            <td className="px-6 py-5 text-right">
+                              <span className="text-[13px] font-black text-gray-900">₹{order.total}</span>
+                            </td>
+                          </tr>
+                        </tbody>
+                      </table>
+                    </div>
+
+                    <div className="p-6 bg-white border-t border-gray-100 space-y-4">
+                      <div className="flex justify-between items-center px-2">
+                        <span className="text-[11px] font-bold text-gray-400 uppercase tracking-widest">Total Product Count</span>
+                        <span className="text-[11px] font-black text-gray-900 uppercase tracking-widest">{order.quantity || 1} Item(s)</span>
+                      </div>
+                      
+                      <div className="flex justify-between items-center p-5 rounded-[22px] bg-[#1BAFAF]/5 border border-[#1BAFAF]/10">
+                        <div className="flex items-center gap-3">
+                          <div className="w-10 h-10 rounded-full bg-[#1BAFAF]/10 text-[#1BAFAF] flex items-center justify-center">
+                            <CreditCard size={18} />
+                          </div>
+                          <span className="text-[11px] font-black uppercase tracking-widest text-[#1BAFAF]">Final Amount Paid</span>
+                        </div>
+                        <span className="text-2xl font-black text-[#1BAFAF] tracking-tighter">₹{order.total}</span>
+                      </div>
+                    </div>
+                  </div>
+                </div>
+              </div>
+
+              {/* Modal Footer - Fixed */}
+              <div className="px-8 py-6 bg-gray-50 border-t border-gray-100 flex items-center justify-between shrink-0">
+                <div className="flex items-center gap-2 text-[11px] font-bold text-gray-400 uppercase tracking-widest">
+                  <Calendar size={14} />
+                  Ordered on {formatDate(order.createdAt)}
+                </div>
+                <button
+                  onClick={onClose}
+                  className="px-8 py-3 bg-[#1BAFAF] hover:bg-[#17a0a0] text-white text-[12px] font-bold uppercase tracking-widest rounded-xl transition-all active:scale-95 shadow-lg shadow-[#1BAFAF]/10"
+                >
+                  Done
+                </button>
+              </div>
+            </motion.div>
+          </div>
+        )}
+      </AnimatePresence>
+    );
   };
 
   return (
@@ -104,7 +391,6 @@ export default function Orders() {
                 <th className="px-6 py-5 text-left text-[14px] font-bold text-[#1BAFAF]">Total</th>
                 <th className="px-6 py-5 text-left text-[14px] font-bold text-[#1BAFAF]">Date</th>
                 <th className="px-6 py-5 text-left text-[14px] font-bold text-[#1BAFAF]">Status</th>
-                <th className="px-6 py-5 text-right text-[14px] font-bold text-[#1BAFAF]">Actions</th>
               </tr>
             </thead>
             <tbody className="divide-y divide-gray-50/50">
@@ -119,7 +405,11 @@ export default function Orders() {
                         animate={{ opacity: 1 }}
                         exit={{ opacity: 0 }}
                         key={order.id} 
-                        className="hover:bg-gray-50/80 group transition-colors"
+                        onClick={() => {
+                          setSelectedOrder(order);
+                          setIsViewModalOpen(true);
+                        }}
+                        className="hover:bg-gray-50/80 group transition-colors cursor-pointer"
                       >
                         <td className="px-6 py-5">
                           <span className="text-[13px] font-bold text-gray-300">{(index + 1).toString().padStart(2, '0')}</span>
@@ -148,15 +438,11 @@ export default function Orders() {
                            <span className="text-[13px] text-gray-500 font-medium">{formatDate(order.createdAt)}</span>
                         </td>
                         <td className="px-6 py-5 whitespace-nowrap">
-                          <span className={`text-[10px] font-black uppercase tracking-widest px-3 py-1.5 rounded-xl flex items-center justify-center gap-1.5 w-fit shadow-sm border ${config.color} border-current/10`}>
-                            <config.icon size={12} strokeWidth={2.5} />
-                            {order.status}
-                          </span>
-                        </td>
-                        <td className="px-6 py-5 text-right">
-                           <button className="w-9 h-9 flex items-center justify-center text-gray-400 hover:text-[#1BAFAF] hover:bg-[#1BAFAF]/10 rounded-xl transition-all active:scale-95">
-                              <ArrowUpRight size={18} />
-                           </button>
+                          <OrderStatusDropdown 
+                            order={order} 
+                            currentStatus={order.status} 
+                            onUpdate={updateStatus} 
+                          />
                         </td>
                       </motion.tr>
                     );
@@ -182,6 +468,12 @@ export default function Orders() {
           <div className="w-8 h-8 border-4 border-[#1BAFAF]/20 border-t-[#1BAFAF] rounded-full animate-spin" />
         </div>
       )}
+
+      <OrderViewModal 
+        order={selectedOrder} 
+        isOpen={isViewModalOpen} 
+        onClose={() => setIsViewModalOpen(false)} 
+      />
     </div>
   );
 }
