@@ -11,13 +11,14 @@ import {
   ChevronRight,
   X,
   Plus,
-  Minus
+  Minus,
+  Star
 } from 'lucide-react';
 import { useAuth } from '../../context/AuthContext';
 import useCategories from '../../hooks/useCategories';
 import navLogo from '../../assets/navbar logo.png';
 import { db } from '../../firebase';
-import { collection, onSnapshot, query } from 'firebase/firestore';
+import { collection, onSnapshot, query, doc } from 'firebase/firestore';
 
 export default function Navbar() {
   const { categories } = useCategories();
@@ -25,8 +26,10 @@ export default function Navbar() {
   const [isScrolled, setIsScrolled] = useState(false);
   const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false);
   const [isMobileSearchOpen, setIsMobileSearchOpen] = useState(false);
+  const [isUserDropdownOpen, setIsUserDropdownOpen] = useState(false);
   const [cartCount, setCartCount] = useState(0);
   const [wishlistCount, setWishlistCount] = useState(0);
+  const [profileData, setProfileData] = useState(null);
   const location = useLocation();
   const navigate = useNavigate();
 
@@ -85,7 +88,22 @@ export default function Navbar() {
     return () => unsubscribe();
   }, [user]);
 
+  // Real-time listener for profile data (to sync name/photo in Navbar)
+  useEffect(() => {
+    if (!user) {
+      setProfileData(null);
+      return;
+    }
+    const unsubscribe = onSnapshot(doc(db, 'users', user.uid), (docSnap) => {
+      if (docSnap.exists()) {
+        setProfileData(docSnap.data());
+      }
+    });
+    return () => unsubscribe();
+  }, [user]);
+
   const isActive = (path) => location.pathname === path;
+  const displayName = profileData?.fullName || user?.displayName || 'Guest User';
 
   return (
     <header className={`sticky top-0 z-[1000] transition-all duration-300 ${isScrolled ? 'shadow-lg' : ''}`}>
@@ -158,12 +176,73 @@ export default function Navbar() {
                 )}
               </Link>
 
-              <Link
-                to={user ? "/profile" : "/login"}
-                className="p-2 text-brand-black hover:text-brand-orange transition-colors relative flex items-center justify-center min-w-[40px]"
+              <div 
+                className="relative group"
+                onMouseEnter={() => setIsUserDropdownOpen(true)}
+                onMouseLeave={() => setIsUserDropdownOpen(false)}
               >
-                <User size={22} strokeWidth={2} />
-              </Link>
+                <Link
+                  to={user ? "/profile" : "/login"}
+                  className="p-2 text-brand-black hover:text-brand-orange transition-colors relative flex items-center justify-center min-w-[40px]"
+                >
+                  <User size={22} strokeWidth={2} />
+                </Link>
+
+                {/* Premium User Dropdown */}
+                <AnimatePresence>
+                  {isUserDropdownOpen && user && (
+                    <motion.div
+                      initial={{ opacity: 0, y: 10, scale: 0.95 }}
+                      animate={{ opacity: 1, y: 0, scale: 1 }}
+                      exit={{ opacity: 0, y: 10, scale: 0.95 }}
+                      transition={{ duration: 0.2, ease: "easeOut" }}
+                      className="absolute right-0 top-full pt-2 z-[1100] w-72"
+                    >
+                      <div className="bg-white p-8 rounded-xl border border-gray-100 shadow-2xl shadow-black/5 flex flex-col items-center text-center relative overflow-hidden group/card">
+                        {/* Avatar Section */}
+                        <div className="relative mb-4 p-1 rounded-full border-2 border-brand-orange/10">
+                          <div className="w-16 h-16 rounded-full bg-brand-orange flex items-center justify-center text-white font-bold text-2xl shadow-lg border-2 border-white overflow-hidden">
+                            {user.photoURL ? (
+                              <img src={user.photoURL} alt="Profile" className="w-full h-full object-cover" />
+                            ) : (
+                              displayName.charAt(0)
+                            )}
+                          </div>
+                        </div>
+
+                        <div className="relative z-10 w-full mb-6">
+                          <h2 className="text-base font-bold text-[#1A1A1A] leading-tight mb-1 uppercase tracking-tight truncate">{displayName}</h2>
+                          <p className="text-gray-400 text-[9px] font-bold uppercase tracking-widest truncate">{user.email}</p>
+                        </div>
+
+                        {/* Stats Row */}
+                        <div className="grid grid-cols-3 gap-2 w-full mb-6 pt-6 border-t border-gray-50">
+                          <div className="bg-gray-50/50 p-2.5 rounded-xl border border-gray-100">
+                            <p className="text-xs font-bold text-[#1A1A1A]">12</p>
+                            <p className="text-[7px] text-brand-orange uppercase font-bold tracking-widest mt-0.5">Orders</p>
+                          </div>
+                          <div className="bg-gray-50/50 p-2.5 rounded-xl border border-gray-100">
+                            <p className="text-xs font-bold text-[#1A1A1A]">48</p>
+                            <p className="text-[7px] text-brand-orange uppercase font-bold tracking-widest mt-0.5">Saved</p>
+                          </div>
+                          <div className="bg-gray-50/50 p-2.5 rounded-xl border border-gray-100">
+                            <p className="text-xs font-bold text-[#1A1A1A]">5</p>
+                            <p className="text-[7px] text-brand-orange uppercase font-bold tracking-widest mt-0.5">Reviews</p>
+                          </div>
+                        </div>
+
+                        <Link 
+                          to="/profile"
+                          onClick={() => setIsUserDropdownOpen(false)}
+                          className="w-full py-4 bg-brand-orange text-white rounded-xl text-[10px] font-bold uppercase tracking-[0.2em] shadow-lg shadow-brand-orange/20 hover:bg-brand-orange-dark transition-all active:scale-95"
+                        >
+                          Manage Account
+                        </Link>
+                      </div>
+                    </motion.div>
+                  )}
+                </AnimatePresence>
+              </div>
             </div>
 
             {/* Mobile Menu Toggle */}

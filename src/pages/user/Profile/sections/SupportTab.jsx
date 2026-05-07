@@ -9,23 +9,28 @@ export default function SupportTab() {
   ];
 
   return (
-    <div className="bg-white p-10 md:p-14 rounded-[4rem] shadow-sm border border-gray-50">
-      <div className="flex items-center gap-4 mb-12">
-        <HelpCircle className="text-brand-orange" size={28} />
-        <h2 className="text-3xl font-fashion font-bold text-[#1A1A1A]">Help & Support</h2>
+    <div className="bg-white p-6 md:p-10 rounded-[3rem] shadow-xl shadow-gray-200/20 border border-[#f0dda0]/20">
+      <div className="flex items-center gap-4 mb-8">
+        <div className="w-12 h-12 bg-gradient-to-br from-[#f5aa00] to-[#e07a00] rounded-2xl flex items-center justify-center text-white shadow-lg shadow-[#f5aa00]/20">
+          <HelpCircle size={24} strokeWidth={1.5} />
+        </div>
+        <div>
+          <h2 className="text-2xl font-fashion font-bold text-[#1A1A1A] tracking-tight">Help & Support</h2>
+          <p className="text-[10px] text-[#f5aa00] font-bold uppercase tracking-[0.2em] mt-0.5">Assistance Center</p>
+        </div>
       </div>
 
-      <div className="grid grid-cols-1 md:grid-cols-2 gap-12 mb-16">
+      <div className="grid grid-cols-1 md:grid-cols-2 gap-10">
         <div className="space-y-6">
-          <h3 className="text-xl font-fashion font-bold text-[#1A1A1A] mb-8">Frequently Asked Questions</h3>
-          <div className="space-y-4">
+          <h3 className="text-[15px] font-bold text-[#1A1A1A] uppercase tracking-wider mb-4 px-2">Frequently Asked Questions</h3>
+          <div className="space-y-3">
             {faqs.map((faq, idx) => (
-              <details key={idx} className="group p-6 bg-[#FAF9F6] rounded-3xl border border-transparent hover:border-brand-orange/10 transition-all cursor-pointer">
-                <summary className="flex items-center justify-between list-none text-sm font-bold text-gray-700">
+              <details key={idx} className="group p-5 bg-[#fffbf2]/40 rounded-2xl border border-[#f0dda0]/10 hover:border-[#f5aa00]/20 transition-all cursor-pointer">
+                <summary className="flex items-center justify-between list-none text-[13px] font-bold text-gray-700">
                   {faq.q}
-                  <ChevronDown size={18} className="text-gray-400 group-open:rotate-180 transition-transform" />
+                  <ChevronDown size={16} className="text-[#f5aa00] group-open:rotate-180 transition-transform" />
                 </summary>
-                <p className="mt-4 text-xs text-gray-500 leading-relaxed font-medium">
+                <p className="mt-3 text-[12px] text-gray-500 leading-relaxed font-medium">
                   {faq.a}
                 </p>
               </details>
@@ -33,21 +38,21 @@ export default function SupportTab() {
           </div>
         </div>
 
-        <div className="space-y-8">
-          <h3 className="text-xl font-fashion font-bold text-[#1A1A1A] mb-8">Direct Assistance</h3>
-          <div className="grid grid-cols-2 gap-4">
-            <SupportOption icon={<MessageCircle />} label="WhatsApp" color="text-green-500" />
-            <SupportOption icon={<PhoneCall />} label="Call Us" color="text-blue-500" />
-            <SupportOption icon={<Mail />} label="Email" color="text-brand-orange" />
-            <SupportOption icon={<FileText />} label="Tickets" color="text-indigo-500" />
+        <div className="space-y-6">
+          <h3 className="text-[15px] font-bold text-[#1A1A1A] uppercase tracking-wider mb-4 px-2">Direct Assistance</h3>
+          <div className="grid grid-cols-2 gap-3">
+            <SupportOption icon={<MessageCircle size={18} />} label="WhatsApp" color="text-green-500" />
+            <SupportOption icon={<PhoneCall size={18} />} label="Call Us" color="text-blue-500" />
+            <SupportOption icon={<Mail size={18} />} label="Email" color="text-[#f5aa00]" />
+            <SupportOption icon={<FileText size={18} />} label="Tickets" color="text-indigo-500" />
           </div>
           
-          <div className="bg-brand-orange/[0.03] p-10 rounded-[3rem] border border-brand-orange/5">
-             <h4 className="font-fashion font-bold text-brand-orange mb-2">Our Boutique Studio</h4>
-             <p className="text-xs text-gray-400 font-medium leading-relaxed">
+          <div className="bg-[#fffbf2]/40 p-8 rounded-[2rem] border border-[#f0dda0]/20 shadow-sm">
+             <h4 className="text-[13px] font-bold text-[#f5aa00] uppercase tracking-widest mb-2">Our Boutique Studio</h4>
+             <p className="text-[11px] text-gray-400 font-bold uppercase tracking-wider leading-relaxed">
                Heritage Row, Block C-14, <br />
                Crafts District, Jaipur, Rajasthan.<br />
-               Monday — Saturday, 10am — 7pm
+               Mon — Sat, 10am — 7pm
              </p>
           </div>
         </div>
@@ -58,11 +63,11 @@ export default function SupportTab() {
 
 function SupportOption({ icon, label, color }) {
   return (
-    <div className="p-6 bg-white border border-gray-50 rounded-[2.5rem] flex flex-col items-center gap-4 hover:shadow-md transition-all cursor-pointer active:scale-95 group">
-      <div className={`w-12 h-12 rounded-2xl bg-gray-50 flex items-center justify-center ${color} transition-transform group-hover:scale-110`}>
+    <div className="p-5 bg-white border border-[#f0dda0]/10 rounded-[2rem] flex flex-col items-center gap-3 hover:shadow-lg hover:border-[#f5aa00]/20 transition-all cursor-pointer active:scale-95 group shadow-sm">
+      <div className={`w-10 h-10 rounded-xl bg-[#fffbf2] flex items-center justify-center ${color} transition-transform group-hover:scale-110 shadow-sm`}>
         {icon}
       </div>
-      <span className="text-[10px] font-black uppercase tracking-widest text-gray-400">{label}</span>
+      <span className="text-[9px] font-bold uppercase tracking-widest text-gray-400">{label}</span>
     </div>
   );
 }

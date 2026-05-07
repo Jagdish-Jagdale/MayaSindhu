@@ -65,7 +65,7 @@ export default function CartTab({ user }) {
 
   if (items.length === 0) {
     return (
-      <div className="bg-white p-12 rounded-[3.5rem] shadow-sm text-center border border-gray-50">
+      <div className="bg-white p-12 rounded-xl shadow-sm text-center border border-gray-50">
         <div className="w-20 h-20 bg-gray-50 rounded-full flex items-center justify-center mx-auto mb-6">
           <ShoppingBag size={32} className="text-gray-200" />
         </div>
@@ -101,7 +101,7 @@ export default function CartTab({ user }) {
               initial={{ opacity: 0, y: 20 }}
               animate={{ opacity: 1, y: 0 }}
               exit={{ opacity: 0, scale: 0.95 }}
-              className="bg-white p-6 rounded-[2.5rem] shadow-sm border border-gray-50 flex items-center gap-6 group hover:shadow-md transition-all duration-500"
+              className="bg-white p-6 rounded-xl shadow-sm border border-gray-100 flex items-center gap-6 group hover:shadow-md transition-all duration-500"
             >
               <div className="w-24 h-32 rounded-3xl overflow-hidden flex-shrink-0 bg-gray-50">
                 <img src={item.image || null} alt={item.name} className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-700" />
@@ -141,15 +141,15 @@ export default function CartTab({ user }) {
         </AnimatePresence>
       </div>
 
-      <div className="bg-[#1A1A1A] p-10 rounded-[3.5rem] text-white flex flex-col md:flex-row items-center justify-between gap-8 shadow-2xl shadow-black/10">
-        <div>
-          <p className="text-[10px] font-black uppercase tracking-[0.3em] text-white/40 mb-2">Grand Total</p>
-          <h3 className="text-4xl font-fashion font-bold">₹{total.toLocaleString('en-IN')}</h3>
+      <div className="bg-white p-8 rounded-xl text-[#1A1A1A] flex flex-col md:flex-row items-center justify-between gap-8 border border-gray-100 shadow-sm mt-12">
+        <div className="text-center md:text-left">
+          <p className="text-[10px] font-bold uppercase tracking-[0.2em] text-gray-400 mb-1">Grand Total</p>
+          <h3 className="text-4xl font-bold text-[#1A1A1A]">₹{total.toLocaleString('en-IN')}</h3>
         </div>
         
         <button 
           onClick={() => navigate('/checkout')}
-          className="w-full md:w-auto bg-brand-orange text-white px-12 py-5 rounded-2xl flex items-center justify-center gap-4 hover:bg-white hover:text-brand-orange transition-all font-bold active:scale-95 group"
+          className="w-full md:w-auto bg-brand-orange text-white px-12 py-4.5 rounded-xl flex items-center justify-center gap-4 hover:bg-brand-orange-dark transition-all font-bold active:scale-95 group shadow-lg shadow-brand-orange/20"
         >
           <span className="uppercase tracking-[0.2em] text-xs">Checkout Now</span>
           <ArrowRight size={18} className="group-hover:translate-x-2 transition-transform" />

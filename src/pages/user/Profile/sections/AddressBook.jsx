@@ -1,13 +1,16 @@
 import React, { useState, useEffect } from 'react';
 import { db } from '../../../../firebase';
-import { collection, query, onSnapshot, doc, setDoc, updateDoc, deleteDoc, serverTimestamp, getDocs } from 'firebase/firestore';
-import { MapPin, Plus, Trash2, Edit3, CheckCircle2, Home, Briefcase, Landmark, Loader2, X } from 'lucide-react';
+import { collection, query, onSnapshot, doc, addDoc, updateDoc, deleteDoc, writeBatch, getDocs } from 'firebase/firestore';
+import { 
+  Plus, MapPin, Home, Briefcase, Trash2, Edit3, CheckCircle2, 
+  X, Loader2, Save, Map
+} from 'lucide-react';
 import toast from 'react-hot-toast';
 
 const ADDRESS_TYPES = [
-  { id: 'Home', icon: <Home size={16} /> },
-  { id: 'Work', icon: <Briefcase size={16} /> },
-  { id: 'Office', icon: <Landmark size={16} /> },
+  { id: 'HOME', label: 'Home', icon: <Home size={14} /> },
+  { id: 'OFFICE', label: 'Office', icon: <Briefcase size={14} /> },
+  { id: 'OTHER', label: 'Other', icon: <MapPin size={14} /> }
 ];
 
 export default function AddressBook({ user }) {
@@ -16,13 +19,13 @@ export default function AddressBook({ user }) {
   const [isModalOpen, setIsModalOpen] = useState(false);
   const [editingId, setEditingId] = useState(null);
   const [formData, setFormData] = useState({
-    type: 'Home',
     fullName: '',
     phone: '',
     address: '',
     city: '',
     state: '',
     zip: '',
+    type: 'HOME',
     isDefault: false
   });
 
@@ -30,84 +33,74 @@ export default function AddressBook({ user }) {
     if (!user) return;
     const q = query(collection(db, 'users', user.uid, 'addresses'));
     const unsubscribe = onSnapshot(q, (snapshot) => {
-      const data = snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() }));
-      setAddresses(data);
+      setAddresses(snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() })));
       setLoading(false);
     });
     return () => unsubscribe();
   }, [user]);
 
-  const handleOpenModal = (address = null) => {
-    if (address) {
-      setFormData(address);
-      setEditingId(address.id);
+  const handleOpenModal = (addr = null) => {
+    if (addr) {
+      setFormData(addr);
+      setEditingId(addr.id);
     } else {
       setFormData({
-        type: 'Home',
         fullName: '',
         phone: '',
         address: '',
         city: '',
         state: '',
         zip: '',
-        isDefault: false
+        type: 'HOME',
+        isDefault: addresses.length === 0
       });
       setEditingId(null);
     }
     setIsModalOpen(true);
   };
 
-  const handleSetDefault = async (id) => {
-    try {
-      const batch = [];
-      addresses.forEach(addr => {
-        const ref = doc(db, 'users', user.uid, 'addresses', addr.id);
-        batch.push(updateDoc(ref, { isDefault: addr.id === id }));
-      });
-      await Promise.all(batch);
-      toast.success('Default address updated');
-    } catch (error) {
-      toast.error('Failed to set default address');
-    }
-  };
-
   const handleDelete = async (id) => {
-    if (!window.confirm('Delete this address?')) return;
+    if (!window.confirm('Are you sure you want to delete this address?')) return;
     try {
       await deleteDoc(doc(db, 'users', user.uid, 'addresses', id));
       toast.success('Address deleted');
     } catch (error) {
-      toast.error('Failed to delete address');
+      toast.error('Error deleting address');
+    }
+  };
+
+  const handleSetDefault = async (id) => {
+    try {
+      const batch = writeBatch(db);
+      addresses.forEach(addr => {
+        batch.update(doc(db, 'users', user.uid, 'addresses', addr.id), { isDefault: addr.id === id });
+      });
+      await batch.commit();
+      toast.success('Default address updated');
+    } catch (error) {
+      toast.error('Error setting default');
     }
   };
 
   const handleSubmit = async (e) => {
     e.preventDefault();
     try {
+      const addrData = { ...formData, updatedAt: new Date() };
+      
       if (formData.isDefault) {
-        // Unset others if this is default
-        const batch = [];
-        addresses.forEach(addr => {
-          if (addr.id !== editingId) {
-             batch.push(updateDoc(doc(db, 'users', user.uid, 'addresses', addr.id), { isDefault: false }));
-          }
+        const batch = writeBatch(db);
+        const querySnapshot = await getDocs(collection(db, 'users', user.uid, 'addresses'));
+        querySnapshot.forEach((doc) => {
+          batch.update(doc.ref, { isDefault: false });
         });
-        await Promise.all(batch);
+        await batch.commit();
       }
 
       if (editingId) {
-        await updateDoc(doc(db, 'users', user.uid, 'addresses', editingId), {
-          ...formData,
-          updatedAt: serverTimestamp()
-        });
+        await updateDoc(doc(db, 'users', user.uid, 'addresses', editingId), addrData);
         toast.success('Address updated');
       } else {
-        const newRef = doc(collection(db, 'users', user.uid, 'addresses'));
-        await setDoc(newRef, {
-          ...formData,
-          isDefault: addresses.length === 0 ? true : formData.isDefault,
-          createdAt: serverTimestamp()
-        });
+        await addDoc(collection(db, 'users', user.uid, 'addresses'), addrData);
         toast.success('Address added');
       }
       setIsModalOpen(false);
@@ -119,17 +112,17 @@ export default function AddressBook({ user }) {
   if (loading) return <div className="flex justify-center p-20"><Loader2 className="animate-spin text-brand-orange" size={40} /></div>;
 
   return (
-    <div className="bg-white p-10 md:p-14 rounded-[4rem] shadow-sm border border-gray-50">
-      <div className="flex flex-col md:flex-row md:items-center justify-between gap-6 mb-12">
-        <div className="flex items-center gap-4">
-          <MapPin className="text-brand-orange" size={28} />
-          <h2 className="text-3xl font-fashion font-bold text-[#1A1A1A]">Address Book</h2>
+    <div className="bg-white p-8 rounded-xl shadow-sm border border-gray-100">
+      <div className="flex flex-col md:flex-row md:items-center justify-between gap-4 mb-10">
+        <div>
+          <h2 className="text-xl font-bold text-[#1A1A1A]">Address Book</h2>
+          <p className="text-xs text-gray-400 font-medium mt-1">Manage your shipping and billing addresses.</p>
         </div>
         <button 
           onClick={() => handleOpenModal()}
-          className="btn btn-primary px-8 py-4 rounded-2xl flex items-center gap-2 active:scale-95 transition-all text-sm font-bold uppercase tracking-widest"
+          className="bg-brand-orange text-white px-8 py-3 rounded-xl flex items-center gap-2 hover:bg-brand-orange-dark transition-all text-xs font-bold uppercase tracking-widest shadow-lg shadow-brand-orange/20"
         >
-          <Plus size={18} /> New Address
+          <Plus size={16} strokeWidth={3} /> New Address
         </button>
       </div>
 
@@ -137,39 +130,39 @@ export default function AddressBook({ user }) {
         {addresses.map((addr) => (
           <div 
             key={addr.id} 
-            className={`p-10 rounded-[3rem] border-2 transition-all relative group ${
-              addr.isDefault ? 'border-brand-orange/20 bg-brand-orange/[0.02]' : 'border-gray-50 bg-[#FAF9F6]/50'
+            className={`p-6 rounded-xl border-2 transition-all relative group ${
+              addr.isDefault ? 'border-brand-orange/20 bg-brand-orange/[0.02]' : 'border-gray-50 bg-white shadow-sm'
             }`}
           >
             {addr.isDefault && (
-              <div className="absolute top-8 right-8 flex items-center gap-2 text-brand-orange bg-white px-4 py-1.5 rounded-full text-[9px] font-black uppercase tracking-widest shadow-sm">
-                <CheckCircle2 size={12} strokeWidth={3} /> Default
+              <div className="absolute top-6 right-6 flex items-center gap-1.5 text-brand-orange bg-white px-3 py-1 rounded-full text-[8px] font-bold uppercase tracking-widest shadow-sm border border-brand-orange/10">
+                <CheckCircle2 size={10} strokeWidth={3} /> Default
               </div>
             )}
 
-            <div className="flex items-center gap-3 text-gray-400 mb-6 font-bold uppercase tracking-widest text-[10px]">
+            <div className="flex items-center gap-2 text-gray-400 mb-4 font-bold uppercase tracking-widest text-[9px] bg-gray-50 w-fit px-3 py-1 rounded-lg">
               {ADDRESS_TYPES.find(t => t.id === addr.type)?.icon} {addr.type}
             </div>
 
-            <div className="space-y-1 mb-8">
-              <h4 className="text-lg font-fashion font-bold text-[#1A1A1A]">{addr.fullName}</h4>
-              <p className="text-sm text-gray-500 leading-relaxed max-w-[200px]">
+            <div className="space-y-1 mb-6">
+              <h4 className="text-base font-bold text-[#1A1A1A]">{addr.fullName}</h4>
+              <p className="text-sm text-gray-400 font-medium leading-relaxed">
                 {addr.address}, {addr.city}, {addr.state} - {addr.zip}
               </p>
-              <p className="text-sm font-bold text-gray-400 mt-2">{addr.phone}</p>
+              <p className="text-xs font-bold text-brand-orange mt-2 uppercase tracking-wider">{addr.phone}</p>
             </div>
 
-            <div className="flex items-center gap-4 border-t border-gray-100 pt-8 mt-4">
-              <button onClick={() => handleOpenModal(addr)} className="p-3 bg-white text-gray-400 hover:text-brand-orange rounded-xl shadow-sm hover:shadow-md transition-all active:scale-90">
-                <Edit3 size={16} />
+            <div className="flex items-center gap-3 border-t border-gray-50 pt-5 mt-2">
+              <button onClick={() => handleOpenModal(addr)} className="p-2.5 bg-white text-gray-400 hover:text-brand-orange rounded-xl border border-gray-100 shadow-sm transition-all">
+                <Edit3 size={14} />
               </button>
-              <button onClick={() => handleDelete(addr.id)} className="p-3 bg-white text-gray-400 hover:text-red-500 rounded-xl shadow-sm hover:shadow-md transition-all active:scale-90">
-                <Trash2 size={16} />
+              <button onClick={() => handleDelete(addr.id)} className="p-2.5 bg-white text-gray-400 hover:text-red-500 rounded-xl border border-gray-100 shadow-sm transition-all">
+                <Trash2 size={14} />
               </button>
               {!addr.isDefault && (
                 <button 
                   onClick={() => handleSetDefault(addr.id)}
-                  className="ml-auto text-[10px] font-black uppercase tracking-widest text-gray-400 hover:text-brand-orange transition-colors"
+                  className="ml-auto text-[10px] font-bold uppercase tracking-widest text-gray-300 hover:text-brand-orange transition-colors"
                 >
                   Set as Default
                 </button>
@@ -181,68 +174,64 @@ export default function AddressBook({ user }) {
 
       {/* Address Modal */}
       {isModalOpen && (
-        <div className="fixed inset-0 z-[100] flex items-center justify-center p-6 bg-[#1A1A1A]/20 backdrop-blur-md">
-          <div className="bg-white w-full max-w-2xl rounded-[4rem] shadow-2xl overflow-hidden animate-in fade-in zoom-in duration-300">
-            <div className="p-10 md:p-14">
-              <div className="flex items-center justify-between mb-10">
-                <h3 className="text-2xl font-fashion font-bold text-[#1A1A1A]">
-                  {editingId ? 'Edit Address' : 'Add New Address'}
-                </h3>
-                <button onClick={() => setIsModalOpen(false)} className="p-3 bg-gray-50 rounded-full text-gray-400 hover:text-[#1A1A1A] transition-colors">
-                  <X size={20} />
+        <div className="fixed inset-0 z-[2000] flex items-center justify-center p-4 bg-black/10 backdrop-blur-md overflow-y-auto py-10 md:py-20">
+          <div className="bg-white w-full max-w-xl rounded-xl shadow-2xl overflow-hidden border border-gray-100 my-auto">
+            <div className="p-8 md:p-10 max-h-[90vh] overflow-y-auto no-scrollbar">
+              <div className="flex items-center justify-between mb-8 sticky top-0 bg-white z-10 pb-2">
+                <div className="flex items-center gap-3">
+                  <h3 className="text-xl font-bold text-[#1A1A1A]">
+                    {editingId ? 'Edit Address' : 'Add New Address'}
+                  </h3>
+                </div>
+                <button onClick={() => setIsModalOpen(false)} className="p-2 bg-gray-50 rounded-full text-gray-400 hover:text-red-500 transition-colors">
+                  <X size={18} />
                 </button>
               </div>
 
               <form onSubmit={handleSubmit} className="space-y-6">
-                <div className="space-y-3">
-                  <label className="text-[10px] uppercase font-bold tracking-widest text-gray-400 block px-2">Address Type</label>
-                  <div className="flex gap-4 p-2 bg-[#FAF9F6] rounded-2xl">
-                    {ADDRESS_TYPES.map(t => (
-                      <button
-                        key={t.id}
-                        type="button"
-                        onClick={() => setFormData({...formData, type: t.id})}
-                        className={`flex-1 py-3 rounded-xl flex items-center justify-center gap-2 text-xs font-bold transition-all ${
-                          formData.type === t.id 
-                          ? 'bg-brand-orange text-white shadow-lg shadow-brand-orange/20' 
-                          : 'text-gray-400 hover:text-text-main'
-                        }`}
-                      >
-                        {t.icon} {t.id}
-                      </button>
-                    ))}
+                <div className="grid grid-cols-2 gap-4">
+                  {ADDRESS_TYPES.map(t => (
+                    <button
+                      key={t.id}
+                      type="button"
+                      onClick={() => setFormData({ ...formData, type: t.id })}
+                      className={`flex items-center justify-center gap-2 p-4 rounded-xl border-2 transition-all font-bold text-[10px] uppercase tracking-widest ${
+                        formData.type === t.id ? 'border-brand-orange bg-brand-orange/[0.03] text-brand-orange' : 'border-gray-50 text-gray-400'
+                      }`}
+                    >
+                      {t.icon} {t.label}
+                    </button>
+                  ))}
+                </div>
+
+                <div className="space-y-4">
+                  <ModalInput label="Full Name" value={formData.fullName} onChange={(v) => setFormData({...formData, fullName: v})} />
+                  <ModalInput label="Phone Number" value={formData.phone} onChange={(v) => setFormData({...formData, phone: v})} type="tel" />
+                  <ModalInput label="Street Address" value={formData.address} onChange={(v) => setFormData({...formData, address: v})} />
+                  <div className="grid grid-cols-2 gap-4">
+                    <ModalInput label="City" value={formData.city} onChange={(v) => setFormData({...formData, city: v})} />
+                    <ModalInput label="State" value={formData.state} onChange={(v) => setFormData({...formData, state: v})} />
                   </div>
+                  <ModalInput label="ZIP / Postal Code" value={formData.zip} onChange={(v) => setFormData({...formData, zip: v})} />
                 </div>
 
-                <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-                  <ModalInput label="Full Name" value={formData.fullName} onChange={v => setFormData({...formData, fullName: v})} />
-                  <ModalInput label="Phone" type="tel" value={formData.phone} onChange={v => setFormData({...formData, phone: v})} />
-                </div>
-                
-                <ModalInput label="Street Address" value={formData.address} onChange={v => setFormData({...formData, address: v})} />
-
-                <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
-                  <ModalInput label="City" value={formData.city} onChange={v => setFormData({...formData, city: v})} />
-                  <ModalInput label="State" value={formData.state} onChange={v => setFormData({...formData, state: v})} />
-                  <ModalInput label="Zip Code" value={formData.zip} onChange={v => setFormData({...formData, zip: v})} />
-                </div>
-
-                <div className="flex items-center gap-3 px-2">
+                <div className="flex items-center gap-3 p-4 bg-gray-50 rounded-xl">
                   <input 
                     type="checkbox" 
-                    id="isDefault" 
-                    checked={formData.isDefault} 
-                    onChange={e => setFormData({...formData, isDefault: e.target.checked})}
-                    className="w-5 h-5 accent-brand-orange rounded-md"
+                    id="isDefault"
+                    checked={formData.isDefault}
+                    onChange={(e) => setFormData({...formData, isDefault: e.target.checked})}
+                    className="w-4 h-4 accent-brand-orange"
                   />
-                  <label htmlFor="isDefault" className="text-sm font-medium text-gray-500">Set as my default shipping address</label>
+                  <label htmlFor="isDefault" className="text-xs font-bold text-gray-500">Set as default address</label>
                 </div>
 
-                <div className="pt-8 border-t border-gray-50 mt-10">
-                  <button type="submit" className="btn btn-primary w-full py-5 rounded-3xl uppercase tracking-[0.2em] font-bold text-sm">
-                    {editingId ? 'Update Address' : 'Save Address'}
-                  </button>
-                </div>
+                <button 
+                  type="submit"
+                  className="w-full bg-brand-orange text-white py-4 rounded-xl font-bold uppercase tracking-[0.2em] text-xs shadow-lg shadow-brand-orange/20 hover:bg-brand-orange-dark transition-all active:scale-95 flex items-center justify-center gap-2"
+                >
+                  <Save size={16} /> Save Address
+                </button>
               </form>
             </div>
           </div>
@@ -254,14 +243,14 @@ export default function AddressBook({ user }) {
 
 function ModalInput({ label, value, onChange, type = 'text' }) {
   return (
-    <div className="space-y-2">
-      <label className="text-[10px] uppercase font-bold tracking-widest text-gray-400 block px-2">{label}</label>
+    <div className="space-y-1.5">
+      <label className="text-[10px] font-black uppercase tracking-widest text-gray-400 px-1">{label}</label>
       <input 
-        type={type} 
+        type={type}
+        required
         value={value}
         onChange={(e) => onChange(e.target.value)}
-        className="w-full bg-[#FAF9F6] px-6 py-4 rounded-2xl border border-transparent focus:outline-none focus:border-brand-orange/20 focus:bg-white transition-all font-medium text-sm"
-        required
+        className="w-full bg-white border-2 border-gray-50 rounded-xl px-5 py-3.5 text-sm font-bold text-[#1A1A1A] focus:outline-none focus:border-brand-orange transition-all"
       />
     </div>
   );
