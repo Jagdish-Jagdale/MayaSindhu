@@ -1,9 +1,9 @@
 import React, { useState, useEffect } from 'react';
 import { db } from '../../../../firebase';
-import { collection, query, orderBy, onSnapshot, doc, deleteDoc } from 'firebase/firestore';
-import { Heart, ShoppingBag, X, Loader2, Trash2 } from 'lucide-react';
-import ProductCard from '../../../../components/user/ProductCard';
+import { collection, query, onSnapshot, doc, deleteDoc } from 'firebase/firestore';
+import { Heart, ShoppingBag, Trash2, ArrowRight } from 'lucide-react';
 import { Link } from 'react-router-dom';
+import toast from 'react-hot-toast';
 
 export default function WishlistTab({ user }) {
   const [items, setItems] = useState([]);
@@ -11,68 +11,66 @@ export default function WishlistTab({ user }) {
 
   useEffect(() => {
     if (!user) return;
-
-    const q = query(
-      collection(db, 'users', user.uid, 'wishlist'),
-      orderBy('addedAt', 'desc')
-    );
-
+    const q = query(collection(db, 'users', user.uid, 'wishlist'));
     const unsubscribe = onSnapshot(q, (snapshot) => {
-      const wishlistItems = snapshot.docs.map(doc => ({
-        docId: doc.id,
-        ...doc.data()
-      }));
-      setItems(wishlistItems);
-      setLoading(false);
-    }, (error) => {
-      console.error("Wishlist listener error:", error);
+      setItems(snapshot.docs.map(doc => ({ docId: doc.id, ...doc.data() })));
       setLoading(false);
     });
-
     return () => unsubscribe();
   }, [user]);
 
   const removeItem = async (docId) => {
     try {
       await deleteDoc(doc(db, 'users', user.uid, 'wishlist', docId));
+      toast.success('Item removed');
     } catch (error) {
-      console.error("Error removing item:", error);
+      toast.error('Error removing item');
     }
   };
 
-  if (loading) return <div className="flex justify-center p-20"><Loader2 className="animate-spin text-brand-orange" size={40} /></div>;
+  if (loading) return null;
 
   return (
-    <div className="bg-white p-10 md:p-14 rounded-[4rem] shadow-sm border border-gray-50">
-      <div className="flex items-center gap-4 mb-12">
-        <Heart className="text-brand-orange" size={28} />
-        <h2 className="text-3xl font-fashion font-bold text-[#1A1A1A]">My Wishlist</h2>
+    <div className="space-y-8">
+      <div className="flex items-center justify-between">
+        <h2 className="text-xl font-bold text-[#1A1A1A]">My Wishlist</h2>
+        <span className="bg-brand-orange/10 text-brand-orange px-4 py-1 rounded-full text-[10px] font-black uppercase tracking-widest">
+          {items.length} Items
+        </span>
       </div>
 
       {items.length === 0 ? (
-        <div className="text-center py-20 bg-[#FAF9F6] rounded-[3rem]">
-          <Heart size={48} className="text-gray-200 mx-auto mb-6" />
-          <p className="text-gray-500 font-medium mb-8">No treasures saved yet.</p>
-          <Link to="/shop" className="btn btn-primary px-10">Start Shopping</Link>
+        <div className="bg-white p-12 rounded-xl border border-gray-100 text-center shadow-sm">
+          <div className="w-20 h-20 bg-gray-50 rounded-full flex items-center justify-center mx-auto mb-6">
+            <Heart size={32} className="text-gray-200" />
+          </div>
+          <p className="text-gray-400 font-bold text-xs uppercase tracking-widest mb-8">Your wishlist is currently empty</p>
+          <Link to="/shop" className="bg-[#1A1A1A] text-white px-10 py-4 rounded-xl text-[11px] font-bold uppercase tracking-widest hover:bg-black transition-all shadow-lg">Start Shopping</Link>
         </div>
       ) : (
-        <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-10">
+        <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-8">
           {items.map((item) => (
-            <div key={item.docId} className="relative group">
-              <button
-                onClick={() => removeItem(item.docId)}
-                className="absolute top-4 right-4 z-20 w-10 h-10 bg-white shadow-lg rounded-full flex items-center justify-center text-gray-400 hover:text-red-500 transition-all active:scale-90"
-              >
-                <X size={18} strokeWidth={2.5} />
-              </button>
-              <div className="flex flex-col h-full bg-[#FAF9F6]/50 p-4 rounded-[40px] border border-transparent hover:border-brand-orange/10 transition-all">
-                <ProductCard {...item} />
+            <div key={item.docId} className="bg-white rounded-xl border border-gray-100 shadow-sm overflow-hidden group hover:shadow-md transition-all duration-500">
+              <div className="relative aspect-[1/1.2] overflow-hidden bg-gray-50">
+                <img src={item.image} alt={item.name} className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-700" />
                 <button 
                   onClick={() => removeItem(item.docId)}
-                  className="mt-6 text-[11px] font-black uppercase tracking-widest text-gray-400 hover:text-red-500 transition-colors flex items-center justify-center gap-2"
+                  className="absolute top-4 right-4 w-9 h-9 bg-white/90 backdrop-blur-sm rounded-full flex items-center justify-center text-gray-400 hover:text-red-500 transition-all shadow-sm"
                 >
-                  <Trash2 size={14} /> Remove Item
+                  <Trash2 size={16} />
                 </button>
+              </div>
+              
+              <div className="p-6">
+                <h3 className="font-bold text-[#1A1A1A] mb-1 truncate">{item.name}</h3>
+                <p className="text-brand-orange font-bold text-sm mb-6">₹{item.price.toLocaleString('en-IN')}</p>
+                
+                <Link 
+                  to={`/product/${item.productId || item.id}`}
+                  className="w-full bg-[#1A1A1A] text-white py-3 rounded-lg flex items-center justify-center gap-2 text-[10px] font-bold uppercase tracking-widest hover:bg-black transition-all group"
+                >
+                  View Details <ArrowRight size={14} className="group-hover:translate-x-1 transition-transform" />
+                </Link>
               </div>
             </div>
           ))}

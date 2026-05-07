@@ -126,10 +126,6 @@ export default function Shop() {
   return (
     <div className="bg-[#FAF9F6] min-h-screen pt-12 pb-24 font-sans">
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-        <button onClick={goBack} className="flex items-center gap-2 text-sm font-medium text-gray-500 hover:text-black transition-all group mb-4 w-fit">
-          <ArrowLeft size={18} className="transition-transform group-hover:-translate-x-1" />
-          Back
-        </button>
         <header className="mb-6 text-center">
           <h1 className="text-xl md:text-2xl font-fashion text-[#1A1A1A] capitalize tracking-wide">
             {filter === 'All' ? 'The Collection' : filter}

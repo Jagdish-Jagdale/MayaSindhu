@@ -314,8 +314,7 @@ export default function Checkout() {
                     </motion.div>
                   )}
 
-                  <div className="mt-12 flex justify-between">
-                    <button onClick={prevStep} className="text-sm font-bold text-gray-400 hover:text-[#1A1A1A] transition-colors">Back to Shipping</button>
+                  <div className="mt-12 flex justify-end">
                     <button onClick={handlePlaceOrder} className="btn btn-primary px-12 py-5 rounded-2xl flex items-center gap-2 transition-transform active:scale-95 shadow-xl shadow-brand-orange/20">
                       Place Order <Lock size={16} />
                     </button>

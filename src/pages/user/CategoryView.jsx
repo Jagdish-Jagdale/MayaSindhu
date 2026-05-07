@@ -144,10 +144,6 @@ export default function CategoryView() {
         {/* Sidebar - Desktop */}
         <aside className="hidden md:block w-80 lg:w-96 flex-shrink-0 bg-[#F9F9F9] border-r border-gray-100 min-h-screen">
           <div className="sticky top-24 p-8 lg:p-10">
-            <button onClick={goBack} className="flex items-center gap-2 text-sm font-medium text-gray-500 hover:text-brand-orange transition-all group mb-10 w-fit">
-              <ArrowLeft size={18} className="transition-transform group-hover:-translate-x-1" />
-              Back
-            </button>
             <FilterSidebar
               className="bg-transparent p-0"
               categories={breadcrumbs.length > 0 ? [breadcrumbs[0]] : []}
