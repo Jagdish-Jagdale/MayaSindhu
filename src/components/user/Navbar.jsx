@@ -29,6 +29,36 @@ export default function Navbar() {
   const [wishlistCount, setWishlistCount] = useState(0);
   const location = useLocation();
   const navigate = useNavigate();
+  const [searchQuery, setSearchQuery] = useState('');
+
+  const handleSearch = (e) => {
+    if (e.key === 'Enter' || e.type === 'click') {
+      if (searchQuery.trim()) {
+        navigate(`/shop?q=${encodeURIComponent(searchQuery.trim())}`);
+        setIsMobileSearchOpen(false);
+      }
+    }
+  };
+
+  // Live Search - Debounced
+  useEffect(() => {
+    const timer = setTimeout(() => {
+      if (searchQuery.trim()) {
+        // Only trigger live search if we are already on the shop page or if it's a significant enough query
+        // This avoids jarring navigation if the user is on Home and just starts typing
+        if (location.pathname === '/shop' || searchQuery.length > 2) {
+          navigate(`/shop?q=${encodeURIComponent(searchQuery.trim())}`, { replace: true });
+        }
+      } else if (location.pathname === '/shop' && !searchQuery && location.search.includes('q=')) {
+        // Clear search if query is empty on shop page
+        const params = new URLSearchParams(location.search);
+        params.delete('q');
+        navigate(`/shop${params.toString() ? '?' + params.toString() : ''}`, { replace: true });
+      }
+    }, 400); // 400ms debounce
+
+    return () => clearTimeout(timer);
+  }, [searchQuery, navigate, location.pathname]);
 
   // Define the preferred order for main categories
   const categoryOrder = [
@@ -52,6 +82,11 @@ export default function Navbar() {
 
     return indexA - indexB;
   });
+
+  useEffect(() => {
+    const q = new URLSearchParams(location.search).get('q') || '';
+    setSearchQuery(q);
+  }, [location.search]);
 
   useEffect(() => {
     const handleScroll = () => setIsScrolled(window.scrollY > 20);
@@ -123,9 +158,15 @@ export default function Navbar() {
               <input
                 type="text"
                 placeholder="Search curated art..."
+                value={searchQuery}
+                onChange={(e) => setSearchQuery(e.target.value)}
+                onKeyDown={handleSearch}
                 className="w-full bg-gray-50 border border-gray-200 rounded-full py-2.5 pl-6 pr-12 focus:outline-none focus:bg-white focus:ring-4 focus:ring-brand-orange/10 transition-all text-sm placeholder-brand-black/40 text-brand-black shadow-sm"
               />
-              <div className="absolute right-4 top-1/2 -translate-y-1/2 text-brand-black/50 group-hover:text-brand-orange transition-colors cursor-pointer">
+              <div 
+                onClick={handleSearch}
+                className="absolute right-4 top-1/2 -translate-y-1/2 text-brand-black/50 group-hover:text-brand-orange transition-colors cursor-pointer"
+              >
                 <Search size={18} strokeWidth={2} />
               </div>
             </div>
@@ -190,10 +231,16 @@ export default function Navbar() {
                   <input
                     type="text"
                     placeholder="Search for Sarees, Jewelry..."
+                    value={searchQuery}
+                    onChange={(e) => setSearchQuery(e.target.value)}
+                    onKeyDown={handleSearch}
                     autoFocus
                     className="w-full bg-white border border-gray-200 rounded-full py-4 pl-6 pr-12 focus:outline-none focus:border-brand-orange focus:ring-4 focus:ring-brand-orange/5 transition-all text-sm"
                   />
-                  <div className="absolute right-4 top-1/2 -translate-y-1/2 text-brand-orange">
+                  <div 
+                    onClick={handleSearch}
+                    className="absolute right-4 top-1/2 -translate-y-1/2 text-brand-orange"
+                  >
                     <Search size={20} />
                   </div>
                 </div>
