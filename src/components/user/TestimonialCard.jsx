@@ -41,10 +41,10 @@ export default function TestimonialCard({ review, index }) {
         {/* Rating */}
         <div className="flex space-x-0.5 mb-3">
           {[...Array(5)].map((_, i) => (
-            <Star 
-              key={i} 
-              size={12} 
-              className={i < review.rating ? 'fill-[#FFB800] text-[#FFB800]' : 'text-gray-100'} 
+            <Star
+              key={i}
+              size={12}
+              className={i < review.rating ? 'fill-[#FFB800] text-[#FFB800]' : 'text-gray-100'}
             />
           ))}
         </div>

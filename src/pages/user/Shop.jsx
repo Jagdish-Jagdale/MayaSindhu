@@ -158,26 +158,35 @@ export default function Shop() {
     <div className="bg-[#FAF9F6] min-h-screen pt-4 pb-24 font-sans">
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
 
-        <header className="mb-8 text-center px-4">
-          <h1 className="text-2xl md:text-3xl font-fashion text-[#1A1A1A] capitalize tracking-wide">
+        <header className="mb-12 md:mb-16 text-center pt-8">
+          <nav className="mb-6 flex justify-center items-center gap-3 text-[10px] font-bold uppercase tracking-[0.2em] text-gray-400">
+            <Link to="/" className="hover:text-brand-orange transition-colors">Home</Link>
+            <span className="w-1 h-1 bg-gray-300 rounded-full"></span>
+            <span className="text-brand-orange">Shop</span>
+          </nav>
+          
+          <h1 className="text-4xl md:text-6xl font-fashion text-[#111111] capitalize tracking-tight leading-none mb-4">
             {searchQuery ? (
-              <div className="flex flex-col items-center gap-3">
-                <span className="text-gray-400 text-xs font-sans uppercase tracking-widest">Search results for</span>
-                <div className="flex items-center gap-3 text-brand-orange">
+              <div className="flex flex-col items-center gap-4">
+                <span className="text-gray-400 text-xs font-sans uppercase tracking-[0.3em]">Search results for</span>
+                <div className="flex items-center gap-4 text-brand-orange">
                   "{searchQuery}"
                   <button 
                     onClick={clearSearch}
-                    className="p-1.5 hover:bg-orange-50 rounded-full transition-colors"
+                    className="p-2 bg-gray-50 hover:bg-orange-50 rounded-full transition-colors border border-gray-100"
                     title="Clear search"
                   >
-                    <X size={18} />
+                    <X size={16} />
                   </button>
                 </div>
               </div>
             ) : (
-              filter === 'All' ? 'The Collection' : filter
+              filter === 'All' ? 'The Complete Collection' : filter
             )}
           </h1>
+          <p className="text-gray-400 text-[10px] md:text-xs font-bold uppercase tracking-[0.5em] mt-6">
+            MayaSindhu / Curated Treasures
+          </p>
         </header>
 
         <div className="flex flex-col md:flex-row gap-8 lg:gap-12">

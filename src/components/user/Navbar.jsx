@@ -330,9 +330,9 @@ export default function Navbar() {
       </div>
 
       {/* Category Navigation (Desktop) - Adjusted for secondary nav look */}
-      <nav className="hidden md:block bg-gray-50 border-b border-gray-200 shadow-sm">
+      <nav className={`hidden md:block transition-all duration-500 ${isScrolled ? 'bg-white/80 backdrop-blur-xl border-b border-gray-100' : 'bg-gray-50 border-b border-gray-200'}`}>
         <div className="max-w-[1536px] mx-auto px-6 py-0">
-          <ul className="flex items-center justify-start gap-8 lg:gap-12 overflow-x-auto no-scrollbar py-0.5 w-full">
+          <ul className="flex items-center justify-start gap-10 lg:gap-14 overflow-x-auto no-scrollbar py-1 w-full">
             {sortedCategories.map((category, index) => (
               <NavItem
                 key={category.id}
@@ -394,14 +394,14 @@ function NavItem({ category, location, side }) {
     >
       <Link
         to={category.fullPath}
-        className={`flex items-center gap-1.5 text-[15px] font-normal tracking-normal font-sans py-1.5 whitespace-nowrap transition-colors ${isActive || isHovered ? 'text-brand-orange' : 'text-gray-700 hover:text-brand-black'
+        className={`flex items-center gap-2 text-[14px] font-medium tracking-wide font-sans py-2 whitespace-nowrap transition-all duration-300 ${isActive || isHovered ? 'text-brand-orange scale-105' : 'text-gray-700 hover:text-brand-black'
           }`}
       >
         <span className="capitalize">{category.name.toLowerCase()}</span>
         {hasSubCategories && (
           <ChevronDown
-            size={16}
-            className={`transition-transform duration-300 ${isHovered ? 'rotate-180' : ''}`}
+            size={14}
+            className={`transition-transform duration-500 ${isHovered ? 'rotate-180 text-brand-orange' : 'text-gray-400'}`}
           />
         )}
       </Link>

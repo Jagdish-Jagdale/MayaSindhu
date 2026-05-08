@@ -393,11 +393,16 @@ export default function Home() {
 
       {/* 3. Explore Category (Responsive Grid) */}
       <section className="py-12 md:py-16 max-w-[1536px] mx-auto px-4 md:px-8 lg:px-[60px] bg-white">
-        <div className="mb-12 md:mb-20 text-center">
+        <motion.div
+          initial={{ opacity: 0, y: 20 }}
+          whileInView={{ opacity: 1, y: 0 }}
+          viewport={{ once: true }}
+          className="mb-16 md:mb-24 text-center"
+        >
           <span className="text-[10px] md:text-[11px] uppercase font-bold tracking-[0.5em] text-brand-orange mb-4 block">Curated Realms</span>
-          <h2 className="font-fashion text-brand-black tracking-normal mb-6" style={{ fontSize: 'clamp(28px, 4vw, 52px)' }}>Explore Category</h2>
-          <div className="w-16 md:w-24 h-[1px] bg-brand-orange opacity-40 mx-auto" />
-        </div>
+          <h2 className="font-fashion text-brand-black tracking-normal mb-8 leading-tight" style={{ fontSize: 'clamp(32px, 5vw, 64px)' }}>Explore Category</h2>
+          <div className="w-16 md:w-32 h-[1px] bg-brand-orange/30 mx-auto" />
+        </motion.div>
 
         {(() => {
           if (realmsLoading) {
@@ -454,10 +459,10 @@ export default function Home() {
                     >
                       {/* Background Image */}
                       <div className="absolute inset-0 bg-gray-100">
-                        <img 
-                          src={item.imageUrl} 
-                          alt={item.title} 
-                          className="w-full h-full object-cover object-top group-hover:scale-105 transition-transform duration-700 ease-out" 
+                        <img
+                          src={item.imageUrl}
+                          alt={item.title}
+                          className="w-full h-full object-cover object-top group-hover:scale-105 transition-transform duration-700 ease-out"
                         />
                       </div>
 
@@ -466,17 +471,19 @@ export default function Home() {
 
                       {/* Text Content */}
                       {(item.title || item.subtitle) && (
-                        <div className="absolute bottom-0 left-0 right-0 p-6 md:p-8 transform translate-y-2 group-hover:translate-y-0 transition-transform duration-500">
-                          {item.title && (
-                            <h4 className="text-white text-2xl md:text-3xl font-bold font-fashion mb-1 md:mb-2 leading-tight">
-                              {item.title}
-                            </h4>
-                          )}
-                          {item.subtitle && (
-                            <p className="text-white/80 text-xs md:text-sm tracking-wide font-medium">
-                              {item.subtitle}
-                            </p>
-                          )}
+                        <div className="absolute inset-x-0 bottom-0 p-8 md:p-10 z-20">
+                          <div className="transform translate-y-4 group-hover:translate-y-0 transition-transform duration-500">
+                            {item.subtitle && (
+                              <p className="text-brand-orange text-[10px] md:text-[11px] uppercase font-bold tracking-[0.3em] mb-3 opacity-0 group-hover:opacity-100 transition-all duration-500 delay-75">
+                                {item.subtitle}
+                              </p>
+                            )}
+                            {item.title && (
+                              <h4 className="text-white text-2xl md:text-4xl font-medium font-fashion leading-tight">
+                                {item.title}
+                              </h4>
+                            )}
+                          </div>
                         </div>
                       )}
 
@@ -499,11 +506,21 @@ export default function Home() {
       {/* Featured Treasures Section */}
       {featuredTreasures.length > 0 && (
         <section className="py-12 md:py-16 max-w-[1536px] mx-auto px-6 lg:px-24">
-          <div className="mb-12 md:mb-20 text-center">
-            <span className="text-[10px] md:text-[11px] uppercase font-bold tracking-[0.5em] text-[#825e5c] mb-4 block">The Selection</span>
-            <h2 className="text-3xl md:text-[52px] font-fashion font-medium text-[#111c2d] tracking-normal leading-tight mb-6">Customer Favourites</h2>
-            <div className="w-16 md:w-24 h-[1px] bg-brand-orange opacity-40 mx-auto" />
-          </div>
+          <motion.div
+            initial={{ opacity: 0, y: 20 }}
+            whileInView={{ opacity: 1, y: 0 }}
+            viewport={{ once: true }}
+            className="mb-16 md:mb-24 flex flex-col md:flex-row md:items-end md:justify-between gap-8"
+          >
+            <div className="text-left">
+              <span className="text-[10px] md:text-[11px] uppercase font-bold tracking-[0.5em] text-gray-400 mb-4 block">The Selection</span>
+              <h2 className="text-4xl md:text-[64px] font-fashion font-medium text-[#111111] tracking-tight leading-[0.9]">Customer <br className="hidden md:block" /> <span className="text-brand-orange">Favourites</span></h2>
+            </div>
+            <Link to="/shop" className="group flex items-center gap-4 text-[11px] font-bold uppercase tracking-[0.2em] border-b border-gray-200 pb-2 hover:text-brand-orange hover:border-brand-orange transition-all">
+              View All Collection
+              <ChevronRight size={16} className="group-hover:translate-x-1 transition-transform" />
+            </Link>
+          </motion.div>
 
           <div
             ref={featuredRef}
@@ -522,10 +539,16 @@ export default function Home() {
       {trends.length > 0 && (
         <section className="py-6 md:py-8 bg-bg-alt">
           <div className="max-w-[1536px] mx-auto px-6 lg:px-24">
-            <div className="mb-12 md:mb-20 text-center">
-              <h2 className="text-3xl md:text-5xl font-fashion font-medium text-text-main tracking-tight mb-6">Shop By Trend</h2>
-              <div className="w-16 md:w-24 h-[1px] bg-brand-orange opacity-40 mx-auto" />
-            </div>
+            <motion.div
+              initial={{ opacity: 0, y: 20 }}
+              whileInView={{ opacity: 1, y: 0 }}
+              viewport={{ once: true }}
+              className="mb-16 md:mb-24 text-center"
+            >
+              <span className="text-[10px] md:text-[11px] uppercase font-bold tracking-[0.5em] text-brand-orange mb-4 block">Curated Styles</span>
+              <h2 className="text-4xl md:text-6xl font-fashion font-medium text-text-main tracking-tight mb-8">Shop By Trend</h2>
+              <div className="w-16 md:w-32 h-[1px] bg-brand-orange/30 mx-auto" />
+            </motion.div>
 
             <div
               ref={artisanRef}
@@ -561,7 +584,7 @@ export default function Home() {
       {looks.length > 0 && (
         <section className="py-12 md:py-16 bg-white overflow-hidden">
           <div className="max-w-[1536px] mx-auto px-6 lg:px-24">
-            <div className="text-center mb-12 md:mb-16">
+            <div className="text-center mb-8 md:mb-12">
               <span className="text-[10px] md:text-[11px] uppercase font-bold tracking-[0.5em] text-brand-orange mb-4 block">Stories in Motion</span>
               <h2 className="text-3xl md:text-[56px] font-fashion text-text-main tracking-normal leading-tight">Shop The Look</h2>
               <div className="mx-auto w-16 md:w-24 h-[1px] bg-brand-orange opacity-40 mt-6" />
