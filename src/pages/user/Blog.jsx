@@ -1,25 +1,23 @@
 import React, { useState } from 'react';
 import { motion } from 'framer-motion';
-import { Search, Calendar, User, ArrowRight, Mail, Tag, ChevronLeft, ChevronRight } from 'lucide-react';
+import { ChevronLeft, ChevronRight, Search, ArrowRight, Calendar, User } from 'lucide-react';
 import { Link } from 'react-router-dom';
 
-const BLOG_CATEGORIES = [
-  'Fashion', 'Electronics', 'Lifestyle', 'Beauty', 'Offers', 'Trending'
-];
 
-const POPULAR_TAGS = [
-  'Sale', 'New Arrival', 'Summer', 'Winter', 'Trend', 'Premium'
-];
+
+
 
 const MOCK_BLOGS = [
   {
     id: 1,
     title: "The Art of Handwoven Sarees: A Heritage Rediscovered",
-    excerpt: "Explore the intricate journey of traditional weaving techniques that are making a massive comeback in modern fashion wardrobes...",
+    subtitle: "FEATURED STORY",
+    excerpt: "Explore the intricate journey of traditional weaving techniques that are making a massive comeback in modern fashion wardrobes. From the loom to the modern muse, witness the evolution of heritage.",
     category: "Fashion",
     author: "Maya Sharma",
     date: "May 15, 2026",
-    image: "https://images.unsplash.com/photo-1610030469983-98e550d6193c?auto=format&fit=crop&q=80&w=800",
+    image: "https://images.unsplash.com/photo-1610030469983-98e550d6193c?w=800&q=80",
+    secondaryImage: "https://images.unsplash.com/photo-1583391733956-3750e0ff4e8b?w=800&q=80",
     isFeatured: true
   },
   {
@@ -29,7 +27,7 @@ const MOCK_BLOGS = [
     category: "Lifestyle",
     author: "Arjun Rao",
     date: "May 12, 2026",
-    image: "https://images.unsplash.com/photo-1515562141207-7a88fb7ce338?auto=format&fit=crop&q=80&w=600"
+    image: "https://images.unsplash.com/photo-1515562141207-7a88fb7ce338?w=800&q=80"
   },
   {
     id: 3,
@@ -38,7 +36,7 @@ const MOCK_BLOGS = [
     category: "Trending",
     author: "Priya Varma",
     date: "May 10, 2026",
-    image: "https://images.unsplash.com/photo-1523381210434-271e8be1f52b?auto=format&fit=crop&q=80&w=600"
+    image: "https://images.unsplash.com/photo-1583391733956-3750e0ff4e8b?w=800&q=80"
   },
   {
     id: 4,
@@ -47,16 +45,58 @@ const MOCK_BLOGS = [
     category: "Fashion",
     author: "Maya Sharma",
     date: "May 08, 2026",
-    image: "https://images.unsplash.com/photo-1583391733956-3750e0ff4e8b?auto=format&fit=crop&q=80&w=600"
+    image: "https://picsum.photos/seed/saree1/800/500"
+  },
+  {
+    id: 5,
+    title: "Chanderi: The Fabric of Royalty",
+    excerpt: "Discover the lightweight elegance and shimmering textures of Chanderi silk, a favorite of queens and modern fashion icons alike...",
+    category: "Heritage",
+    author: "Rajesh Kumar",
+    date: "May 05, 2026",
+    image: "https://picsum.photos/seed/chanderi/800/500"
+  },
+  {
+    id: 6,
+    title: "The Block Print Revolution",
+    excerpt: "From Jaipur's dusty streets to global runways, how the ancient art of hand-block printing is being reimagined for today...",
+    category: "Craft",
+    author: "Anita Desai",
+    date: "May 02, 2026",
+    image: "https://picsum.photos/seed/blockprint/800/500"
+  },
+  {
+    id: 7,
+    title: "Jewelry Care 101: Preserving Heritage",
+    excerpt: "Practical tips on how to care for your handcrafted silver and gold-plated jewelry so it stays as radiant as the day you bought it...",
+    category: "Lifestyle",
+    author: "Sanjay Mehta",
+    date: "April 28, 2026",
+    image: "https://images.unsplash.com/photo-1535632066927-ab7c9ab60908?w=800&q=80"
+  },
+  {
+    id: 8,
+    title: "Varanasi: A Symphony in Silk",
+    excerpt: "A deep dive into the spiritual and artistic heart of Banarasi weaving, where every thread tells a thousand-year-old story...",
+    category: "Heritage",
+    author: "Maya Sharma",
+    date: "April 25, 2026",
+    image: "https://images.unsplash.com/photo-1512436991641-6745cdb1723f?w=800&q=80"
   }
 ];
 
 export default function Blog() {
   const [searchQuery, setSearchQuery] = useState('');
-  const [selectedCategory, setSelectedCategory] = useState('All');
 
-  const featuredBlog = MOCK_BLOGS.find(b => b.isFeatured);
+
+  const [visibleCount, setVisibleCount] = useState(3);
+
   const latestBlogs = MOCK_BLOGS.filter(b => !b.isFeatured);
+  const visibleBlogs = latestBlogs.slice(0, visibleCount);
+
+  const handleLoadMore = () => {
+    setVisibleCount(latestBlogs.length);
+  };
 
   return (
     <div className="bg-white min-h-screen font-sans text-[#1A1A1A]">
@@ -77,15 +117,16 @@ export default function Blog() {
             animate={{ opacity: 1, y: 0 }}
             className="text-4xl md:text-6xl font-fashion font-bold mb-6 tracking-tight"
           >
-            Latest Fashion & <span className="text-brand-orange">Shopping Blogs</span>
+            Our <span className="text-brand-orange">Cultural Essence</span>
           </motion.h1>
           <motion.p 
             initial={{ opacity: 0, y: 20 }}
             animate={{ opacity: 1, y: 0 }}
             transition={{ delay: 0.1 }}
-            className="text-gray-500 text-lg mb-10 max-w-2xl mx-auto leading-relaxed"
+            className="text-gray-600 text-lg md:text-xl mb-10 max-w-3xl mx-auto leading-relaxed font-light"
           >
-            Insights into the world of heritage, craftsmanship, and modern style trends curated just for the modern muse.
+            At MayaSindhu, we celebrate tradition through handcrafted creations made with care, artistry, and authenticity. 
+            Every product reflects the beauty of skilled craftsmanship, preserving cultural heritage while bringing timeless elegance into modern lifestyles.
           </motion.p>
 
           <motion.div 
@@ -107,55 +148,11 @@ export default function Blog() {
       </section>
 
       <div className="max-w-[1536px] mx-auto px-6 lg:px-24 py-20">
-        <div className="flex flex-col lg:flex-row gap-16">
+        <div className="max-w-5xl mx-auto">
           
           {/* Main Content Area */}
           <div className="flex-1 space-y-24">
             
-            {/* Featured Blog */}
-            {featuredBlog && (
-              <motion.section 
-                initial={{ opacity: 0, y: 30 }}
-                whileInView={{ opacity: 1, y: 0 }}
-                viewport={{ once: true }}
-                className="group cursor-pointer"
-              >
-                <div className="grid grid-cols-1 md:grid-cols-2 gap-10 items-center bg-[#F9F9F9] rounded-[3rem] overflow-hidden p-4 md:p-8">
-                  <div className="aspect-[4/3] rounded-[2.5rem] overflow-hidden">
-                    <img 
-                      src={featuredBlog.image} 
-                      alt={featuredBlog.title}
-                      className="w-full h-full object-cover transition-transform duration-700 group-hover:scale-110"
-                    />
-                  </div>
-                  <div className="p-4 md:p-6 space-y-6">
-                    <span className="inline-block px-4 py-1.5 bg-brand-orange/10 text-brand-orange text-[10px] font-black uppercase tracking-[0.2em] rounded-full">
-                      Featured Story
-                    </span>
-                    <h2 className="text-3xl md:text-4xl font-fashion font-bold leading-tight group-hover:text-brand-orange transition-colors">
-                      {featuredBlog.title}
-                    </h2>
-                    <p className="text-gray-500 leading-relaxed text-lg">
-                      {featuredBlog.excerpt}
-                    </p>
-                    <div className="flex items-center gap-6 text-xs text-gray-400 font-medium border-t border-gray-100 pt-6">
-                      <div className="flex items-center gap-2">
-                        <User size={14} className="text-brand-orange" />
-                        <span>{featuredBlog.author}</span>
-                      </div>
-                      <div className="flex items-center gap-2">
-                        <Calendar size={14} className="text-brand-orange" />
-                        <span>{featuredBlog.date}</span>
-                      </div>
-                    </div>
-                    <button className="flex items-center gap-3 bg-[#1A1A1A] text-white px-8 py-4 rounded-full text-[10px] font-bold uppercase tracking-[0.2em] hover:bg-brand-orange transition-all active:scale-95 shadow-lg shadow-black/10">
-                      Read More <ArrowRight size={16} />
-                    </button>
-                  </div>
-                </div>
-              </motion.section>
-            )}
-
             {/* Latest Blogs Grid */}
             <section>
               <div className="flex items-center justify-between mb-12">
@@ -163,154 +160,85 @@ export default function Blog() {
                 <div className="h-px flex-1 bg-gray-100 mx-8 hidden md:block"></div>
               </div>
               
-              <div className="grid grid-cols-1 md:grid-cols-2 gap-x-10 gap-y-16">
-                {latestBlogs.map((blog, idx) => (
+              <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-8">
+                {visibleBlogs.map((blog, idx) => (
                   <motion.div 
                     key={blog.id}
                     initial={{ opacity: 0, y: 20 }}
                     whileInView={{ opacity: 1, y: 0 }}
                     viewport={{ once: true }}
                     transition={{ delay: idx * 0.1 }}
-                    className="group"
+                    className="group bg-white rounded-2xl overflow-hidden shadow-sm border border-gray-100 flex flex-col h-full hover:shadow-xl transition-all duration-500"
                   >
-                    <div className="aspect-[16/10] rounded-[2.5rem] overflow-hidden mb-6 relative shadow-sm">
+                    {/* Card Image Wrapper */}
+                    <div className="aspect-[16/10] relative overflow-hidden">
                       <img 
                         src={blog.image} 
                         alt={blog.title} 
                         className="w-full h-full object-cover transition-transform duration-700 group-hover:scale-110"
                       />
-                      <div className="absolute top-6 left-6">
-                        <span className="px-4 py-1.5 bg-white/90 backdrop-blur-md text-[#1A1A1A] text-[9px] font-black uppercase tracking-[0.2em] rounded-full shadow-sm">
-                          {blog.category}
+                      {/* Category Badge */}
+                      <div className="absolute top-4 left-4">
+                        <span className="px-4 py-1.5 bg-[#C5A059]/90 backdrop-blur-sm text-white text-[10px] font-bold uppercase tracking-wider rounded shadow-lg">
+                          {blog.category || 'Lifestyle'}
                         </span>
                       </div>
                     </div>
-                    <div className="space-y-4 px-2">
-                      <h4 className="text-xl font-fashion font-bold leading-snug group-hover:text-brand-orange transition-colors">
+
+                    {/* Card Content */}
+                    <div className="p-6 flex flex-col flex-1">
+                      {/* Meta Info */}
+                      <div className="flex items-center gap-4 text-gray-400 text-[11px] font-medium mb-3">
+                        <div className="flex items-center gap-1.5">
+                          <Calendar size={13} className="text-[#C5A059]" />
+                          <span>24/04/2026</span>
+                        </div>
+                        <div className="flex items-center gap-1.5">
+                          <User size={13} className="text-[#C5A059]" />
+                          <span>Expert Writer</span>
+                        </div>
+                      </div>
+
+                      {/* Title */}
+                      <h4 className="text-lg font-fashion font-bold leading-tight text-[#1A1A1A] group-hover:text-brand-orange transition-colors mb-3">
                         {blog.title}
                       </h4>
-                      <p className="text-gray-500 text-sm leading-relaxed line-clamp-2">
+
+                      {/* Excerpt */}
+                      <p className="text-gray-500 text-sm leading-relaxed line-clamp-3 font-light mb-4 flex-1">
                         {blog.excerpt}
                       </p>
-                      <button className="text-brand-orange text-[10px] font-bold uppercase tracking-[0.2em] flex items-center gap-2 group/btn">
-                        Read Story <ArrowRight size={14} className="transition-transform group-hover/btn:translate-x-1" />
-                      </button>
+
+                      {/* Call to Action */}
+                      <div className="border-t border-gray-100 pt-4">
+                        <button className="flex items-center gap-2 text-[12px] font-bold uppercase tracking-widest text-[#1A1A1A] hover:text-brand-orange transition-all group/btn">
+                          Read Full Article
+                          <ArrowRight size={14} className="group-hover/btn:translate-x-1 transition-transform" />
+                        </button>
+                      </div>
                     </div>
                   </motion.div>
                 ))}
               </div>
 
-              {/* Pagination */}
-              <div className="mt-20 flex justify-center items-center gap-4">
-                <button className="w-12 h-12 rounded-full border border-gray-100 flex items-center justify-center text-gray-400 hover:bg-[#1A1A1A] hover:text-white transition-all active:scale-90">
-                  <ChevronLeft size={20} />
-                </button>
-                {[1, 2, 3].map(page => (
+              {/* Load More Button */}
+              {visibleCount < latestBlogs.length && (
+                <div className="mt-20 flex justify-center">
                   <button 
-                    key={page}
-                    className={`w-12 h-12 rounded-full text-xs font-bold transition-all ${page === 1 ? 'bg-[#1A1A1A] text-white shadow-lg' : 'bg-gray-50 text-gray-400 hover:bg-gray-100'}`}
+                    onClick={handleLoadMore}
+                    className="px-12 py-4 rounded-xl border-2 border-[#1A1A1A] text-[#1A1A1A] font-bold text-sm uppercase tracking-widest hover:bg-[#1A1A1A] hover:text-white transition-all duration-300 active:scale-95 shadow-sm"
                   >
-                    {page}
+                    Load More Articles
                   </button>
-                ))}
-                <button className="w-12 h-12 rounded-full border border-gray-100 flex items-center justify-center text-gray-400 hover:bg-[#1A1A1A] hover:text-white transition-all active:scale-90">
-                  <ChevronRight size={20} />
-                </button>
-              </div>
+                </div>
+              )}
             </section>
           </div>
-
-          {/* Sidebar */}
-          <aside className="w-full lg:w-96 space-y-16">
-            
-            {/* Categories */}
-            <div className="bg-[#F9F9F9] rounded-[2.5rem] p-10">
-              <h4 className="text-xs font-black uppercase tracking-[0.3em] mb-8 flex items-center gap-3">
-                <div className="w-1.5 h-1.5 bg-brand-orange rounded-full"></div>
-                Categories
-              </h4>
-              <div className="space-y-4">
-                {BLOG_CATEGORIES.map(cat => (
-                  <button 
-                    key={cat}
-                    onClick={() => setSelectedCategory(cat)}
-                    className={`w-full flex items-center justify-between py-2 text-sm font-medium transition-all ${selectedCategory === cat ? 'text-brand-orange' : 'text-gray-400 hover:text-[#1A1A1A]'}`}
-                  >
-                    <span>{cat}</span>
-                    <span className="text-[10px] bg-white px-2 py-1 rounded-md shadow-sm">12</span>
-                  </button>
-                ))}
-              </div>
-            </div>
-
-            {/* Popular Tags */}
-            <div className="bg-white border border-gray-100 rounded-[2.5rem] p-10">
-              <h4 className="text-xs font-black uppercase tracking-[0.3em] mb-8 flex items-center gap-3">
-                <div className="w-1.5 h-1.5 bg-brand-orange rounded-full"></div>
-                Popular Tags
-              </h4>
-              <div className="flex flex-wrap gap-3">
-                {POPULAR_TAGS.map(tag => (
-                  <button 
-                    key={tag}
-                    className="px-5 py-2.5 bg-gray-50 text-gray-400 text-[10px] font-bold uppercase tracking-widest rounded-full hover:bg-brand-orange hover:text-white transition-all border border-transparent"
-                  >
-                    {tag}
-                  </button>
-                ))}
-              </div>
-            </div>
-
-            {/* Newsletter Sidebar */}
-            <div className="bg-[#1A1A1A] rounded-[2.5rem] p-10 text-white relative overflow-hidden group">
-              <div className="absolute -right-4 -top-4 w-24 h-24 bg-brand-orange/20 rounded-full blur-2xl group-hover:scale-150 transition-transform duration-700"></div>
-              <div className="relative z-10 space-y-6 text-center">
-                <div className="w-16 h-16 bg-brand-orange/10 rounded-full flex items-center justify-center mx-auto mb-4">
-                  <Mail className="text-brand-orange" size={24} />
-                </div>
-                <h4 className="text-xl font-fashion font-bold">Stay Inspired</h4>
-                <p className="text-gray-400 text-sm leading-relaxed">
-                  Join our community to receive the latest style updates and exclusive offers.
-                </p>
-                <div className="space-y-3">
-                  <input 
-                    type="email" 
-                    placeholder="Your email address" 
-                    className="w-full bg-white/5 border border-white/10 rounded-full py-3 px-6 text-sm focus:outline-none focus:border-brand-orange transition-all"
-                  />
-                  <button className="w-full bg-brand-orange text-white py-3 rounded-full text-[10px] font-bold uppercase tracking-widest hover:bg-white hover:text-[#1A1A1A] transition-all">
-                    Subscribe Now
-                  </button>
-                </div>
-              </div>
-            </div>
-          </aside>
 
         </div>
       </div>
 
-      {/* Footer CTA */}
-      <section className="bg-[#F0F7FF] py-32 text-center px-6">
-        <motion.div 
-          initial={{ opacity: 0, scale: 0.95 }}
-          whileInView={{ opacity: 1, scale: 1 }}
-          viewport={{ once: true }}
-          className="max-w-4xl mx-auto space-y-8"
-        >
-          <h2 className="text-4xl md:text-5xl font-fashion font-bold tracking-tight">
-            Ready to find your <span className="text-brand-orange">next treasure?</span>
-          </h2>
-          <p className="text-gray-500 text-lg max-w-xl mx-auto">
-            Experience the blend of tradition and modernity in our latest collections.
-          </p>
-          <Link 
-            to="/shop" 
-            className="inline-flex items-center gap-4 bg-[#1A1A1A] text-white px-12 py-5 rounded-full text-xs font-black uppercase tracking-[0.2em] hover:bg-brand-orange transition-all shadow-2xl active:scale-95"
-          >
-            Start Shopping Today <ArrowRight size={20} />
-          </Link>
-        </motion.div>
-      </section>
+
     </div>
   );
 }

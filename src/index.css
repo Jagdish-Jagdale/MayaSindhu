@@ -2,34 +2,42 @@
 @import "tailwindcss";
 
 @theme {
-  --font-sans: "Montserrat", sans-serif;
-  --font-fashion: "Montserrat", sans-serif;
+  --font-sans: "Outfit", sans-serif;
+  --font-fashion: "Playfair Display", serif;
 
   /* Brand Palette */
-  --color-primary: #1A1A1A;
+  --color-primary: #111111;
   --color-accent: #D4AF37;
   --color-brand-orange: #F99C00;
   --color-brand-orange-dark: #D98600;
   --color-brand-orange-light: #FFF8EB;
 
   /* Functional Palette */
-  --color-text-main: #1A1A1A;
+  --color-text-main: #111111;
   --color-text-muted: #666666;
   --color-bg-alt: #FCFBF9;
   --color-brand-gray: #F7F7F7;
   
   --color-brand-white: #FFFFFF;
-  --color-brand-black: #1A1A1A;
+  --color-brand-black: #111111;
 }
 
 @layer base {
+  html {
+    scroll-behavior: smooth;
+  }
+
   body {
     @apply bg-white text-text-main font-sans antialiased;
   }
 
+  ::selection {
+    @apply bg-brand-orange/20 text-brand-orange;
+  }
+
   h1, h2, h3, h4, h5, h6 {
     @apply font-fashion text-text-main tracking-tight;
-    font-weight: 500 !important;
+    font-weight: 400 !important;
   }
 
   button, 
