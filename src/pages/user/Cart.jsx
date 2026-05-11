@@ -74,7 +74,7 @@ export default function Cart() {
 
   if (loading) {
     return (
-      <div className="min-h-screen flex items-center justify-center bg-[#FAF9F6]">
+      <div className="min-h-screen flex items-center justify-center bg-white">
         <Loader2 className="w-12 h-12 animate-spin text-brand-orange" />
       </div>
     );
@@ -94,9 +94,9 @@ export default function Cart() {
   }
 
   return (
-    <div className="bg-[#FAF9F6] min-h-screen pt-8 pb-16">
+    <div className="bg-white min-h-screen pt-8 pb-16">
       <div className="max-w-[1200px] mx-auto px-6">
-        <h1 className="text-4xl md:text-5xl font-fashion font-bold text-[#1A1A1A] mb-8">Shopping Bag</h1>
+        <h1 className="text-4xl md:text-5xl font-bold text-[#1A1A1A] mb-8">Shopping Bag</h1>
 
         <div className="grid grid-cols-1 lg:grid-cols-3 gap-12">
           {/* Cart Items List */}
@@ -109,18 +109,18 @@ export default function Cart() {
                   initial={{ opacity: 0, y: 20 }}
                   animate={{ opacity: 1, y: 0 }}
                   exit={{ opacity: 0, x: -20 }}
-                  className="bg-white p-6 md:p-8 rounded-[2.5rem] flex flex-col md:flex-row gap-8 items-center shadow-sm hover:shadow-md transition-all border border-gray-50"
+                  className="bg-white p-6 md:p-8 rounded-md flex flex-col md:flex-row gap-8 items-center shadow-sm hover:shadow-md transition-all border border-gray-50"
                 >
-                  <div className="w-32 h-40 flex-shrink-0 bg-[#FAF9F6] rounded-2xl overflow-hidden p-2">
+                  <div className="w-32 h-40 flex-shrink-0 bg-white rounded-md overflow-hidden p-2 border border-gray-50">
                     <img src={item.image} alt={item.name} className="w-full h-full object-contain" />
                   </div>
 
                   <div className="flex-grow text-center md:text-left">
-                    <h3 className="text-xl font-fashion font-bold text-[#1A1A1A] mb-2 uppercase tracking-tight">{item.name}</h3>
+                    <h3 className="text-xl font-bold text-[#1A1A1A] mb-2 uppercase tracking-tight">{item.name}</h3>
                     <p className="text-brand-orange font-bold text-lg mb-6">₹{item.price.toLocaleString()}</p>
 
                     <div className="flex items-center justify-center md:justify-start gap-4">
-                      <div className="flex items-center bg-[#FAF9F6] rounded-full px-4 py-2 gap-6 border border-gray-100">
+                      <div className="flex items-center bg-gray-50 rounded-full px-4 py-2 gap-6 border border-gray-100">
                         <button onClick={() => updateQty(item.docId, -1, item.qty)} className="text-gray-400 hover:text-brand-orange transition-colors">
                           <Minus size={16} />
                         </button>
@@ -133,7 +133,7 @@ export default function Cart() {
                   </div>
 
                   <div className="flex flex-col items-center md:items-end gap-4 md:gap-6">
-                    <p className="text-2xl font-fashion font-bold text-[#1A1A1A]">₹{(item.price * item.qty).toLocaleString()}</p>
+                    <p className="text-2xl font-bold text-[#1A1A1A]">₹{(item.price * item.qty).toLocaleString()}</p>
                     <div className="flex flex-col gap-2 w-full sm:w-auto">
                       <button
                         onClick={() => navigate('/checkout', { 
@@ -164,8 +164,8 @@ export default function Cart() {
 
           {/* Order Summary Sidebar */}
           <div className="lg:col-span-1">
-            <div className="bg-white p-10 rounded-[3rem] sticky top-32 shadow-sm border border-gray-100">
-              <h2 className="text-2xl font-fashion font-bold text-[#1A1A1A] mb-8 uppercase tracking-tighter">Summary</h2>
+            <div className="bg-white p-10 rounded-md sticky top-32 shadow-sm border border-gray-100">
+              <h2 className="text-2xl font-bold text-[#1A1A1A] mb-8 uppercase tracking-tighter">Summary</h2>
 
               <div className="space-y-4 mb-10 pb-10 border-b border-gray-100">
                 <div className="flex justify-between items-center">
@@ -185,7 +185,7 @@ export default function Cart() {
                 )}
               </div>
 
-              <div className="flex justify-between items-center text-2xl font-fashion font-bold mb-10">
+              <div className="flex justify-between items-center text-2xl font-bold mb-10">
                 <span className="uppercase tracking-tighter">Total</span>
                 <span className="text-brand-orange">₹{total.toLocaleString()}</span>
               </div>

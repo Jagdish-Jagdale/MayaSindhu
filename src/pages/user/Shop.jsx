@@ -6,7 +6,7 @@ import { Loader2, ArrowLeft, X } from 'lucide-react';
 
 import { useSearchParams, Link, useNavigate } from 'react-router-dom';
 import { useGoBack } from '../../hooks/useGoBack';
-import { motion } from 'framer-motion';
+import { motion, AnimatePresence } from 'framer-motion';
 import useCategories from '../../hooks/useCategories';
 import FilterSidebar from '../../components/user/FilterSidebar';
 
