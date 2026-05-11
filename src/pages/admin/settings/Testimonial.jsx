@@ -301,7 +301,7 @@ export default function Testimonial() {
       ) : (
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
           {testimonials.map((t, index) => (
-            <div key={t.id} className="bg-white border border-gray-100 rounded-[24px] overflow-hidden shadow-sm hover:shadow-md transition-all group p-6 space-y-5 relative">
+            <div key={t.id} className="bg-white border border-gray-100 rounded-[24px] overflow-hidden shadow-sm hover:shadow-md transition-all group p-6 pt-14 space-y-5 relative">
               
               {/* Delete Button */}
               <button 
@@ -313,7 +313,7 @@ export default function Testimonial() {
 
               {/* Status Badge */}
               {(t.isNew || t.isModified) && (
-                <div className="absolute top-4 left-4 px-2 py-0.5 bg-[#1BAFAF] text-white text-[9px] font-bold rounded-lg uppercase tracking-wider">
+                <div className="absolute top-4 left-4 px-2.5 py-1 bg-[#1BAFAF] text-white text-[10px] font-black rounded-lg uppercase tracking-widest shadow-sm z-10 border border-white/20">
                   {t.isNew ? 'Unsaved' : 'Modified'}
                 </div>
               )}

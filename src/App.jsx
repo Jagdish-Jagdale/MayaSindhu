@@ -51,6 +51,7 @@ import Stories from './pages/admin/settings/Stories';
 import Purpose from './pages/admin/settings/Purpose';
 import Testimonial from './pages/admin/settings/Testimonial';
 import AboutUs from './pages/admin/settings/AboutUs';
+import Blogs from './pages/admin/settings/Blogs';
 
 import './App.css';
 
@@ -135,6 +136,7 @@ function App() {
             <Route path="settings/purpose" element={<Purpose />} />
             <Route path="settings/testimonial" element={<Testimonial />} />
             <Route path="settings/about-us" element={<AboutUs />} />
+            <Route path="settings/blogs" element={<Blogs />} />
           </Route>
 
           {/* Offline Store Route */}

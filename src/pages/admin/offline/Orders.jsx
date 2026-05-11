@@ -19,6 +19,7 @@ import {
   query, 
   orderBy 
 } from 'firebase/firestore';
+import { formatDate } from '../../../utils/dateHelper';
 
 export default function OfflineOrders() {
   const [orders, setOrders] = useState([]);
@@ -120,7 +121,7 @@ export default function OfflineOrders() {
                           <div className="flex items-center gap-2 text-gray-400">
                              <Clock size={12} />
                              <span className="text-[12px] font-medium">
-                                {order.createdAt?.toDate().toLocaleDateString('en-IN', { day: 'numeric', month: 'short' })}
+                                {formatDate(order.createdAt)}
                              </span>
                           </div>
                        </td>
