@@ -14,7 +14,8 @@ import {
   Tv,
   Heart,
   MessageSquareQuote,
-  BarChart3
+  BarChart3,
+  FileText
 } from 'lucide-react';
 import { Link, useLocation, useNavigate } from 'react-router-dom';
 import { auth } from '../../firebase';
@@ -57,6 +58,7 @@ function getMenuItems(pathname) {
         { title: 'Our Purpose', icon: Heart, path: `${base}/settings/purpose` },
         { title: 'Testimonial', icon: MessageSquareQuote, path: `${base}/settings/testimonial` },
         { title: 'About Us', icon: Users, path: `${base}/settings/about-us` },
+        { title: 'Blogs', icon: FileText, path: `${base}/settings/blogs` },
       ]
     },
   ];

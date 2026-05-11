@@ -1,102 +1,63 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { motion } from 'framer-motion';
-import { ChevronLeft, ChevronRight, Search, ArrowRight, Calendar, User } from 'lucide-react';
+import { ChevronLeft, ChevronRight, Search, ArrowRight, Calendar, User, Loader2 } from 'lucide-react';
 import { Link } from 'react-router-dom';
-
-
-
-
-
-const MOCK_BLOGS = [
-  {
-    id: 1,
-    title: "The Art of Handwoven Sarees: A Heritage Rediscovered",
-    subtitle: "FEATURED STORY",
-    excerpt: "Explore the intricate journey of traditional weaving techniques that are making a massive comeback in modern fashion wardrobes. From the loom to the modern muse, witness the evolution of heritage.",
-    category: "Fashion",
-    author: "Maya Sharma",
-    date: "May 15, 2026",
-    image: "https://images.unsplash.com/photo-1610030469983-98e550d6193c?w=800&q=80",
-    secondaryImage: "https://images.unsplash.com/photo-1583391733956-3750e0ff4e8b?w=800&q=80",
-    isFeatured: true
-  },
-  {
-    id: 2,
-    title: "Sustainable Jewelry: Beauty with a Conscience",
-    excerpt: "Why conscious consumerism is the new luxury in the world of handcrafted ornaments and silver jewellery...",
-    category: "Lifestyle",
-    author: "Arjun Rao",
-    date: "May 12, 2026",
-    image: "https://images.unsplash.com/photo-1515562141207-7a88fb7ce338?w=800&q=80"
-  },
-  {
-    id: 3,
-    title: "Summer Essentials: Staying Cool in Style",
-    excerpt: "From breathable cottons to elegant linen blends, here's your guide to navigating the summer heat with grace...",
-    category: "Trending",
-    author: "Priya Varma",
-    date: "May 10, 2026",
-    image: "https://images.unsplash.com/photo-1583391733956-3750e0ff4e8b?w=800&q=80"
-  },
-  {
-    id: 4,
-    title: "The Rise of Minimalist Ethnic Wear",
-    excerpt: "How less became more in the world of Indian festive dressing and why Gen Z is loving the subtle shift...",
-    category: "Fashion",
-    author: "Maya Sharma",
-    date: "May 08, 2026",
-    image: "https://picsum.photos/seed/saree1/800/500"
-  },
-  {
-    id: 5,
-    title: "Chanderi: The Fabric of Royalty",
-    excerpt: "Discover the lightweight elegance and shimmering textures of Chanderi silk, a favorite of queens and modern fashion icons alike...",
-    category: "Heritage",
-    author: "Rajesh Kumar",
-    date: "May 05, 2026",
-    image: "https://picsum.photos/seed/chanderi/800/500"
-  },
-  {
-    id: 6,
-    title: "The Block Print Revolution",
-    excerpt: "From Jaipur's dusty streets to global runways, how the ancient art of hand-block printing is being reimagined for today...",
-    category: "Craft",
-    author: "Anita Desai",
-    date: "May 02, 2026",
-    image: "https://picsum.photos/seed/blockprint/800/500"
-  },
-  {
-    id: 7,
-    title: "Jewelry Care 101: Preserving Heritage",
-    excerpt: "Practical tips on how to care for your handcrafted silver and gold-plated jewelry so it stays as radiant as the day you bought it...",
-    category: "Lifestyle",
-    author: "Sanjay Mehta",
-    date: "April 28, 2026",
-    image: "https://images.unsplash.com/photo-1535632066927-ab7c9ab60908?w=800&q=80"
-  },
-  {
-    id: 8,
-    title: "Varanasi: A Symphony in Silk",
-    excerpt: "A deep dive into the spiritual and artistic heart of Banarasi weaving, where every thread tells a thousand-year-old story...",
-    category: "Heritage",
-    author: "Maya Sharma",
-    date: "April 25, 2026",
-    image: "https://images.unsplash.com/photo-1512436991641-6745cdb1723f?w=800&q=80"
-  }
-];
+import { db } from '../../firebase';
+import { collection, onSnapshot, query, orderBy, doc } from 'firebase/firestore';
+import { formatDate } from '../../utils/dateHelper';
 
 export default function Blog() {
   const [searchQuery, setSearchQuery] = useState('');
-
-
+  const [blogs, setBlogs] = useState([]);
+  const [settings, setSettings] = useState({
+    heading: 'Our Cultural Essence',
+    subheading: 'At MayaSindhu, we celebrate tradition through handcrafted creations made with care, artistry, and authenticity.'
+  });
+  const [loading, setLoading] = useState(true);
   const [visibleCount, setVisibleCount] = useState(3);
 
-  const latestBlogs = MOCK_BLOGS.filter(b => !b.isFeatured);
-  const visibleBlogs = latestBlogs.slice(0, visibleCount);
+  useEffect(() => {
+    // 1. Fetch Blogs
+    const blogsQuery = query(collection(db, 'blogs'), orderBy('updatedAt', 'desc'));
+    const unsubBlogs = onSnapshot(blogsQuery, (snapshot) => {
+      const data = snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() }));
+      setBlogs(data);
+      setLoading(false);
+    });
+
+    // 2. Fetch Blog Settings
+    const unsubSettings = onSnapshot(doc(db, 'settings', 'blogs_config'), (snapshot) => {
+      if (snapshot.exists()) {
+        setSettings(snapshot.data());
+      }
+    });
+
+    return () => {
+      unsubBlogs();
+      unsubSettings();
+    };
+  }, []);
+
+  const filteredBlogs = blogs.filter(b => 
+    b.title?.toLowerCase().includes(searchQuery.toLowerCase()) ||
+    b.category?.toLowerCase().includes(searchQuery.toLowerCase()) ||
+    b.summary?.toLowerCase().includes(searchQuery.toLowerCase())
+  );
+
+  const visibleBlogs = filteredBlogs.slice(0, visibleCount);
 
   const handleLoadMore = () => {
-    setVisibleCount(latestBlogs.length);
+    setVisibleCount(prev => prev + 6);
   };
+
+  if (loading) {
+    return (
+      <div className="h-screen flex flex-col items-center justify-center gap-4">
+        <Loader2 className="w-10 h-10 animate-spin text-brand-orange" />
+        <p className="text-gray-400 font-medium italic tracking-widest">Gathering stories...</p>
+      </div>
+    );
+  }
 
   return (
     <div className="bg-white min-h-screen font-sans text-[#1A1A1A]">
@@ -117,7 +78,11 @@ export default function Blog() {
             animate={{ opacity: 1, y: 0 }}
             className="text-4xl md:text-6xl font-fashion font-bold mb-6 tracking-tight"
           >
-            Our <span className="text-brand-orange">Cultural Essence</span>
+            {settings.heading.split(' ').map((word, i) => (
+              <span key={i} className={i === settings.heading.split(' ').length - 1 ? "text-brand-orange" : ""}>
+                {word}{' '}
+              </span>
+            ))}
           </motion.h1>
           <motion.p 
             initial={{ opacity: 0, y: 20 }}
@@ -125,8 +90,7 @@ export default function Blog() {
             transition={{ delay: 0.1 }}
             className="text-gray-600 text-lg md:text-xl mb-10 max-w-3xl mx-auto leading-relaxed font-light"
           >
-            At MayaSindhu, we celebrate tradition through handcrafted creations made with care, artistry, and authenticity. 
-            Every product reflects the beauty of skilled craftsmanship, preserving cultural heritage while bringing timeless elegance into modern lifestyles.
+            {settings.subheading}
           </motion.p>
 
           <motion.div 
@@ -180,7 +144,7 @@ export default function Blog() {
                       {/* Category Badge */}
                       <div className="absolute top-4 left-4">
                         <span className="px-4 py-1.5 bg-[#C5A059]/90 backdrop-blur-sm text-white text-[10px] font-bold uppercase tracking-wider rounded shadow-lg">
-                          {blog.category || 'Lifestyle'}
+                          {blog.category || 'Stories'}
                         </span>
                       </div>
                     </div>
@@ -191,11 +155,11 @@ export default function Blog() {
                       <div className="flex items-center gap-4 text-gray-400 text-[11px] font-medium mb-3">
                         <div className="flex items-center gap-1.5">
                           <Calendar size={13} className="text-[#C5A059]" />
-                          <span>24/04/2026</span>
+                          <span>{formatDate(blog.updatedAt || blog.createdAt)}</span>
                         </div>
                         <div className="flex items-center gap-1.5">
                           <User size={13} className="text-[#C5A059]" />
-                          <span>Expert Writer</span>
+                          <span>{blog.author || 'MayaSindhu'}</span>
                         </div>
                       </div>
 
@@ -204,9 +168,9 @@ export default function Blog() {
                         {blog.title}
                       </h4>
 
-                      {/* Excerpt */}
+                      {/* Summary */}
                       <p className="text-gray-500 text-sm leading-relaxed line-clamp-3 font-light mb-4 flex-1">
-                        {blog.excerpt}
+                        {blog.summary}
                       </p>
 
                       {/* Call to Action */}
@@ -222,7 +186,7 @@ export default function Blog() {
               </div>
 
               {/* Load More Button */}
-              {visibleCount < latestBlogs.length && (
+              {visibleCount < filteredBlogs.length && (
                 <div className="mt-20 flex justify-center">
                   <button 
                     onClick={handleLoadMore}

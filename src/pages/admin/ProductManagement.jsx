@@ -24,6 +24,7 @@ import {
   History
 } from 'lucide-react';
 import { useAdminUI } from '../../context/AdminUIContext';
+import { formatDate } from '../../utils/dateHelper';
 import { db } from '../../firebase';
 import { 
   collection, 
@@ -502,10 +503,7 @@ export default function ProductManagement() {
                     </td>
                     <td className="px-6 py-4 whitespace-nowrap">
                       <div className="text-[13px] font-medium text-gray-500">
-                        {product.updatedAt ? (() => {
-                          const date = product.updatedAt.toDate ? product.updatedAt.toDate() : new Date(product.updatedAt);
-                          return `${String(date.getDate()).padStart(2, '0')}/${String(date.getMonth() + 1).padStart(2, '0')}/${date.getFullYear()}`;
-                        })() : '---'}
+                        {product.updatedAt ? formatDate(product.updatedAt) : '---'}
                       </div>
                     </td>
                     <td className="px-6 py-4 text-right whitespace-nowrap">
