@@ -105,10 +105,10 @@ export default function Blog() {
         <div className="absolute inset-0 z-0">
           <img 
             src="https://images.unsplash.com/photo-1490481651871-ab68de25d43d?auto=format&fit=crop&q=80&w=2000" 
-            className="w-full h-full object-cover opacity-20"
+            className="w-full h-full object-cover opacity-40"
             alt="Hero Background"
           />
-          <div className="absolute inset-0 bg-gradient-to-b from-white/80 via-transparent to-white"></div>
+          <div className="absolute inset-0 bg-gradient-to-b from-white/30 via-transparent to-white/70"></div>
         </div>
 
         <div className="relative z-10 text-center max-w-4xl px-6">
