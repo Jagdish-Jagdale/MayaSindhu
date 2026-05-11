@@ -101,14 +101,14 @@ export default function PaymentMethods({ user }) {
   if (loading) return <div className="flex justify-center p-20"><Loader2 className="animate-spin text-[#f5aa00]" size={40} /></div>;
 
   return (
-    <div className="bg-white p-6 md:p-10 rounded-[3rem] shadow-xl shadow-gray-200/20 border border-[#f0dda0]/20">
+    <div className="bg-white p-6 md:p-10 rounded-xl shadow-xl shadow-gray-200/20 border border-[#f0dda0]/20">
       <div className="flex flex-col md:flex-row md:items-center justify-between gap-4 mb-8">
         <div className="flex items-center gap-4">
           <div className="w-12 h-12 bg-gradient-to-br from-[#f5aa00] to-[#e07a00] rounded-2xl flex items-center justify-center text-white shadow-lg shadow-[#f5aa00]/20">
             <CreditCard size={24} strokeWidth={1.5} />
           </div>
           <div>
-            <h2 className="text-2xl font-fashion font-bold text-[#1A1A1A] tracking-tight">Saved Payments</h2>
+            <h2 className="text-2xl font-sans font-bold text-[#1A1A1A] tracking-tight">Saved Payments</h2>
             <p className="text-[10px] text-[#f5aa00] font-bold uppercase tracking-[0.2em] mt-0.5">Secure Vault</p>
           </div>
         </div>
@@ -122,18 +122,18 @@ export default function PaymentMethods({ user }) {
 
       <div className="grid grid-cols-1 md:grid-cols-2 gap-6 mb-10">
         {cards.map(card => (
-          <div key={card.id} className={`${card.brand || 'bg-gray-800'} p-8 rounded-[2.5rem] text-white shadow-2xl relative overflow-hidden group transition-all duration-500`}>
+          <div key={card.id} className={`${card.brand || 'bg-gray-800'} p-8 rounded-xl text-white shadow-2xl relative overflow-hidden group transition-all duration-500`}>
             <div className="absolute top-0 right-0 w-48 h-48 bg-white/5 rounded-full -translate-y-24 translate-x-24 group-hover:scale-110 transition-transform duration-1000" />
             <div className="flex justify-between items-start mb-12 relative z-10">
               <div className="space-y-0.5">
                 <p className="text-[9px] uppercase font-bold tracking-[0.3em] opacity-40">MayaSindhu Vault</p>
-                <h4 className="text-lg font-fashion font-bold italic tracking-wider">{card.type}</h4>
+                <h4 className="text-lg font-sans font-bold italic tracking-wider">{card.type}</h4>
               </div>
               <ShieldCheck size={24} className="opacity-20" />
             </div>
             <div className="flex justify-between items-end relative z-10">
               <div>
-                <p className="text-xl font-bold tracking-[0.2em] mb-4 font-fashion">•••• •••• •••• {card.last4}</p>
+                <p className="text-xl font-bold tracking-[0.2em] mb-4 font-sans">•••• •••• •••• {card.last4}</p>
                 <div className="flex gap-6">
                   <div>
                     <p className="text-[7px] uppercase font-bold tracking-widest opacity-40 mb-1">Card Holder</p>
@@ -152,7 +152,7 @@ export default function PaymentMethods({ user }) {
           </div>
         ))}
         {cards.length === 0 && (
-          <div className="col-span-1 md:col-span-2 border-2 border-dashed border-[#f0dda0]/30 rounded-[2.5rem] p-12 flex flex-col items-center justify-center text-center bg-[#fffbf2]/20">
+          <div className="col-span-1 md:col-span-2 border-2 border-dashed border-[#f0dda0]/30 rounded-xl p-12 flex flex-col items-center justify-center text-center bg-[#fffbf2]/20">
             <CreditCard size={40} className="text-[#f5aa00]/20 mb-4" />
             <p className="text-[11px] font-bold uppercase tracking-widest text-gray-400">No saved cards found in your vault</p>
           </div>
@@ -162,7 +162,7 @@ export default function PaymentMethods({ user }) {
       {/* Bank Accounts Section */}
       <div className="space-y-4">
         {bankAccounts.map(bank => (
-          <div key={bank.id} className="p-6 border border-[#f0dda0]/30 rounded-[2.5rem] flex items-center gap-5 bg-[#fffbf2]/30 shadow-sm group">
+          <div key={bank.id} className="p-6 border border-[#f0dda0]/30 rounded-xl flex items-center gap-5 bg-[#fffbf2]/30 shadow-sm group">
             <div className="w-12 h-12 bg-white rounded-2xl flex items-center justify-center text-[#f5aa00] shadow-sm border border-[#f0dda0]/10 group-hover:scale-105 transition-transform">
                <Landmark size={20} />
             </div>
@@ -179,7 +179,7 @@ export default function PaymentMethods({ user }) {
           </div>
         ))}
 
-        <div className="p-6 border border-[#f0dda0]/30 rounded-[2.5rem] flex items-center gap-5 bg-[#fffbf2]/30 shadow-sm">
+        <div className="p-6 border border-[#f0dda0]/30 rounded-xl flex items-center gap-5 bg-[#fffbf2]/30 shadow-sm">
           <div className="w-12 h-12 bg-white rounded-2xl flex items-center justify-center text-[#f5aa00]/40 shadow-sm">
              <Landmark size={20} />
           </div>
@@ -199,14 +199,14 @@ export default function PaymentMethods({ user }) {
       {/* Add Card Modal */}
       {isModalOpen && (
         <div className="fixed inset-0 z-[2000] flex items-center justify-center p-4 bg-[#1A1A1A]/10 backdrop-blur-md overflow-y-auto py-10 md:py-20">
-          <div className="bg-white w-full max-w-lg rounded-[3rem] shadow-2xl overflow-hidden animate-in fade-in zoom-in duration-300 border border-[#f0dda0]/20 my-auto">
+          <div className="bg-white w-full max-w-lg rounded-xl shadow-2xl overflow-hidden animate-in fade-in zoom-in duration-300 border border-[#f0dda0]/20 my-auto">
             <div className="p-8 md:p-10 max-h-[90vh] overflow-y-auto no-scrollbar">
               <div className="flex items-center justify-between mb-8 sticky top-0 bg-white z-10 pb-2">
                 <div className="flex items-center gap-3">
                   <div className="w-10 h-10 bg-[#fffbf2] rounded-xl flex items-center justify-center text-[#f5aa00]">
                     <Plus size={20} />
                   </div>
-                  <h3 className="text-xl font-fashion font-bold text-[#1A1A1A] uppercase tracking-tight">Add New Card</h3>
+                  <h3 className="text-xl font-sans font-bold text-[#1A1A1A] uppercase tracking-tight">Add New Card</h3>
                 </div>
                 <button onClick={() => setIsModalOpen(false)} className="p-2 bg-gray-50 rounded-full text-gray-400 hover:text-red-500 transition-colors">
                   <X size={18} />
@@ -249,14 +249,14 @@ export default function PaymentMethods({ user }) {
       {/* Link Bank Modal */}
       {isBankModalOpen && (
         <div className="fixed inset-0 z-[2000] flex items-center justify-center p-4 bg-[#1A1A1A]/10 backdrop-blur-md overflow-y-auto py-10 md:py-20">
-          <div className="bg-white w-full max-w-lg rounded-[3rem] shadow-2xl overflow-hidden animate-in fade-in zoom-in duration-300 border border-[#f0dda0]/20 my-auto">
+          <div className="bg-white w-full max-w-lg rounded-xl shadow-2xl overflow-hidden animate-in fade-in zoom-in duration-300 border border-[#f0dda0]/20 my-auto">
             <div className="p-8 md:p-10 max-h-[90vh] overflow-y-auto no-scrollbar">
               <div className="flex items-center justify-between mb-8 sticky top-0 bg-white z-10 pb-2">
                 <div className="flex items-center gap-3">
                   <div className="w-10 h-10 bg-[#fffbf2] rounded-xl flex items-center justify-center text-[#f5aa00]">
                     <Landmark size={20} />
                   </div>
-                  <h3 className="text-xl font-fashion font-black text-[#1A1A1A] uppercase tracking-tight">Link Bank Account</h3>
+                  <h3 className="text-xl font-sans font-black text-[#1A1A1A] uppercase tracking-tight">Link Bank Account</h3>
                 </div>
                 <button onClick={() => setIsBankModalOpen(false)} className="p-2 bg-gray-50 rounded-full text-gray-400 hover:text-red-500 transition-colors">
                   <X size={18} />

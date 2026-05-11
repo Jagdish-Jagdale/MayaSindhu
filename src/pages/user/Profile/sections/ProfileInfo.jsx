@@ -68,7 +68,7 @@ export default function ProfileInfo({ user }) {
       <div className="bg-white rounded-xl shadow-sm border border-gray-100 overflow-hidden">
         <div className="px-8 py-6 border-b border-gray-50 flex items-center justify-between">
           <h2 className="text-xl font-bold text-[#1A1A1A]">Personal Information</h2>
-          <button 
+          <button
             onClick={() => setIsEditing(!isEditing)}
             className="flex items-center gap-2 text-brand-orange hover:text-brand-orange-dark font-bold text-sm transition-colors"
           >
@@ -80,37 +80,37 @@ export default function ProfileInfo({ user }) {
         <div className="p-8">
           <form onSubmit={handleSubmit} className="space-y-8">
             <div className="grid grid-cols-1 md:grid-cols-2 gap-x-12 gap-y-10">
-              <InfoField 
-                label="Full Name" 
-                value={formData.fullName} 
+              <InfoField
+                label="Full Name"
+                value={formData.fullName}
                 isEditing={isEditing}
-                onChange={(v) => setFormData({...formData, fullName: v})}
+                onChange={(v) => setFormData({ ...formData, fullName: v })}
               />
-              <InfoField 
-                label="Email Address" 
-                value={formData.email} 
-                isEditing={false} 
+              <InfoField
+                label="Email Address"
+                value={formData.email}
+                isEditing={false}
               />
-              <InfoField 
-                label="Phone Number" 
-                value={formData.phone} 
+              <InfoField
+                label="Phone Number"
+                value={formData.phone}
                 isEditing={isEditing}
-                onChange={(v) => setFormData({...formData, phone: v})}
+                onChange={(v) => setFormData({ ...formData, phone: v })}
                 type="tel"
               />
-              <InfoField 
-                label="Date of Birth" 
-                value={formData.dob} 
+              <InfoField
+                label="Date of Birth"
+                value={formData.dob}
                 isEditing={isEditing}
-                onChange={(v) => setFormData({...formData, dob: v})}
+                onChange={(v) => setFormData({ ...formData, dob: v })}
                 type="date"
               />
             </div>
 
             {isEditing && (
               <div className="pt-6 border-t border-gray-50 flex justify-end">
-                <button 
-                  type="submit" 
+                <button
+                  type="submit"
                   disabled={saving}
                   className="bg-brand-orange text-white px-8 py-3 rounded-xl font-bold text-xs uppercase tracking-widest hover:bg-brand-orange-dark transition-all shadow-lg shadow-brand-orange/20 flex items-center gap-2"
                 >
@@ -130,9 +130,9 @@ export default function ProfileInfo({ user }) {
             <div className="w-10 h-10 bg-gray-50 rounded-xl flex items-center justify-center text-gray-400">
               <Sparkles size={20} />
             </div>
-            <h3 className="text-lg font-bold text-[#1A1A1A]">Account Security</h3>
+            <h3 className="text-lg font-bold text-[#1A1A1A]">Vault Security</h3>
           </div>
-          <p className="text-xs text-gray-400 mb-6">Manage your password and security settings to keep your account safe.</p>
+          <p className="text-xs text-gray-400 mb-6 font-medium">Protect your handcrafted treasures. Manage your password and security keys to keep your vault safe.</p>
           <button className="text-brand-orange font-bold text-sm hover:underline">Change Password</button>
         </div>
 
@@ -141,9 +141,9 @@ export default function ProfileInfo({ user }) {
             <div className="w-10 h-10 bg-gray-50 rounded-xl flex items-center justify-center text-gray-400">
               <Mail size={20} />
             </div>
-            <h3 className="text-lg font-bold text-[#1A1A1A]">Newsletter</h3>
+            <h3 className="text-lg font-bold text-[#1A1A1A]">Heritage Newsletter</h3>
           </div>
-          <p className="text-xs text-gray-400 mb-6">Stay updated with our latest collections and exclusive offers.</p>
+          <p className="text-xs text-gray-400 mb-6 font-medium">Be the first to explore our latest weaves and exclusive boutique collections.</p>
           <button className="text-brand-orange font-bold text-sm hover:underline">Manage Subscription</button>
         </div>
       </div>
@@ -156,7 +156,7 @@ function InfoField({ label, value, isEditing, onChange, type = 'text' }) {
     <div className="space-y-2">
       <label className="text-[10px] uppercase font-bold tracking-widest text-gray-400 block px-1">{label}</label>
       {isEditing ? (
-        <input 
+        <input
           type={type}
           value={value}
           onChange={(e) => onChange?.(e.target.value)}

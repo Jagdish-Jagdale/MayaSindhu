@@ -1,8 +1,8 @@
 import React, { useState, useEffect } from 'react';
 import { db } from '../../../../firebase';
 import { collection, query, onSnapshot, doc, addDoc, updateDoc, deleteDoc, writeBatch, getDocs } from 'firebase/firestore';
-import { 
-  Plus, MapPin, Home, Briefcase, Trash2, Edit3, CheckCircle2, 
+import {
+  Plus, MapPin, Home, Briefcase, Trash2, Edit3, CheckCircle2,
   X, Loader2, Save, Map
 } from 'lucide-react';
 import toast from 'react-hot-toast';
@@ -86,7 +86,7 @@ export default function AddressBook({ user }) {
     e.preventDefault();
     try {
       const addrData = { ...formData, updatedAt: new Date() };
-      
+
       if (formData.isDefault) {
         const batch = writeBatch(db);
         const querySnapshot = await getDocs(collection(db, 'users', user.uid, 'addresses'));
@@ -118,7 +118,7 @@ export default function AddressBook({ user }) {
           <h2 className="text-xl font-bold text-[#1A1A1A]">Address Book</h2>
           <p className="text-xs text-gray-400 font-medium mt-1">Manage your shipping and billing addresses.</p>
         </div>
-        <button 
+        <button
           onClick={() => handleOpenModal()}
           className="bg-brand-orange text-white px-8 py-3 rounded-xl flex items-center gap-2 hover:bg-brand-orange-dark transition-all text-xs font-bold uppercase tracking-widest shadow-lg shadow-brand-orange/20"
         >
@@ -128,11 +128,10 @@ export default function AddressBook({ user }) {
 
       <div className="grid grid-cols-1 md:grid-cols-2 gap-8">
         {addresses.map((addr) => (
-          <div 
-            key={addr.id} 
-            className={`p-6 rounded-xl border-2 transition-all relative group ${
-              addr.isDefault ? 'border-brand-orange/20 bg-brand-orange/[0.02]' : 'border-gray-50 bg-white shadow-sm'
-            }`}
+          <div
+            key={addr.id}
+            className={`p-6 rounded-xl border-2 transition-all relative group ${addr.isDefault ? 'border-brand-orange/20 bg-brand-orange/[0.02]' : 'border-gray-50 bg-white shadow-sm'
+              }`}
           >
             {addr.isDefault && (
               <div className="absolute top-6 right-6 flex items-center gap-1.5 text-brand-orange bg-white px-3 py-1 rounded-full text-[8px] font-bold uppercase tracking-widest shadow-sm border border-brand-orange/10">
@@ -160,7 +159,7 @@ export default function AddressBook({ user }) {
                 <Trash2 size={14} />
               </button>
               {!addr.isDefault && (
-                <button 
+                <button
                   onClick={() => handleSetDefault(addr.id)}
                   className="ml-auto text-[10px] font-bold uppercase tracking-widest text-gray-300 hover:text-brand-orange transition-colors"
                 >
@@ -195,9 +194,8 @@ export default function AddressBook({ user }) {
                       key={t.id}
                       type="button"
                       onClick={() => setFormData({ ...formData, type: t.id })}
-                      className={`flex items-center justify-center gap-2 p-4 rounded-xl border-2 transition-all font-bold text-[10px] uppercase tracking-widest ${
-                        formData.type === t.id ? 'border-brand-orange bg-brand-orange/[0.03] text-brand-orange' : 'border-gray-50 text-gray-400'
-                      }`}
+                      className={`flex items-center justify-center gap-2 p-4 rounded-xl border-2 transition-all font-bold text-[10px] uppercase tracking-widest ${formData.type === t.id ? 'border-brand-orange bg-brand-orange/[0.03] text-brand-orange' : 'border-gray-50 text-gray-400'
+                        }`}
                     >
                       {t.icon} {t.label}
                     </button>
@@ -205,28 +203,28 @@ export default function AddressBook({ user }) {
                 </div>
 
                 <div className="space-y-4">
-                  <ModalInput label="Full Name" value={formData.fullName} onChange={(v) => setFormData({...formData, fullName: v})} />
-                  <ModalInput label="Phone Number" value={formData.phone} onChange={(v) => setFormData({...formData, phone: v})} type="tel" />
-                  <ModalInput label="Street Address" value={formData.address} onChange={(v) => setFormData({...formData, address: v})} />
+                  <ModalInput label="Full Name" value={formData.fullName} onChange={(v) => setFormData({ ...formData, fullName: v })} />
+                  <ModalInput label="Phone Number" value={formData.phone} onChange={(v) => setFormData({ ...formData, phone: v })} type="tel" />
+                  <ModalInput label="Street Address" value={formData.address} onChange={(v) => setFormData({ ...formData, address: v })} />
                   <div className="grid grid-cols-2 gap-4">
-                    <ModalInput label="City" value={formData.city} onChange={(v) => setFormData({...formData, city: v})} />
-                    <ModalInput label="State" value={formData.state} onChange={(v) => setFormData({...formData, state: v})} />
+                    <ModalInput label="City" value={formData.city} onChange={(v) => setFormData({ ...formData, city: v })} />
+                    <ModalInput label="State" value={formData.state} onChange={(v) => setFormData({ ...formData, state: v })} />
                   </div>
-                  <ModalInput label="ZIP / Postal Code" value={formData.zip} onChange={(v) => setFormData({...formData, zip: v})} />
+                  <ModalInput label="ZIP / Postal Code" value={formData.zip} onChange={(v) => setFormData({ ...formData, zip: v })} />
                 </div>
 
                 <div className="flex items-center gap-3 p-4 bg-gray-50 rounded-xl">
-                  <input 
-                    type="checkbox" 
+                  <input
+                    type="checkbox"
                     id="isDefault"
                     checked={formData.isDefault}
-                    onChange={(e) => setFormData({...formData, isDefault: e.target.checked})}
+                    onChange={(e) => setFormData({ ...formData, isDefault: e.target.checked })}
                     className="w-4 h-4 accent-brand-orange"
                   />
                   <label htmlFor="isDefault" className="text-xs font-bold text-gray-500">Set as default address</label>
                 </div>
 
-                <button 
+                <button
                   type="submit"
                   className="w-full bg-brand-orange text-white py-4 rounded-xl font-bold uppercase tracking-[0.2em] text-xs shadow-lg shadow-brand-orange/20 hover:bg-brand-orange-dark transition-all active:scale-95 flex items-center justify-center gap-2"
                 >
@@ -245,7 +243,7 @@ function ModalInput({ label, value, onChange, type = 'text' }) {
   return (
     <div className="space-y-1.5">
       <label className="text-[10px] font-black uppercase tracking-widest text-gray-400 px-1">{label}</label>
-      <input 
+      <input
         type={type}
         required
         value={value}

@@ -1,7 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
-import { 
-  Package, User, Heart, LogOut, ChevronRight, 
+import {
+  Package, User, Heart, LogOut, ChevronRight,
   MapPin, CreditCard, Bell, RotateCcw, HelpCircle, Menu, ShoppingBag
 } from 'lucide-react';
 import { useNavigate } from 'react-router-dom';
@@ -119,8 +119,8 @@ export default function Profile() {
                     }}
                     className={`
                       w-full flex items-center gap-4 px-6 py-4 rounded-xl transition-all font-bold text-[13px]
-                      ${activeTab === tab.id 
-                        ? 'bg-brand-orange text-white shadow-lg shadow-brand-orange/20' 
+                      ${activeTab === tab.id
+                        ? 'bg-brand-orange text-white shadow-lg shadow-brand-orange/20'
                         : 'text-gray-400 hover:text-[#1A1A1A] hover:bg-gray-50'}
                     `}
                   >
@@ -135,7 +135,7 @@ export default function Profile() {
 
               {/* Bottom Actions */}
               <div className="mt-8 pt-8 border-t border-gray-50 px-6">
-                <button 
+                <button
                   onClick={handleLogout}
                   className="flex items-center gap-3 text-red-500 hover:text-red-600 transition-colors font-bold text-[11px] uppercase tracking-widest"
                 >

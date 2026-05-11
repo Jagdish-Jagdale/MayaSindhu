@@ -48,24 +48,24 @@ export default function WishlistTab({ user }) {
           <Link to="/shop" className="bg-[#1A1A1A] text-white px-10 py-4 rounded-xl text-[11px] font-bold uppercase tracking-widest hover:bg-black transition-all shadow-lg">Start Shopping</Link>
         </div>
       ) : (
-        <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-8">
+        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-6">
           {items.map((item) => (
             <div key={item.docId} className="bg-white rounded-xl border border-gray-100 shadow-sm overflow-hidden group hover:shadow-md transition-all duration-500">
-              <div className="relative aspect-[1/1.2] overflow-hidden bg-gray-50">
+              <div className="relative aspect-square overflow-hidden bg-gray-50">
                 <img src={item.image} alt={item.name} className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-700" />
-                <button 
+                <button
                   onClick={() => removeItem(item.docId)}
                   className="absolute top-4 right-4 w-9 h-9 bg-white/90 backdrop-blur-sm rounded-full flex items-center justify-center text-gray-400 hover:text-red-500 transition-all shadow-sm"
                 >
                   <Trash2 size={16} />
                 </button>
               </div>
-              
-              <div className="p-6">
-                <h3 className="font-bold text-[#1A1A1A] mb-1 truncate">{item.name}</h3>
-                <p className="text-brand-orange font-bold text-sm mb-6">₹{item.price.toLocaleString('en-IN')}</p>
-                
-                <Link 
+
+              <div className="p-4">
+                <h3 className="font-bold text-[#1A1A1A] text-sm mb-1 truncate">{item.name}</h3>
+                <p className="text-brand-orange font-bold text-xs mb-4">₹{item.price.toLocaleString('en-IN')}</p>
+
+                <Link
                   to={`/product/${item.productId || item.id}`}
                   className="w-full bg-[#1A1A1A] text-white py-3 rounded-lg flex items-center justify-center gap-2 text-[10px] font-bold uppercase tracking-widest hover:bg-black transition-all group"
                 >

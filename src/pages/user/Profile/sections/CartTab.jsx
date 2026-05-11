@@ -71,7 +71,7 @@ export default function CartTab({ user }) {
         </div>
         <h3 className="text-2xl font-fashion font-bold text-[#1A1A1A] mb-2">Your Bag is Empty</h3>
         <p className="text-gray-400 mb-8 max-w-xs mx-auto">Treasures are waiting to be discovered in our collections.</p>
-        <button 
+        <button
           onClick={() => navigate('/shop')}
           className="btn btn-primary px-10 py-4 bg-[#1A1A1A] text-white rounded-2xl hover:bg-black transition-all"
         >
@@ -108,9 +108,9 @@ export default function CartTab({ user }) {
               </div>
 
               <div className="flex-grow min-w-0">
-                <h4 className="font-fashion font-bold text-lg text-[#1A1A1A] mb-1 truncate">{item.name}</h4>
+                <h4 className="font-sans font-bold text-lg text-[#1A1A1A] mb-1 truncate">{item.name}</h4>
                 <p className="text-brand-orange font-bold text-sm mb-4">₹{item.price.toLocaleString('en-IN')}</p>
-                
+
                 <div className="flex items-center gap-4">
                   <div className="flex items-center bg-gray-50 rounded-xl p-1 px-2 border border-gray-100">
                     <button onClick={() => updateQty(item.docId, item.qty - 1)} className="p-1 hover:text-brand-orange transition-colors">
@@ -122,7 +122,7 @@ export default function CartTab({ user }) {
                     </button>
                   </div>
 
-                  <button 
+                  <button
                     onClick={() => removeItem(item.docId)}
                     className="p-2 text-gray-300 hover:text-red-500 hover:bg-red-50 rounded-xl transition-all"
                     title="Remove item"
@@ -146,8 +146,8 @@ export default function CartTab({ user }) {
           <p className="text-[10px] font-bold uppercase tracking-[0.2em] text-gray-400 mb-1">Grand Total</p>
           <h3 className="text-4xl font-bold text-[#1A1A1A]">₹{total.toLocaleString('en-IN')}</h3>
         </div>
-        
-        <button 
+
+        <button
           onClick={() => navigate('/checkout')}
           className="w-full md:w-auto bg-brand-orange text-white px-12 py-4.5 rounded-xl flex items-center justify-center gap-4 hover:bg-brand-orange-dark transition-all font-bold active:scale-95 group shadow-lg shadow-brand-orange/20"
         >
