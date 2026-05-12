@@ -18,7 +18,7 @@ export default function Contact() {
             initial={{ opacity: 0, y: 20 }}
             animate={{ opacity: 1, y: 0 }}
             transition={{ delay: 0.1 }}
-            className="text-5xl md:text-6xl font-fashion font-bold text-[#1A1A1A]"
+            className="text-5xl md:text-6xl font-sans font-bold text-[#1A1A1A]"
           >
             Connect with Our Artisans
           </motion.h1>
@@ -28,7 +28,7 @@ export default function Contact() {
           {/* Left: Contact Info */}
           <div className="space-y-12">
             <div>
-              <h2 className="text-3xl font-fashion font-bold text-[#1A1A1A] mb-8">Let's start a conversation</h2>
+              <h2 className="text-3xl font-sans font-bold text-[#1A1A1A] mb-8">Let's start a conversation</h2>
               <p className="text-gray-500 text-lg leading-relaxed mb-12">
                 Whether you have a question about our heritage techniques, need assistance with an order, or just want to share your love for handcrafted art, our team is here to listen.
               </p>
@@ -102,7 +102,7 @@ function ContactItem({ icon, label, value, sub }) {
       </div>
       <div>
         <p className="text-[10px] uppercase font-bold tracking-widest text-gray-400 mb-1">{label}</p>
-        <p className="text-xl font-fashion font-bold text-[#1A1A1A] mb-1">{value}</p>
+        <p className="text-xl font-sans font-bold text-[#1A1A1A] mb-1">{value}</p>
         <p className="text-sm text-gray-500">{sub}</p>
       </div>
     </div>

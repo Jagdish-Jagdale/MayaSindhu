@@ -18,7 +18,7 @@ import { useAuth } from '../../context/AuthContext';
 import useCategories from '../../hooks/useCategories';
 import navLogo from '../../assets/navbar logo.png';
 import { db } from '../../firebase';
-import { collection, onSnapshot, query, doc } from 'firebase/firestore';
+import { collection, onSnapshot, query, doc, getDocs, limit, where, orderBy } from 'firebase/firestore';
 
 export default function Navbar() {
   const { categories } = useCategories();
@@ -39,9 +39,56 @@ export default function Navbar() {
       if (searchQuery.trim()) {
         navigate(`/shop?q=${encodeURIComponent(searchQuery.trim())}`);
         setIsMobileSearchOpen(false);
+        setSuggestions([]);
       }
     }
   };
+
+  const [suggestions, setSuggestions] = useState([]);
+  const [isSearching, setIsSearching] = useState(false);
+  const suggestionRef = useRef(null);
+
+  useEffect(() => {
+    if (!searchQuery.trim() || searchQuery.length < 1) {
+      setSuggestions([]);
+      return;
+    }
+
+    const fetchSuggestions = async () => {
+      setIsSearching(true);
+      try {
+        const q = query(
+          collection(db, 'products'),
+          limit(20)
+        );
+        const snapshot = await getDocs(q);
+        const allProducts = snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() }));
+        const filtered = allProducts.filter(p => 
+          p.name.toLowerCase().includes(searchQuery.toLowerCase()) ||
+          p.category?.toLowerCase().includes(searchQuery.toLowerCase()) ||
+          p.collection?.toLowerCase().includes(searchQuery.toLowerCase())
+        ).slice(0, 6);
+        setSuggestions(filtered);
+      } catch (err) {
+        console.error("Suggestion Error:", err);
+      } finally {
+        setIsSearching(false);
+      }
+    };
+
+    const timer = setTimeout(fetchSuggestions, 300);
+    return () => clearTimeout(timer);
+  }, [searchQuery]);
+
+  useEffect(() => {
+    const handleClickOutside = (e) => {
+      if (suggestionRef.current && !suggestionRef.current.contains(e.target)) {
+        setSuggestions([]);
+      }
+    };
+    document.addEventListener('mousedown', handleClickOutside);
+    return () => document.removeEventListener('mousedown', handleClickOutside);
+  }, []);
 
   // Live Search - Debounced
   useEffect(() => {
@@ -172,13 +219,14 @@ export default function Navbar() {
           <div className="flex-[2] flex justify-end items-center gap-2 lg:gap-6">
 
             {/* Search Bar (Hidden on Mobile) */}
-            <div className="hidden md:block w-64 lg:w-80 relative group">
+            <div className="hidden md:block w-64 lg:w-80 relative group" ref={suggestionRef}>
               <input
                 type="text"
                 placeholder="Search curated art..."
                 value={searchQuery}
                 onChange={(e) => setSearchQuery(e.target.value)}
                 onKeyDown={handleSearch}
+                onFocus={() => searchQuery.length >= 1 && setSuggestions(suggestions)}
                 className="w-full bg-gray-50 border border-gray-200 rounded-full py-2.5 pl-6 pr-12 focus:outline-none focus:bg-white focus:ring-4 focus:ring-brand-orange/10 transition-all text-sm placeholder-brand-black/40 text-brand-black shadow-sm"
               />
               <div 
@@ -187,6 +235,44 @@ export default function Navbar() {
               >
                 <Search size={18} strokeWidth={2} />
               </div>
+
+              {/* Suggestions Dropdown */}
+              <AnimatePresence>
+                {suggestions.length > 0 && (
+                  <motion.div
+                    initial={{ opacity: 0, y: 10 }}
+                    animate={{ opacity: 1, y: 0 }}
+                    exit={{ opacity: 0, y: 10 }}
+                    className="absolute top-full left-0 right-0 mt-2 bg-white rounded-2xl shadow-2xl border border-gray-100 overflow-hidden z-[1100]"
+                  >
+                    <div className="p-2">
+                      {suggestions.map((p) => (
+                        <Link
+                          key={p.id}
+                          to={`/product/${p.slug || p.id}`}
+                          onClick={() => setSuggestions([])}
+                          className="flex items-center gap-3 p-3 hover:bg-gray-50 rounded-xl transition-colors group/item"
+                        >
+                          <div className="w-12 h-12 rounded-lg bg-gray-50 overflow-hidden flex-shrink-0 border border-gray-100 p-1">
+                            <img src={p.image || (p.images && p.images[0])} alt="" className="w-full h-full object-contain" />
+                          </div>
+                          <div className="flex-1 min-w-0">
+                            <h4 className="text-xs font-bold text-[#1A1A1A] truncate group-hover/item:text-brand-orange transition-colors">{p.name}</h4>
+                            <p className="text-[10px] text-gray-400 font-medium">₹{p.price?.toLocaleString()}</p>
+                          </div>
+                          <ChevronRight size={14} className="text-gray-300 group-hover/item:text-brand-orange group-hover/item:translate-x-1 transition-all" />
+                        </Link>
+                      ))}
+                      <button 
+                        onClick={() => handleSearch({ type: 'click' })}
+                        className="w-full py-3 text-[10px] font-bold uppercase tracking-widest text-gray-400 hover:text-brand-orange border-t border-gray-50 mt-1 transition-colors"
+                      >
+                        View All Results
+                      </button>
+                    </div>
+                  </motion.div>
+                )}
+              </AnimatePresence>
             </div>
 
             {/* Mobile Search Toggle */}
@@ -306,7 +392,7 @@ export default function Navbar() {
               className="md:hidden border-t border-gray-100 bg-gray-50/50 overflow-hidden"
             >
               <div className="px-6 py-5">
-                <div className="relative">
+                <div className="relative" ref={suggestionRef}>
                   <input
                     type="text"
                     placeholder="Search for Sarees, Jewelry..."
@@ -322,6 +408,40 @@ export default function Navbar() {
                   >
                     <Search size={20} />
                   </div>
+
+                  {/* Mobile Suggestions */}
+                  <AnimatePresence>
+                    {suggestions.length > 0 && (
+                      <motion.div
+                        initial={{ opacity: 0, y: 10 }}
+                        animate={{ opacity: 1, y: 0 }}
+                        exit={{ opacity: 0, y: 10 }}
+                        className="mt-4 bg-white rounded-2xl shadow-xl border border-gray-100 overflow-hidden"
+                      >
+                        <div className="p-2">
+                          {suggestions.map((p) => (
+                            <Link
+                              key={p.id}
+                              to={`/product/${p.slug || p.id}`}
+                              onClick={() => {
+                                setSuggestions([]);
+                                setIsMobileSearchOpen(false);
+                              }}
+                              className="flex items-center gap-3 p-4 hover:bg-gray-50 rounded-xl transition-colors border-b last:border-0 border-gray-50"
+                            >
+                              <div className="w-12 h-12 rounded-lg bg-gray-50 overflow-hidden flex-shrink-0 border border-gray-100 p-1">
+                                <img src={p.image || (p.images && p.images[0])} alt="" className="w-full h-full object-contain" />
+                              </div>
+                              <div className="flex-1 min-w-0">
+                                <h4 className="text-sm font-bold text-[#1A1A1A] truncate">{p.name}</h4>
+                                <p className="text-xs text-brand-orange font-bold">₹{p.price?.toLocaleString()}</p>
+                              </div>
+                            </Link>
+                          ))}
+                        </div>
+                      </motion.div>
+                    )}
+                  </AnimatePresence>
                 </div>
               </div>
             </motion.div>

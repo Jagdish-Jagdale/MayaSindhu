@@ -37,13 +37,17 @@
 
   h1, h2, h3, h4, h5, h6 {
     @apply font-sans text-text-main tracking-tight;
-    font-weight: 600 !important;
+    font-weight: 500 !important;
   }
 
   button, 
   a,
+  input,
+  select,
+  textarea,
   [role="button"] {
     @apply cursor-pointer;
+    font-family: inherit;
   }
 }
 

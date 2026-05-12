@@ -73,7 +73,7 @@ function App() {
             style: {
               background: '#fff',
               color: '#333',
-              fontFamily: "'Inter', 'SF Pro Display', -apple-system, sans-serif",
+              fontFamily: "'Montserrat', sans-serif",
               fontSize: '13px',
               fontWeight: '600',
               borderRadius: '16px',

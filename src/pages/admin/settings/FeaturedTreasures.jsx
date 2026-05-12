@@ -280,7 +280,7 @@ export default function FeaturedTreasures() {
 
                 <div className="mt-5 px-3">
                   <div className="flex items-start justify-between mb-2">
-                    <h3 className="text-[14px] font-fashion font-bold text-gray-900 line-clamp-1 flex-1">{product.name}</h3>
+                    <h3 className="text-[14px] font-sans font-bold text-gray-900 line-clamp-1 flex-1">{product.name}</h3>
                     <div className="flex items-center gap-1 text-gray-900 ml-2">
                       <Star size={10} fill="#FF6B00" className="text-brand-orange" />
                       <span className="text-[11px] font-bold">{product.rating || '4.8'}</span>

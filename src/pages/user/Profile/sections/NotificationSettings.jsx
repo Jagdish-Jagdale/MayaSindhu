@@ -55,7 +55,7 @@ export default function NotificationSettings({ user }) {
           <Bell size={24} strokeWidth={1.5} />
         </div>
         <div>
-          <h2 className="text-2xl font-fashion font-bold text-[#1A1A1A] tracking-tight">Notification Settings</h2>
+          <h2 className="text-2xl font-sans font-bold text-[#1A1A1A] tracking-tight">Notification Settings</h2>
           <p className="text-[10px] text-[#f5aa00] font-bold uppercase tracking-[0.2em] mt-0.5">Manage Alerts</p>
         </div>
       </div>

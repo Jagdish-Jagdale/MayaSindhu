@@ -50,7 +50,7 @@ export default function TestimonialCard({ review, index }) {
         </div>
 
         <div className="flex-1">
-          <p className={`text-gray-600 text-sm md:text-[15px] leading-relaxed font-fashion font-medium ${isExpanded ? '' : 'line-clamp-4'}`}>
+          <p className={`text-gray-600 text-sm md:text-[15px] leading-relaxed font-sans font-medium ${isExpanded ? '' : 'line-clamp-4'}`}>
             "{review.text}"
           </p>
 
@@ -64,7 +64,7 @@ export default function TestimonialCard({ review, index }) {
         </div>
 
         <div className="mt-4 pt-4 border-t border-gray-50">
-          <h4 className="text-[#1A1A1A] font-fashion font-bold text-xs md:text-sm uppercase tracking-wider mb-0.5">{review.name}</h4>
+          <h4 className="text-[#1A1A1A] font-sans font-bold text-xs md:text-sm uppercase tracking-wider mb-0.5">{review.name}</h4>
           <p className="text-[#B08968] text-[9px] uppercase font-bold tracking-[0.15em]">{review.location || review.category}</p>
         </div>
       </div>

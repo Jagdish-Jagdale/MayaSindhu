@@ -69,7 +69,7 @@ export default function CartTab({ user }) {
         <div className="w-20 h-20 bg-gray-50 rounded-full flex items-center justify-center mx-auto mb-6">
           <ShoppingBag size={32} className="text-gray-200" />
         </div>
-        <h3 className="text-2xl font-fashion font-bold text-[#1A1A1A] mb-2">Your Bag is Empty</h3>
+        <h3 className="text-2xl font-sans font-bold text-[#1A1A1A] mb-2">Your Bag is Empty</h3>
         <p className="text-gray-400 mb-8 max-w-xs mx-auto">Treasures are waiting to be discovered in our collections.</p>
         <button
           onClick={() => navigate('/shop')}
@@ -86,7 +86,7 @@ export default function CartTab({ user }) {
   return (
     <div className="space-y-8">
       <div className="flex items-center justify-between">
-        <h2 className="text-3xl font-fashion font-bold text-[#1A1A1A]">My Shopping Bag</h2>
+        <h2 className="text-3xl font-sans font-bold text-[#1A1A1A]">My Shopping Bag</h2>
         <span className="bg-brand-orange/10 text-brand-orange px-4 py-1 rounded-full text-[10px] font-black uppercase tracking-widest">
           {items.length} Items
         </span>

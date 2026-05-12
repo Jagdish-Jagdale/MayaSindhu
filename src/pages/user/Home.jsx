@@ -5,12 +5,14 @@ import ProductCard from '../../components/user/ProductCard';
 import VideoCard from '../../components/user/VideoCard';
 import VideoModal from '../../components/user/VideoModal';
 import TestimonialCard from '../../components/user/TestimonialCard';
-import { ChevronLeft, ChevronRight, Plus, Loader2 } from 'lucide-react';
+import { ChevronLeft, ChevronRight, Plus, Loader2, Calendar, CheckCircle2 } from 'lucide-react';
+import WorkshopModal from '../../components/user/WorkshopModal';
 
 import { db } from '../../firebase';
 import { collection, onSnapshot, query, orderBy, doc } from 'firebase/firestore';
 import useCategories from '../../hooks/useCategories';
 import mstitle from '../../assets/mstitle.png';
+import workshopImg from '../../assets/workshop.png';
 
 const SplashScreen = () => (
   <motion.div
@@ -112,6 +114,8 @@ export default function Home() {
 
   const [testimonials, setTestimonials] = useState([]);
   const [testimonialsLoading, setTestimonialsLoading] = useState(true);
+  const [workshopModalOpen, setWorkshopModalOpen] = useState(false);
+  const [selectedWorkshop, setSelectedWorkshop] = useState(null);
 
   const { categories: allCategories } = useCategories();
   const featuredRef = useRef(null);
@@ -349,7 +353,7 @@ export default function Home() {
                 )}
                 {displaySlides[currentSlide]?.title && (
                   <h1
-                    className="text-white font-fashion font-medium leading-[1.1] md:leading-tight"
+                    className="text-white font-sans font-medium leading-[1.1] md:leading-tight"
                     style={{ fontSize: 'clamp(18px, 4.5vw, 56px)' }}
                   >
                     {displaySlides[currentSlide].title}
@@ -400,7 +404,7 @@ export default function Home() {
           className="mb-16 md:mb-24 text-center"
         >
           <span className="text-[10px] md:text-[11px] uppercase font-bold tracking-[0.5em] text-brand-orange mb-4 block">Curated Realms</span>
-          <h2 className="font-fashion text-brand-black tracking-normal mb-8 leading-tight" style={{ fontSize: 'clamp(32px, 5vw, 64px)' }}>Explore Category</h2>
+          <h2 className="font-sans text-brand-black tracking-normal mb-8 leading-tight" style={{ fontSize: 'clamp(32px, 5vw, 64px)' }}>Explore Category</h2>
           <div className="w-16 md:w-32 h-[1px] bg-brand-orange/30 mx-auto" />
         </motion.div>
 
@@ -479,7 +483,7 @@ export default function Home() {
                               </p>
                             )}
                             {item.title && (
-                              <h4 className="text-white text-2xl md:text-4xl font-medium font-fashion leading-tight">
+                              <h4 className="text-white text-2xl md:text-4xl font-medium font-sans leading-tight">
                                 {item.title}
                               </h4>
                             )}
@@ -514,7 +518,7 @@ export default function Home() {
           >
             <div className="text-left">
               <span className="text-[10px] md:text-[11px] uppercase font-bold tracking-[0.5em] text-gray-400 mb-4 block">The Selection</span>
-              <h2 className="text-4xl md:text-[64px] font-fashion font-medium text-[#111111] tracking-tight leading-[0.9]">Customer <br className="hidden md:block" /> <span className="text-brand-orange">Favourites</span></h2>
+              <h2 className="text-4xl md:text-[64px] font-sans font-medium text-[#111111] tracking-tight leading-[0.9]">Customer <br className="hidden md:block" /> <span className="text-brand-orange">Favourites</span></h2>
             </div>
             <Link to="/shop" className="group flex items-center gap-4 text-[11px] font-bold uppercase tracking-[0.2em] border-b border-gray-200 pb-2 hover:text-brand-orange hover:border-brand-orange transition-all">
               View All Collection
@@ -527,7 +531,7 @@ export default function Home() {
             className="flex space-x-8 overflow-x-auto pb-12 no-scrollbar scroll-smooth snap-x"
           >
             {featuredTreasures.map(product => (
-              <div key={product.id} className="flex-shrink-0 w-[220px] md:w-[350px] snap-start">
+              <div key={product.id} className="flex-shrink-0 w-[200px] md:w-[280px] snap-start">
                 <ProductCard {...product} />
               </div>
             ))}
@@ -546,7 +550,7 @@ export default function Home() {
               className="mb-16 md:mb-24 text-center"
             >
               <span className="text-[10px] md:text-[11px] uppercase font-bold tracking-[0.5em] text-brand-orange mb-4 block">Curated Styles</span>
-              <h2 className="text-4xl md:text-6xl font-fashion font-medium text-text-main tracking-tight mb-8">Shop By Trend</h2>
+              <h2 className="text-4xl md:text-6xl font-sans font-medium text-text-main tracking-tight mb-8">Shop By Trend</h2>
               <div className="w-16 md:w-32 h-[1px] bg-brand-orange/30 mx-auto" />
             </motion.div>
 
@@ -555,12 +559,12 @@ export default function Home() {
               className="flex space-x-8 overflow-x-auto pb-12 no-scrollbar scroll-smooth snap-x"
             >
               {trends.map((trend) => (
-                <div key={trend.id} className="flex-shrink-0 w-[280px] md:w-[450px] bg-white rounded-[2rem] md:rounded-[3rem] p-6 md:p-10 flex flex-col md:flex-row items-center md:space-x-8 space-y-6 md:space-y-0 shadow-sm transition-all group hover:shadow-xl duration-500">
-                  <div className="w-24 h-24 md:w-40 md:h-40 rounded-full overflow-hidden flex-shrink-0 bg-gray-50 border-4 border-white shadow-md">
-                    <img src={trend.imageUrl} alt={trend.title} className="w-full h-full object-cover transition-transform duration-700 group-hover:scale-110" />
+                <div key={trend.id} className="flex-shrink-0 w-[280px] md:w-[380px] bg-white rounded-3xl p-6 md:p-8 flex flex-col md:flex-row items-center md:space-x-6 space-y-6 md:space-y-0 shadow-sm transition-all group hover:shadow-xl duration-500">
+                  <div className="w-24 h-24 md:w-40 md:h-40 rounded-2xl md:rounded-3xl overflow-hidden flex-shrink-0 bg-white border-4 border-white shadow-md flex items-center justify-center p-2">
+                    <img src={trend.imageUrl} alt={trend.title} className="w-full h-full object-contain transition-transform duration-700 group-hover:scale-110" />
                   </div>
                   <div className="text-center md:text-left flex-1">
-                    <h3 className="text-lg md:text-xl font-fashion font-bold text-text-main mb-2 md:mb-3">
+                    <h3 className="text-lg md:text-xl font-sans font-bold text-text-main mb-2 md:mb-3">
                       {trend.title}
                     </h3>
                     <p className="text-text-muted text-[12px] md:text-sm leading-relaxed mb-4 md:mb-6 line-clamp-2 md:line-clamp-none">
@@ -586,7 +590,7 @@ export default function Home() {
           <div className="max-w-[1536px] mx-auto px-6 lg:px-24">
             <div className="text-center mb-8 md:mb-12">
               <span className="text-[10px] md:text-[11px] uppercase font-bold tracking-[0.5em] text-brand-orange mb-4 block">Stories in Motion</span>
-              <h2 className="text-3xl md:text-[56px] font-fashion text-text-main tracking-normal leading-tight">Shop The Look</h2>
+              <h2 className="text-3xl md:text-[56px] font-sans text-text-main tracking-normal leading-tight">Shop The Look</h2>
               <div className="mx-auto w-16 md:w-24 h-[1px] bg-brand-orange opacity-40 mt-6" />
             </div>
 
@@ -669,7 +673,7 @@ export default function Home() {
                     {purpose.accent}
                   </span>
 
-                  <h2 className="text-2xl md:text-4xl lg:text-5xl font-fashion font-medium text-text-main leading-tight mb-6 tracking-tight">
+                  <h2 className="text-2xl md:text-4xl lg:text-5xl font-sans font-medium text-text-main leading-tight mb-6 tracking-tight">
                     {purpose.title}
                   </h2>
 
@@ -681,7 +685,7 @@ export default function Home() {
                   <div className="grid grid-cols-2 gap-8 mb-8 py-6 border-y border-gray-100">
                     {purpose.stats && purpose.stats.map((stat, idx) => (
                       <div key={idx}>
-                        <span className="text-3xl md:text-4xl font-fashion font-bold text-accent block mb-1">{stat.value}</span>
+                        <span className="text-3xl md:text-4xl font-sans font-bold text-accent block mb-1">{stat.value}</span>
                         <span className="text-[9px] uppercase font-bold tracking-[0.1em] text-text-muted/60">{stat.label}</span>
                       </div>
                     ))}
@@ -715,7 +719,7 @@ export default function Home() {
               viewport={{ once: true }}
               className="mb-20"
             >
-              <h2 className="text-3xl md:text-6xl font-fashion font-medium text-text-main tracking-tight">Speaking from their hearts</h2>
+              <h2 className="text-3xl md:text-6xl font-sans font-medium text-text-main tracking-tight">Speaking from their hearts</h2>
               <div className="mx-auto w-16 md:w-24 h-1 bg-brand-orange mt-4 md:mt-6 rounded-none opacity-30" />
             </motion.div>
 
@@ -754,9 +758,74 @@ export default function Home() {
         </section>
       )}
 
+      {/* Workshop Section */}
+      <section className="py-20 md:py-32 bg-white px-6 lg:px-24">
+        <div className="max-w-[1536px] mx-auto">
+          <motion.div
+            initial={{ opacity: 0, y: 20 }}
+            whileInView={{ opacity: 1, y: 0 }}
+            viewport={{ once: true }}
+            className="text-center mb-16 md:mb-24"
+          >
+            <h2 className="text-3xl md:text-6xl font-sans font-medium text-text-main tracking-tight">Artisanal Workshops</h2>
+            <div className="mx-auto w-16 md:w-24 h-1 bg-brand-orange mt-4 md:mt-6 rounded-none opacity-30" />
+          </motion.div>
+
+          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-8">
+            {[
+              {
+                title: "Art of Handweaving",
+                date: "May 25, 2026",
+                desc: "Join our master artisans for an exclusive behind-the-scenes journey into heritage handweaving.",
+                image: workshopImg
+              },
+              {
+                title: "Natural Dyeing Secrets",
+                date: "June 12, 2026",
+                desc: "Discover the alchemy of colors derived from nature's palette in this hands-on studio session.",
+                image: workshopImg // Placeholder
+              },
+              {
+                title: "The Loom Rhythm",
+                date: "June 28, 2026",
+                desc: "Experience the meditative flow of the loom and create your own small textile piece.",
+                image: workshopImg // Placeholder
+              }
+            ].map((ws, idx) => (
+              <motion.div
+                key={idx}
+                initial={{ opacity: 0, y: 30 }}
+                whileInView={{ opacity: 1, y: 0 }}
+                viewport={{ once: true }}
+                transition={{ delay: idx * 0.1, duration: 0.8 }}
+                className="group"
+              >
+                <div className="relative aspect-[4/3] rounded-2xl overflow-hidden mb-6 shadow-lg bg-[#FAF9F6] flex items-center justify-center p-2">
+                  <img src={ws.image} alt={ws.title} className="w-full h-full object-contain group-hover:scale-105 transition-transform duration-700" />
+                  <div className="absolute top-4 right-4 bg-white/90 backdrop-blur-sm px-4 py-2 rounded-full shadow-sm">
+                    <p className="text-[9px] font-bold uppercase tracking-widest text-brand-orange">{ws.date}</p>
+                  </div>
+                </div>
+                <h3 className="text-xl font-sans font-medium text-text-main mb-3 group-hover:text-brand-orange transition-colors">{ws.title}</h3>
+                <p className="text-gray-500 text-sm leading-relaxed mb-6 line-clamp-2">{ws.desc}</p>
+                <button 
+                  onClick={() => {
+                    setSelectedWorkshop(ws);
+                    setWorkshopModalOpen(true);
+                  }}
+                  className="flex items-center gap-2 text-[10px] font-bold uppercase tracking-[0.2em] text-text-main hover:gap-4 transition-all"
+                >
+                  Book Slot <ChevronRight size={14} />
+                </button>
+              </motion.div>
+            ))}
+          </div>
+        </div>
+      </section>
+
       {/* Stay Connected / Newsletter Section */}
       <section className="py-10 md:py-16 bg-white px-6 lg:px-24">
-        <div className="max-w-[1440px] mx-auto relative overflow-hidden bg-brand-orange rounded-[2rem] md:rounded-[4rem] px-6 md:px-16 py-12 md:py-24 text-center">
+        <div className="max-w-[1440px] mx-auto relative overflow-hidden bg-brand-orange rounded-3xl md:rounded-[2.5rem] px-6 md:px-16 py-12 md:py-24 text-center">
 
           {/* Decorative Background Circles (Matching Theme) */}
           <div className="absolute -top-24 -left-24 w-64 h-64 bg-brand-orange-dark rounded-full opacity-40 blur-3xl" />
@@ -771,7 +840,7 @@ export default function Home() {
             transition={{ duration: 1 }}
             className="relative z-10 max-w-3xl mx-auto"
           >
-            <h2 className="text-3xl md:text-5xl lg:text-6xl font-fashion font-bold text-white mb-6 leading-tight text-center">
+            <h2 className="text-3xl md:text-5xl lg:text-6xl font-sans font-bold text-white mb-6 leading-tight text-center">
               Stay Connected with <br className="hidden md:block" /> Handmade Fashion
             </h2>
 
@@ -798,6 +867,13 @@ export default function Home() {
           </motion.div>
         </div>
       </section>
+
+      {/* Workshop Modal */}
+      <WorkshopModal 
+        isOpen={workshopModalOpen} 
+        onClose={() => setWorkshopModalOpen(false)} 
+        workshop={selectedWorkshop} 
+      />
     </div>
   );
 }

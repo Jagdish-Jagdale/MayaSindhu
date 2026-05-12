@@ -117,12 +117,12 @@ export default function ProductCard({ id, slug, name, price, image, imageUrl, im
       viewport={{ once: true }}
       className="group relative"
     >
-      <div className="relative aspect-[1/1.1] overflow-hidden bg-brand-gray rounded-2xl shadow-sm hover:shadow-xl transition-shadow duration-500">
-        <Link to={`/product/${slug || id}`}>
+      <div className="relative aspect-[3/4] overflow-hidden bg-[#F9F8F6] rounded-2xl shadow-sm hover:shadow-xl transition-shadow duration-500 flex items-center justify-center p-2">
+        <Link to={`/product/${slug || id}`} className="w-full h-full">
           <img
             src={displayImage}
             alt={name}
-            className="w-full h-full object-cover transition-transform duration-[2000ms] ease-out group-hover:scale-110"
+            className="w-full h-full object-contain transition-transform duration-[2000ms] ease-out group-hover:scale-105"
           />
         </Link>
 
@@ -140,15 +140,15 @@ export default function ProductCard({ id, slug, name, price, image, imageUrl, im
 
         {/* Actions - Buy Now & Add to Cart */}
         <div className="absolute bottom-4 md:bottom-6 left-0 right-0 md:translate-y-10 md:opacity-0 group-hover:translate-y-0 group-hover:opacity-100 transition-all duration-700 ease-out z-10 px-4 md:px-6">
-          <div className="flex flex-col sm:flex-row gap-2">
+          <div className="flex flex-row gap-1.5 md:gap-2">
             <button
               onClick={isInCart ? (e) => { e.preventDefault(); e.stopPropagation(); navigate('/cart'); } : handleAddToCart}
-              className={`flex-1 flex items-center justify-center space-x-2 backdrop-blur-md border border-white/30 text-white py-3 rounded-full shadow-2xl active:scale-95 transition-all duration-500 ${
+              className={`flex-1 flex items-center justify-center space-x-1 md:space-x-2 backdrop-blur-md border border-white/30 text-white py-2.5 md:py-3 rounded-full shadow-2xl active:scale-95 transition-all duration-500 ${
                 isInCart ? 'bg-brand-orange hover:bg-brand-orange-dark' : 'bg-black/30 hover:bg-white hover:text-brand-black'
               }`}
             >
-              <ShoppingBag size={14} strokeWidth={2} />
-              <span className="text-[9px] md:text-[10px] font-bold uppercase tracking-[0.1em] whitespace-nowrap">
+              <ShoppingBag size={12} className="md:w-3.5 md:h-3.5" strokeWidth={2} />
+              <span className="text-[8px] md:text-[10px] font-bold uppercase tracking-[0.1em] whitespace-nowrap">
                 {isInCart ? "In Bag" : "Add"}
               </span>
             </button>
@@ -174,9 +174,9 @@ export default function ProductCard({ id, slug, name, price, image, imageUrl, im
                   } 
                 });
               }}
-              className="flex-1 flex items-center justify-center space-x-2 bg-brand-orange hover:bg-brand-orange-dark text-white py-3 rounded-full shadow-2xl active:scale-95 transition-all duration-500 border border-brand-orange/30"
+              className="flex-1 flex items-center justify-center space-x-1 md:space-x-2 bg-brand-orange hover:bg-brand-orange-dark text-white py-2.5 md:py-3 rounded-full shadow-2xl active:scale-95 transition-all duration-500 border border-brand-orange/30"
             >
-              <span className="text-[9px] md:text-[10px] font-bold uppercase tracking-[0.1em] whitespace-nowrap">Buy Now</span>
+              <span className="text-[8px] md:text-[10px] font-bold uppercase tracking-[0.1em] whitespace-nowrap">Buy Now</span>
             </button>
           </div>
         </div>
@@ -201,7 +201,7 @@ export default function ProductCard({ id, slug, name, price, image, imageUrl, im
                 initial={{ y: 10, opacity: 0 }}
                 animate={{ y: 0, opacity: 1 }}
                 transition={{ delay: 0.2 }}
-                className="text-text-main font-fashion font-bold text-lg mb-1"
+                className="text-text-main font-sans font-bold text-lg mb-1"
               >
                 Added to Cart!
               </motion.h4>
@@ -220,7 +220,7 @@ export default function ProductCard({ id, slug, name, price, image, imageUrl, im
 
       <div className="mt-5 px-1">
         <Link to={`/product/${slug || id}`}>
-          <h3 className="text-sm md:text-[15px] tracking-wide font-fashion text-text-main hover:text-brand-orange transition-colors line-clamp-1 mb-1.5">{name}</h3>
+          <h3 className="text-sm md:text-[15px] tracking-wide font-sans text-text-main hover:text-brand-orange transition-colors line-clamp-1 mb-1.5">{name}</h3>
         </Link>
         <div className="flex items-center justify-between">
           <p className="text-brand-orange font-bold text-lg md:text-xl">

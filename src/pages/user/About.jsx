@@ -22,7 +22,7 @@ export default function About() {
     return (
       <div className="h-screen w-full flex flex-col items-center justify-center gap-4 bg-white">
         <Loader2 className="w-10 h-10 animate-spin text-brand-orange" />
-        <p className="text-[14px] font-medium text-gray-400 font-fashion uppercase tracking-widest">MayaSindhu</p>
+        <p className="text-[14px] font-medium text-gray-400 font-sans uppercase tracking-widest">MayaSindhu</p>
       </div>
     );
   }
@@ -81,7 +81,7 @@ export default function About() {
             initial={{ opacity: 0, y: 30 }}
             animate={{ opacity: 1, y: 0 }}
             transition={{ delay: 0.2 }}
-            className="text-4xl md:text-5xl font-fashion font-bold text-white drop-shadow-2xl leading-tight"
+            className="text-4xl md:text-5xl font-sans font-bold text-white drop-shadow-2xl leading-tight"
           >
             {content.aboutUs.heading}
           </motion.h1>
@@ -97,7 +97,7 @@ export default function About() {
               <span className="text-[10px] md:text-[12px] font-bold uppercase tracking-[0.4em] text-gray-400 block">
                 FEATURED STORY
               </span>
-              <h2 className="text-3xl md:text-4xl lg:text-5xl font-fashion font-medium leading-[1.2] tracking-tight text-[#111111]">
+              <h2 className="text-3xl md:text-4xl lg:text-5xl font-sans font-medium leading-[1.2] tracking-tight text-[#111111]">
                 {content.featuredStory.title}
               </h2>
             </div>
@@ -158,7 +158,7 @@ export default function About() {
             whileInView={{ opacity: 1, x: 0 }}
             viewport={{ once: true }}
           >
-            <h2 className="text-4xl font-fashion font-bold text-[#111111] mb-8 leading-tight">
+            <h2 className="text-4xl font-sans font-bold text-[#111111] mb-8 leading-tight">
               {content.featuredStory.highlight.title}
             </h2>
             <div className="space-y-6">
@@ -183,7 +183,7 @@ export default function About() {
               viewport={{ once: true }}
               transition={{ delay: i * 0.1 }}
             >
-              <span className="text-5xl md:text-6xl font-fashion font-bold text-brand-orange block mb-3">
+              <span className="text-5xl md:text-6xl font-sans font-bold text-brand-orange block mb-3">
                 {stat.value}
               </span>
               <span className="text-[11px] md:text-[12px] uppercase font-bold tracking-[0.2em] text-gray-400">
@@ -201,7 +201,7 @@ export default function About() {
              initial={{ opacity: 0, y: 20 }}
              whileInView={{ opacity: 1, y: 0 }}
              viewport={{ once: true }}
-             className="text-4xl font-fashion font-bold text-[#111111] mb-10"
+             className="text-4xl font-sans font-bold text-[#111111] mb-10"
            >
              {content.statsSection.title}
            </motion.h2>
