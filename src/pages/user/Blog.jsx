@@ -76,7 +76,7 @@ export default function Blog() {
           <motion.h1 
             initial={{ opacity: 0, y: 20 }}
             animate={{ opacity: 1, y: 0 }}
-            className="text-4xl md:text-6xl font-fashion font-bold mb-6 tracking-tight"
+            className="text-4xl md:text-6xl font-sans font-bold mb-6 tracking-tight"
           >
             {settings.heading.split(' ').map((word, i) => (
               <span key={i} className={i === settings.heading.split(' ').length - 1 ? "text-brand-orange" : ""}>
@@ -120,7 +120,7 @@ export default function Blog() {
             {/* Latest Blogs Grid */}
             <section>
               <div className="flex items-center justify-between mb-12">
-                <h3 className="text-2xl font-fashion font-bold tracking-tight">Latest Stories</h3>
+                <h3 className="text-2xl font-sans font-bold tracking-tight">Latest Stories</h3>
                 <div className="h-px flex-1 bg-gray-100 mx-8 hidden md:block"></div>
               </div>
               
@@ -164,7 +164,7 @@ export default function Blog() {
                       </div>
 
                       {/* Title */}
-                      <h4 className="text-lg font-fashion font-bold leading-tight text-[#1A1A1A] group-hover:text-brand-orange transition-colors mb-3">
+                      <h4 className="text-lg font-sans font-bold leading-tight text-[#1A1A1A] group-hover:text-brand-orange transition-colors mb-3">
                         {blog.title}
                       </h4>
 

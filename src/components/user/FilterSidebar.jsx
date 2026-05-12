@@ -225,7 +225,7 @@ export default function FilterSidebar({ className = "", categories = [], onFilte
 
             <div className="flex items-center gap-3">
               <div className="flex-[3] relative group">
-                <span className="absolute left-3 top-1/2 -translate-y-1/2 text-[12px] text-gray-400 font-serif">₹</span>
+                <span className="absolute left-3 top-1/2 -translate-y-1/2 text-[12px] text-gray-400 font-sans">₹</span>
                 <input
                   type="number"
                   placeholder="0"
@@ -236,7 +236,7 @@ export default function FilterSidebar({ className = "", categories = [], onFilte
               </div>
               <span className="flex-1 text-center text-[10px] text-gray-400 font-bold uppercase tracking-[0.2em]">To</span>
               <div className="flex-[3] relative group">
-                <span className="absolute left-3 top-1/2 -translate-y-1/2 text-[12px] text-gray-400 font-serif">₹</span>
+                <span className="absolute left-3 top-1/2 -translate-y-1/2 text-[12px] text-gray-400 font-sans">₹</span>
                 <input
                   type="number"
                   placeholder="20000"

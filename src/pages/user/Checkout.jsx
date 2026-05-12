@@ -161,7 +161,7 @@ export default function Checkout() {
               >
                 {index < activeStep ? <Check size={20} /> : index + 1}
               </div>
-              <span className={`mt-4 text-[10px] uppercase font-bold tracking-[0.2em] transition-colors ${index <= activeStep ? 'text-brand-orange' : 'text-gray-300'
+              <span className={`mt-4 text-[10px] font-bold tracking-[0.2em] transition-colors ${index <= activeStep ? 'text-brand-orange' : 'text-gray-300'
                 }`}>
                 {step}
               </span>
@@ -184,7 +184,7 @@ export default function Checkout() {
                 >
                   <div className="flex items-center gap-4 mb-4">
                     <Truck className="text-brand-orange" size={24} />
-                    <h2 className="text-3xl font-fashion font-bold text-[#1A1A1A]">Shipping Details</h2>
+                    <h2 className="text-3xl font-sans font-bold text-[#1A1A1A]">Shipping Details</h2>
                   </div>
 
                   {/* Saved Addresses Picker */}
@@ -192,7 +192,7 @@ export default function Checkout() {
                     <div className="mb-12">
                       <div className="flex items-center gap-2 mb-6 px-2">
                         <MapPinned size={14} className="text-brand-orange" />
-                        <span className="text-[10px] uppercase font-black tracking-widest text-gray-400">Select from Saved Addresses</span>
+                        <span className="text-[10px] font-black tracking-widest text-gray-400">Select from Saved Addresses</span>
                       </div>
                       <div className="flex gap-4 overflow-x-auto pb-4 custom-scrollbar snap-x">
                         {savedAddresses.map((addr) => (
@@ -210,7 +210,7 @@ export default function Checkout() {
                                 <Check size={10} strokeWidth={4} />
                               </div>
                             )}
-                            <p className="text-[9px] uppercase font-black tracking-widest text-gray-400 mb-3">{addr.type}</p>
+                            <p className="text-[9px] font-black tracking-widest text-gray-400 mb-3">{addr.type}</p>
                             <h4 className="text-sm font-bold text-[#1A1A1A] mb-1">{addr.fullName}</h4>
                             <p className="text-xs text-gray-500 line-clamp-2 leading-relaxed">
                               {addr.address}, {addr.city}
@@ -253,7 +253,7 @@ export default function Checkout() {
                 >
                   <div className="flex items-center gap-4 mb-10">
                     <CreditCard className="text-brand-orange" size={24} />
-                    <h2 className="text-3xl font-fashion font-bold text-[#1A1A1A]">Payment Method</h2>
+                    <h2 className="text-3xl font-sans font-bold text-[#1A1A1A]">Payment Method</h2>
                   </div>
 
                   <div className="space-y-4 mb-10">
@@ -299,7 +299,7 @@ export default function Checkout() {
                       className="p-8 bg-[#FAF9F6] rounded-3xl border border-dashed border-gray-200 text-center"
                     >
                       <p className="text-sm text-gray-500 mb-2">You will be redirected to our secure payment gateway to complete your UPI/Net Banking transaction.</p>
-                      <span className="text-[10px] uppercase font-bold tracking-widest text-brand-orange">Fast & Secure Heritage Payments</span>
+                      <span className="text-[10px] font-bold tracking-widest text-brand-orange">Fast & Secure Heritage Payments</span>
                     </motion.div>
                   )}
 
@@ -310,7 +310,7 @@ export default function Checkout() {
                       className="p-8 bg-[#FAF9F6] rounded-3xl border border-dashed border-gray-200 text-center"
                     >
                       <p className="text-sm text-gray-500 mb-2">Pay in cash when your heritage treasure arrives at your doorstep.</p>
-                      <span className="text-[10px] uppercase font-bold tracking-widest text-brand-orange">Heritage Delivery Service</span>
+                      <span className="text-[10px] font-bold tracking-widest text-brand-orange">Heritage Delivery Service</span>
                     </motion.div>
                   )}
 
@@ -332,7 +332,7 @@ export default function Checkout() {
                   <div className="w-24 h-24 bg-green-50 text-green-500 rounded-full flex items-center justify-center mx-auto mb-10">
                     <Check size={48} strokeWidth={3} />
                   </div>
-                  <h2 className="text-4xl font-fashion font-bold text-[#1A1A1A] mb-4">A Heritage Treasure is on its way!</h2>
+                  <h2 className="text-4xl font-sans font-bold text-[#1A1A1A] mb-4">A Heritage Treasure is on its way!</h2>
                   <p className="text-gray-500 text-lg mb-12 max-w-md mx-auto leading-relaxed">
                     Your order has been successfully placed. We've sent the confirmation details to your email.
                   </p>
@@ -345,11 +345,11 @@ export default function Checkout() {
           {/* Sidebar Summary */}
           {activeStep < 2 && (
             <div className="lg:col-span-1">
-              <div className="bg-white p-10 rounded-[3rem] shadow-sm border border-gray-100 sticky top-12">
+              <div className="bg-white p-10 rounded-[3rem] shadow-sm border border-gray-100 sticky top-24 h-fit">
                 <div className="flex items-center justify-between mb-8">
-                  <h3 className="text-xl font-fashion font-bold text-[#1A1A1A]">Order Details</h3>
+                  <h3 className="text-xl font-sans font-bold text-[#1A1A1A]">Order Details</h3>
                   {buyNowItem && (
-                    <span className="bg-orange-50 text-brand-orange text-[8px] font-black uppercase tracking-widest px-2.5 py-1 rounded-full border border-orange-100">
+                    <span className="bg-orange-50 text-brand-orange text-[8px] font-black tracking-widest px-2.5 py-1 rounded-full border border-orange-100">
                       Direct Purchase
                     </span>
                   )}
@@ -363,9 +363,9 @@ export default function Checkout() {
                         <img src={item.image} alt="" className="w-full h-full object-contain" />
                       </div>
                       <div className="flex-1 min-w-0">
-                        <h4 className="text-[10px] font-black text-[#1A1A1A] truncate uppercase tracking-tight group-hover:text-brand-orange transition-colors">{item.name}</h4>
+                        <h4 className="text-[10px] font-black text-[#1A1A1A] truncate tracking-tight group-hover:text-brand-orange transition-colors">{item.name}</h4>
                         <div className="flex justify-between items-center mt-0.5">
-                          <p className="text-[9px] text-gray-400 font-bold uppercase tracking-widest">QTY: {item.qty}</p>
+                          <p className="text-[9px] text-gray-400 font-bold tracking-widest">QTY: {item.qty}</p>
                           <p className="text-xs font-bold text-[#1A1A1A]">₹{item.price.toLocaleString()}</p>
                         </div>
                       </div>
@@ -375,32 +375,32 @@ export default function Checkout() {
 
                 <div className="space-y-4 mb-8 pt-6 border-t border-gray-50">
                   <div className="flex justify-between items-center">
-                    <span className="text-[10px] uppercase font-black tracking-widest text-gray-400">Subtotal</span>
+                    <span className="text-[10px] font-black tracking-widest text-gray-400">Subtotal</span>
                     <span className="font-bold text-[#1A1A1A]">₹{subtotal.toLocaleString()}</span>
                   </div>
                   <div className="flex justify-between items-center">
-                    <span className="text-[10px] uppercase font-black tracking-widest text-gray-400">Shipping</span>
+                    <span className="text-[10px] font-black tracking-widest text-gray-400">Shipping</span>
                     <span className={`font-bold ${subtotal > 25000 ? 'text-green-600' : 'text-[#1A1A1A]'}`}>
-                      {subtotal > 25000 ? 'FREE' : `₹${shipping.toLocaleString()}`}
+                      {subtotal > 25000 ? 'Free' : `₹${shipping.toLocaleString()}`}
                     </span>
                   </div>
                   {subtotal > 25000 && (
                     <div className="bg-green-50 p-3 rounded-xl border border-green-100 flex items-center gap-2">
                       <Check size={12} className="text-green-600" />
-                      <p className="text-[8px] font-bold text-green-600 uppercase tracking-widest">Heritage Shipping unlocked</p>
+                      <p className="text-[8px] font-bold text-green-600 tracking-widest">Heritage Shipping unlocked</p>
                     </div>
                   )}
                 </div>
 
-                <div className="flex justify-between items-center text-2xl font-fashion font-bold pt-6 border-t border-gray-50 mb-8">
-                  <span className="uppercase tracking-tighter">Total</span>
+                <div className="flex justify-between items-center text-2xl font-sans font-bold pt-6 border-t border-gray-50 mb-8">
+                  <span className=" tracking-tighter">Total</span>
                   <span className="text-brand-orange">₹{total.toLocaleString()}</span>
                 </div>
 
                 <div className="p-4 bg-[#FAF9F6] rounded-2xl border border-dashed border-gray-200">
                   <div className="flex items-center gap-2 mb-2">
                     <Lock size={10} className="text-gray-400" />
-                    <span className="text-[8px] uppercase font-black tracking-widest text-gray-400">Secure Payment</span>
+                    <span className="text-[8px] font-black tracking-widest text-gray-400">Secure Payment</span>
                   </div>
                   <p className="text-[9px] text-gray-400 font-medium leading-relaxed">
                     By completing your purchase you agree to our Terms of Use and Privacy Policy.
@@ -419,7 +419,7 @@ export default function Checkout() {
 function FormInput({ label, type = 'text', placeholder = '', value = '', onChange }) {
   return (
     <div className="space-y-2 group">
-      <label className="text-[10px] uppercase font-bold tracking-widest text-gray-400 block px-2 group-focus-within:text-brand-orange transition-colors">{label}</label>
+      <label className="text-[10px] font-bold tracking-widest text-gray-400 block px-2 group-focus-within:text-brand-orange transition-colors">{label}</label>
       <input
         type={type}
         placeholder={placeholder}
@@ -440,7 +440,7 @@ function PaymentOption({ label, icon, active, onClick }) {
     >
       <div className="flex items-center gap-4">
         {icon}
-        <span className="font-bold text-xs uppercase tracking-widest leading-none">{label}</span>
+        <span className="font-bold text-xs tracking-widest leading-none">{label}</span>
       </div>
       <div className={`w-6 h-6 rounded-full border-2 flex items-center justify-center transition-all ${active ? 'border-brand-orange bg-brand-orange' : 'border-gray-200 bg-white'
         }`}>
