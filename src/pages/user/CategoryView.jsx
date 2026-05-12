@@ -130,7 +130,7 @@ export default function CategoryView() {
   if (!currentCategory) {
     return (
       <div className="min-h-screen pt-40 pb-20 text-center">
-        <h2 className="text-2xl font-fashion mb-4">Category not found</h2>
+        <h2 className="text-2xl font-sans mb-4">Category not found</h2>
         <Link to="/shop" className="text-brand-orange font-bold uppercase tracking-widest text-sm underline">
           Return to Shop
         </Link>
@@ -172,7 +172,7 @@ export default function CategoryView() {
               ))}
             </nav>
             
-            <h1 className="text-4xl md:text-5xl font-fashion font-medium text-[#111111] capitalize tracking-tight leading-tight">
+            <h1 className="text-4xl md:text-5xl font-sans font-medium text-[#111111] capitalize tracking-tight leading-tight">
               {currentCategory.name}
             </h1>
             <p className="text-brand-orange text-[10px] font-bold uppercase tracking-[0.4em] mt-4">
@@ -192,14 +192,14 @@ export default function CategoryView() {
               </button>
             </div>
 
-            <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-2 xl:grid-cols-3 gap-x-8 gap-y-16 md:gap-y-24">
+            <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-x-6 gap-y-12">
               {filteredProducts.length > 0 ? (
                 filteredProducts.map((product) => (
                   <ProductCard key={product.id} {...product} />
                 ))
               ) : (
-                <div className="col-span-full py-20 text-center bg-gray-50 rounded-[3rem]">
-                  <p className="text-gray-400 font-fashion text-xl mb-4">No treasures found in this range yet.</p>
+                <div className="col-span-full py-20 text-center bg-gray-50 rounded-3xl">
+                  <p className="text-gray-400 font-sans text-xl mb-4">No treasures found in this range yet.</p>
                   <Link to="/shop" className="text-brand-orange font-bold uppercase tracking-widest text-[10px]">Explore All Collections</Link>
                 </div>
               )}

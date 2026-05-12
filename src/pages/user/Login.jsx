@@ -65,7 +65,7 @@ export default function Login() {
 
           <div className="text-center mb-8">
             <Link to="/" className="inline-block hover:scale-105 transition-transform mb-6">
-              <h1 className="text-4xl font-fashion text-text-main tracking-widest">
+              <h1 className="text-4xl font-sans text-text-main tracking-widest">
                 MAYA<span className="text-brand-orange">SINDHU</span>
               </h1>
             </Link>

@@ -165,7 +165,7 @@ export default function Shop() {
             <span className="text-brand-orange">Shop</span>
           </nav>
           
-          <h1 className="text-4xl md:text-6xl font-fashion text-[#111111] capitalize tracking-tight leading-none mb-4">
+          <h1 className="text-4xl md:text-6xl font-sans text-[#111111] capitalize tracking-tight leading-none mb-4">
             {searchQuery ? (
               <div className="flex flex-col items-center gap-4">
                 <span className="text-gray-400 text-xs font-sans uppercase tracking-[0.3em]">Search results for</span>
@@ -209,7 +209,7 @@ export default function Shop() {
             <FilterSidebar
               categories={allCategories}
               onFilterChange={handleFilterChange}
-              className="rounded-[2.5rem] shadow-sm border border-gray-50"
+              className="rounded-3xl shadow-sm border border-gray-50"
             />
           </aside>
 
@@ -242,7 +242,7 @@ export default function Shop() {
                           className="flex flex-col items-center flex-shrink-0 w-24 snap-center cursor-pointer group"
                           onClick={() => setFilter(child.name)}
                         >
-                          <div className="w-16 h-16 md:w-20 md:h-20 rounded-full overflow-hidden bg-white border-2 border-transparent group-hover:border-brand-orange transition-all shadow-sm mb-3">
+                          <div className="w-16 h-16 md:w-20 md:h-20 rounded-2xl overflow-hidden bg-white border-2 border-transparent group-hover:border-brand-orange transition-all shadow-sm mb-3">
                             {child.imageUrl ? (
                               <img src={child.imageUrl} alt={child.name} className="w-full h-full object-cover" />
                             ) : (
@@ -264,14 +264,14 @@ export default function Shop() {
             })()}
 
             {/* Product Grid */}
-            <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-2 gap-x-8 gap-y-16">
+            <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-x-6 gap-y-12">
               {filteredProducts.length > 0 ? (
                 filteredProducts.map((product) => (
                   <ProductCard key={product.id} {...product} />
                 ))
               ) : (
                 <div className="col-span-full py-20 text-center">
-                  <p className="text-gray-400 font-fashion text-xl">No treasures found in this category.</p>
+                  <p className="text-gray-400 font-sans text-xl">No treasures found in this category.</p>
                 </div>
               )}
             </div>

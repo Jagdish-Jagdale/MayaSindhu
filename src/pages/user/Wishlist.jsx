@@ -84,7 +84,7 @@ export default function Wishlist() {
         <div className="w-24 h-24 bg-red-50 rounded-full flex items-center justify-center mb-8">
           <Heart size={40} className="text-red-200" fill="currentColor" />
         </div>
-        <h2 className="text-3xl font-fashion font-bold text-[#1A1A1A] mb-4">Your wishlist is empty</h2>
+        <h2 className="text-3xl font-sans font-bold text-[#1A1A1A] mb-4">Your wishlist is empty</h2>
         <p className="text-gray-500 mb-10 max-w-md">Save your favorite handcrafted pieces for later.</p>
         <Link to="/shop" className="btn btn-primary px-12">Browse Collection</Link>
       </div>
@@ -94,7 +94,7 @@ export default function Wishlist() {
   return (
     <div className="bg-white min-h-screen pt-16 pb-24">
       <div className="max-w-[1200px] mx-auto px-6">
-        <h1 className="text-4xl md:text-5xl font-fashion font-bold text-[#1A1A1A] mb-12">Your Wishlist</h1>
+        <h1 className="text-4xl md:text-5xl font-sans font-bold text-[#1A1A1A] mb-12">Your Wishlist</h1>
 
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-x-10 gap-y-16">
           <AnimatePresence>

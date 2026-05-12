@@ -20,6 +20,7 @@ import { db } from '../../firebase';
 import { doc, getDoc, setDoc, updateDoc, deleteDoc, serverTimestamp, onSnapshot, collection, query, where, getDocs, orderBy, limit } from 'firebase/firestore';
 import { addToCart } from '../../utils/cartUtils';
 import ProductCard from '../../components/user/ProductCard';
+import toast from 'react-hot-toast';
 
 export default function ProductDetail() {
   const { slug } = useParams();
@@ -195,6 +196,32 @@ export default function ProductDetail() {
     }
   };
 
+  const handleShare = async () => {
+    const shareData = {
+      title: product.name,
+      text: `Check out this exquisite artisanal piece: ${product.name}`,
+      url: window.location.href
+    };
+
+    if (navigator.share) {
+      try {
+        await navigator.share(shareData);
+      } catch (err) {
+        if (err.name !== 'AbortError') {
+          console.error("Error sharing:", err);
+          toast.error("Failed to share product.");
+        }
+      }
+    } else {
+      try {
+        await navigator.clipboard.writeText(window.location.href);
+        toast.success("Product link copied to clipboard!");
+      } catch (err) {
+        toast.error("Failed to copy link.");
+      }
+    }
+  };
+
   if (loading) {
     return (
       <div className="min-h-screen flex items-center justify-center bg-[#FDFBF7]">
@@ -206,7 +233,7 @@ export default function ProductDetail() {
   if (!product) {
     return (
       <div className="min-h-screen flex flex-col items-center justify-center bg-[#FDFBF7] p-6 text-center">
-        <h2 className="text-3xl font-fashion font-bold text-[#1A1A1A] mb-4">Treasure Not Found</h2>
+        <h2 className="text-3xl font-sans font-bold text-[#1A1A1A] mb-4">Treasure Not Found</h2>
         <button onClick={() => navigate('/shop')} className="btn btn-primary px-12">Return to Shop</button>
       </div>
     );
@@ -228,7 +255,7 @@ export default function ProductDetail() {
         </div>
 
         {/* Responsive Layout Section */}
-        <div className="flex flex-col lg:flex-row gap-6 lg:gap-8 bg-white p-4 sm:p-6 lg:p-8 rounded-3xl lg:rounded-[2.5rem] shadow-sm border border-gray-100/50 mb-8 lg:mb-12">
+        <div className="flex flex-col lg:flex-row gap-6 lg:gap-8 bg-white p-4 sm:p-6 lg:p-8 rounded-3xl shadow-sm border border-gray-100/50 mb-8 lg:mb-12">
           
           {/* Section 1: Gallery */}
           <div className="flex flex-col-reverse lg:flex-row gap-4 lg:gap-6 lg:w-[48%] flex-shrink-0">
@@ -248,7 +275,7 @@ export default function ProductDetail() {
               ))}
             </div>
 
-            <div className="relative flex-1 aspect-square rounded-2xl lg:rounded-[2rem] overflow-hidden bg-[#F9F8F6] border border-gray-100 group shadow-md flex items-center justify-center p-3 sm:p-4">
+            <div className="relative flex-1 aspect-square rounded-2xl lg:rounded-3xl overflow-hidden bg-[#F9F8F6] border border-gray-100 group shadow-md flex items-center justify-center p-3 sm:p-4">
               <div className="w-full h-full relative">
                  <motion.img 
                     key={activeImage}
@@ -274,10 +301,10 @@ export default function ProductDetail() {
           {/* Section 2: Details */}
           <div className="flex-1 flex flex-col pt-1 min-w-0">
             <div className="mb-4 sm:mb-6">
-              <h1 className="text-xl sm:text-2xl lg:text-3xl font-fashion font-bold text-[#1A1A1A] mb-1.5 leading-tight tracking-tight">
+              <h1 className="text-xl sm:text-2xl lg:text-3xl font-sans font-bold text-[#1A1A1A] mb-1.5 leading-tight tracking-tight">
                 {product.name}
               </h1>
-              <p className="text-[10px] sm:text-xs italic font-medium text-gray-500 mb-4 font-fashion">
+              <p className="text-[10px] sm:text-xs italic font-medium text-gray-500 mb-4 font-sans">
                 {product.subtitle || 'Exquisite Artisanal Piece'}
               </p>
               
@@ -374,7 +401,7 @@ export default function ProductDetail() {
           <div className="mt-8 sm:mt-12 lg:mt-16">
             <div className="flex items-center justify-between mb-6 sm:mb-10 px-2">
               <div>
-                <h2 className="text-xl sm:text-2xl font-fashion font-bold text-[#1A1A1A] mb-2 uppercase tracking-tighter">You May Also Love</h2>
+                <h2 className="text-xl sm:text-2xl font-sans font-bold text-[#1A1A1A] mb-2 uppercase tracking-tighter">You May Also Love</h2>
                 <div className="w-16 h-1 bg-brand-orange rounded-full" />
               </div>
             </div>

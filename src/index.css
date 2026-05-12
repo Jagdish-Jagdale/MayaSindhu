@@ -2,7 +2,7 @@
 @import "tailwindcss";
 
 @theme {
-  --font-sans: "Outfit", sans-serif;
+  --font-sans: "Montserrat", sans-serif;
   --font-fashion: "Playfair Display", serif;
 
   /* Brand Palette */
@@ -36,14 +36,18 @@
   }
 
   h1, h2, h3, h4, h5, h6 {
-    @apply font-fashion text-text-main tracking-tight;
-    font-weight: 400 !important;
+    @apply font-sans text-text-main tracking-tight;
+    font-weight: 500 !important;
   }
 
   button, 
   a,
+  input,
+  select,
+  textarea,
   [role="button"] {
     @apply cursor-pointer;
+    font-family: inherit;
   }
 }
 

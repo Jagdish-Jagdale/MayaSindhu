@@ -9,13 +9,13 @@ export default function SupportTab() {
   ];
 
   return (
-    <div className="bg-white p-6 md:p-10 rounded-[3rem] shadow-xl shadow-gray-200/20 border border-[#f0dda0]/20">
+    <div className="bg-white p-6 md:p-10 rounded-xl shadow-xl shadow-gray-200/20 border border-[#f0dda0]/20">
       <div className="flex items-center gap-4 mb-8">
         <div className="w-12 h-12 bg-gradient-to-br from-[#f5aa00] to-[#e07a00] rounded-2xl flex items-center justify-center text-white shadow-lg shadow-[#f5aa00]/20">
           <HelpCircle size={24} strokeWidth={1.5} />
         </div>
         <div>
-          <h2 className="text-2xl font-fashion font-bold text-[#1A1A1A] tracking-tight">Help & Support</h2>
+          <h2 className="text-2xl font-sans font-bold text-[#1A1A1A] tracking-tight">Help & Support</h2>
           <p className="text-[10px] text-[#f5aa00] font-bold uppercase tracking-[0.2em] mt-0.5">Assistance Center</p>
         </div>
       </div>
@@ -47,7 +47,7 @@ export default function SupportTab() {
             <SupportOption icon={<FileText size={18} />} label="Tickets" color="text-indigo-500" />
           </div>
           
-          <div className="bg-[#fffbf2]/40 p-8 rounded-[2rem] border border-[#f0dda0]/20 shadow-sm">
+          <div className="bg-[#fffbf2]/40 p-8 rounded-xl border border-[#f0dda0]/20 shadow-sm">
              <h4 className="text-[13px] font-bold text-[#f5aa00] uppercase tracking-widest mb-2">Our Boutique Studio</h4>
              <p className="text-[11px] text-gray-400 font-bold uppercase tracking-wider leading-relaxed">
                Heritage Row, Block C-14, <br />
@@ -63,7 +63,7 @@ export default function SupportTab() {
 
 function SupportOption({ icon, label, color }) {
   return (
-    <div className="p-5 bg-white border border-[#f0dda0]/10 rounded-[2rem] flex flex-col items-center gap-3 hover:shadow-lg hover:border-[#f5aa00]/20 transition-all cursor-pointer active:scale-95 group shadow-sm">
+    <div className="p-5 bg-white border border-[#f0dda0]/10 rounded-xl flex flex-col items-center gap-3 hover:shadow-lg hover:border-[#f5aa00]/20 transition-all cursor-pointer active:scale-95 group shadow-sm">
       <div className={`w-10 h-10 rounded-xl bg-[#fffbf2] flex items-center justify-center ${color} transition-transform group-hover:scale-110 shadow-sm`}>
         {icon}
       </div>

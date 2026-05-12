@@ -56,7 +56,7 @@ export default function VideoCard({ videoUrl, title, category, thumbnail, produc
 
   return (
     <motion.div
-      className="relative flex-shrink-0 w-[200px] md:w-[280px] h-[320px] md:h-[480px] rounded-[1.5rem] md:rounded-[2.5rem] overflow-hidden group cursor-pointer shadow-lg bg-gray-100"
+      className="relative flex-shrink-0 w-[200px] md:w-[280px] h-[320px] md:h-[480px] rounded-2xl md:rounded-3xl overflow-hidden group cursor-pointer shadow-lg bg-gray-100"
       onMouseEnter={handleMouseEnter}
       onMouseLeave={handleMouseLeave}
       transition={{ duration: 0.5, ease: "easeOut" }}
@@ -141,7 +141,7 @@ export default function VideoCard({ videoUrl, title, category, thumbnail, produc
       </div>
 
       {/* Rim Light Effect */}
-      <div className="absolute inset-0 border border-white/0 group-hover:border-white/20 rounded-[2rem] md:rounded-[3rem] transition-colors duration-500 pointer-events-none" />
+      <div className="absolute inset-0 border border-white/0 group-hover:border-white/20 rounded-2xl md:rounded-3xl transition-colors duration-500 pointer-events-none" />
     </motion.div>
   );
 }

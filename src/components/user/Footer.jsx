@@ -36,7 +36,7 @@ export default function Footer() {
 
           {/* Column 1: Brand Info */}
           <div>
-            <h2 className="text-[#004D40] text-lg font-fashion font-bold tracking-[0.3em] uppercase mb-8">
+            <h2 className="text-[#004D40] text-lg font-sans font-bold tracking-[0.3em] uppercase mb-8">
               MAYASINDHU
             </h2>
             <p className="text-[#1A1A1A] text-[15px] leading-relaxed mb-10 max-w-[280px]">
@@ -57,7 +57,7 @@ export default function Footer() {
 
           {/* Column 2: Categories */}
           <div>
-            <h3 className="text-[#004D40] text-xs font-fashion font-bold tracking-[0.2em] uppercase mb-8">
+            <h3 className="text-[#004D40] text-xs font-sans font-bold tracking-[0.2em] uppercase mb-8">
               Categories
             </h3>
             <ul className="space-y-4">
@@ -86,7 +86,7 @@ export default function Footer() {
 
           {/* Column 3: Other Links */}
           <div>
-            <h3 className="text-[#004D40] text-xs font-fashion font-bold tracking-[0.2em] uppercase mb-8">
+            <h3 className="text-[#004D40] text-xs font-sans font-bold tracking-[0.2em] uppercase mb-8">
               Other Links
             </h3>
             <ul className="space-y-4">
@@ -115,7 +115,7 @@ export default function Footer() {
 
           {/* Column 4: Contact US */}
           <div className="lg:col-start-4">
-            <h3 className="text-[#004D40] text-xs font-fashion font-bold tracking-[0.2em] uppercase mb-8">
+            <h3 className="text-[#004D40] text-xs font-sans font-bold tracking-[0.2em] uppercase mb-8">
               Contact US
             </h3>
             <ul className="space-y-5 text-[#1A1A1A] text-[13px] leading-relaxed">
