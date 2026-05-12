@@ -5,16 +5,12 @@ import {
   Filter, 
   Pencil, 
   Trash2, 
-  ArrowUpRight, 
   X, 
   ChevronDown, 
-  Eye, 
-  EyeOff,
   User as UserIcon,
-  Loader2,
-  Calendar
+  Loader2
 } from 'lucide-react';
-import { db } from '../../firebase';
+import { db } from '../../../firebase';
 import { 
   collection, 
   onSnapshot, 
@@ -25,13 +21,13 @@ import {
 } from 'firebase/firestore';
 import toast from 'react-hot-toast';
 
-import { useAdminUI } from '../../context/AdminUIContext';
-import DeleteConfirmationModal from '../../components/admin/DeleteConfirmationModal';
-import UserModal from '../../components/admin/UserModal';
+import { useAdminUI } from '../../../context/AdminUIContext';
+import DeleteConfirmationModal from '../../../components/admin/DeleteConfirmationModal';
+import StoreCustomerModal from '../../../components/admin/offline/StoreCustomerModal';
 
-const Users = () => {
+const StoreCustomers = () => {
   const { isCollapsed } = useAdminUI();
-  const [users, setUsers] = useState([]);
+  const [customers, setCustomers] = useState([]);
   const [loading, setLoading] = useState(true);
   const [searchTerm, setSearchTerm] = useState('');
   const [filterOpen, setFilterOpen] = useState(false);
@@ -40,32 +36,30 @@ const Users = () => {
   const [rowsPerPage, setRowsPerPage] = useState(10);
   const [sortConfig, setSortConfig] = useState({ key: 'createdAt', dir: 'desc' });
 
-  // Delete Modal States
-  const [isDeleteModalOpen, setIsDeleteModalOpen] = useState(false);
-  const [userToDelete, setUserToDelete] = useState(null);
-  const [isDeleting, setIsDeleting] = useState(false);
-
-  // Add/Edit Modal States
+  // Modal States
   const [isModalOpen, setIsModalOpen] = useState(false);
-  const [selectedUser, setSelectedUser] = useState(null);
+  const [selectedCustomer, setSelectedCustomer] = useState(null);
+  const [isDeleteModalOpen, setIsDeleteModalOpen] = useState(false);
+  const [customerToDelete, setCustomerToDelete] = useState(null);
+  const [isDeleting, setIsDeleting] = useState(false);
 
   const filterRef = useRef(null);
   const rowsRef = useRef(null);
 
   // Real-time Firestore Listener
   useEffect(() => {
-    const q = query(collection(db, 'users'), orderBy('createdAt', 'desc'));
+    const q = query(collection(db, 'storeCustomers'), orderBy('createdAt', 'desc'));
     
     const unsubscribe = onSnapshot(q, (snapshot) => {
-      const usersData = snapshot.docs.map(doc => ({
+      const data = snapshot.docs.map(doc => ({
         id: doc.id,
         ...doc.data()
       }));
-      setUsers(usersData);
+      setCustomers(data);
       setLoading(false);
     }, (error) => {
-      console.error("Error fetching users:", error);
-      toast.error("Failed to load users data.");
+      console.error("Error fetching store customers:", error);
+      toast.error("Failed to load customer data.");
       setLoading(false);
     });
 
@@ -73,31 +67,31 @@ const Users = () => {
   }, []);
 
   const handleAdd = () => {
-    setSelectedUser(null);
+    setSelectedCustomer(null);
     setIsModalOpen(true);
   };
 
-  const handleEdit = (user) => {
-    setSelectedUser(user);
+  const handleEdit = (customer) => {
+    setSelectedCustomer(customer);
     setIsModalOpen(true);
   };
 
-  const handleDelete = (user) => {
-    setUserToDelete(user);
+  const handleDelete = (customer) => {
+    setCustomerToDelete(customer);
     setIsDeleteModalOpen(true);
   };
 
   const confirmDelete = async () => {
-    if (!userToDelete) return;
+    if (!customerToDelete) return;
     try {
       setIsDeleting(true);
-      await deleteDoc(doc(db, 'users', userToDelete.id));
-      toast.success(`User "${userToDelete.fullName || userToDelete.email}" removed`);
+      await deleteDoc(doc(db, 'storeCustomers', customerToDelete.id));
+      toast.success(`Customer "${customerToDelete.fullName}" removed`);
       setIsDeleteModalOpen(false);
-      setUserToDelete(null);
+      setCustomerToDelete(null);
     } catch (error) {
-      console.error("Error deleting user:", error);
-      toast.error("Failed to delete user profile");
+      console.error("Error deleting customer:", error);
+      toast.error("Failed to delete customer");
     } finally {
       setIsDeleting(false);
     }
@@ -132,13 +126,13 @@ const Users = () => {
     return `${day}/${month}/${year}`;
   };
 
-  const filteredUsers = (() => {
-    let list = users.filter(user => {
+  const filteredCustomers = (() => {
+    let list = customers.filter(c => {
       const matchesSearch =
-        (user.fullName?.toLowerCase() || '').includes(searchTerm.toLowerCase()) ||
-        (user.email?.toLowerCase() || '').includes(searchTerm.toLowerCase()) ||
-        (user.phone?.toLowerCase() || '').includes(searchTerm.toLowerCase());
-      const matchesFilter = activeFilter === 'All' || (user.status || 'Active') === activeFilter;
+        (c.fullName?.toLowerCase() || '').includes(searchTerm.toLowerCase()) ||
+        (c.email?.toLowerCase() || '').includes(searchTerm.toLowerCase()) ||
+        (c.phone?.toLowerCase() || '').includes(searchTerm.toLowerCase());
+      const matchesFilter = activeFilter === 'All' || (c.status || 'Active') === activeFilter;
       return matchesSearch && matchesFilter;
     });
 
@@ -147,7 +141,6 @@ const Users = () => {
         let aVal = a[sortConfig.key] || '';
         let bVal = b[sortConfig.key] || '';
 
-        // Handle Firestore Timestamps for sorting
         if (sortConfig.key === 'createdAt' || sortConfig.key === 'updatedAt') {
           if (aVal?.toDate) aVal = aVal.toDate();
           if (bVal?.toDate) bVal = bVal.toDate();
@@ -175,7 +168,7 @@ const Users = () => {
     return (
       <div className="h-[60vh] w-full flex flex-col items-center justify-center gap-4">
         <Loader2 className="w-10 h-10 animate-spin text-[#1BAFAF]" />
-        <p className="text-[14px] font-medium text-gray-400">Loading user database...</p>
+        <p className="text-[14px] font-medium text-gray-400">Loading store customers...</p>
       </div>
     );
   }
@@ -188,16 +181,16 @@ const Users = () => {
         <div className="flex items-center justify-between">
           <div>
             <h1 className="text-[22px] font-semibold text-gray-900 tracking-tight">
-              User Directory
+              Store Customers
             </h1>
-            <p className="text-[12px] text-gray-400 font-medium font-inter">Monitor and manage all registered accounts in the system</p>
+            <p className="text-[12px] text-gray-400 font-medium font-inter">Manage your offline store customer database</p>
           </div>
           <button 
             onClick={handleAdd}
             className="flex items-center gap-2 px-6 py-3 bg-[#1BAFAF] text-white rounded-2xl text-[13px] font-bold shadow-lg shadow-[#1BAFAF]/20 hover:bg-[#158e8e] transition-all active:scale-95 group"
           >
             <Plus size={18} className="group-hover:rotate-90 transition-transform duration-300" />
-            Add User
+            Add Customer
           </button>
         </div>
         <hr className="border-gray-100" />
@@ -252,16 +245,10 @@ const Users = () => {
             >
               <Filter size={14} strokeWidth={2.5} />
               {activeFilter !== 'All' ? `Status: ${activeFilter}` : 'Filters'}
-              {activeFilter !== 'All' && (
-                <span onClick={(e) => { e.stopPropagation(); setActiveFilter('All'); }} className="ml-1 hover:text-red-400">
-                  <X size={12} strokeWidth={2.5} />
-                </span>
-              )}
             </button>
             {filterOpen && (
               <div className="absolute right-0 top-full mt-2 w-40 bg-white border border-gray-100 rounded-xl shadow-lg z-50 py-1 overflow-hidden">
-                <p className="px-3 py-1.5 text-[10px] font-bold text-gray-400 uppercase tracking-widest">Filter by Status</p>
-                {['All', 'Active', 'Inactive', 'Suspended'].map(opt => (
+                {['All', 'Active', 'Inactive'].map(opt => (
                   <button
                     key={opt}
                     onClick={() => { setActiveFilter(opt); setFilterOpen(false); }}
@@ -314,40 +301,40 @@ const Users = () => {
               </tr>
             </thead>
             <tbody className="divide-y divide-gray-50/50">
-              {filteredUsers.length > 0 ? (
-                filteredUsers.slice(0, rowsPerPage).map((user, idx) => (
-                  <tr key={user.id} className="hover:bg-gray-50 group transition-colors">
+              {filteredCustomers.length > 0 ? (
+                filteredCustomers.slice(0, rowsPerPage).map((c, idx) => (
+                  <tr key={c.id} className="hover:bg-gray-50 group transition-colors">
                     <td className="px-6 py-4 whitespace-nowrap text-[14px] text-gray-400 font-medium">{(idx + 1).toString().padStart(2, '0')}</td>
                     <td className="px-6 py-4 min-w-[200px]">
-                      <span className="text-[14px] font-bold text-gray-900">{user.fullName}</span>
+                      <span className="text-[14px] font-bold text-gray-900">{c.fullName}</span>
                     </td>
                     <td className="px-6 py-4">
-                      <span className="text-[14px] text-gray-500 font-medium">{user.email}</span>
+                      <span className="text-[14px] text-gray-500 font-medium">{c.email}</span>
                     </td>
                     <td className="px-6 py-4">
-                      <span className="text-[14px] text-gray-500 font-medium">{user.phone || '---'}</span>
+                      <span className="text-[14px] text-gray-500 font-medium">{c.phone || '---'}</span>
                     </td>
                     <td className="px-6 py-4 whitespace-nowrap">
                       <span className={`text-[11px] font-bold uppercase tracking-wider px-2.5 py-1 rounded-lg ${
-                        (user.status || 'Active') === 'Active' ? 'text-[#1BAFAF] bg-[#eaf6f6]' :
+                        (c.status || 'Active') === 'Active' ? 'text-[#1BAFAF] bg-[#eaf6f6]' :
                         'text-red-500 bg-red-50'
                       }`}>
-                        {user.status || 'Active'}
+                        {c.status || 'Active'}
                       </span>
                     </td>
                     <td className="px-6 py-4 whitespace-nowrap text-[14px] text-gray-500 font-medium">
-                      {formatDate(user.createdAt)}
+                      {formatDate(c.createdAt)}
                     </td>
                     <td className="px-6 py-4 text-right">
                       <div className="flex items-center justify-end gap-2">
                         <button 
-                          onClick={() => handleEdit(user)}
+                          onClick={() => handleEdit(c)}
                           className="w-8 h-8 flex items-center justify-center text-[#1BAFAF] hover:bg-[#1BAFAF]/5 rounded-lg transition-all active:scale-90"
                         >
                           <Pencil size={14} strokeWidth={2.5} />
                         </button>
                         <button 
-                          onClick={() => handleDelete(user)}
+                          onClick={() => handleDelete(c)}
                           className="w-8 h-8 flex items-center justify-center text-red-600 hover:bg-red-50 rounded-lg transition-all active:scale-90"
                         >
                           <Trash2 size={14} strokeWidth={2.5} />
@@ -359,7 +346,7 @@ const Users = () => {
               ) : (
                 <tr>
                   <td colSpan="7" className="px-6 py-12 text-center text-gray-400 font-medium">
-                    No users found matching your criteria
+                    No customers found matching your criteria
                   </td>
                 </tr>
               )}
@@ -367,32 +354,28 @@ const Users = () => {
           </table>
         </div>
 
-        {/* Footer info */}
         <div className="flex items-center justify-between px-2 pt-1">
           <span className="text-[11px] font-semibold text-gray-300 uppercase tracking-widest">
-            Total Records: {filteredUsers.length}
+            Total Records: {filteredCustomers.length}
           </span>
-          <div className="flex items-center gap-2">
-             <p className="text-[11px] text-gray-400 italic">Showing top {Math.min(rowsPerPage, filteredUsers.length)} results</p>
-          </div>
         </div>
       </div>
+
+      <StoreCustomerModal 
+        isOpen={isModalOpen}
+        onClose={() => setIsModalOpen(false)}
+        customer={selectedCustomer}
+      />
 
       <DeleteConfirmationModal
         isOpen={isDeleteModalOpen}
         onClose={() => setIsDeleteModalOpen(false)}
         onConfirm={confirmDelete}
-        itemName={userToDelete?.fullName || userToDelete?.email}
+        itemName={customerToDelete?.fullName}
         loading={isDeleting}
-      />
-
-      <UserModal
-        isOpen={isModalOpen}
-        onClose={() => setIsModalOpen(false)}
-        user={selectedUser}
       />
     </div>
   );
 };
 
-export default Users;
+export default StoreCustomers;

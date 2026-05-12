@@ -116,7 +116,10 @@ export default function Cart() {
                   </div>
 
                   <div className="flex-grow text-center md:text-left">
-                    <h3 className="text-xl font-fashion font-bold text-[#1A1A1A] mb-2 uppercase tracking-tight">{item.name}</h3>
+                    <h3 className="text-xl font-fashion font-bold text-[#1A1A1A] mb-1 uppercase tracking-tight">{item.name}</h3>
+                    {item.productType === 'Unique' && (
+                      <p className="text-[10px] font-black text-[#1BAFAF] uppercase tracking-widest mb-2">Unique Piece</p>
+                    )}
                     <p className="text-brand-orange font-bold text-lg mb-6">₹{item.price.toLocaleString()}</p>
 
                     <div className="flex items-center justify-center md:justify-start gap-4">
@@ -125,7 +128,11 @@ export default function Cart() {
                           <Minus size={16} />
                         </button>
                         <span className="font-bold text-sm min-w-[20px] text-center">{item.qty}</span>
-                        <button onClick={() => updateQty(item.docId, 1, item.qty)} className="text-gray-400 hover:text-brand-orange transition-colors">
+                        <button 
+                          onClick={() => item.productType !== 'Unique' && updateQty(item.docId, 1, item.qty)} 
+                          disabled={item.productType === 'Unique'}
+                          className={`transition-colors ${item.productType === 'Unique' ? 'text-gray-200 cursor-not-allowed' : 'text-gray-400 hover:text-brand-orange'}`}
+                        >
                           <Plus size={16} />
                         </button>
                       </div>

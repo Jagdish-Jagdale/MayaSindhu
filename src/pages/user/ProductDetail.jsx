@@ -289,6 +289,12 @@ export default function ProductDetail() {
                 <div className="h-3 w-px bg-gray-200" />
                 <span className="text-[8px] sm:text-[9px] font-bold uppercase tracking-widest text-green-600">Premium Stock</span>
                 <div className="h-3 w-px bg-gray-200 hidden sm:block" />
+                {product.productType === 'Unique' && (
+                  <>
+                    <span className="text-[8px] sm:text-[9px] font-bold uppercase tracking-widest text-[#1BAFAF] bg-[#1BAFAF]/10 px-2 py-0.5 rounded-full">Unique Piece</span>
+                    <div className="h-3 w-px bg-gray-200 hidden sm:block" />
+                  </>
+                )}
                 <button className="text-[8px] sm:text-[9px] font-bold uppercase tracking-widest text-gray-400 hover:text-black transition-colors flex items-center gap-1.5">
                   <Share2 size={10} /> Share
                 </button>
@@ -328,7 +334,13 @@ export default function ProductDetail() {
                 <div className="flex items-center bg-white rounded-xl shadow-sm p-1 border border-gray-100">
                   <button onClick={() => setQuantity(Math.max(1, quantity - 1))} className="p-1.5 text-gray-400 hover:text-black transition-colors"><Minus size={14} /></button>
                   <span className="w-8 sm:w-12 text-center font-bold text-sm sm:text-base">{quantity}</span>
-                  <button onClick={() => setQuantity(quantity + 1)} className="p-1.5 text-gray-400 hover:text-black transition-colors"><Plus size={14} /></button>
+                  <button 
+                    onClick={() => product.productType !== 'Unique' && setQuantity(quantity + 1)} 
+                    disabled={product.productType === 'Unique'}
+                    className={`p-1.5 transition-colors ${product.productType === 'Unique' ? 'text-gray-200 cursor-not-allowed' : 'text-gray-400 hover:text-black'}`}
+                  >
+                    <Plus size={14} />
+                  </button>
                 </div>
               </div>
 

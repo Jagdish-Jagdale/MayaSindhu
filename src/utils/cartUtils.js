@@ -13,6 +13,10 @@ export const addToCart = async (user, product) => {
   const cartItemSnap = await getDoc(cartItemRef);
 
   if (cartItemSnap.exists()) {
+    // If product is unique, do not increment quantity
+    if (product.productType === 'Unique') {
+      return { type: 'already_in_cart' };
+    }
     await updateDoc(cartItemRef, {
       qty: (cartItemSnap.data().qty || 1) + 1,
       updatedAt: serverTimestamp()
@@ -26,6 +30,7 @@ export const addToCart = async (user, product) => {
       price: product.price || 0,
       image: product.image || product.imageUrl || (product.images && product.images[0]) || '',
       qty: 1,
+      productType: product.productType || 'Standard',
       addedAt: serverTimestamp()
     });
     return { type: 'added' };
