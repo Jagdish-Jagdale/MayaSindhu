@@ -15,7 +15,12 @@ import {
   Heart,
   MessageSquareQuote,
   BarChart3,
-  FileText
+  FileText,
+  RotateCcw,
+  CircleDollarSign,
+  Users2,
+  ShoppingCart,
+  Truck
 } from 'lucide-react';
 import { Link, useLocation, useNavigate } from 'react-router-dom';
 import { auth } from '../../firebase';
@@ -30,10 +35,35 @@ function getMenuItems(pathname) {
   if (isOffline) {
     return [
       { title: 'Dashboard', icon: LayoutDashboard, path: `${base}/dashboard` },
-      { title: 'Orders', icon: ShoppingBag, path: `${base}/orders` },
-      { title: 'Inventory Logs', icon: ScrollText, path: `${base}/inventory-logs` },
-      { title: 'Products', icon: Package, path: `${base}/products` },
-      { title: 'Categories', icon: Grid2X2, path: `${base}/categories` },
+      {
+        title: 'Sales',
+        icon: ShoppingBag,
+        path: `${base}/sales`,
+        subItems: [
+          { title: 'Customers', icon: Users, path: `${base}/customers` },
+          { title: 'Orders', icon: ShoppingBag, path: `${base}/orders` },
+          { title: 'Invoice', icon: FileText, path: `${base}/invoice` },
+          { title: 'Return', icon: RotateCcw, path: `${base}/return` },
+        ]
+      },
+      {
+        title: 'Purchases',
+        icon: ShoppingCart,
+        path: `${base}/purchases`,
+        subItems: [
+          { title: 'Vendors', icon: Truck, path: `${base}/vendors` },
+          { title: 'Purchase Orders', icon: FileText, path: `${base}/purchase-orders` },
+        ]
+      },
+      {
+        title: 'Inventory',
+        icon: Package,
+        path: `${base}/inventory`,
+        subItems: [
+          { title: 'Products', icon: Package, path: `${base}/products` },
+          { title: 'Categories', icon: Grid2X2, path: `${base}/categories` },
+        ]
+      },
       { title: 'Reports', icon: BarChart3, path: `${base}/reports` },
     ];
   }
@@ -100,6 +130,16 @@ export default function Sidebar({ isCollapsed }) {
     );
   };
 
+  // Auto-open menus that contain active sub-items
+  useEffect(() => {
+    const items = getMenuItems(location.pathname);
+    items.forEach(item => {
+      if (item.subItems && item.subItems.some(sub => isActive(sub.path))) {
+        setOpenMenus(prev => prev.includes(item.title) ? prev : [...prev, item.title]);
+      }
+    });
+  }, [location.pathname, location.pathname]); // Re-run on path change
+
   return (
     <div className="flex flex-col flex-1 min-h-0 overflow-hidden">
 
@@ -122,7 +162,7 @@ export default function Sidebar({ isCollapsed }) {
         {getMenuItems(location.pathname).map((item) => {
           const hasSubItems = item.subItems && item.subItems.length > 0;
           const isMenuOpen = openMenus.includes(item.title);
-          const active = isActive(item.path);
+          const active = isActive(item.path) || (hasSubItems && item.subItems.some(sub => isActive(sub.path)));
 
           return (
             <div key={item.title} className="space-y-1">

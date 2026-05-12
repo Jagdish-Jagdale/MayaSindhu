@@ -4,7 +4,7 @@ import { Check, ChevronRight, Lock, CreditCard, Truck, ShoppingBag, MapPin, MapP
 import { Link, useNavigate, useLocation } from 'react-router-dom';
 import { useGoBack } from '../../hooks/useGoBack';
 import { db } from '../../firebase';
-import { collection, addDoc, serverTimestamp, query, onSnapshot, getDocs, deleteDoc, doc } from 'firebase/firestore';
+import { collection, addDoc, serverTimestamp, query, onSnapshot, getDocs, deleteDoc, doc, updateDoc } from 'firebase/firestore';
 import { useAuth } from '../../context/AuthContext';
 
 const steps = ['Shipping', 'Payment', 'Confirmation'];
@@ -104,14 +104,28 @@ export default function Checkout() {
     try {
       const orderId = `#ORD-${Math.floor(10000 + Math.random() * 90000)}`;
 
-      // 1. Save Order to Firestore
+      // 1. Update Product Availability for Unique Items
+      const availabilityPromises = items.map(async (item) => {
+        if (item.productType === 'Unique') {
+          const productRef = doc(db, 'products', item.id);
+          return updateDoc(productRef, {
+            isAvailable: false,
+            stock: 0,
+            updatedAt: serverTimestamp()
+          });
+        }
+        return Promise.resolve();
+      });
+      await Promise.all(availabilityPromises);
+
+      // 2. Save Order to Firestore
       await addDoc(collection(db, "orders"), {
         orderId: orderId,
         customerUid: user.uid,
         customerName: `${formData.firstName} ${formData.lastName}`,
         totalAmount: total,
         paymentMethod: paymentMethod,
-        items: items.map(i => ({ name: i.name, qty: i.qty, price: i.price })),
+        items: items.map(i => ({ name: i.name, qty: i.qty, price: i.price, productType: i.productType || 'Standard' })),
         subtotal,
         shipping: subtotal > 25000 ? 0 : shipping,
         total,
@@ -120,7 +134,7 @@ export default function Checkout() {
         createdAt: serverTimestamp(),
       });
 
-      // 2. Trigger Admin Notification
+      // 3. Trigger Admin Notification
       await addDoc(collection(db, "notifications"), {
         type: 'order',
         uid: orderId,
@@ -128,7 +142,7 @@ export default function Checkout() {
         createdAt: serverTimestamp(),
       });
 
-      // 3. Clear Cart (Only if not a Buy Now purchase)
+      // 4. Clear Cart (Only if not a Buy Now purchase)
       if (!buyNowItem) {
         const cartRef = collection(db, 'users', user.uid, 'cart');
         const cartSnap = await getDocs(cartRef);

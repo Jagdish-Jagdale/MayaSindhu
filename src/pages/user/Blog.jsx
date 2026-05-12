@@ -20,7 +20,7 @@ export default function Blog() {
     // 1. Fetch Blogs
     const blogsQuery = query(collection(db, 'blogs'), orderBy('updatedAt', 'desc'));
     const unsubBlogs = onSnapshot(blogsQuery, (snapshot) => {
-      const data = snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() }));
+      const data = snapshot.docs.map(doc => ({ ...doc.data(), id: doc.id }));
       setBlogs(data);
       setLoading(false);
     });
@@ -164,9 +164,11 @@ export default function Blog() {
                       </div>
 
                       {/* Title */}
-                      <h4 className="text-lg font-sans font-bold leading-tight text-[#1A1A1A] group-hover:text-brand-orange transition-colors mb-3">
-                        {blog.title}
-                      </h4>
+                      <Link to={`/blog/${blog.id}`}>
+                        <h4 className="text-lg font-fashion font-bold leading-tight text-[#1A1A1A] group-hover:text-brand-orange transition-colors mb-3">
+                          {blog.title}
+                        </h4>
+                      </Link>
 
                       {/* Summary */}
                       <p className="text-gray-500 text-sm leading-relaxed line-clamp-3 font-light mb-4 flex-1">
@@ -175,10 +177,10 @@ export default function Blog() {
 
                       {/* Call to Action */}
                       <div className="border-t border-gray-100 pt-4">
-                        <button className="flex items-center gap-2 text-[12px] font-bold uppercase tracking-widest text-[#1A1A1A] hover:text-brand-orange transition-all group/btn">
+                        <Link to={`/blog/${blog.id}`} className="flex items-center gap-2 text-[12px] font-bold uppercase tracking-widest text-[#1A1A1A] hover:text-brand-orange transition-all group/btn">
                           Read Full Article
                           <ArrowRight size={14} className="group-hover/btn:translate-x-1 transition-transform" />
-                        </button>
+                        </Link>
                       </div>
                     </div>
                   </motion.div>

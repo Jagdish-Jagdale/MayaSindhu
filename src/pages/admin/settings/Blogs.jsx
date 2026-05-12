@@ -81,8 +81,8 @@ export default function Blogs() {
     const q = query(collection(db, 'blogs'), orderBy('createdAt', 'desc'));
     const blogsUnsub = onSnapshot(q, (snapshot) => {
       const blogsData = snapshot.docs.map(doc => ({
-        id: doc.id,
-        ...doc.data()
+        ...doc.data(),
+        id: doc.id
       }));
       setBlogs(blogsData);
       setLoading(false);

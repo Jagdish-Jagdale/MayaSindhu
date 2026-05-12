@@ -28,6 +28,14 @@ const PAGE_TITLES = {
   '/admin/settings': { title: 'Settings' },
   '/admin-offline/dashboard': { title: 'Shop Dashboard' },
   '/admin-offline/orders': { title: 'Shop Orders' },
+  '/admin-offline/products': { title: 'Products' },
+  '/admin-offline/categories': { title: 'Categories' },
+  '/admin-offline/inventory-logs': { title: 'Inventory Logs' },
+  '/admin-offline/customers': { title: 'Customers' },
+  '/admin-offline/invoice': { title: 'Invoices' },
+  '/admin-offline/return': { title: 'Returns' },
+  '/admin-offline/vendors': { title: 'Vendors' },
+  '/admin-offline/purchase-orders': { title: 'Purchase Orders' },
 };
 
 const PLACEHOLDERS = ["Products", "Categories", "Users"];
