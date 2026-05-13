@@ -1,221 +1,354 @@
 import React, { useState, useEffect } from 'react';
-import { motion } from 'framer-motion';
+import { motion, AnimatePresence } from 'framer-motion';
 import { db } from '../../firebase';
-import { doc, onSnapshot } from 'firebase/firestore';
-import { Loader2 } from 'lucide-react';
+import { collection, onSnapshot, query, orderBy, doc } from 'firebase/firestore';
+import { 
+  Loader2, 
+  MapPin, 
+  Sparkles, 
+  ShoppingBag, 
+  Quote, 
+  ShieldCheck, 
+  History, 
+  Award,
+  Users,
+  Layers,
+  ChevronRight
+} from 'lucide-react';
+
+// Animation Variants
+const fadeInUp = {
+  initial: { opacity: 0, y: 30 },
+  animate: { opacity: 1, y: 0 },
+  transition: { duration: 0.8, ease: [0.16, 1, 0.3, 1] }
+};
 
 export default function About() {
-  const [data, setData] = useState(null);
+  const [artisans, setArtisans] = useState([]);
+  const [aboutData, setAboutData] = useState(null);
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
-    const unsub = onSnapshot(doc(db, 'aboutus', 'content'), (docSnap) => {
+    // 1. Fetch Hero Data
+    const aboutUnsub = onSnapshot(doc(db, 'aboutus', 'content'), (docSnap) => {
       if (docSnap.exists()) {
-        setData(docSnap.data());
+        setAboutData(docSnap.data());
+      }
+    });
+
+    // 2. Fetch Artisans
+    const q = query(collection(db, 'artisans'), orderBy('createdAt', 'desc'));
+        const artisanUnsub = onSnapshot(q, (snapshot) => {
+      if (!snapshot.empty) {
+        setArtisans(snapshot.docs.map(doc => ({ 
+          id: doc.id, 
+          experience: "20+ Years",
+          crafted: "500+",
+          teamSize: "10-15",
+          generations: "3rd Gen",
+          since: "1995",
+          speciality: "Traditional Craftsmanship",
+          story: "A legacy of preserving the soul of Indian heritage through meticulous handiwork.",
+          ...doc.data() 
+        })));
+      } else {
+        // Luxury Mock Data
+        setArtisans([
+          {
+            id: 1,
+            name: "Rameshwar Prasad",
+            photo: "https://images.unsplash.com/photo-1617113930975-f9c7322db856?w=800&q=80",
+            address: "Varanasi, Uttar Pradesh",
+            product: "Heritage Banarasi Silk",
+            experience: "42 Years",
+            crafted: "1500+ Sarees",
+            teamSize: "24 Master Weavers",
+            generations: "5th Generation",
+            since: "1978",
+            speciality: "Mastering the 'Kadhwa' technique.",
+            story: "Rameshwar leads a cluster of 24 weavers, ensuring that the rhythm of the wooden loom never fades from the narrow alleys of Varanasi."
+          },
+          {
+            id: 2,
+            name: "Sita Devi",
+            photo: "https://images.unsplash.com/photo-1544005313-94ddf0286df2?w=800&q=80",
+            address: "Madhubani, Bihar",
+            product: "Folk Art Accessories",
+            experience: "28 Years",
+            crafted: "2000+ Artworks",
+            teamSize: "40 Rural Artisans",
+            generations: "3rd Generation",
+            since: "1994",
+            speciality: "Sacred 'Tantrik' motifs.",
+            story: "Sita Devi has trained over 200 women in her village, transforming a domestic ritual into a sustainable livelihood."
+          }
+        ]);
       }
       setLoading(false);
     });
-    return () => unsub();
+
+    return () => {
+      aboutUnsub();
+      artisanUnsub();
+    };
   }, []);
 
   if (loading) {
     return (
-      <div className="h-screen w-full flex flex-col items-center justify-center gap-4 bg-white">
-        <Loader2 className="w-10 h-10 animate-spin text-brand-orange" />
-        <p className="text-[14px] font-medium text-gray-400 font-sans uppercase tracking-widest">MayaSindhu</p>
+      <div className="h-screen w-full flex flex-col items-center justify-center gap-6 bg-[#FAF9F6]">
+        <div className="relative">
+          <Loader2 className="w-12 h-12 animate-spin text-[#C5A059]" strokeWidth={1} />
+          <div className="absolute inset-0 flex items-center justify-center">
+            <div className="w-2 h-2 bg-[#C5A059] rounded-full animate-pulse" />
+          </div>
+        </div>
+        <p className="text-[10px] font-bold text-[#C5A059] uppercase tracking-[0.6em] animate-pulse">Curating Heritage</p>
       </div>
     );
   }
 
-  // Fallback data if DB is empty
-  const content = data || {
+  const heroContent = aboutData || {
     aboutUs: {
-      heading: 'About Our Heritage',
-      subheading: 'Our Heritage'
-    },
-    featuredStory: {
-      title: 'The Art of Handwoven Sarees',
-      description: 'Explore the intricate journey of traditional weaving techniques that are making a massive comeback in modern fashion wardrobes.',
-      image1: 'https://images.unsplash.com/photo-1544005313-94ddf0286df2?w=1600&q=80',
-      image2: 'https://images.unsplash.com/photo-1590736704228-a4004944883f?w=1000&q=80',
-      highlight: {
-        title: 'Bridging the Gap Between Ancient Hands & Modern Muses',
-        description: 'MayaSindhu was born from an obsession with the soulful imperfections of the handmade. In a world of fast fashion and mass production, we stood for the slow, the deliberate, and the heritage-driven.\n\nOur name, a tribute to the mystical "Maya" and the ancient "Sindhu" river, represents the flow of creativity across generations. From the weaver\'s loom in Varanasi to the block printer\'s table in Jaipur, we curate pieces that are not just garments, but living canvases.',
-        image: 'https://images.unsplash.com/photo-1672302255324-28009cc288b2?q=80&w=687&auto=format&fit=crop'
-      }
-    },
-    statsSection: {
-      title: 'Our Ethical Compass',
-      description: 'We ensure fair wages, safe working conditions, and the preservation of dying arts. Every purchase at MayaSindhu directly impacts a family of artisans, keeping the tradition of hand-embroidery, natural dyeing, and hand-weaving alive for another century.',
-      stats: [
-        { id: 1, label: 'ARTISANS EMPOWERED', value: '200+' },
-        { id: 2, label: 'WOMEN-LED CLUSTERS', value: '12' },
-        { id: 3, label: 'HERITAGE CRAFTS', value: '15+' },
-        { id: 4, label: 'SUSTAINABLE YEARS', value: '8' }
-      ]
+      heading: 'The Soul of Craft',
+      subheading: 'Established Heritage'
     }
   };
 
   return (
-    <div className="bg-white min-h-screen">
-      {/* Hero Section */}
-      <section className="relative h-[45vh] flex items-center justify-center overflow-hidden">
+    <div className="bg-[#FAF9F6] min-h-screen pb-32 overflow-hidden selection:bg-[#C5A059]/30">
+      
+      {/* Editorial Hero Section - Reduced Height */}
+      <section className="relative h-[55vh] flex items-center justify-center overflow-hidden">
         <div className="absolute inset-0">
-          <img 
-            src="https://plus.unsplash.com/premium_photo-1663931104646-e866646f598d?q=80&w=1170&auto=format&fit=crop" 
-            alt="Artisan Heritage Background" 
+          <motion.img 
+            initial={{ scale: 1.1 }}
+            animate={{ scale: 1 }}
+            transition={{ duration: 1.5, ease: "easeOut" }}
+            src="https://plus.unsplash.com/premium_photo-1663931104646-e866646f598d?q=80&w=1600&auto=format&fit=crop" 
+            alt="Artisan Background" 
             className="w-full h-full object-cover"
           />
-          <div className="absolute inset-0 bg-black/40 backdrop-blur-[2px]" />
+          <div className="absolute inset-0 bg-gradient-to-b from-black/70 via-black/40 to-[#FAF9F6]" />
         </div>
         
-        <div className="relative text-center px-6 max-w-4xl">
-          <motion.span 
+        <div className="relative text-center px-6 max-w-5xl">
+          <motion.div
             initial={{ opacity: 0, y: 20 }}
             animate={{ opacity: 1, y: 0 }}
-            className="text-[12px] md:text-[14px] uppercase tracking-[0.6em] font-bold mb-4 block text-brand-orange"
+            className="flex items-center justify-center gap-4 mb-8"
           >
-            {content.aboutUs.subheading}
-          </motion.span>
+            <div className="h-[1px] w-12 bg-[#C5A059]" />
+            <span className="text-[11px] md:text-[13px] uppercase tracking-[0.6em] font-black text-[#C5A059]">
+              {heroContent.aboutUs.subheading}
+            </span>
+            <div className="h-[1px] w-12 bg-[#C5A059]" />
+          </motion.div>
+
           <motion.h1 
-            initial={{ opacity: 0, y: 30 }}
+            initial={{ opacity: 0, y: 40 }}
             animate={{ opacity: 1, y: 0 }}
-            transition={{ delay: 0.2 }}
-            className="text-4xl md:text-5xl font-sans font-bold text-white drop-shadow-2xl leading-tight"
+            transition={{ delay: 0.3 }}
+            className="text-4xl md:text-7xl font-sans font-light text-white leading-[1.1] mb-12 tracking-tight"
           >
-            {content.aboutUs.heading}
+            Preserving <span className="italic text-[#C5A059]">Ancient</span> Hands
           </motion.h1>
+
+          <motion.div
+            initial={{ opacity: 0 }}
+            animate={{ opacity: 1 }}
+            transition={{ delay: 0.6 }}
+            className="flex flex-col items-center gap-6"
+          >
+            <div className="w-[1px] h-16 bg-gradient-to-b from-[#C5A059] to-transparent" />
+          </motion.div>
         </div>
       </section>
 
-      {/* Featured Story Section */}
-      <section className="py-24 max-w-[1536px] mx-auto px-6 lg:px-24">
-        <div className="grid grid-cols-1 lg:grid-cols-2 gap-16 lg:gap-24 items-center">
-          
-          <div className="order-2 lg:order-1 space-y-8 max-w-lg">
-            <div className="space-y-6">
-              <span className="text-[10px] md:text-[12px] font-bold uppercase tracking-[0.4em] text-gray-400 block">
-                FEATURED STORY
-              </span>
-              <h2 className="text-3xl md:text-4xl lg:text-5xl font-sans font-medium leading-[1.2] tracking-tight text-[#111111]">
-                {content.featuredStory.title}
-              </h2>
+      {/* Narrative Section - Balanced Spacing */}
+      <section className="py-24 px-6 max-w-7xl mx-auto grid grid-cols-1 lg:grid-cols-12 gap-16 items-center">
+        <div className="lg:col-span-5 space-y-6">
+          <motion.span 
+            variants={fadeInUp} initial="initial" whileInView="animate"
+            className="text-[10px] font-black text-[#C5A059] uppercase tracking-[0.4em]"
+          >
+            Our Philosophy
+          </motion.span>
+          <motion.h2 
+            variants={fadeInUp} initial="initial" whileInView="animate"
+            className="text-3xl md:text-5xl font-sans font-medium text-[#1A1A1A] leading-tight"
+          >
+            Beyond the <span className="italic">Fabric</span>, Into the Heart.
+          </motion.h2>
+          <motion.p 
+            variants={fadeInUp} initial="initial" whileInView="animate"
+            className="text-gray-500 text-base md:text-lg leading-relaxed font-light"
+          >
+            At MayaSindhu, every thread is a testament to resilience. We believe that true luxury lies in the story of the artisan—the rhythm of the loom and the legacy passed through generations.
+          </motion.p>
+        </div>
+        <div className="lg:col-span-7 relative">
+          <div className="aspect-[21/9] rounded-2xl overflow-hidden shadow-xl relative group">
+            <img 
+              src="https://images.unsplash.com/photo-1590736704228-a4004944883f?w=1200&q=80" 
+              className="w-full h-full object-cover transition-transform duration-1000 group-hover:scale-105"
+              alt=""
+            />
+            <div className="absolute inset-0 bg-black/20" />
+          </div>
+        </div>
+      </section>
+
+      {/* The Artisan Journal - Reduced Image Grid */}
+      <section className="px-6 space-y-40">
+        {artisans.map((artisan, index) => (
+          <div 
+            key={artisan.id}
+            className={`max-w-7xl mx-auto grid grid-cols-1 lg:grid-cols-12 gap-12 lg:gap-20 items-center ${
+              index % 2 !== 0 ? 'lg:flex-row-reverse' : ''
+            }`}
+          >
+            {/* Visual Column - Reduced to 5 cols */}
+            <div className={`lg:col-span-5 relative group ${index % 2 !== 0 ? 'lg:order-2' : ''}`}>
+              <motion.div 
+                initial={{ opacity: 0, x: index % 2 === 0 ? -40 : 40 }}
+                whileInView={{ opacity: 1, x: 0 }}
+                viewport={{ once: true }}
+                transition={{ duration: 1 }}
+                className="relative"
+              >
+                {/* Main Image with refined Aspect Ratio */}
+                <div className="aspect-square rounded-3xl overflow-hidden shadow-2xl border border-white/50 relative">
+                  <img 
+                    src={artisan.photo} 
+                    alt={artisan.name} 
+                    className="w-full h-full object-cover transition-transform duration-[2s] ease-out group-hover:scale-110"
+                  />
+                  <div className="absolute inset-0 bg-gradient-to-t from-black/80 via-black/10 to-transparent opacity-60" />
+                  
+                  {/* Verified Badge */}
+                  <div className="absolute top-6 left-6 flex items-center gap-2 bg-white/10 backdrop-blur-md px-3 py-1.5 rounded-full border border-white/20">
+                    <ShieldCheck size={12} className="text-[#C5A059]" />
+                    <span className="text-[9px] font-bold text-white uppercase tracking-widest">Verified</span>
+                  </div>
+
+                  {/* Since Label */}
+                  <div className="absolute bottom-6 right-6 text-right">
+                    <div className="flex items-center justify-end gap-2 text-white/60 mb-1">
+                      <History size={10} />
+                      <span className="text-[8px] font-bold uppercase tracking-widest">Since</span>
+                    </div>
+                    <p className="text-xl font-sans text-white italic">{artisan.since || "1990"}</p>
+                  </div>
+                </div>
+
+              </motion.div>
             </div>
-            
-            <p className="text-gray-600 text-base md:text-lg leading-relaxed font-light">
-              {content.featuredStory.description}
+
+            {/* Content Column - Increased to 7 cols */}
+            <div className={`lg:col-span-7 space-y-8 ${index % 2 !== 0 ? 'lg:order-1' : ''}`}>
+              <div className="space-y-3">
+                <div className="flex items-center gap-3">
+                  <MapPin size={12} className="text-[#C5A059]" />
+                  <span className="text-[10px] font-bold text-gray-400 uppercase tracking-[0.3em]">{artisan.address}</span>
+                </div>
+                <h3 className="text-3xl md:text-5xl font-sans text-[#1A1A1A] tracking-tight">
+                  {artisan.name}
+                </h3>
+                <div className="flex items-center gap-4">
+                  <div className="px-3 py-1 bg-[#C5A059]/10 text-[#C5A059] text-[9px] font-black uppercase tracking-widest rounded-full border border-[#C5A059]/20">
+                    {artisan.product}
+                  </div>
+                </div>
+              </div>
+
+              {/* Speciality Highlight */}
+              <motion.div 
+                initial={{ opacity: 0 }}
+                whileInView={{ opacity: 1 }}
+                className="relative pl-10"
+              >
+                <Sparkles size={18} className="absolute top-1 left-0 text-[#C5A059]" />
+                <div className="space-y-1">
+                   <p className="text-[10px] font-black text-[#C5A059] uppercase tracking-[0.2em]">Primary Speciality</p>
+                   <p className="text-gray-900 text-[15px] font-bold font-sans">
+                     {artisan.speciality}
+                   </p>
+                </div>
+              </motion.div>
+
+              {/* Story Narrative */}
+              <motion.div 
+                initial={{ opacity: 0 }}
+                whileInView={{ opacity: 1 }}
+                className="relative pl-10"
+              >
+                <Quote size={30} className="absolute top-0 left-0 text-[#C5A059]/10" />
+                <div className="space-y-2">
+                   <p className="text-[10px] font-black text-gray-400 uppercase tracking-[0.2em]">The Artisan Story</p>
+                   <p className="text-gray-600 text-base md:text-[16px] leading-relaxed italic font-light font-sans">
+                     "{artisan.story || artisan.speciality}"
+                   </p>
+                </div>
+              </motion.div>
+
+              {/* Luxury Statistics Grid */}
+              <div className="grid grid-cols-2 gap-6 py-6 border-y border-gray-100">
+                <div className="space-y-1">
+                  <p className="text-[18px] font-sans font-bold text-[#1A1A1A]">{artisan.experience}</p>
+                  <p className="text-[8px] font-black text-gray-400 uppercase tracking-widest">Experience</p>
+                </div>
+                <div className="space-y-1">
+                  <p className="text-[18px] font-sans font-bold text-[#1A1A1A]">{artisan.crafted}</p>
+                  <p className="text-[8px] font-black text-gray-400 uppercase tracking-widest">Masterpieces</p>
+                </div>
+                <div className="space-y-1">
+                  <p className="text-[18px] font-sans font-bold text-[#1A1A1A]">{artisan.teamSize}</p>
+                  <p className="text-[8px] font-black text-gray-400 uppercase tracking-widest">Team</p>
+                </div>
+                <div className="space-y-1">
+                  <p className="text-[18px] font-sans font-bold text-[#1A1A1A]">{artisan.generations}</p>
+                  <p className="text-[8px] font-black text-gray-400 uppercase tracking-widest">Heritage</p>
+                </div>
+              </div>
+
+            </div>
+          </div>
+        ))}
+      </section>
+
+      {/* Global Impact Summary */}
+      <section className="mt-40 px-6">
+        <div className="max-w-4xl mx-auto bg-white rounded-[2.5rem] p-10 md:p-20 shadow-2xl border border-gray-100 relative overflow-hidden group text-center space-y-10">
+          <div className="absolute top-0 right-0 w-80 h-80 bg-[#C5A059]/5 rounded-full blur-[80px]" />
+          
+          <div className="relative z-10 space-y-4">
+            <span className="text-[10px] font-black text-[#C5A059] uppercase tracking-[0.6em]">Commitment</span>
+            <h2 className="text-3xl md:text-5xl font-sans font-light text-[#1A1A1A]">Empowering Heritage</h2>
+            <p className="text-gray-500 text-base md:text-lg font-light leading-relaxed max-w-2xl mx-auto italic font-sans">
+              "We believe that a garment without a soul is just a cloth."
             </p>
           </div>
 
-          <div className="order-1 lg:order-2 relative aspect-[4/5] md:aspect-square flex items-center justify-center lg:justify-end pr-[15%] pt-[5%]">
-            <div className="relative w-[85%] h-[85%] rounded-[2rem] overflow-hidden shadow-2xl z-0 border border-gray-100">
-              <img 
-                src={content.featuredStory.image1} 
-                className="w-full h-full object-cover" 
-                alt="" 
-              />
-            </div>
-            
-            <motion.div 
-              initial={{ x: -20, y: 20, opacity: 0 }}
-              whileInView={{ x: 0, y: 0, opacity: 1 }}
-              viewport={{ once: true }}
-              transition={{ duration: 1, delay: 0.3 }}
-              className="absolute bottom-[-8%] left-[-8%] w-[55%] aspect-[4/5] rounded-[1.5rem] overflow-hidden shadow-2xl z-10 border-[8px] border-white"
-            >
-              <img 
-                src={content.featuredStory.image2} 
-                className="w-full h-full object-cover" 
-                alt="" 
-              />
-            </motion.div>
-
-            <div className="absolute -top-10 -right-10 w-48 h-48 bg-brand-orange/5 rounded-full blur-3xl -z-10" />
+          <div className="relative z-10 grid grid-cols-2 md:grid-cols-4 gap-8 pt-6">
+            {[
+              { label: "Artisans", val: "200+", icon: <Users size={16} /> },
+              { label: "Clusters", val: "15", icon: <MapPin size={16} /> },
+              { label: "Crafts", val: "18", icon: <Award size={16} /> },
+              { label: "Impact", val: "1200+", icon: <Sparkles size={16} /> }
+            ].map((item, idx) => (
+              <div key={idx} className="space-y-2">
+                <div className="w-10 h-10 bg-[#FAF9F6] rounded-xl flex items-center justify-center text-[#C5A059] mx-auto">
+                  {item.icon}
+                </div>
+                <p className="text-2xl font-sans font-bold text-[#1A1A1A]">{item.val}</p>
+                <p className="text-[8px] font-black text-gray-400 uppercase tracking-widest">{item.label}</p>
+              </div>
+            ))}
           </div>
-
         </div>
       </section>
 
-      {/* Philosophy Section */}
-      <section className="py-24 max-w-[1200px] mx-auto px-6 bg-white">
-        <div className="grid grid-cols-1 md:grid-cols-2 gap-20 items-center">
-          <motion.div 
-            initial={{ opacity: 0, scale: 0.9, x: -30 }}
-            whileInView={{ opacity: 1, scale: 1, x: 0 }}
-            viewport={{ once: true }}
-            className="relative"
-          >
-            <img 
-              src={content.featuredStory.highlight.image} 
-              alt="Artisanal Heritage" 
-              className="rounded-[3rem] shadow-2xl w-full max-h-[400px] object-cover"
-            />
-            <div className="absolute -bottom-10 -left-10 w-40 h-40 bg-brand-orange/10 rounded-full blur-3xl -z-10" />
-          </motion.div>
-
-          <motion.div
-            initial={{ opacity: 0, x: 50 }}
-            whileInView={{ opacity: 1, x: 0 }}
-            viewport={{ once: true }}
-          >
-            <h2 className="text-4xl font-sans font-bold text-[#111111] mb-8 leading-tight">
-              {content.featuredStory.highlight.title}
-            </h2>
-            <div className="space-y-6">
-              {content.featuredStory.highlight.description.split('\n').map((para, idx) => para.trim() && (
-                <p key={idx} className="text-gray-600 text-lg leading-relaxed font-light">
-                  {para}
-                </p>
-              ))}
-            </div>
-          </motion.div>
-        </div>
-      </section>
-
-      {/* Stats Section */}
-      <section className="py-24 bg-[#FAF9F6]">
-        <div className="max-w-[1200px] mx-auto px-6 grid grid-cols-2 md:grid-cols-4 gap-12 text-center">
-          {content.statsSection.stats.map((stat, i) => (
-            <motion.div
-              key={i}
-              initial={{ opacity: 0, y: 20 }}
-              whileInView={{ opacity: 1, y: 0 }}
-              viewport={{ once: true }}
-              transition={{ delay: i * 0.1 }}
-            >
-              <span className="text-5xl md:text-6xl font-sans font-bold text-brand-orange block mb-3">
-                {stat.value}
-              </span>
-              <span className="text-[11px] md:text-[12px] uppercase font-bold tracking-[0.2em] text-gray-400">
-                {stat.label}
-              </span>
-            </motion.div>
-          ))}
-        </div>
-      </section>
-
-      {/* Dynamic Display Under Stats Section (Ethical Compass) */}
-      <section className="py-32 bg-white text-center">
-        <div className="max-w-[1200px] mx-auto px-6">
-           <motion.h2 
-             initial={{ opacity: 0, y: 20 }}
-             whileInView={{ opacity: 1, y: 0 }}
-             viewport={{ once: true }}
-             className="text-4xl font-sans font-bold text-[#111111] mb-10"
-           >
-             {content.statsSection.title}
-           </motion.h2>
-           <motion.p 
-             initial={{ opacity: 0, y: 20 }}
-             whileInView={{ opacity: 1, y: 0 }}
-             viewport={{ once: true }}
-             transition={{ delay: 0.1 }}
-             className="text-gray-500 max-w-4xl mx-auto text-lg font-light leading-relaxed px-4 md:px-0"
-           >
-             {content.statsSection.description}
-           </motion.p>
-        </div>
-      </section>
+      <div className="fixed inset-0 pointer-events-none opacity-[0.02] mix-blend-multiply -z-0 bg-[url('https://www.transparenttextures.com/patterns/natural-paper.png')]" />
     </div>
   );
 }
