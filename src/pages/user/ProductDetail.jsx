@@ -322,7 +322,10 @@ export default function ProductDetail() {
                     <div className="h-3 w-px bg-gray-200 hidden sm:block" />
                   </>
                 )}
-                <button className="text-[8px] sm:text-[9px] font-bold uppercase tracking-widest text-gray-400 hover:text-black transition-colors flex items-center gap-1.5">
+                <button 
+                  onClick={handleShare}
+                  className="text-[8px] sm:text-[9px] font-bold uppercase tracking-widest text-gray-400 hover:text-black transition-colors flex items-center gap-1.5"
+                >
                   <Share2 size={10} /> Share
                 </button>
               </div>
