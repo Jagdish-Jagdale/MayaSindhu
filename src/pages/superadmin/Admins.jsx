@@ -132,10 +132,11 @@ export default function Admins() {
         const secondaryApp = initializeApp(firebaseConfig, `SecondaryApp_${Date.now()}`);
         const secondaryAuth = getAuth(secondaryApp);
         
-        await createUserWithEmailAndPassword(secondaryAuth, formData.email, formData.password);
+        const userCredential = await createUserWithEmailAndPassword(secondaryAuth, formData.email, formData.password);
+        const uid = userCredential.user.uid;
         
-        // Save to DB
-        await addDoc(collection(db, 'admins'), {
+        // Save to DB using UID as Document ID for security rule verification
+        await setDoc(doc(db, 'admins', uid), {
           name: formData.name,
           email: formData.email,
           password: formData.password,

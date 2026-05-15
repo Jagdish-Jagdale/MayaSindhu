@@ -137,14 +137,29 @@ export default function Blogs() {
         imageUrl = await uploadToCloudinary(selectedFile, 'Blogs');
       }
 
-      await addDoc(collection(db, 'blogs'), {
-        ...newBlog,
-        image: imageUrl,
-        createdAt: serverTimestamp(),
-        updatedAt: serverTimestamp()
-      });
+      if (newBlog.id) {
+        // UPDATE EXISTING BLOG
+        const { id, ...blogData } = newBlog;
+        // Remove createdAt to prevent overwriting it
+        delete blogData.createdAt; 
+        
+        await updateDoc(doc(db, 'blogs', id), {
+          ...blogData,
+          image: imageUrl,
+          updatedAt: serverTimestamp()
+        });
+        toast.success("Blog updated successfully!");
+      } else {
+        // CREATE NEW BLOG
+        await addDoc(collection(db, 'blogs'), {
+          ...newBlog,
+          image: imageUrl,
+          createdAt: serverTimestamp(),
+          updatedAt: serverTimestamp()
+        });
+        toast.success("Blog published successfully!");
+      }
 
-      toast.success("Blog published successfully!");
       setIsModalOpen(false);
       setNewBlog({
         title: '',
@@ -158,20 +173,21 @@ export default function Blogs() {
       });
       setSelectedFile(null);
     } catch (err) {
-      console.error(err);
-      toast.error("Failed to publish blog");
+      console.error("Save error:", err);
+      toast.error(err.message || "Failed to save blog");
     } finally {
       setIsSavingBlog(false);
     }
   };
 
   const handleDeleteBlog = async (id) => {
-    if (!window.confirm("Are you sure?")) return;
+    if (!window.confirm("Are you sure you want to delete this blog?")) return;
     try {
       await deleteDoc(doc(db, 'blogs', id));
-      toast.success("Blog deleted");
+      toast.success("Blog removed from system");
     } catch (err) {
-      console.error(err);
+      console.error("Delete error:", err);
+      toast.error("Permission denied or system error");
     }
   };
 
