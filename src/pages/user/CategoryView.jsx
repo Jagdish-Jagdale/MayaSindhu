@@ -175,9 +175,10 @@ export default function CategoryView() {
             <h1 className="text-4xl md:text-5xl font-sans font-medium text-[#111111] capitalize tracking-tight leading-tight">
               {currentCategory.name}
             </h1>
-            <p className="text-brand-orange text-[10px] font-bold uppercase tracking-[0.4em] mt-4">
+            <p className="text-brand-orange text-[10px] font-bold uppercase tracking-[0.4em] mt-4 mb-8">
               {breadcrumbs.length > 1 ? breadcrumbs[breadcrumbs.length - 2].name : 'The Collection'}
             </p>
+
           </motion.div>
 
           {/* Product Grid Area */}
