@@ -7,7 +7,8 @@ import { db } from '../../firebase';
 import { doc, getDoc, setDoc, updateDoc, deleteDoc, serverTimestamp, onSnapshot } from 'firebase/firestore';
 import { addToCart } from '../../utils/cartUtils';
 
-export default function ProductCard({ id, slug, name, price, image, imageUrl, images, rating = 4.8, showWishlist = true }) {
+export default function ProductCard({ id, slug, name, price, discountedPrice, image, imageUrl, images, rating = 4.8, showWishlist = true }) {
+  const displayPrice = discountedPrice || price || 0;
   const displayImage = image || imageUrl || (images && images.length > 0 ? images[0] : '');
   const [isAdded, setIsAdded] = useState(false);
   const { user } = useAuth();
@@ -60,7 +61,7 @@ export default function ProductCard({ id, slug, name, price, image, imageUrl, im
     }
 
     try {
-      await addToCart(user, { id, slug, name, price, image, images });
+      await addToCart(user, { id, slug, name, price: displayPrice, image, images });
       setIsAdded(true);
       setTimeout(() => setIsAdded(false), 2000);
     } catch (error) {
@@ -97,7 +98,7 @@ export default function ProductCard({ id, slug, name, price, image, imageUrl, im
           id: productId,
           slug: slug || productId,
           name: name || 'Handcrafted Treasure',
-          price: price || 0,
+          price: displayPrice,
           image: image || imageUrl || (images && images[0]) || '',
           rating: rating || 4.8,
           addedAt: serverTimestamp()
@@ -166,7 +167,7 @@ export default function ProductCard({ id, slug, name, price, image, imageUrl, im
                       id: id,
                       slug: slug || id,
                       name: name,
-                      price: price,
+                      price: displayPrice,
                       image: displayImage,
                       qty: 1,
                       isDirectBuy: true
@@ -224,7 +225,7 @@ export default function ProductCard({ id, slug, name, price, image, imageUrl, im
         </Link>
         <div className="flex items-center justify-between">
           <p className="text-brand-orange font-bold text-lg md:text-xl">
-            ₹{typeof price === 'number' ? price.toLocaleString('en-IN') : price}
+            ₹{displayPrice.toLocaleString('en-IN')}
           </p>
           <div className="flex items-center space-x-1 text-text-main">
             <Star size={12} fill="currentColor" className="text-brand-orange md:w-3.5 md:h-3.5" />

@@ -24,7 +24,7 @@ export default function WorkshopModal({ isOpen, onClose, workshop }) {
     try {
       await addDoc(collection(db, 'workshopBookings'), {
         ...formData,
-        workshopName: workshop.title,
+        workshopName: workshop.name,
         workshopDate: workshop.date,
         createdAt: serverTimestamp(),
         status: 'pending'
@@ -42,6 +42,16 @@ export default function WorkshopModal({ isOpen, onClose, workshop }) {
     } finally {
       setLoading(false);
     }
+  };
+
+  const formatWorkshopDate = (dateStr) => {
+    if (!dateStr) return '';
+    const date = new Date(dateStr);
+    return date.toLocaleDateString('en-US', {
+      month: 'long',
+      day: 'numeric',
+      year: 'numeric'
+    });
   };
 
   return (
@@ -79,14 +89,14 @@ export default function WorkshopModal({ isOpen, onClose, workshop }) {
               <div className="flex flex-col md:flex-row">
                 {/* Left Side - Image & Info */}
                 <div className="hidden md:block w-2/5 relative bg-gray-100">
-                  <img src={workshop.image} alt={workshop.title} className="w-full h-full object-cover" />
+                  <img src={workshop.image} alt={workshop.name} className="w-full h-full object-cover" />
                   <div className="absolute inset-0 bg-gradient-to-t from-black/60 via-transparent to-transparent" />
                   <div className="absolute bottom-8 left-8 text-white">
                     <p className="text-[10px] font-bold uppercase tracking-widest opacity-80 mb-1">Selected Workshop</p>
-                    <h4 className="text-xl font-bold font-sans leading-tight">{workshop.title}</h4>
+                    <h4 className="text-xl font-bold font-sans leading-tight">{workshop.name}</h4>
                     <div className="flex items-center gap-2 mt-3 opacity-90">
                       <Calendar size={14} className="text-brand-orange" />
-                      <span className="text-xs font-medium tracking-wide">{workshop.date}</span>
+                      <span className="text-xs font-medium tracking-wide">{formatWorkshopDate(workshop.date)}</span>
                     </div>
                   </div>
                 </div>

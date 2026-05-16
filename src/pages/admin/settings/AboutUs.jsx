@@ -25,6 +25,7 @@ import {
 } from 'lucide-react';
 import toast from 'react-hot-toast';
 import { uploadToCloudinary } from '../../../utils/cloudinary';
+import DeleteConfirmationModal from '../../../components/admin/DeleteConfirmationModal';
 
 export default function AboutUs() {
   const { isCollapsed } = useAdminUI();
@@ -59,6 +60,10 @@ export default function AboutUs() {
   const [loading, setLoading] = useState(true);
   const [isSaving, setIsSaving] = useState(false);
   const [hasChanges, setHasChanges] = useState(false);
+
+  // Delete Modal State
+  const [isDeleteModalOpen, setIsDeleteModalOpen] = useState(false);
+  const [targetToDelete, setTargetToDelete] = useState(null);
 
   const img1Ref = useRef(null);
   const img2Ref = useRef(null);
@@ -119,6 +124,14 @@ export default function AboutUs() {
   };
 
   const removeImage = (target) => {
+    setTargetToDelete(target);
+    setIsDeleteModalOpen(true);
+  };
+
+  const confirmDelete = () => {
+    if (!targetToDelete) return;
+    const target = targetToDelete;
+
     if (target === 'image1') {
       setData(prev => ({ ...prev, featuredStory: { ...prev.featuredStory, image1: '' } }));
       setPendingFiles(prev => ({ ...prev, image1: null }));
@@ -130,6 +143,8 @@ export default function AboutUs() {
       setPendingFiles(prev => ({ ...prev, highlightImage: null }));
     }
     setHasChanges(true);
+    setIsDeleteModalOpen(false);
+    setTargetToDelete(null);
     toast.success("Image removed locally. Save to confirm.");
   };
 
@@ -373,6 +388,13 @@ export default function AboutUs() {
           </div>
         </section>
       </div>
+
+      <DeleteConfirmationModal
+        isOpen={isDeleteModalOpen}
+        onClose={() => setIsDeleteModalOpen(false)}
+        onConfirm={confirmDelete}
+        itemName="this image"
+      />
     </div>
   );
 }

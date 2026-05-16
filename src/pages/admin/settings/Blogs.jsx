@@ -39,6 +39,7 @@ import toast from 'react-hot-toast';
 import { uploadToCloudinary, deleteFromCloudinary } from '../../../utils/cloudinary';
 import { formatDate } from '../../../utils/dateHelper';
 import CustomSelect from '../../../components/common/CustomSelect';
+import DeleteConfirmationModal from '../../../components/admin/DeleteConfirmationModal';
 
 export default function Blogs() {
   const { isCollapsed } = useAdminUI();
@@ -63,6 +64,11 @@ export default function Blogs() {
   });
   const [selectedFile, setSelectedFile] = useState(null);
   const fileInputRef = useRef(null);
+
+  // Delete Modal State
+  const [isDeleteModalOpen, setIsDeleteModalOpen] = useState(false);
+  const [isDeleting, setIsDeleting] = useState(false);
+  const [blogToDelete, setBlogToDelete] = useState(null);
 
   // Section Config State
   const [config, setConfig] = useState({
@@ -188,21 +194,31 @@ export default function Blogs() {
     }
   };
 
-  const handleDeleteBlog = async (blog) => {
-    if (!window.confirm("Are you sure you want to delete this blog?")) return;
+  const handleDeleteBlog = (blog) => {
+    setBlogToDelete(blog);
+    setIsDeleteModalOpen(true);
+  };
+
+  const confirmDeleteBlog = async () => {
+    if (!blogToDelete) return;
     try {
+      setIsDeleting(true);
       // 1. Delete image from Cloudinary if it exists
-      if (blog.image && blog.image.includes('cloudinary')) {
-        await deleteFromCloudinary(blog.image);
+      if (blogToDelete.image && blogToDelete.image.includes('cloudinary')) {
+        await deleteFromCloudinary(blogToDelete.image);
       }
       
       // 2. Delete document from Firestore
-      await deleteDoc(doc(db, 'blogs', blog.id));
+      await deleteDoc(doc(db, 'blogs', blogToDelete.id));
       
       toast.success("Blog removed from system");
+      setIsDeleteModalOpen(false);
     } catch (err) {
       console.error("Delete error:", err);
       toast.error("Permission denied or system error");
+    } finally {
+      setIsDeleting(false);
+      setBlogToDelete(null);
     }
   };
 
@@ -619,6 +635,13 @@ export default function Blogs() {
         </div>
       )}
 
+      <DeleteConfirmationModal
+        isOpen={isDeleteModalOpen}
+        onClose={() => setIsDeleteModalOpen(false)}
+        onConfirm={confirmDeleteBlog}
+        itemName={blogToDelete?.title || 'this story'}
+        loading={isDeleting}
+      />
     </div>
   );
 }

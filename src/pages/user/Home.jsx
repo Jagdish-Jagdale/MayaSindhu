@@ -156,7 +156,13 @@ export default function Home() {
       // Hydrate with latest product details whenever products OR metadata changes
       const hydrated = ftData.map(ft => {
         const product = products.find(p => p.id === ft.productId);
-        return product ? { ...product, originalFeaturedId: ft.id } : null;
+        if (!product) return null;
+        
+        return { 
+          ...product, 
+          price: product.discountedPrice || product.price || 0,
+          originalFeaturedId: ft.id 
+        };
       }).filter(Boolean);
 
       setFeaturedTreasures(hydrated);
@@ -170,7 +176,7 @@ export default function Home() {
   useEffect(() => {
     const q = query(collection(db, 'banners'), orderBy('order', 'asc'));
     const unsubscribe = onSnapshot(q, async (snapshot) => {
-      const data = snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() }));
+      const data = snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() })).filter(b => b.isActive !== false);
       setBanners(data);
 
       // Preload critical banner images
@@ -269,24 +275,32 @@ export default function Home() {
     return () => unsubscribe();
   }, []);
 
-  // Auto-slide Testimonials
+  const [workshops, setWorkshops] = useState([]);
+  const [workshopsLoading, setWorkshopsLoading] = useState(true);
+
+  // Load Workshops from Firestore
   useEffect(() => {
-    if (testimonialsLoading || testimonials.length === 0) return;
+    const q = query(collection(db, 'workshops'), orderBy('date', 'asc'));
+    const unsubscribe = onSnapshot(q, (snapshot) => {
+      const data = snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() }));
+      setWorkshops(data);
+      setWorkshopsLoading(false);
+    }, (error) => {
+      console.error("Workshops fetch error:", error);
+      setWorkshopsLoading(false);
+    });
+    return () => unsubscribe();
+  }, []);
 
-    const interval = setInterval(() => {
-      if (testimonialRef.current) {
-        const { scrollLeft, scrollWidth, clientWidth } = testimonialRef.current;
-        // If we are at the end, scroll back to start, otherwise scroll right
-        if (scrollLeft + clientWidth >= scrollWidth - 10) {
-          testimonialRef.current.scrollTo({ left: 0, behavior: 'smooth' });
-        } else {
-          scroll(testimonialRef, 'right');
-        }
-      }
-    }, 5000);
-
-    return () => clearInterval(interval);
-  }, [testimonials, testimonialsLoading]);
+  const formatWorkshopDate = (dateStr) => {
+    if (!dateStr) return '';
+    const date = new Date(dateStr);
+    return date.toLocaleDateString('en-US', {
+      month: 'long',
+      day: 'numeric',
+      year: 'numeric'
+    }).toUpperCase();
+  };
 
   const scroll = (ref, direction) => {
     if (ref.current) {
@@ -772,42 +786,29 @@ export default function Home() {
           </motion.div>
 
           <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-8">
-            {[
-              {
-                title: "Art of Handweaving",
-                date: "May 25, 2026",
-                desc: "Join our master artisans for an exclusive behind-the-scenes journey into heritage handweaving.",
-                image: workshopImg
-              },
-              {
-                title: "Natural Dyeing Secrets",
-                date: "June 12, 2026",
-                desc: "Discover the alchemy of colors derived from nature's palette in this hands-on studio session.",
-                image: workshopImg // Placeholder
-              },
-              {
-                title: "The Loom Rhythm",
-                date: "June 28, 2026",
-                desc: "Experience the meditative flow of the loom and create your own small textile piece.",
-                image: workshopImg // Placeholder
-              }
-            ].map((ws, idx) => (
+            {workshops.map((ws, idx) => (
               <motion.div
-                key={idx}
+                key={ws.id}
                 initial={{ opacity: 0, y: 30 }}
                 whileInView={{ opacity: 1, y: 0 }}
                 viewport={{ once: true }}
                 transition={{ delay: idx * 0.1, duration: 0.8 }}
                 className="group"
               >
-                <div className="relative aspect-[4/3] rounded-2xl overflow-hidden mb-6 shadow-lg bg-[#FAF9F6] flex items-center justify-center p-2">
-                  <img src={ws.image} alt={ws.title} className="w-full h-full object-contain group-hover:scale-105 transition-transform duration-700" />
+                <div className="relative aspect-[4/3] rounded-2xl overflow-hidden mb-6 shadow-lg bg-[#FAF9F6] flex items-center justify-center">
+                  {ws.image ? (
+                    <img src={ws.image} alt={ws.name} className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-700" />
+                  ) : (
+                    <div className="w-full h-full bg-gray-100 flex items-center justify-center">
+                      <Calendar size={48} className="text-gray-200" />
+                    </div>
+                  )}
                   <div className="absolute top-4 right-4 bg-white/90 backdrop-blur-sm px-4 py-2 rounded-full shadow-sm">
-                    <p className="text-[9px] font-bold uppercase tracking-widest text-brand-orange">{ws.date}</p>
+                    <p className="text-[9px] font-bold uppercase tracking-widest text-brand-orange">{formatWorkshopDate(ws.date)}</p>
                   </div>
                 </div>
-                <h3 className="text-xl font-sans font-medium text-text-main mb-3 group-hover:text-brand-orange transition-colors">{ws.title}</h3>
-                <p className="text-gray-500 text-sm leading-relaxed mb-6 line-clamp-2">{ws.desc}</p>
+                <h3 className="text-xl font-sans font-medium text-text-main mb-3 group-hover:text-brand-orange transition-colors">{ws.name}</h3>
+                <p className="text-gray-500 text-sm leading-relaxed mb-6 line-clamp-2">{ws.summary}</p>
                 <button 
                   onClick={() => {
                     setSelectedWorkshop(ws);
@@ -820,6 +821,11 @@ export default function Home() {
               </motion.div>
             ))}
           </div>
+          {workshops.length === 0 && !workshopsLoading && (
+            <div className="text-center py-20">
+              <p className="text-gray-400 text-sm">No workshops available at the moment. Stay tuned!</p>
+            </div>
+          )}
         </div>
       </section>
 
