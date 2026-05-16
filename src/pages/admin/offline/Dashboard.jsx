@@ -159,7 +159,7 @@ export default function OfflineDashboard() {
       <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
         
         {/* Sales Trend Chart */}
-        <div className="lg:col-span-2 bg-white rounded-[2rem] p-8 shadow-sm border border-gray-100">
+        <div className="lg:col-span-2 bg-white rounded-[20px] p-8 shadow-sm border border-gray-100">
           <div className="flex items-center justify-between mb-8">
             <div>
               <h2 className="text-[15px] font-bold text-gray-900">In-Store Sales Trend</h2>
@@ -188,7 +188,7 @@ export default function OfflineDashboard() {
         </div>
 
         {/* Recent In-Store Activity */}
-        <div className="bg-white rounded-[2rem] p-8 shadow-sm border border-gray-100 flex flex-col">
+        <div className="bg-white rounded-[20px] p-8 shadow-sm border border-gray-100 flex flex-col">
           <div className="mb-6">
             <h2 className="text-[15px] font-bold text-gray-900">Recent Shop Activity</h2>
             <p className="text-[11px] text-gray-400 font-medium">Latest manual entries</p>

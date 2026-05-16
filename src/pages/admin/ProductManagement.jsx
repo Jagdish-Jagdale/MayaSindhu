@@ -42,6 +42,7 @@ import ProductFormModal from '../../components/admin/ProductFormModal';
 import DeleteConfirmationModal from '../../components/admin/DeleteConfirmationModal';
 import toast from 'react-hot-toast';
 import { deleteMultipleFromCloudinary } from '../../utils/cloudinary';
+import CustomSelect from '../../components/common/CustomSelect';
 
 export default function ProductManagement() {
   const { isCollapsed } = useAdminUI();
@@ -54,7 +55,13 @@ export default function ProductManagement() {
   const [rowsOpen, setRowsOpen] = useState(false);
   const [activeFilter, setActiveFilter] = useState('All');
   const [rowsPerPage, setRowsPerPage] = useState(10);
+  const [currentPage, setCurrentPage] = useState(1);
+  const [direction, setDirection] = useState(0);
   const [sortConfig, setSortConfig] = useState({ key: 'updatedAt', dir: 'desc' });
+
+  useEffect(() => {
+    setCurrentPage(1);
+  }, [searchTerm, activeFilter, rowsPerPage]);
   
   const [isModalOpen, setIsModalOpen] = useState(false);
   const [editingProduct, setEditingProduct] = useState(null);
@@ -236,6 +243,24 @@ export default function ProductManagement() {
     setIsViewModalOpen(true);
   };
 
+  const rowVariants = {
+    initial: ({ direction }) => ({ opacity: 0, x: direction * 30 }),
+    animate: ({ index }) => ({ 
+      opacity: 1, 
+      x: 0,
+      transition: { 
+        delay: index * 0.03,
+        duration: 0.4,
+        ease: [0.22, 1, 0.36, 1]
+      }
+    }),
+    exit: ({ direction }) => ({ 
+      opacity: 0, 
+      x: direction * -30,
+      transition: { duration: 0.2 }
+    })
+  };
+
   const filteredProducts = (() => {
     let list = products.filter(p => {
       const categoryName = categoryMap[p.categoryId] || '';
@@ -318,30 +343,15 @@ export default function ProductManagement() {
           />
         </div>
         <div className="flex items-center gap-3 pr-2">
-          {/* Rows Selection */}
-          <div className="relative" ref={rowsRef}>
-            <button
-              onClick={() => setRowsOpen(prev => !prev)}
-              className="flex items-center gap-2 px-3 py-1.5 text-[12px] font-semibold text-gray-500 hover:text-gray-900 transition-colors border-r border-gray-100"
-            >
-              Rows: <span className="text-[#1BAFAF]">{rowsPerPage}</span>
-              <ChevronDown size={12} className={`transition-transform duration-200 ${rowsOpen ? 'rotate-180' : ''}`} />
-            </button>
-            {rowsOpen && (
-              <div className="absolute right-0 top-full mt-2 w-24 bg-white border border-gray-100 rounded-xl shadow-lg z-50 py-1 overflow-hidden">
-                {rowOptions.map(opt => (
-                  <button
-                    key={opt}
-                    onClick={() => { setRowsPerPage(opt); setRowsOpen(false); }}
-                    className={`w-full text-left px-3 py-2 text-[13px] transition-colors ${
-                      rowsPerPage === opt ? 'text-[#1BAFAF] font-semibold bg-[#1BAFAF]/5' : 'text-gray-600 hover:bg-gray-50'
-                    }`}
-                  >
-                    {opt} rows
-                  </button>
-                ))}
-              </div>
-            )}
+          <div className="flex items-center px-3 border-r border-gray-100">
+            <CustomSelect
+              value={rowsPerPage}
+              onChange={(val) => setRowsPerPage(Number(val))}
+              options={[5, 10, 20, 50].map(opt => ({ value: opt, label: `${opt} rows` }))}
+              className="w-28"
+              minimal={true}
+              valuePrefix="Rows:"
+            />
           </div>
 
           <div className="relative" ref={filterRef}>
@@ -426,14 +436,22 @@ export default function ProductManagement() {
               </tr>
             </thead>
             <tbody className="divide-y divide-gray-50/50">
-              {filteredProducts.length > 0 ? (
-                filteredProducts.slice(0, rowsPerPage).map((product, idx) => (
-                  <tr 
-                    key={product.id} 
-                    onClick={() => openViewModal(product)}
-                    className="hover:bg-gray-50 group transition-colors cursor-pointer"
-                  >
-                    <td className="px-6 py-4 whitespace-nowrap text-[14px] text-gray-400 font-medium">{(idx + 1).toString().padStart(2, '0')}</td>
+              <AnimatePresence mode="wait" custom={direction}>
+                {filteredProducts.length > 0 ? (
+                  filteredProducts.slice((currentPage - 1) * rowsPerPage, currentPage * rowsPerPage).map((product, idx) => (
+                    <motion.tr 
+                      custom={{ direction, index: idx }}
+                      variants={rowVariants}
+                      initial="initial"
+                      animate="animate"
+                      exit="exit"
+                      key={product.id} 
+                      onClick={() => openViewModal(product)}
+                      className="hover:bg-gray-50 group transition-colors cursor-pointer"
+                    >
+                      <td className="px-6 py-4 whitespace-nowrap text-[14px] text-gray-400 font-medium">
+                        {((currentPage - 1) * rowsPerPage + idx + 1).toString().padStart(2, '0')}
+                      </td>
                     <td className="px-6 py-4 whitespace-nowrap text-[13px] text-gray-600 font-bold font-mono">
                       <div className="flex flex-col">
                         <span>{product.productId || '---'}</span>
@@ -527,28 +545,29 @@ export default function ProductManagement() {
                         </button>
                       </div>
                     </td>
+                    </motion.tr>
+                  ))
+                ) : (
+                  <tr>
+                    <td colSpan="10" className="px-6 py-20 text-center">
+                      <div className="flex flex-col items-center gap-3">
+                        <div className="w-16 h-16 bg-gray-50 rounded-full flex items-center justify-center text-gray-200">
+                          <Package size={32} />
+                        </div>
+                        <div className="space-y-1">
+                          <p className="text-gray-500 font-bold">No products found</p>
+                          <p className="text-gray-400 text-[12px]">Try adjusting your search or add a new creation</p>
+                        </div>
+                        {(searchTerm || activeFilter !== 'All') && (
+                          <button onClick={() => { setSearchTerm(''); setActiveFilter('All'); }} className="text-[#1BAFAF] text-[13px] font-bold hover:underline mt-2">
+                            Clear all filters
+                          </button>
+                        )}
+                      </div>
+                    </td>
                   </tr>
-                ))
-              ) : (
-                <tr>
-                  <td colSpan="10" className="px-6 py-20 text-center">
-                    <div className="flex flex-col items-center gap-3">
-                      <div className="w-16 h-16 bg-gray-50 rounded-full flex items-center justify-center text-gray-200">
-                        <Package size={32} />
-                      </div>
-                      <div className="space-y-1">
-                        <p className="text-gray-500 font-bold">No products found</p>
-                        <p className="text-gray-400 text-[12px]">Try adjusting your search or add a new creation</p>
-                      </div>
-                      {(searchTerm || activeFilter !== 'All') && (
-                        <button onClick={() => { setSearchTerm(''); setActiveFilter('All'); }} className="text-[#1BAFAF] text-[13px] font-bold hover:underline mt-2">
-                          Clear all filters
-                        </button>
-                      )}
-                    </div>
-                  </td>
-                </tr>
-              )}
+                )}
+              </AnimatePresence>
             </tbody>
           </table>
         </div>
@@ -556,14 +575,38 @@ export default function ProductManagement() {
         {/* Page Footer */}
         <div className="flex items-center justify-between px-2 pt-3">
           <span className="text-[11px] font-bold text-gray-300 uppercase tracking-widest">
-            Showing {Math.min(filteredProducts.length, 1)}-{Math.min(rowsPerPage, filteredProducts.length)} of {filteredProducts.length} Items
+            Showing {filteredProducts.length > 0 ? (currentPage - 1) * rowsPerPage + 1 : 0}-{Math.min(currentPage * rowsPerPage, filteredProducts.length)} of {filteredProducts.length} Items
           </span>
           <div className="flex items-center gap-2">
-            <div className="w-8 h-8 rounded-lg bg-gray-50 flex items-center justify-center text-gray-300 transition-all cursor-not-allowed">
+            <button 
+              onClick={(e) => {
+                e.stopPropagation();
+                setDirection(-1);
+                setCurrentPage(prev => Math.max(1, prev - 1));
+              }}
+              disabled={currentPage === 1}
+              className={`w-8 h-8 rounded-lg flex items-center justify-center transition-all ${
+                currentPage === 1 
+                  ? 'bg-gray-50 text-gray-300 cursor-not-allowed' 
+                  : 'bg-white border border-gray-100 text-gray-900 hover:shadow-sm hover:text-[#1BAFAF]'
+              }`}
+            >
               <ArrowUpRight size={14} className="rotate-[225deg]" />
-            </div>
-            <button className="w-8 h-8 rounded-lg bg-white border border-gray-100 flex items-center justify-center text-gray-900 hover:shadow-sm hover:text-[#1BAFAF] transition-all group">
-              <ArrowUpRight size={14} className="rotate-45 group-hover:translate-x-0.5 group-hover:-translate-y-0.5 transition-transform" />
+            </button>
+            <button 
+              onClick={(e) => {
+                e.stopPropagation();
+                setDirection(1);
+                setCurrentPage(prev => Math.min(Math.ceil(filteredProducts.length / rowsPerPage), prev + 1));
+              }}
+              disabled={currentPage >= Math.ceil(filteredProducts.length / rowsPerPage)}
+              className={`w-8 h-8 rounded-lg flex items-center justify-center transition-all ${
+                currentPage >= Math.ceil(filteredProducts.length / rowsPerPage)
+                  ? 'bg-gray-50 text-gray-300 cursor-not-allowed' 
+                  : 'bg-white border border-gray-100 text-gray-900 hover:shadow-sm hover:text-[#1BAFAF]'
+              }`}
+            >
+              <ArrowUpRight size={14} className="rotate-45" />
             </button>
           </div>
         </div>

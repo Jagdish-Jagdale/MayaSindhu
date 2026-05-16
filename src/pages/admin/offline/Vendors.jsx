@@ -121,7 +121,7 @@ export default function Vendors() {
       </div>
 
       {/* Vendors Table */}
-      <div className="bg-white rounded-[2rem] border border-gray-100 shadow-sm overflow-hidden">
+      <div className="bg-white rounded-[20px] border border-gray-100 shadow-sm overflow-hidden">
          <div className="overflow-x-auto">
             <table className="w-full text-left border-collapse">
                <thead>

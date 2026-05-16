@@ -220,7 +220,7 @@ export default function Testimonial() {
       </div>
 
       {/* Search & Filter Bar */}
-      <div className="bg-white border border-gray-100 rounded-[1.5rem] p-3 shadow-sm flex flex-col md:flex-row items-center gap-4 transition-all hover:shadow-md">
+      <div className="bg-white border border-gray-100 rounded-2xl p-1.5 shadow-sm flex flex-col md:flex-row items-center gap-4 transition-all hover:shadow-md">
         <div className="relative group flex-1">
           <Search className="absolute left-4 top-1/2 -translate-y-1/2 w-4 h-4 text-gray-300 group-focus-within:text-[#1BAFAF] transition-colors" />
           <input 
@@ -233,13 +233,19 @@ export default function Testimonial() {
         </div>
         
         <div className="flex items-center gap-3 pr-2">
-          <div className="flex items-center gap-2 px-3 text-[12px] font-semibold text-gray-500 border-r border-gray-100 min-w-[120px]">
-            Rows: 
+          <div className="flex items-center px-3 border-r border-gray-100">
             <CustomSelect
               value={rowsPerPage}
               onChange={(val) => setRowsPerPage(Number(val))}
-              options={[5, 10, 20, 50]}
-              className="w-24"
+              options={[
+                { value: 5, label: '5 rows' },
+                { value: 10, label: '10 rows' },
+                { value: 20, label: '20 rows' },
+                { value: 50, label: '50 rows' }
+              ]}
+              className="w-28"
+              minimal={true}
+              valuePrefix="Rows:"
             />
           </div>
           
@@ -251,7 +257,7 @@ export default function Testimonial() {
       </div>
 
       {/* Table Card */}
-      <div className="bg-white border border-gray-100 rounded-[1.5rem] shadow-sm overflow-hidden">
+      <div className="bg-white border border-gray-100 rounded-[1.5rem] shadow-sm">
         <div className="overflow-x-auto">
           <table className="w-full text-left">
             <thead>

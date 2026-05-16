@@ -303,7 +303,7 @@ export default function ArtisanBlooms() {
       ) : (
         <div className="grid grid-cols-1 lg:grid-cols-2 gap-8 pb-12">
           {trends.map((trend) => (
-            <div key={trend.id} className="bg-white border border-gray-100 rounded-3xl p-8 flex flex-col sm:flex-row gap-8 shadow-sm hover:shadow-xl transition-all group relative overflow-hidden">
+            <div key={trend.id} className="bg-white border border-gray-100 rounded-3xl p-8 flex flex-col sm:flex-row gap-8 shadow-sm hover:shadow-xl transition-all group relative">
               {/* Image Cluster */}
               <div className="relative flex-shrink-0 flex items-center justify-center">
                 <div className="relative w-40 h-40 md:w-48 md:h-48 group/img">

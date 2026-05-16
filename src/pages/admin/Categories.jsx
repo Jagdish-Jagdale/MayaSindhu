@@ -1,4 +1,5 @@
 import React, { useState, useEffect, useRef } from 'react';
+import { motion, AnimatePresence } from 'framer-motion';
 import {
   Plus,
   Search,
@@ -28,6 +29,7 @@ import useCategories from '../../hooks/useCategories';
 import ProductFormModal from '../../components/admin/ProductFormModal';
 import DeleteConfirmationModal from '../../components/admin/DeleteConfirmationModal';
 import toast from 'react-hot-toast';
+import CustomSelect from '../../components/common/CustomSelect';
 
 export default function Categories() {
   const { isCollapsed } = useAdminUI();
@@ -37,10 +39,16 @@ export default function Categories() {
   const [productsLoading, setProductsLoading] = useState(true);
   const [searchTerm, setSearchTerm] = useState('');
   const [rowsPerPage, setRowsPerPage] = useState(10);
+  const [currentPage, setCurrentPage] = useState(1);
+  const [direction, setDirection] = useState(0);
   const [rowsOpen, setRowsOpen] = useState(false);
 
   // Navigation State
   const [currentPath, setCurrentPath] = useState([]); // Array of category IDs
+
+  useEffect(() => {
+    setCurrentPage(1);
+  }, [searchTerm, rowsPerPage, currentPath]);
 
   // Modal State
   const [isModalOpen, setIsModalOpen] = useState(false);
@@ -112,17 +120,37 @@ export default function Categories() {
 
   // Navigation Logic
   const handleDrillDown = (category) => {
+    setDirection(1);
     setCurrentPath(prev => [...prev, category.id]);
     setSearchTerm('');
   };
 
   const handleBreadcrumb = (index) => {
+    setDirection(-1);
     if (index === -1) {
       setCurrentPath([]);
     } else {
       setCurrentPath(prev => prev.slice(0, index + 1));
     }
     setSearchTerm('');
+  };
+
+  const rowVariants = {
+    initial: ({ direction }) => ({ opacity: 0, x: direction * 30 }),
+    animate: ({ index }) => ({ 
+      opacity: 1, 
+      x: 0,
+      transition: { 
+        delay: index * 0.03,
+        duration: 0.4,
+        ease: [0.22, 1, 0.36, 1]
+      }
+    }),
+    exit: ({ direction }) => ({ 
+      opacity: 0, 
+      x: direction * -30,
+      transition: { duration: 0.2 }
+    })
   };
 
   const handleEdit = (category) => {
@@ -317,28 +345,20 @@ export default function Categories() {
           />
         </div>
         <div className="flex items-center gap-3 pr-2">
-          <div className="relative" ref={rowsRef}>
-            <button
-              onClick={() => setRowsOpen(prev => !prev)}
-              className="flex items-center gap-2 px-3 py-1.5 text-[12px] font-semibold text-gray-500 hover:text-gray-900 transition-colors"
-            >
-              Rows: <span className="text-[#1BAFAF]">{rowsPerPage}</span>
-              <ChevronDown size={12} className={`transition-transform duration-200 ${rowsOpen ? 'rotate-180' : ''}`} />
-            </button>
-            {rowsOpen && (
-              <div className="absolute right-0 top-full mt-2 w-24 bg-white border border-gray-100 rounded-xl shadow-lg z-50 py-1 overflow-hidden">
-                {[5, 10, 20, 50].map(opt => (
-                  <button
-                    key={opt}
-                    onClick={() => { setRowsPerPage(opt); setRowsOpen(false); }}
-                    className={`w-full text-left px-3 py-2 text-[13px] transition-colors ${rowsPerPage === opt ? 'text-[#1BAFAF] font-semibold bg-[#1BAFAF]/5' : 'text-gray-600 hover:bg-gray-50'
-                      }`}
-                  >
-                    {opt} rows
-                  </button>
-                ))}
-              </div>
-            )}
+          <div className="flex items-center px-3 border-r border-gray-100">
+            <CustomSelect
+              value={rowsPerPage}
+              onChange={(val) => setRowsPerPage(Number(val))}
+              options={[
+                { value: 5, label: '5 rows' },
+                { value: 10, label: '10 rows' },
+                { value: 20, label: '20 rows' },
+                { value: 50, label: '50 rows' }
+              ]}
+              className="w-28"
+              minimal={true}
+              valuePrefix="Rows:"
+            />
           </div>
         </div>
       </div>
@@ -362,19 +382,29 @@ export default function Categories() {
                 </tr>
               </thead>
               <tbody className="divide-y divide-gray-50/50">
-                {visibleCategories.slice(0, rowsPerPage).map((cat, idx) => {
-                  const itemsCount = products.filter(p => p.categoryId === cat.id).length;
-                  const hasChildren = cat.children && cat.children.length > 0;
+                <AnimatePresence mode="wait" custom={direction}>
+                {visibleCategories.length > 0 ? (
+                  visibleCategories.slice((currentPage - 1) * rowsPerPage, currentPage * rowsPerPage).map((cat, index) => {
+                    const itemsCount = products.filter(p => p.categoryId === cat.id).length;
+                    const hasChildren = cat.children && cat.children.length > 0;
 
-                  return (
-                    <tr
-                      key={cat.id}
-                      className="hover:bg-gray-50 group transition-all duration-200 cursor-pointer"
-                      onClick={() => handleDrillDown(cat)}
-                    >
-                      <td className="px-6 py-4 whitespace-nowrap text-[14px] text-gray-400 font-medium">
-                        {(idx + 1).toString().padStart(2, '0')}
-                      </td>
+                    return (
+                      <motion.tr
+                        key={cat.id}
+                        custom={{ direction, index }}
+                        variants={rowVariants}
+                        initial="initial"
+                        animate="animate"
+                        exit="exit"
+                        className="hover:bg-gray-50 group transition-all duration-200 cursor-pointer"
+                        onClick={() => {
+                          setDirection(1);
+                          handleDrillDown(cat);
+                        }}
+                      >
+                        <td className="px-6 py-4 whitespace-nowrap text-[14px] text-gray-400 font-medium">
+                          {((currentPage - 1) * rowsPerPage + index + 1).toString().padStart(2, '0')}
+                        </td>
                       <td className="px-6 py-4">
                         <div className="flex items-center gap-3">
                           <div className={`w-10 h-10 rounded-[12px] flex items-center justify-center transition-all ${hasChildren ? 'bg-[#eaf6f6] text-[#1BAFAF] group-hover:scale-110' : 'bg-gray-50 text-gray-400 border border-gray-100'
@@ -441,9 +471,11 @@ export default function Categories() {
                           </button>
                         </div>
                       </td>
-                    </tr>
-                  );
-                })}
+                      </motion.tr>
+                    );
+                  })
+                ) : null}
+                </AnimatePresence>
               </tbody>
             </table>
           ) : (
@@ -474,7 +506,7 @@ export default function Categories() {
 
               return (
                 <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-6">
-                  {catProducts.slice(0, rowsPerPage).map((p) => (
+                  {catProducts.slice((currentPage - 1) * rowsPerPage, currentPage * rowsPerPage).map((p) => (
                     <div key={p.id} className="group bg-white rounded-[28px] border border-gray-100 overflow-hidden hover:shadow-2xl hover:shadow-[#1BAFAF]/5 hover:-translate-y-1 transition-all duration-300 flex flex-col">
                       {/* Image Container */}
                       <div className="relative aspect-square overflow-hidden bg-gray-50">
@@ -575,13 +607,58 @@ export default function Categories() {
         {/* Table Footer */}
         <div className="flex items-center justify-between px-2 pt-3">
           <span className="text-[11px] font-bold text-gray-300 uppercase tracking-widest">
-            {visibleCategories.length > 0
-              ? `Showing ${Math.min(visibleCategories.length, 1)}-${Math.min(rowsPerPage, visibleCategories.length)} of ${visibleCategories.length} Layers`
-              : "End of hierarchy reached • Viewing Products"
-            }
+            {(() => {
+              const totalItems = visibleCategories.length > 0 ? visibleCategories.length : (products.filter(p => p.categoryId === currentPath[currentPath.length - 1]).length);
+              const label = visibleCategories.length > 0 ? "Layers" : "Products";
+              if (totalItems === 0 && visibleCategories.length === 0) return "End of hierarchy reached • No Products found";
+              return `Showing ${totalItems > 0 ? (currentPage - 1) * rowsPerPage + 1 : 0}-${Math.min(currentPage * rowsPerPage, totalItems)} of ${totalItems} ${label}`;
+            })()}
           </span>
-          <div className="flex items-center gap-2 text-[12px] font-bold text-gray-400">
-            {visibleCategories.length > 0 ? 'Click rows to explore deeper' : 'Direct product overview'}
+          <div className="flex items-center gap-4">
+            <div className="flex items-center gap-2 text-[12px] font-bold text-gray-400">
+              {visibleCategories.length > rowsPerPage 
+                ? 'Click rows to explore deeper' 
+                : (visibleCategories.length === 0 && (products.filter(p => p.categoryId === currentPath[currentPath.length - 1]).length) > rowsPerPage ? 'Scroll to see more products' : '')}
+            </div>
+            <div className="flex items-center gap-2">
+              <button 
+                onClick={(e) => {
+                  e.stopPropagation();
+                  setDirection(-1);
+                  setCurrentPage(prev => Math.max(1, prev - 1));
+                }}
+                disabled={currentPage === 1}
+                className={`w-8 h-8 rounded-lg flex items-center justify-center transition-all ${
+                  currentPage === 1 
+                    ? 'bg-gray-50 text-gray-300 cursor-not-allowed' 
+                    : 'bg-white border border-gray-100 text-gray-900 hover:shadow-sm hover:text-[#1BAFAF]'
+                }`}
+              >
+                <ArrowUpRight size={14} className="rotate-[225deg]" />
+              </button>
+              <button 
+                onClick={(e) => {
+                  e.stopPropagation();
+                  setDirection(1);
+                  const totalItems = visibleCategories.length > 0 ? visibleCategories.length : (products.filter(p => p.categoryId === currentPath[currentPath.length - 1]).length);
+                  setCurrentPage(prev => Math.min(Math.ceil(totalItems / rowsPerPage), prev + 1));
+                }}
+                disabled={(() => {
+                  const totalItems = visibleCategories.length > 0 ? visibleCategories.length : (products.filter(p => p.categoryId === currentPath[currentPath.length - 1]).length);
+                  return currentPage >= Math.ceil(totalItems / rowsPerPage);
+                })()}
+                className={`w-8 h-8 rounded-lg flex items-center justify-center transition-all ${
+                  (() => {
+                    const totalItems = visibleCategories.length > 0 ? visibleCategories.length : (products.filter(p => p.categoryId === currentPath[currentPath.length - 1]).length);
+                    return currentPage >= Math.ceil(totalItems / rowsPerPage);
+                  })()
+                    ? 'bg-gray-50 text-gray-300 cursor-not-allowed' 
+                    : 'bg-white border border-gray-100 text-gray-900 hover:shadow-sm hover:text-[#1BAFAF]'
+                }`}
+              >
+                <ArrowUpRight size={14} className="rotate-45" />
+              </button>
+            </div>
           </div>
         </div>
       </div>
