@@ -234,7 +234,7 @@ export default function ProductDetail() {
     return (
       <div className="min-h-screen flex flex-col items-center justify-center bg-[#FDFBF7] p-6 text-center">
         <h2 className="text-3xl font-sans font-bold text-[#1A1A1A] mb-4">Treasure Not Found</h2>
-        <button onClick={() => navigate('/shop')} className="btn btn-primary px-12">Return to Shop</button>
+        <button onClick={() => navigate('/')} className="btn btn-primary px-12">Return to Shop</button>
       </div>
     );
   }
@@ -331,8 +331,8 @@ export default function ProductDetail() {
               </div>
 
               <div className="flex items-baseline gap-3 mb-4 sm:mb-6">
-                <span className="text-2xl sm:text-3xl font-bold text-[#1A1A1A]">₹{product.price.toLocaleString('en-IN')}</span>
-                <span className="text-xs sm:text-sm text-gray-400 line-through font-medium">₹{(product.price * 2).toLocaleString('en-IN')}</span>
+                <span className="text-2xl sm:text-3xl font-bold text-[#1A1A1A]">₹{(product.price || 0).toLocaleString('en-IN')}</span>
+                <span className="text-xs sm:text-sm text-gray-400 line-through font-medium">₹{( (product.price || 0) * 2).toLocaleString('en-IN')}</span>
                 <span className="text-[8px] sm:text-[9px] font-black text-red-500 uppercase tracking-[0.2em] ml-2">Flat 50% Off</span>
               </div>
 

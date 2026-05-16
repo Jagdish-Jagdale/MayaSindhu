@@ -45,7 +45,7 @@ export default function WishlistTab({ user }) {
             <Heart size={32} className="text-gray-200" />
           </div>
           <p className="text-gray-400 font-bold text-xs uppercase tracking-widest mb-8">Your wishlist is currently empty</p>
-          <Link to="/shop" className="bg-[#1A1A1A] text-white px-10 py-4 rounded-xl text-[11px] font-bold uppercase tracking-widest hover:bg-black transition-all shadow-lg">Start Shopping</Link>
+          <Link to="/" className="bg-[#1A1A1A] text-white px-10 py-4 rounded-xl text-[11px] font-bold uppercase tracking-widest hover:bg-black transition-all shadow-lg">Start Shopping</Link>
         </div>
       ) : (
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-6">

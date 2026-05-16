@@ -37,8 +37,9 @@ export default function Navbar() {
   const handleSearch = (e) => {
     if (e.key === 'Enter' || e.type === 'click') {
       if (searchQuery.trim()) {
-        navigate(`/shop?q=${encodeURIComponent(searchQuery.trim())}`);
-        setIsMobileSearchOpen(false);
+        // Since Shop page is removed, we can redirect to a specific category or home
+        // For now, let's just clear the suggestions and stay on page
+        // or we could potentially navigate to a search result if we had a dedicated page
         setSuggestions([]);
       }
     }
@@ -90,25 +91,6 @@ export default function Navbar() {
     return () => document.removeEventListener('mousedown', handleClickOutside);
   }, []);
 
-  // Live Search - Debounced
-  useEffect(() => {
-    const timer = setTimeout(() => {
-      if (searchQuery.trim()) {
-        // Only trigger live search if we are already on the shop page or if it's a significant enough query
-        // This avoids jarring navigation if the user is on Home and just starts typing
-        if (location.pathname === '/shop' || searchQuery.length > 2) {
-          navigate(`/shop?q=${encodeURIComponent(searchQuery.trim())}`, { replace: true });
-        }
-      } else if (location.pathname === '/shop' && !searchQuery && location.search.includes('q=')) {
-        // Clear search if query is empty on shop page
-        const params = new URLSearchParams(location.search);
-        params.delete('q');
-        navigate(`/shop${params.toString() ? '?' + params.toString() : ''}`, { replace: true });
-      }
-    }, 400); // 400ms debounce
-
-    return () => clearTimeout(timer);
-  }, [searchQuery, navigate, location.pathname]);
 
   // Define the preferred order for main categories
   const categoryOrder = [
@@ -207,12 +189,12 @@ export default function Navbar() {
     } bg-white border-b border-gray-200`}>
       {/* Top Navbar: Brand & Search & Icons */}
       <div className="border-b border-gray-200">
-        <div className="max-w-[1536px] mx-auto px-6 h-[90px] flex items-center justify-between gap-8">
+        <div className="max-w-[1536px] mx-auto px-6 h-[95px] flex items-center justify-between gap-8">
 
           {/* 1. Logo (Left) */}
           <div className="flex items-center h-full">
             <Link to="/" className="flex items-center relative group">
-              <img src={navLogo} alt="MayaSindhu" className="h-12 md:h-[64px] w-auto object-contain opacity-0" />
+              <img src={navLogo} alt="MayaSindhu" className="h-12 md:h-[75px] w-auto object-contain opacity-0" />
               <div
                 className="absolute inset-0 bg-[#F99C00] transition-opacity duration-300 group-hover:opacity-80"
                 style={{
@@ -336,12 +318,14 @@ export default function Navbar() {
                         </div>
                         <h2 className="text-base font-bold text-[#1A1A1A] leading-tight mb-1 uppercase tracking-tight truncate w-full">{displayName}</h2>
                         <p className="text-gray-400 text-[9px] font-bold uppercase tracking-widest truncate w-full mb-6">{user.email}</p>
-                        <button 
-                          onClick={() => { logout(); setIsUserDropdownOpen(false); }}
-                          className="w-full py-4 bg-brand-black text-white rounded-xl text-[10px] font-bold uppercase tracking-[0.2em] shadow-lg hover:bg-brand-orange transition-all active:scale-95"
+                        
+                        <Link 
+                          to="/profile"
+                          onClick={() => setIsUserDropdownOpen(false)}
+                          className="w-full py-3 bg-brand-black text-white rounded-xl text-[10px] font-bold uppercase tracking-[0.2em] text-center hover:bg-brand-orange transition-all active:scale-95"
                         >
-                          Sign Out
-                        </button>
+                          Manage Account
+                        </Link>
                       </div>
                     </motion.div>
                   )}
@@ -362,7 +346,7 @@ export default function Navbar() {
       {/* Category Navigation (Desktop) - Centered */}
       <nav className={`hidden md:block transition-all duration-500 bg-white`}>
         <div className="max-w-[1536px] mx-auto px-6">
-          <ul className="flex items-center justify-center gap-8 lg:gap-12 overflow-x-auto no-scrollbar py-0.5 w-full">
+          <ul className="flex items-center justify-center gap-8 lg:gap-12 overflow-x-auto no-scrollbar py-0 w-full">
             {sortedCategories.map((category) => (
 
               <NavItem

@@ -72,7 +72,7 @@ export default function CartTab({ user }) {
         <h3 className="text-2xl font-sans font-bold text-[#1A1A1A] mb-2">Your Bag is Empty</h3>
         <p className="text-gray-400 mb-8 max-w-xs mx-auto">Treasures are waiting to be discovered in our collections.</p>
         <button
-          onClick={() => navigate('/shop')}
+          onClick={() => navigate('/')}
           className="btn btn-primary px-10 py-4 bg-[#1A1A1A] text-white rounded-2xl hover:bg-black transition-all"
         >
           Explore Shop
