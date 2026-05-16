@@ -25,6 +25,7 @@ import toast from 'react-hot-toast';
 import { uploadToCloudinary, deleteMultipleFromCloudinary } from '../../../utils/cloudinary';
 import useCategories from '../../../hooks/useCategories';
 import CustomSelect from '../../../components/common/CustomSelect';
+import DeleteConfirmationModal from '../../../components/admin/DeleteConfirmationModal';
 
 const slugify = (text) => {
   return text
@@ -45,6 +46,11 @@ export default function ArtisanBlooms() {
   const [hasChanges, setHasChanges] = useState(false);
   const [deletedIds, setDeletedIds] = useState([]);
   const [deletedImageUrls, setDeletedImageUrls] = useState([]);
+  
+  // Delete Modal State
+  const [isDeleteModalOpen, setIsDeleteModalOpen] = useState(false);
+  const [isDeleting, setIsDeleting] = useState(false);
+  const [trendToDelete, setTrendToDelete] = useState(null);
   
   const fileInputRef = useRef(null);
   const [editingTrendId, setEditingTrendId] = useState(null);
@@ -125,14 +131,39 @@ export default function ArtisanBlooms() {
   };
 
   const removeTrend = (trend) => {
-    setTrends(prev => prev.filter(t => t.id !== trend.id));
-    if (!trend.isNew) {
-      setDeletedIds(prev => [...prev, trend.id]);
-      if (trend.imageUrl && trend.imageUrl.includes('res.cloudinary.com')) {
-        setDeletedImageUrls(prev => [...prev, trend.imageUrl]);
-      }
+    setTrendToDelete(trend);
+    setIsDeleteModalOpen(true);
+  };
+
+  const confirmDelete = async () => {
+    if (!trendToDelete) return;
+    
+    // If it's a new (unsaved) trend, just remove from local state
+    if (trendToDelete.isNew) {
+      setTrends(prev => prev.filter(t => t.id !== trendToDelete.id));
+      setIsDeleteModalOpen(false);
+      setTrendToDelete(null);
+      setHasChanges(true);
+      return;
     }
-    setHasChanges(true);
+
+    try {
+      setIsDeleting(true);
+      if (trendToDelete.imageUrl && trendToDelete.imageUrl.includes('res.cloudinary.com')) {
+        await deleteMultipleFromCloudinary([trendToDelete.imageUrl]);
+      }
+      await deleteDoc(doc(db, 'shopByTrend', trendToDelete.id));
+      setTrends(prev => prev.filter(t => t.id !== trendToDelete.id));
+      toast.success("Trend card deleted");
+      setIsDeleteModalOpen(false);
+    } catch (err) {
+      console.error("Delete error:", err);
+      toast.error("Failed to delete trend card");
+    } finally {
+      setIsDeleting(false);
+      setTrendToDelete(null);
+      setHasChanges(false);
+    }
   };
 
   const handleSave = async () => {
@@ -343,6 +374,14 @@ export default function ArtisanBlooms() {
           ))}
         </div>
       )}
+
+      <DeleteConfirmationModal
+        isOpen={isDeleteModalOpen}
+        onClose={() => setIsDeleteModalOpen(false)}
+        onConfirm={confirmDelete}
+        itemName={trendToDelete?.title || 'this trend card'}
+        loading={isDeleting}
+      />
     </div>
   );
 }

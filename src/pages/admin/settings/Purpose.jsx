@@ -18,6 +18,7 @@ import {
 } from 'lucide-react';
 import toast from 'react-hot-toast';
 import { uploadToCloudinary } from '../../../utils/cloudinary';
+import DeleteConfirmationModal from '../../../components/admin/DeleteConfirmationModal';
 
 export default function Purpose() {
   const { isCollapsed } = useAdminUI();
@@ -38,6 +39,11 @@ export default function Purpose() {
   
   const fileInputRef = useRef(null);
   const [pendingFile, setPendingFile] = useState(null);
+
+  // Delete Modal State
+  const [isDeleteModalOpen, setIsDeleteModalOpen] = useState(false);
+  const [statToDeleteId, setStatToDeleteId] = useState(null);
+  const [statToDeleteLabel, setStatToDeleteLabel] = useState("");
 
   // Load Data
   useEffect(() => {
@@ -96,12 +102,22 @@ export default function Purpose() {
     setHasChanges(true);
   };
 
-  const removeStat = (id) => {
+  const removeStat = (stat) => {
+    setStatToDeleteId(stat.id);
+    setStatToDeleteLabel(stat.label);
+    setIsDeleteModalOpen(true);
+  };
+
+  const confirmDelete = () => {
+    if (!statToDeleteId) return;
     setData(prev => ({
       ...prev,
-      stats: prev.stats.filter(s => s.id !== id)
+      stats: prev.stats.filter(s => s.id !== statToDeleteId)
     }));
     setHasChanges(true);
+    setIsDeleteModalOpen(false);
+    setStatToDeleteId(null);
+    setStatToDeleteLabel("");
   };
 
   const handleSave = async () => {
@@ -224,7 +240,7 @@ export default function Purpose() {
                       className="bg-white border-gray-100 border px-4 py-2 text-[11px] font-bold text-gray-500 rounded-xl outline-none focus:ring-2 focus:ring-[#1BAFAF]/10"
                     />
                   </div>
-                  <button onClick={() => removeStat(stat.id)} className="text-gray-300 hover:text-red-500 transition-colors">
+                  <button onClick={() => removeStat(stat)} className="text-gray-300 hover:text-red-500 transition-colors">
                     <Trash2 size={16} />
                   </button>
                 </div>
@@ -298,6 +314,12 @@ export default function Purpose() {
            </div>
         </div>
       </div>
+      <DeleteConfirmationModal
+        isOpen={isDeleteModalOpen}
+        onClose={() => setIsDeleteModalOpen(false)}
+        onConfirm={confirmDelete}
+        itemName={`the "${statToDeleteLabel}" statistic`}
+      />
     </div>
   );
 }

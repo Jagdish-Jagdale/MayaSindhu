@@ -26,6 +26,7 @@ import {
   ArrowUpRight
 } from 'lucide-react';
 import toast from 'react-hot-toast';
+import DeleteConfirmationModal from '../../../components/admin/DeleteConfirmationModal';
 
 export default function FeaturedTreasures() {
   const { isCollapsed } = useAdminUI();
@@ -40,6 +41,10 @@ export default function FeaturedTreasures() {
   const [isSearching, setIsSearching] = useState(false);
   const [searchResults, setSearchResults] = useState([]);
   const searchRef = useRef(null);
+
+  // Delete Modal State
+  const [isDeleteModalOpen, setIsDeleteModalOpen] = useState(false);
+  const [productToRemove, setProductToRemove] = useState(null);
 
   // Load All Products for Search
   useEffect(() => {
@@ -122,9 +127,18 @@ export default function FeaturedTreasures() {
     toast.success(`${product.name} added to favorites`);
   };
 
-  const removeProduct = (id) => {
-    setFeaturedItems(prev => prev.filter(p => p.id !== id));
+  const removeProduct = (product) => {
+    setProductToRemove(product);
+    setIsDeleteModalOpen(true);
+  };
+
+  const confirmRemoveProduct = () => {
+    if (!productToRemove) return;
+    setFeaturedItems(prev => prev.filter(p => p.id !== productToRemove.id));
     setHasChanges(true);
+    setIsDeleteModalOpen(false);
+    setProductToRemove(null);
+    toast.success(`${productToRemove.name} removed from featured treasures`);
   };
 
   const handleSave = async () => {
@@ -207,7 +221,7 @@ export default function FeaturedTreasures() {
                       </div>
                       <div className="flex-1 min-w-0">
                         <p className="text-[13px] font-semibold text-gray-900 truncate group-hover:text-brand-orange transition-colors">{product.name}</p>
-                        <p className="text-[11px] text-gray-400 font-medium">₹{product.price.toLocaleString('en-IN')}</p>
+                        <p className="text-[11px] text-gray-400 font-medium">₹{(product.discountedPrice || product.price || 0).toLocaleString('en-IN')}</p>
                       </div>
                       <Plus size={16} className="text-gray-300 group-hover:text-brand-orange" />
                     </button>
@@ -267,8 +281,8 @@ export default function FeaturedTreasures() {
                     {product.isNew && (
                       <span className="bg-brand-orange text-white text-[9px] font-bold px-2 py-1 rounded-lg uppercase tracking-wider shadow-lg">New</span>
                     )}
-                    <button 
-                      onClick={() => removeProduct(product.id)}
+                     <button 
+                      onClick={() => removeProduct(product)}
                       className="w-9 h-9 rounded-full bg-white text-gray-400 hover:text-red-500 shadow-xl flex items-center justify-center transition-all scale-90 hover:scale-110"
                     >
                       <Trash2 size={16} />
@@ -286,13 +300,20 @@ export default function FeaturedTreasures() {
                       <span className="text-[11px] font-bold">{product.rating || '4.8'}</span>
                     </div>
                   </div>
-                  <p className="text-brand-orange font-bold text-[16px]">₹{product.price.toLocaleString('en-IN')}</p>
+                  <p className="text-brand-orange font-bold text-[16px]">₹{(product.discountedPrice || product.price || 0).toLocaleString('en-IN')}</p>
                 </div>
               </div>
             ))}
           </div>
         )}
       </div>
+
+      <DeleteConfirmationModal
+        isOpen={isDeleteModalOpen}
+        onClose={() => setIsDeleteModalOpen(false)}
+        onConfirm={confirmRemoveProduct}
+        itemName={productToRemove?.name}
+      />
     </div>
   );
 }

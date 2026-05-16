@@ -25,7 +25,8 @@ import {
   Repeat
 } from 'lucide-react';
 import toast from 'react-hot-toast';
-import { uploadToCloudinary, deleteMultipleFromCloudinary } from '../../../utils/cloudinary';
+import { uploadToCloudinary, deleteMultipleFromCloudinary, deleteFromCloudinary } from '../../../utils/cloudinary';
+import DeleteConfirmationModal from '../../../components/admin/DeleteConfirmationModal';
 
 export default function Stories() {
   const { isCollapsed } = useAdminUI();
@@ -35,6 +36,11 @@ export default function Stories() {
   const [isSaving, setIsSaving] = useState(false);
   const [hasChanges, setHasChanges] = useState(false);
   const [flippedLooks, setFlippedLooks] = useState(new Set());
+
+  // Delete Modal State
+  const [isDeleteModalOpen, setIsDeleteModalOpen] = useState(false);
+  const [isDeleting, setIsDeleting] = useState(false);
+  const [lookToDelete, setLookToDelete] = useState(null);
 
   const toggleFlip = (id) => {
     setFlippedLooks(prev => {
@@ -162,16 +168,43 @@ export default function Stories() {
   };
 
   const removeLook = (look) => {
-    setLooks(prev => prev.filter(l => l.id !== look.id));
-    if (!look.isNew) {
-      setDeletedIds(prev => [...prev, look.id]);
-      // Track Cloudinary URLs for cleanup
-      const urls = [look.thumbnail, look.productImage, look.url].filter(u => u && u.includes('res.cloudinary.com'));
-      if (urls.length > 0) {
-        setDeletedImageUrls(prev => [...prev, ...urls]);
-      }
+    setLookToDelete(look);
+    setIsDeleteModalOpen(true);
+  };
+
+  const confirmDelete = async () => {
+    if (!lookToDelete) return;
+    
+    // If it's a new (unsaved) look, just remove from local state
+    if (lookToDelete.isNew) {
+      setLooks(prev => prev.filter(l => l.id !== lookToDelete.id));
+      setIsDeleteModalOpen(false);
+      setLookToDelete(null);
+      setHasChanges(true);
+      return;
     }
-    setHasChanges(true);
+
+    try {
+      setIsDeleting(true);
+      
+      // Track Cloudinary URLs for cleanup
+      const urls = [lookToDelete.thumbnail, lookToDelete.productImage, lookToDelete.url].filter(u => u && u.includes('res.cloudinary.com'));
+      if (urls.length > 0) {
+        await deleteMultipleFromCloudinary(urls);
+      }
+      
+      await deleteDoc(doc(db, 'shopTheLook', lookToDelete.id));
+      setLooks(prev => prev.filter(l => l.id !== lookToDelete.id));
+      toast.success("Story deleted");
+      setIsDeleteModalOpen(false);
+    } catch (err) {
+      console.error("Delete error:", err);
+      toast.error("Failed to delete story");
+    } finally {
+      setIsDeleting(false);
+      setLookToDelete(null);
+      setHasChanges(false);
+    }
   };
 
   const handleSave = async () => {
@@ -525,6 +558,14 @@ export default function Stories() {
           ))}
         </div>
       )}
+
+      <DeleteConfirmationModal
+        isOpen={isDeleteModalOpen}
+        onClose={() => setIsDeleteModalOpen(false)}
+        onConfirm={confirmDelete}
+        itemName={lookToDelete?.title || 'this story'}
+        loading={isDeleting}
+      />
     </div>
   );
 }

@@ -156,7 +156,7 @@ export default function ProductDetail() {
           buyNowItem: {
             id: product.id,
             name: product.name,
-            price: product.price,
+            price: product.discountedPrice || product.price || 0,
             image: product.image || (product.images && product.images[0]) || '',
             qty: quantity,
             isDirectBuy: true
@@ -185,7 +185,7 @@ export default function ProductDetail() {
           id: product.id,
           slug: product.slug || product.id,
           name: product.name,
-          price: product.price,
+          price: product.discountedPrice || product.price || 0,
           image: product.image || (product.images && product.images[0]) || '',
           rating: product.rating || 4.8,
           addedAt: serverTimestamp()
@@ -331,9 +331,15 @@ export default function ProductDetail() {
               </div>
 
               <div className="flex items-baseline gap-3 mb-4 sm:mb-6">
-                <span className="text-2xl sm:text-3xl font-bold text-[#1A1A1A]">₹{product.price.toLocaleString('en-IN')}</span>
-                <span className="text-xs sm:text-sm text-gray-400 line-through font-medium">₹{(product.price * 2).toLocaleString('en-IN')}</span>
-                <span className="text-[8px] sm:text-[9px] font-black text-red-500 uppercase tracking-[0.2em] ml-2">Flat 50% Off</span>
+                <span className="text-2xl sm:text-3xl font-bold text-[#1A1A1A]">₹{(product.discountedPrice || product.price || 0).toLocaleString('en-IN')}</span>
+                {Number(product.actualPrice || 0) > Number(product.discountedPrice || product.price || 0) && (
+                  <>
+                    <span className="text-xs sm:text-sm text-gray-400 line-through font-medium">₹{Number(product.actualPrice || 0).toLocaleString('en-IN')}</span>
+                    <span className="text-[8px] sm:text-[9px] font-black text-red-500 uppercase tracking-[0.2em] ml-2">
+                      {Math.round(((product.actualPrice - (product.discountedPrice || product.price)) / product.actualPrice) * 100)}% Off
+                    </span>
+                  </>
+                )}
               </div>
 
               <p className="text-gray-500 text-xs sm:text-sm leading-relaxed mb-4 sm:mb-6 font-medium">

@@ -21,6 +21,7 @@ export default function ProductFormModal({ isOpen, onClose, product = null, init
     isAvailable: true,
     description: '',
     tagline: '',
+    sku: '',
     images: [] // Will store Cloudinary URLs
   });
 
@@ -54,6 +55,7 @@ export default function ProductFormModal({ isOpen, onClose, product = null, init
         isAvailable: product.isAvailable !== undefined ? product.isAvailable : true,
         description: product.description || '',
         tagline: product.tagline || '',
+        sku: product.sku || '',
         images: product.images || []
       });
 
@@ -77,6 +79,7 @@ export default function ProductFormModal({ isOpen, onClose, product = null, init
         isAvailable: true,
         description: '',
         tagline: '',
+        sku: '',
         images: []
       });
 
@@ -357,16 +360,29 @@ export default function ProductFormModal({ isOpen, onClose, product = null, init
                     />
                   </div>
 
-                  <div className="space-y-1.5">
-                    <label className="text-[13px] font-bold text-gray-700 ml-1">Tagline</label>
-                    <input
-                      type="text"
-                      name="tagline"
-                      value={formData.tagline}
-                      onChange={handleInputChange}
-                      placeholder="Short catchy phrase"
-                      className="w-full bg-gray-50 border-none px-4 py-3 rounded-xl text-[14px] outline-none focus:ring-2 focus:ring-[#1BAFAF]/20 focus:bg-white transition-all font-medium"
-                    />
+                  <div className="grid grid-cols-2 gap-4">
+                    <div className="space-y-1.5">
+                      <label className="text-[13px] font-bold text-gray-700 ml-1">Tagline</label>
+                      <input
+                        type="text"
+                        name="tagline"
+                        value={formData.tagline}
+                        onChange={handleInputChange}
+                        placeholder="Short catchy phrase"
+                        className="w-full bg-gray-50 border-none px-4 py-3 rounded-xl text-[14px] outline-none focus:ring-2 focus:ring-[#1BAFAF]/20 focus:bg-white transition-all font-medium"
+                      />
+                    </div>
+                    <div className="space-y-1.5">
+                      <label className="text-[13px] font-bold text-gray-700 ml-1">SKU</label>
+                      <input
+                        type="text"
+                        name="sku"
+                        value={formData.sku}
+                        onChange={handleInputChange}
+                        placeholder="e.g. MS-2024-001"
+                        className="w-full bg-gray-50 border-none px-4 py-3 rounded-xl text-[14px] outline-none focus:ring-2 focus:ring-[#1BAFAF]/20 focus:bg-white transition-all font-medium uppercase"
+                      />
+                    </div>
                   </div>
 
                   <div className="space-y-4">
@@ -407,9 +423,6 @@ export default function ProductFormModal({ isOpen, onClose, product = null, init
                               }
                             }}
                           >
-                            <label className="text-[13px] font-bold text-gray-700 ml-1">
-                              {level === 0 ? 'Main Category *' : `Sub Category ${level} ${level === 1 ? '*' : ''}`}
-                            </label>
                             <div className={`relative ${isDisabled ? 'cursor-pointer' : ''}`}>
                             <CustomSelect
                               value={selectedId || ''}

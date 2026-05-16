@@ -57,6 +57,8 @@ import Purpose from './pages/admin/settings/Purpose';
 import Testimonial from './pages/admin/settings/Testimonial';
 import AboutUs from './pages/admin/settings/AboutUs';
 import Blogs from './pages/admin/settings/Blogs';
+import Workshops from './pages/admin/settings/Workshops';
+
 
 import './App.css';
 
@@ -145,7 +147,9 @@ function App() {
             <Route path="settings/testimonial" element={<Testimonial />} />
             <Route path="settings/about-us" element={<AboutUs />} />
             <Route path="settings/blogs" element={<Blogs />} />
+            <Route path="settings/artician-workshop" element={<Workshops />} />
           </Route>
+
 
           {/* Offline Store Route */}
           <Route path="/admin-offline" element={

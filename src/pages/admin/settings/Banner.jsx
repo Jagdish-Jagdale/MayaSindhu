@@ -1,30 +1,32 @@
 import React, { useState, useEffect, useRef } from 'react';
 import { useAdminUI } from '../../../context/AdminUIContext';
 import { db } from '../../../firebase';
-import { 
-  collection, 
-  onSnapshot, 
-  query, 
-  orderBy, 
-  doc, 
-  addDoc, 
-  deleteDoc, 
+import {
+  collection,
+  onSnapshot,
+  query,
+  orderBy,
+  doc,
+  addDoc,
+  deleteDoc,
   serverTimestamp,
   writeBatch
 } from 'firebase/firestore';
-import { 
-  Save, 
-  Plus, 
-  Image as ImageIcon, 
-  Trash2, 
-  Loader2, 
-  Layout, 
+import {
+  Save,
+  Plus,
+  Image as ImageIcon,
+  Trash2,
+  Loader2,
+  Layout,
   Camera,
   X,
   Pencil
 } from 'lucide-react';
 import toast from 'react-hot-toast';
-import { uploadToCloudinary, deleteMultipleFromCloudinary } from '../../../utils/cloudinary';
+import { uploadToCloudinary, deleteMultipleFromCloudinary, deleteFromCloudinary } from '../../../utils/cloudinary';
+import DeleteConfirmationModal from '../../../components/admin/DeleteConfirmationModal';
+import CustomSelect from '../../../components/common/CustomSelect';
 
 export default function Banner() {
   const { isCollapsed } = useAdminUI();
@@ -34,10 +36,15 @@ export default function Banner() {
   const [hasChanges, setHasChanges] = useState(false);
   const [deletedBannerIds, setDeletedBannerIds] = useState([]);
   const [deletedImageUrls, setDeletedImageUrls] = useState([]);
-  
+
   const fileInputRef = useRef(null);
   const [editingBannerId, setEditingBannerId] = useState(null);
   const [pendingFiles, setPendingFiles] = useState({});  // bannerId -> File
+
+  // Delete Modal State
+  const [isDeleteModalOpen, setIsDeleteModalOpen] = useState(false);
+  const [isDeleting, setIsDeleting] = useState(false);
+  const [bannerToDelete, setBannerToDelete] = useState(null);
 
   // Load Banners
   useEffect(() => {
@@ -47,7 +54,25 @@ export default function Banner() {
         id: doc.id,
         ...doc.data()
       }));
-      setBanners(data);
+
+      // Check for order inconsistencies (duplicates or gaps)
+      const orders = data.map(b => b.order);
+      const isConsistent = data.length === 0 || (
+        new Set(orders).size === data.length &&
+        orders[0] === 1 &&
+        orders[orders.length - 1] === data.length
+      );
+
+      if (!isConsistent) {
+        const normalized = data.sort((a, b) => (a.order || 0) - (b.order || 0)).map((b, idx) => {
+          const newOrder = idx + 1;
+          return { ...b, order: newOrder, isModified: b.order !== newOrder };
+        });
+        setBanners(normalized);
+        if (normalized.some(b => b.isModified)) setHasChanges(true);
+      } else {
+        setBanners(data);
+      }
       setLoading(false);
     });
     return () => unsubscribe();
@@ -65,9 +90,9 @@ export default function Banner() {
     const previewUrl = URL.createObjectURL(file);
     if (editingBannerId) {
       setPendingFiles(prev => ({ ...prev, [editingBannerId]: file }));
-      setBanners(prev => prev.map(b => 
-        b.id === editingBannerId 
-          ? { ...b, imageUrl: previewUrl, isModified: true } 
+      setBanners(prev => prev.map(b =>
+        b.id === editingBannerId
+          ? { ...b, imageUrl: previewUrl, isModified: true }
           : b
       ));
     } else {
@@ -77,6 +102,7 @@ export default function Banner() {
         id: tempId,
         imageUrl: previewUrl,
         order: banners.length + 1,
+        isActive: true,
         isNew: true
       };
       setBanners(prev => [...prev, newBanner]);
@@ -87,21 +113,77 @@ export default function Banner() {
   };
 
   const removeBanner = (banner) => {
-    setBanners(prev => prev.filter(b => b.id !== banner.id));
-    if (!banner.isNew) {
-      setDeletedBannerIds(prev => [...prev, banner.id]);
-      // Track image URL for Cloudinary cleanup
-      if (banner.imageUrl && banner.imageUrl.includes('res.cloudinary.com')) {
-        setDeletedImageUrls(prev => [...prev, banner.imageUrl]);
-      }
+    setBannerToDelete(banner);
+    setIsDeleteModalOpen(true);
+  };
+
+  const confirmDelete = async () => {
+    if (!bannerToDelete) return;
+
+    // If it's a new (unsaved) banner, just remove from local state
+    if (bannerToDelete.isNew) {
+      setBanners(prev => prev.filter(b => b.id !== bannerToDelete.id));
+      setIsDeleteModalOpen(false);
+      setBannerToDelete(null);
+      setHasChanges(true);
+      return;
     }
+
+    try {
+      setIsDeleting(true);
+      if (bannerToDelete.imageUrl?.includes('cloudinary')) {
+        await deleteFromCloudinary(bannerToDelete.imageUrl);
+      }
+      await deleteDoc(doc(db, 'banners', bannerToDelete.id));
+
+      setBanners(prev => {
+        const remaining = prev.filter(b => b.id !== bannerToDelete.id);
+        // Re-normalize orders to maintain 1, 2, 3... sequence
+        return remaining.sort((a, b) => a.order - b.order).map((b, idx) => {
+          const newOrder = idx + 1;
+          if (b.order !== newOrder) {
+            return { ...b, order: newOrder, isModified: b.isNew ? false : true };
+          }
+          return b;
+        });
+      });
+
+      toast.success("Banner deleted and orders re-aligned");
+      setIsDeleteModalOpen(false);
+      setHasChanges(true); // Need to save if other orders were re-aligned
+    } catch (err) {
+      console.error("Delete error:", err);
+      toast.error("Failed to delete banner");
+    } finally {
+      setIsDeleting(false);
+      setBannerToDelete(null);
+    }
+  };
+
+  const updateBannerOrder = (id, newOrder) => {
+    const newVal = parseInt(newOrder);
+    setBanners(prev => {
+      const bannerToUpdate = prev.find(b => b.id === id);
+      if (!bannerToUpdate) return prev;
+      const oldVal = bannerToUpdate.order;
+
+      return prev.map(b => {
+        if (b.id === id) {
+          return { ...b, order: newVal, isModified: true };
+        }
+        // Swap: If another banner has the newVal, give it the oldVal
+        if (b.order === newVal) {
+          return { ...b, order: oldVal, isModified: true };
+        }
+        return b;
+      });
+    });
     setHasChanges(true);
   };
 
-  const updateBannerOrder = (id, orderValue) => {
-    const val = parseInt(orderValue) || 0;
-    setBanners(prev => prev.map(b => 
-      b.id === id ? { ...b, order: val, isModified: true } : b
+  const updateBannerStatus = (id, isActive) => {
+    setBanners(prev => prev.map(b =>
+      b.id === id ? { ...b, isActive, isModified: true } : b
     ));
     setHasChanges(true);
   };
@@ -137,6 +219,7 @@ export default function Banner() {
           batch.set(docRef, {
             imageUrl: finalImageUrl,
             order: banner.order || 0,
+            isActive: banner.isActive !== undefined ? banner.isActive : true,
             createdAt: serverTimestamp()
           });
         } else if (banner.isModified) {
@@ -144,6 +227,7 @@ export default function Banner() {
           batch.update(docRef, {
             imageUrl: finalImageUrl,
             order: banner.order || 0,
+            isActive: banner.isActive !== undefined ? banner.isActive : true,
             updatedAt: serverTimestamp()
           });
         }
@@ -180,7 +264,7 @@ export default function Banner() {
 
   return (
     <div className={`mx-auto space-y-8 animate-in fade-in slide-in-from-bottom-2 duration-500 transition-all duration-300 ${isCollapsed ? 'max-w-[1600px]' : 'max-w-[1280px]'}`} style={{ fontFamily: "'Inter', -apple-system, sans-serif" }}>
-      
+
       <input type="file" ref={fileInputRef} className="hidden" accept="image/*" onChange={handleFileSelect} />
 
       {/* Header Section */}
@@ -192,7 +276,7 @@ export default function Banner() {
           </div>
           <div className="flex items-center gap-3">
             {hasChanges && (
-              <button 
+              <button
                 onClick={handleSave}
                 disabled={isSaving}
                 className="flex items-center gap-2 bg-[#1BAFAF] hover:bg-[#17a0a0] text-white px-6 py-2.5 rounded-xl text-[13px] font-bold transition-all shadow-lg shadow-[#1BAFAF]/10 active:scale-95 disabled:opacity-50"
@@ -201,7 +285,7 @@ export default function Banner() {
                 Save Changes
               </button>
             )}
-            <button 
+            <button
               onClick={() => { setEditingBannerId(null); fileInputRef.current?.click(); }}
               className="flex items-center gap-2 border border-gray-200 hover:bg-gray-50 text-gray-900 px-5 py-2.5 rounded-xl text-[13px] font-semibold transition-all active:scale-95"
             >
@@ -228,66 +312,84 @@ export default function Banner() {
           </div>
         </div>
       ) : (
-        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-          {banners.map((banner) => (
-            <div key={banner.id} className="bg-white border border-gray-100 rounded-[32px] overflow-hidden shadow-sm hover:shadow-md transition-all group p-4 flex flex-col space-y-4 relative">
-              
-              {/* Image Preview */}
-              <div className="relative w-full aspect-[21/9] rounded-2xl overflow-hidden bg-gray-100 group/img">
-                <img src={banner.imageUrl} alt="Banner" className="w-full h-full object-cover" />
-                <div className="absolute inset-0 bg-black/40 opacity-0 group-hover/img:opacity-100 transition-all flex items-center justify-center gap-2">
-                   <button 
-                    onClick={() => { setEditingBannerId(banner.id); fileInputRef.current?.click(); }}
-                    className="w-10 h-10 rounded-full bg-white text-gray-600 flex items-center justify-center hover:scale-110 transition-all"
-                  >
-                    <Camera size={18} />
-                  </button>
-                   <button 
-                    onClick={() => removeBanner(banner)}
-                    className="w-10 h-10 rounded-full bg-red-500 text-white flex items-center justify-center hover:scale-110 transition-all"
-                  >
-                    <Trash2 size={18} />
-                  </button>
-                </div>
-                
-                {(banner.isNew || banner.isModified) && (
-                  <div className="absolute top-3 left-3 px-2 py-1 bg-[#1BAFAF] text-white text-[9px] font-bold rounded-lg uppercase tracking-wider">
-                    {banner.isNew ? 'Unsaved' : 'Modified'}
-                  </div>
-                )}
-              </div>
-
-              {/* Order Selection */}
-              <div className="flex items-center justify-between px-2">
-                <div className="space-y-1 flex-1">
-                  <label className="text-[10px] font-bold text-gray-400 uppercase tracking-widest ml-1">Serial Number (Order)</label>
-                  <div className="flex items-center gap-3">
-                    <input 
-                      type="number"
-                      min="1"
-                      value={banner.order || ''}
-                      onChange={(e) => updateBannerOrder(banner.id, e.target.value)}
-                      className="w-20 bg-gray-50 border-none px-4 py-2 text-[14px] font-bold rounded-xl focus:ring-1 focus:ring-[#1BAFAF] focus:bg-white transition-all outline-none"
-                    />
-                    <span className="text-[11px] text-gray-400 italic">Determines slide position</span>
-                  </div>
-                </div>
-              </div>
-
-            </div>
-          ))}
-
-          <button 
-            onClick={() => { setEditingBannerId(null); fileInputRef.current?.click(); }}
-            className="border-2 border-dashed border-gray-100 rounded-[32px] p-8 flex flex-col items-center justify-center gap-3 text-gray-300 hover:border-[#1BAFAF] hover:text-[#1BAFAF] transition-all group min-h-[220px]"
-          >
-            <div className="w-12 h-12 rounded-full bg-gray-100 group-hover:bg-[#eaf6f6] flex items-center justify-center transition-all">
-              <Plus size={24} />
-            </div>
-            <span className="text-[13px] font-semibold">New Banner Slide</span>
-          </button>
+        <div className="bg-white rounded-[24px] border border-gray-100 shadow-sm">
+          <div>
+            <table className="w-full text-left border-collapse">
+              <thead>
+                <tr className="bg-gray-50/50 border-b border-gray-100">
+                  <th className="px-6 py-2 text-[13px] font-bold text-[#1BAFAF] uppercase tracking-wider w-20 whitespace-nowrap">Sr No</th>
+                  <th className="px-4 py-2 text-[13px] font-bold text-[#1BAFAF] uppercase tracking-wider w-48">Banner Image</th>
+                  <th className="px-4 py-2 text-[13px] font-bold text-[#1BAFAF] uppercase tracking-wider w-32 whitespace-nowrap">Banner Position</th>
+                  <th className="px-4 py-2 text-[13px] font-bold text-[#1BAFAF] uppercase tracking-wider w-28 whitespace-nowrap">Status</th>
+                  <th className="px-6 py-2 text-[13px] font-bold text-[#1BAFAF] uppercase tracking-wider text-right w-24 whitespace-nowrap">Actions</th>
+                </tr>
+              </thead>
+              <tbody className="divide-y divide-gray-50/50">
+                {banners.map((banner, idx) => (
+                  <tr key={banner.id} className="hover:bg-gray-50/50 transition-colors group">
+                    <td className="px-6 py-2 text-[14px] font-medium text-gray-400">
+                      {(idx + 1).toString().padStart(2, '0')}
+                    </td>
+                    <td className="px-4 py-2">
+                      <div className="relative w-32 aspect-[21/9] rounded-xl overflow-hidden bg-gray-100 border border-gray-100">
+                        <img src={banner.imageUrl} alt="Banner" className="w-full h-full object-cover" />
+                        <div className="absolute inset-0 bg-black/20 opacity-0 group-hover:opacity-100 transition-all flex items-center justify-center">
+                          <ImageIcon size={16} className="text-white opacity-60" />
+                        </div>
+                      </div>
+                    </td>
+                    <td className="px-4 py-2">
+                      <CustomSelect
+                        value={banner.order}
+                        onChange={(val) => updateBannerOrder(banner.id, val)}
+                        options={banners.map((_, i) => ({ value: i + 1, label: (i + 1).toString() }))}
+                        className="w-16"
+                      />
+                    </td>
+                    <td className="px-4 py-2">
+                      <CustomSelect
+                        value={banner.isActive !== false}
+                        onChange={(val) => updateBannerStatus(banner.id, val)}
+                        options={[
+                          { value: true, label: 'ACTIVE' },
+                          { value: false, label: 'DEACTIVE' }
+                        ]}
+                        className="w-28"
+                      />
+                    </td>
+                    <td className="px-6 py-2 text-right">
+                      <div className="flex items-center justify-end gap-2">
+                        <button
+                          onClick={() => { setEditingBannerId(banner.id); fileInputRef.current?.click(); }}
+                          className="w-8 h-8 flex items-center justify-center text-emerald-600 bg-emerald-50 hover:bg-emerald-100 rounded-lg transition-all active:scale-95"
+                          title="Change Image"
+                        >
+                          <Pencil size={14} strokeWidth={2.5} />
+                        </button>
+                        <button
+                          onClick={() => removeBanner(banner)}
+                          className="w-8 h-8 flex items-center justify-center text-red-600 bg-red-50 hover:bg-red-100 rounded-lg transition-all active:scale-95"
+                          title="Delete Banner"
+                        >
+                          <Trash2 size={14} strokeWidth={2.5} />
+                        </button>
+                      </div>
+                    </td>
+                  </tr>
+                ))}
+              </tbody>
+            </table>
+          </div>
         </div>
       )}
+
+      <DeleteConfirmationModal
+        isOpen={isDeleteModalOpen}
+        onClose={() => setIsDeleteModalOpen(false)}
+        onConfirm={confirmDelete}
+        itemName="this banner slide"
+        loading={isDeleting}
+      />
     </div>
   );
 }

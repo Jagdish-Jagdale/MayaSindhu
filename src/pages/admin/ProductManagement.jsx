@@ -435,7 +435,10 @@ export default function ProductManagement() {
                   >
                     <td className="px-6 py-4 whitespace-nowrap text-[14px] text-gray-400 font-medium">{(idx + 1).toString().padStart(2, '0')}</td>
                     <td className="px-6 py-4 whitespace-nowrap text-[13px] text-gray-600 font-bold font-mono">
-                      {product.productId || '---'}
+                      <div className="flex flex-col">
+                        <span>{product.productId || '---'}</span>
+                        {product.sku && <span className="text-[10px] text-[#1BAFAF] font-black tracking-widest mt-1 uppercase">{product.sku}</span>}
+                      </div>
                     </td>
                     <td className="px-6 py-4 max-w-[240px]">
                       <div className="flex items-center gap-3 min-w-0">
@@ -742,7 +745,11 @@ function ProductViewModal({ isOpen, onClose, product, categoryMap, hierarchy }) 
                   </div>
 
                   {/* Attributes */}
-                  <div className="grid grid-cols-3 gap-6 py-8 border-y border-gray-50">
+                  <div className="grid grid-cols-2 md:grid-cols-4 gap-6 py-8 border-y border-gray-50">
+                    <div className="space-y-1">
+                      <span className="text-[10px] font-black text-gray-300 uppercase tracking-[0.2em]">SKU</span>
+                      <p className="text-[13px] font-bold text-gray-800 uppercase">{product.sku || 'N/A'}</p>
+                    </div>
                     <div className="space-y-1">
                       <span className="text-[10px] font-black text-gray-300 uppercase tracking-[0.2em]">Fabric</span>
                       <p className="text-[13px] font-bold text-gray-800">Pure Silk</p>
