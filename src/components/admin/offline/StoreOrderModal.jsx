@@ -24,46 +24,49 @@ import {
   where
 } from 'firebase/firestore';
 import toast from 'react-hot-toast';
-import StoreCustomerModal from './StoreCustomerModal';
 import BulkItemModal from './BulkItemModal';
+import ProductFormModal from '../ProductFormModal';
+import CustomSelect from '../../common/CustomSelect';
 
 const StoreOrderModal = ({ isOpen, onClose }) => {
   const [loading, setLoading] = useState(false);
-  const [customers, setCustomers] = useState([]);
+  const [vendors, setVendors] = useState([]);
   const [products, setProducts] = useState([]);
-  const [searchCustomer, setSearchCustomer] = useState('');
-  const [showCustomerDropdown, setShowCustomerDropdown] = useState(false);
-  const [isCustomerModalOpen, setIsCustomerModalOpen] = useState(false);
+  const [searchVendor, setSearchVendor] = useState('');
+  const [showVendorDropdown, setShowVendorDropdown] = useState(false);
+  const [isVendorModalOpen, setIsVendorModalOpen] = useState(false);
   const [isBulkModalOpen, setIsBulkModalOpen] = useState(false);
+  const [isProductModalOpen, setIsProductModalOpen] = useState(false);
   const [isSettingsOpen, setIsSettingsOpen] = useState(false);
   
   // Order Number Settings
   const [orderSettings, setOrderSettings] = useState({
     mode: 'auto',
-    prefix: 'SO-',
+    prefix: 'PO-',
     nextNumber: '00001'
   });
 
   // Form Data
   const [formData, setFormData] = useState({
-    customerId: '',
-    customerName: '',
-    saleOrderNumber: '',
-    saleOrderDate: new Date().toLocaleDateString('en-GB'), // dd/mm/yyyy
-    items: [{ id: Date.now(), productId: '', name: '', quantity: 1, rate: 0, discount: 0, amount: 0 }],
+    vendorId: '',
+    vendorName: '',
+    purchaseOrderNumber: '',
+    purchaseOrderDate: new Date().toLocaleDateString('en-GB'), // dd/mm/yyyy
+    deliveryDate: '',
+    items: [],
     subTotal: 0,
     tax: 18, // Default 18%
     adjustment: 0,
     total: 0,
-    customerNotes: ''
+    vendorNotes: ''
   });
 
-  const customerRef = useRef(null);
+  const vendorRef = useRef(null);
 
   useEffect(() => {
     const handleClickOutside = (event) => {
-      if (customerRef.current && !customerRef.current.contains(event.target)) {
-        setShowCustomerDropdown(false);
+      if (vendorRef.current && !vendorRef.current.contains(event.target)) {
+        setShowVendorDropdown(false);
       }
     };
     document.addEventListener('mousedown', handleClickOutside);
@@ -72,21 +75,21 @@ const StoreOrderModal = ({ isOpen, onClose }) => {
 
   useEffect(() => {
     if (isOpen) {
-      fetchCustomers();
+      fetchVendors();
       fetchProducts();
       if (orderSettings.mode === 'auto') {
-        generateSONumber();
+        generatePONumber();
       }
     }
   }, [isOpen]);
 
-  const fetchCustomers = async () => {
+  const fetchVendors = async () => {
     try {
-      const q = query(collection(db, 'storeCustomers'), orderBy('fullName'));
+      const q = query(collection(db, 'storeVendors'), orderBy('vendorName'));
       const snapshot = await getDocs(q);
-      setCustomers(snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() })));
+      setVendors(snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() })));
     } catch (error) {
-      console.error("Error fetching customers:", error);
+      console.error("Error fetching vendors:", error);
     }
   };
 
@@ -99,16 +102,16 @@ const StoreOrderModal = ({ isOpen, onClose }) => {
     }
   };
 
-  const generateSONumber = async () => {
+  const generatePONumber = async () => {
     try {
-      const q = query(collection(db, 'storeOrders'), orderBy('createdAt', 'desc'), limit(1));
+      const q = query(collection(db, 'purchaseOrders'), orderBy('createdAt', 'desc'), limit(1));
       const snapshot = await getDocs(q);
       let nextNum = 1;
       
       if (!snapshot.empty) {
         const lastOrder = snapshot.docs[0].data();
-        if (lastOrder.saleOrderNumber && lastOrder.saleOrderNumber.includes(orderSettings.prefix)) {
-           const numPart = lastOrder.saleOrderNumber.split(orderSettings.prefix)[1];
+        if (lastOrder.purchaseOrderNumber && lastOrder.purchaseOrderNumber.includes(orderSettings.prefix)) {
+           const numPart = lastOrder.purchaseOrderNumber.split(orderSettings.prefix)[1];
            nextNum = (parseInt(numPart) || 0) + 1;
         }
       } else {
@@ -116,18 +119,18 @@ const StoreOrderModal = ({ isOpen, onClose }) => {
       }
       
       const formattedNum = `${orderSettings.prefix}${nextNum.toString().padStart(orderSettings.nextNumber.length, '0')}`;
-      setFormData(prev => ({ ...prev, saleOrderNumber: formattedNum }));
+      setFormData(prev => ({ ...prev, purchaseOrderNumber: formattedNum }));
     } catch (error) {
-      console.error("Error generating SO number:", error);
+      console.error("Error generating PO number:", error);
       const fallback = `${orderSettings.prefix}${orderSettings.nextNumber}`;
-      setFormData(prev => ({ ...prev, saleOrderNumber: fallback }));
+      setFormData(prev => ({ ...prev, purchaseOrderNumber: fallback }));
     }
   };
 
   const handleAddItem = () => {
     setFormData(prev => ({
       ...prev,
-      items: [...prev.items, { id: Date.now(), productId: '', name: '', quantity: 1, rate: 0, discount: 0, amount: 0 }]
+      items: [...prev.items, { id: Date.now(), productId: '', name: '', quantity: 1, rate: 0, amount: 0 }]
     }));
   };
 
@@ -138,7 +141,6 @@ const StoreOrderModal = ({ isOpen, onClose }) => {
       name: p.name,
       quantity: 1,
       rate: p.price || 0,
-      discount: 0,
       amount: p.price || 0
     }));
 
@@ -154,13 +156,6 @@ const StoreOrderModal = ({ isOpen, onClose }) => {
   };
 
   const handleRemoveItem = (id) => {
-    if (formData.items.length === 1) {
-      setFormData(prev => ({
-        ...prev,
-        items: [{ id: Date.now(), productId: '', name: '', quantity: 1, rate: 0, discount: 0, amount: 0 }]
-      }));
-      return;
-    }
     setFormData(prev => ({
       ...prev,
       items: prev.items.filter(item => item.id !== id)
@@ -178,8 +173,7 @@ const StoreOrderModal = ({ isOpen, onClose }) => {
             updatedItem.rate = prod.price || 0;
           }
         }
-        const baseAmount = updatedItem.rate * updatedItem.quantity;
-        updatedItem.amount = baseAmount - (baseAmount * (updatedItem.discount / 100));
+        updatedItem.amount = updatedItem.rate * updatedItem.quantity;
         return updatedItem;
       }
       return item;
@@ -195,8 +189,8 @@ const StoreOrderModal = ({ isOpen, onClose }) => {
 
   const handleSubmit = async (e) => {
     e.preventDefault();
-    if (!formData.customerId) {
-      toast.error("Please select a customer");
+    if (!formData.vendorId) {
+      toast.error("Please select a vendor");
       return;
     }
     if (formData.items.length === 0 || formData.items.every(item => !item.productId)) {
@@ -206,13 +200,13 @@ const StoreOrderModal = ({ isOpen, onClose }) => {
 
     setLoading(true);
     try {
-      await addDoc(collection(db, 'storeOrders'), {
+      await addDoc(collection(db, 'purchaseOrders'), {
         ...formData,
         items: formData.items.filter(item => item.productId), // Filter out empty rows
         createdAt: serverTimestamp(),
         status: 'Confirmed'
       });
-      toast.success("Order placed successfully!");
+      toast.success("Purchase Order created successfully!");
       onClose();
     } catch (error) {
       console.error("Error saving order:", error);
@@ -222,16 +216,16 @@ const StoreOrderModal = ({ isOpen, onClose }) => {
     }
   };
 
-  const handleClearCustomer = () => {
-    setFormData(prev => ({ ...prev, customerId: '', customerName: '' }));
-    setSearchCustomer('');
+  const handleClearVendor = () => {
+    setFormData(prev => ({ ...prev, vendorId: '', vendorName: '' }));
+    setSearchVendor('');
   };
 
   const handleSettingsSave = (e) => {
     e.preventDefault();
     setIsSettingsOpen(false);
     if (orderSettings.mode === 'auto') {
-      generateSONumber();
+      generatePONumber();
     }
   };
 
@@ -248,8 +242,8 @@ const StoreOrderModal = ({ isOpen, onClose }) => {
         {/* Header */}
         <div className="px-8 py-6 border-b border-gray-100 flex items-center justify-between bg-gradient-to-r from-gray-50 to-white flex-shrink-0">
           <div>
-            <h2 className="text-[20px] font-bold text-gray-900 tracking-tight">New Shop Order</h2>
-            <p className="text-[12px] text-gray-400 font-medium">Create a manual sale for walk-in customers</p>
+            <h2 className="text-[20px] font-bold text-gray-900 tracking-tight">New Purchase Order</h2>
+            <p className="text-[12px] text-gray-400 font-medium">Create a manual purchase order for vendors</p>
           </div>
           <button 
             onClick={onClose}
@@ -262,39 +256,29 @@ const StoreOrderModal = ({ isOpen, onClose }) => {
         <form onSubmit={handleSubmit} className="flex-1 overflow-y-auto p-8 space-y-8 custom-scrollbar">
           
           {/* Top Section: Customer & Details */}
-          <div className="grid grid-cols-1 md:grid-cols-3 gap-8">
-            {/* Customer Selection */}
-            <div className="space-y-2 relative" ref={customerRef}>
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-8">
+            {/* Vendor Selection */}
+            <div className="space-y-2 relative" ref={vendorRef}>
               <div className="flex items-center justify-between px-1">
-                <label className="text-[11px] font-bold text-gray-400 uppercase tracking-widest">Customer Name *</label>
-                <button 
-                  type="button"
-                  onClick={() => {
-                    setShowCustomerDropdown(false);
-                    setIsCustomerModalOpen(true);
-                  }}
-                  className="w-5 h-5 flex items-center justify-center bg-[#1BAFAF] text-white rounded-md hover:bg-[#158e8e] transition-colors"
-                >
-                  <Plus size={12} strokeWidth={3} />
-                </button>
+                <label className="text-[11px] font-bold text-gray-400 uppercase tracking-widest">Vendor Name *</label>
               </div>
               <div className="relative group">
                 <User className="absolute left-4 top-1/2 -translate-y-1/2 w-4 h-4 text-gray-300 group-focus-within:text-[#1BAFAF] transition-colors" />
                 <input
                   type="text"
-                  value={searchCustomer || formData.customerName}
+                  value={searchVendor || formData.vendorName}
                   onChange={(e) => {
-                    setSearchCustomer(e.target.value);
-                    setShowCustomerDropdown(true);
+                    setSearchVendor(e.target.value);
+                    setShowVendorDropdown(true);
                   }}
-                  onFocus={() => setShowCustomerDropdown(true)}
-                  placeholder="Select or Search Customer"
+                  onFocus={() => setShowVendorDropdown(true)}
+                  placeholder="Select or Search Vendor"
                   className="w-full bg-gray-50 border-2 border-transparent py-3.5 pl-12 pr-10 text-[14px] font-medium rounded-2xl outline-none focus:bg-white focus:border-[#1BAFAF]/20 transition-all"
                 />
-                {(formData.customerId || searchCustomer) && (
+                {(formData.vendorId || searchVendor) && (
                   <button 
                     type="button"
-                    onClick={handleClearCustomer}
+                    onClick={handleClearVendor}
                     className="absolute right-4 top-1/2 -translate-y-1/2 text-gray-300 hover:text-gray-500 transition-colors"
                   >
                     <X size={16} />
@@ -302,35 +286,36 @@ const StoreOrderModal = ({ isOpen, onClose }) => {
                 )}
               </div>
               
-              {showCustomerDropdown && (
+              {showVendorDropdown && (
                 <div className="absolute top-full left-0 right-0 mt-2 bg-white border border-gray-100 rounded-2xl shadow-xl z-[110] py-2 max-h-48 overflow-y-auto custom-scrollbar">
-                  {customers
-                    .filter(c => c.fullName.toLowerCase().includes(searchCustomer.toLowerCase()))
-                    .map(c => (
+                  {vendors
+                    .filter(v => v.vendorName?.toLowerCase().includes(searchVendor.toLowerCase()))
+                    .map(v => (
                       <button
-                        key={c.id}
+                        key={v.id}
                         type="button"
                         onClick={() => {
-                          setFormData({ ...formData, customerId: c.id, customerName: c.fullName });
-                          setSearchCustomer(c.fullName);
-                          setShowCustomerDropdown(false);
+                          setFormData({ ...formData, vendorId: v.id, vendorName: v.vendorName });
+                          setSearchVendor(v.vendorName);
+                          setShowVendorDropdown(false);
                         }}
-                        className="w-full text-left px-4 py-3 hover:bg-gray-50 text-[14px] font-medium text-gray-700 transition-colors"
+                        className="w-full text-left px-4 py-3 hover:bg-[#EAF6F6] hover:text-[#1BAFAF] text-[14px] font-bold text-gray-700 transition-all flex items-center justify-between group"
                       >
-                        {c.fullName}
+                        <span>{v.vendorName}</span>
+                        <div className="w-1.5 h-1.5 rounded-full bg-[#1BAFAF] opacity-0 group-hover:opacity-100 transition-opacity" />
                       </button>
                     ))}
-                  {customers.length === 0 && (
-                    <p className="px-4 py-2 text-[12px] text-gray-400">No customers found</p>
+                  {vendors.length === 0 && (
+                    <p className="px-4 py-2 text-[12px] text-gray-400">No vendors found</p>
                   )}
                 </div>
               )}
             </div>
 
-            {/* Sales Order # */}
+            {/* Purchase Order # */}
             <div className="space-y-2 relative">
               <label className="text-[11px] font-bold text-gray-400 uppercase tracking-widest ml-1 flex items-center gap-2">
-                Sales Order# * 
+                Purchase Order# * 
                 <Info size={12} className="text-gray-300" />
               </label>
               <div className="relative group">
@@ -341,8 +326,8 @@ const StoreOrderModal = ({ isOpen, onClose }) => {
                 <input
                   type="text"
                   required
-                  value={formData.saleOrderNumber}
-                  onChange={(e) => setFormData({ ...formData, saleOrderNumber: e.target.value })}
+                  value={formData.purchaseOrderNumber}
+                  onChange={(e) => setFormData({ ...formData, purchaseOrderNumber: e.target.value })}
                   readOnly={orderSettings.mode === 'auto'}
                   className={`w-full bg-gray-50 border-2 border-transparent py-3.5 px-4 text-[14px] font-bold text-gray-900 rounded-2xl outline-none ${orderSettings.mode === 'auto' ? 'cursor-not-allowed' : 'focus:bg-white focus:border-[#1BAFAF]/20'}`}
                 />
@@ -353,7 +338,7 @@ const StoreOrderModal = ({ isOpen, onClose }) => {
                 <div className="absolute top-full right-0 mt-2 w-[400px] bg-white border border-gray-100 rounded-3xl shadow-2xl z-[120] overflow-hidden animate-in slide-in-from-top-2 duration-200">
                   <div className="p-6 space-y-6">
                     <p className="text-[12px] text-gray-500 font-medium leading-relaxed">
-                      Your sales order numbers are set on auto-generate mode to save your time. Are you sure about changing this setting?
+                      Your purchase order numbers are set on auto-generate mode to save your time. Are you sure about changing this setting?
                     </p>
                     
                     <div className="space-y-4">
@@ -362,7 +347,7 @@ const StoreOrderModal = ({ isOpen, onClose }) => {
                         <div className="pt-0.5">
                           <input 
                             type="radio" 
-                            name="so_mode"
+                            name="po_mode"
                             checked={orderSettings.mode === 'auto'}
                             onChange={() => setOrderSettings({ ...orderSettings, mode: 'auto' })}
                             className="hidden" 
@@ -373,7 +358,7 @@ const StoreOrderModal = ({ isOpen, onClose }) => {
                         </div>
                         <div className="flex-1">
                           <div className="flex items-center gap-2 mb-3">
-                            <span className="text-[13px] font-bold text-gray-700">Continue auto-generating sales order numbers</span>
+                            <span className="text-[13px] font-bold text-gray-700">Continue auto-generating purchase order numbers</span>
                             <Info size={12} className="text-gray-300" />
                           </div>
                           
@@ -406,7 +391,7 @@ const StoreOrderModal = ({ isOpen, onClose }) => {
                       <label className="flex items-center gap-3 cursor-pointer">
                         <input 
                           type="radio" 
-                          name="so_mode"
+                          name="po_mode"
                           checked={orderSettings.mode === 'manual'}
                           onChange={() => setOrderSettings({ ...orderSettings, mode: 'manual' })}
                           className="hidden" 
@@ -414,7 +399,7 @@ const StoreOrderModal = ({ isOpen, onClose }) => {
                         <div className={`w-5 h-5 rounded-full border-2 flex items-center justify-center transition-all ${orderSettings.mode === 'manual' ? 'border-[#1BAFAF]' : 'border-gray-200'}`}>
                           {orderSettings.mode === 'manual' && <div className="w-2.5 h-2.5 rounded-full bg-[#1BAFAF]" />}
                         </div>
-                        <span className="text-[13px] font-bold text-gray-700">Enter sales order numbers manually</span>
+                        <span className="text-[13px] font-bold text-gray-700">Enter purchase order numbers manually</span>
                       </label>
                     </div>
 
@@ -437,16 +422,30 @@ const StoreOrderModal = ({ isOpen, onClose }) => {
               )}
             </div>
 
-            {/* Sale Order Date */}
+            {/* Purchase Order Date */}
             <div className="space-y-2">
-              <label className="text-[11px] font-bold text-gray-400 uppercase tracking-widest ml-1">Sale Order Date</label>
+              <label className="text-[11px] font-bold text-gray-400 uppercase tracking-widest ml-1">Date</label>
               <div className="relative group">
                 <Calendar className="absolute left-4 top-1/2 -translate-y-1/2 w-4 h-4 text-gray-300" />
                 <input
                   type="text"
-                  value={formData.saleOrderDate}
+                  value={formData.purchaseOrderDate}
                   readOnly
                   className="w-full bg-gray-100 border-2 border-transparent py-3.5 pl-12 pr-4 text-[14px] font-medium rounded-2xl outline-none text-gray-500 cursor-not-allowed"
+                />
+              </div>
+            </div>
+
+            {/* Delivery Date */}
+            <div className="space-y-2">
+              <label className="text-[11px] font-bold text-gray-400 uppercase tracking-widest ml-1">Delivery Date</label>
+              <div className="relative group">
+                <Calendar className="absolute left-4 top-1/2 -translate-y-1/2 w-4 h-4 text-gray-300" />
+                <input
+                  type="date"
+                  value={formData.deliveryDate}
+                  onChange={(e) => setFormData({ ...formData, deliveryDate: e.target.value })}
+                  className="w-full bg-gray-50 border-2 border-transparent py-3.5 pl-12 pr-4 text-[14px] font-medium rounded-2xl outline-none focus:bg-white focus:border-[#1BAFAF]/20 transition-all"
                 />
               </div>
             </div>
@@ -464,7 +463,6 @@ const StoreOrderModal = ({ isOpen, onClose }) => {
                     <th className="px-6 py-4">Item Details</th>
                     <th className="px-6 py-4 w-24 text-center">Quantity</th>
                     <th className="px-6 py-4 w-32 text-center">Rate</th>
-                    <th className="px-6 py-4 w-32 text-center">Discount (%)</th>
                     <th className="px-6 py-4 w-32 text-right">Amount</th>
                     <th className="px-6 py-4 w-16"></th>
                   </tr>
@@ -473,16 +471,7 @@ const StoreOrderModal = ({ isOpen, onClose }) => {
                   {formData.items.map((item, index) => (
                     <tr key={item.id} className="group transition-colors hover:bg-gray-50/30">
                       <td className="px-6 py-4">
-                        <select
-                          value={item.productId}
-                          onChange={(e) => handleItemChange(item.id, 'productId', e.target.value)}
-                          className="w-full bg-transparent border-none outline-none text-[14px] font-medium text-gray-700 appearance-none cursor-pointer"
-                        >
-                          <option value="">Select an item</option>
-                          {products.map(p => (
-                            <option key={p.id} value={p.id}>{p.name}</option>
-                          ))}
-                        </select>
+                        <span className="text-[14px] font-medium text-gray-700">{item.name}</span>
                       </td>
                       <td className="px-6 py-4">
                         <input
@@ -500,17 +489,7 @@ const StoreOrderModal = ({ isOpen, onClose }) => {
                           className="w-full bg-transparent text-center border-none outline-none text-[14px] font-bold text-gray-900"
                         />
                       </td>
-                      <td className="px-6 py-4">
-                        <div className="flex items-center justify-center gap-1">
-                          <input
-                            type="number"
-                            value={item.discount}
-                            onChange={(e) => handleItemChange(item.id, 'discount', parseFloat(e.target.value) || 0)}
-                            className="w-12 bg-transparent text-center border-none outline-none text-[14px] font-bold text-gray-900"
-                          />
-                          <span className="text-[14px] text-gray-400">%</span>
-                        </div>
-                      </td>
+
                       <td className="px-6 py-4 text-right">
                         <span className="text-[14px] font-black text-gray-900">₹{item.amount.toFixed(2)}</span>
                       </td>
@@ -531,38 +510,17 @@ const StoreOrderModal = ({ isOpen, onClose }) => {
             <div className="p-4 bg-gray-50/30 flex items-center gap-3">
               <button
                 type="button"
-                onClick={handleAddItem}
-                className="flex items-center gap-2 px-4 py-2 bg-white border border-gray-100 rounded-xl text-[12px] font-bold text-gray-600 hover:bg-gray-50 transition-all shadow-sm active:scale-95"
-              >
-                <Plus size={14} className="text-[#1BAFAF]" />
-                Add New Row
-              </button>
-              <button
-                type="button"
                 onClick={() => setIsBulkModalOpen(true)}
                 className="flex items-center gap-2 px-4 py-2 bg-white border border-gray-100 rounded-xl text-[12px] font-bold text-gray-600 hover:bg-gray-50 transition-all shadow-sm active:scale-95"
               >
                 <Search size={14} className="text-[#1BAFAF]" />
-                Add Items in Bulk
+                Add Items
               </button>
             </div>
           </div>
 
-          {/* Bottom Section: Notes & Summary */}
-          <div className="grid grid-cols-1 md:grid-cols-2 gap-12 pt-4">
-            <div className="space-y-4">
-              <div className="space-y-1.5">
-                <label className="text-[11px] font-bold text-gray-400 uppercase tracking-widest ml-1">Customer Notes</label>
-                <textarea
-                  rows="4"
-                  value={formData.customerNotes}
-                  onChange={(e) => setFormData({ ...formData, customerNotes: e.target.value })}
-                  placeholder="Enter any notes to be displayed in your transaction"
-                  className="w-full bg-gray-50 border-2 border-transparent p-4 text-[14px] font-medium rounded-2xl outline-none focus:bg-white focus:border-[#1BAFAF]/20 transition-all resize-none"
-                />
-              </div>
-            </div>
-
+          {/* Bottom Section: Summary */}
+          <div className="pt-4">
             <div className="bg-gray-50/50 rounded-[32px] p-8 space-y-6">
               <div className="flex items-center justify-between">
                 <span className="text-[14px] font-bold text-gray-500">Sub Total</span>
@@ -580,15 +538,15 @@ const StoreOrderModal = ({ isOpen, onClose }) => {
                      <span className="text-[12px] font-bold text-gray-500 uppercase tracking-widest">TCS</span>
                    </div>
                 </div>
-                <select 
-                  value={formData.tax}
-                  onChange={(e) => setFormData({ ...formData, tax: parseFloat(e.target.value) || 0 })}
-                  className="bg-white border border-gray-100 rounded-xl px-3 py-1.5 text-[12px] font-bold text-gray-600 outline-none"
-                >
-                  <option value="18">GST 18%</option>
-                  <option value="5">GST 5%</option>
-                  <option value="0">No Tax</option>
-                </select>
+                <CustomSelect
+                  value={`GST ${formData.tax}%`}
+                  onChange={(val) => {
+                    const num = parseFloat(val.replace('GST ', '').replace('%', '')) || 0;
+                    setFormData({ ...formData, tax: num });
+                  }}
+                  options={['GST 18%', 'GST 5%', 'No Tax']}
+                  className="w-32"
+                />
               </div>
 
               <div className="flex items-center justify-between gap-8">
@@ -614,7 +572,7 @@ const StoreOrderModal = ({ isOpen, onClose }) => {
           </div>
 
           {/* Footer Buttons */}
-          <div className="pt-8 border-t border-gray-50 flex gap-4">
+          <div className="pt-8 border-t border-gray-50 flex justify-end gap-4">
             <button
               type="button"
               onClick={onClose}
@@ -625,7 +583,7 @@ const StoreOrderModal = ({ isOpen, onClose }) => {
             <button
               type="submit"
               disabled={loading}
-              className="flex-1 py-4 text-[14px] font-bold text-white bg-[#1BAFAF] rounded-2xl hover:bg-[#158e8e] transition-all shadow-lg shadow-[#1BAFAF]/20 active:scale-95 disabled:opacity-50 disabled:scale-100 flex items-center justify-center gap-2"
+              className="px-12 py-4 text-[14px] font-bold text-white bg-[#1BAFAF] rounded-2xl hover:bg-[#158e8e] transition-all shadow-lg shadow-[#1BAFAF]/20 active:scale-95 disabled:opacity-50 disabled:scale-100 flex items-center justify-center gap-2"
             >
               {loading ? <Loader2 className="w-4 h-4 animate-spin" /> : null}
               {loading ? 'Processing...' : 'Place Order'}
@@ -634,21 +592,22 @@ const StoreOrderModal = ({ isOpen, onClose }) => {
         </form>
       </div>
 
-      {/* Add Customer Modal */}
-      <StoreCustomerModal 
-        isOpen={isCustomerModalOpen}
-        onClose={() => {
-          setIsCustomerModalOpen(false);
-          fetchCustomers(); // Refresh list after adding
-        }}
-      />
-
       {/* Bulk Item Selection Modal */}
       <BulkItemModal 
         isOpen={isBulkModalOpen}
         onClose={() => setIsBulkModalOpen(false)}
         products={products}
         onAdd={handleBulkAdd}
+        onAddProduct={() => setIsProductModalOpen(true)}
+      />
+
+      {/* Add Product Modal */}
+      <ProductFormModal
+        isOpen={isProductModalOpen}
+        onClose={() => {
+          setIsProductModalOpen(false);
+          fetchProducts();
+        }}
       />
     </div>
   );

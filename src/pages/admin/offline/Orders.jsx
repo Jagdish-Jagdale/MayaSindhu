@@ -26,15 +26,15 @@ import {
 import toast from 'react-hot-toast';
 import StoreOrderModal from '../../../components/admin/offline/StoreOrderModal';
 
-export default function OfflineOrders() {
+export default function PurchaseOrders() {
   const [orders, setOrders] = useState([]);
   const [loading, setLoading] = useState(true);
   const [searchTerm, setSearchTerm] = useState('');
   const [isModalOpen, setIsModalOpen] = useState(false);
 
   useEffect(() => {
-    // Note: We use 'storeOrders' as requested
-    const q = query(collection(db, 'storeOrders'), orderBy('createdAt', 'desc'));
+    // Note: We use 'purchaseOrders' as requested
+    const q = query(collection(db, 'purchaseOrders'), orderBy('createdAt', 'desc'));
     const unsubscribe = onSnapshot(q, (snapshot) => {
       setOrders(snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() })));
       setLoading(false);
@@ -50,7 +50,7 @@ export default function OfflineOrders() {
   const handleDelete = async (id) => {
     if (!window.confirm("Are you sure you want to delete this order?")) return;
     try {
-      await deleteDoc(doc(db, 'storeOrders', id));
+      await deleteDoc(doc(db, 'purchaseOrders', id));
       toast.success("Order deleted successfully");
     } catch (error) {
       console.error("Error deleting order:", error);
@@ -77,8 +77,8 @@ export default function OfflineOrders() {
   }
 
   const filteredOrders = orders.filter(o => 
-    (o.customerName || '').toLowerCase().includes(searchTerm.toLowerCase()) ||
-    (o.saleOrderNumber || '').toLowerCase().includes(searchTerm.toLowerCase())
+    (o.vendorName || '').toLowerCase().includes(searchTerm.toLowerCase()) ||
+    (o.purchaseOrderNumber || '').toLowerCase().includes(searchTerm.toLowerCase())
   );
 
   const totalVolume = orders.reduce((acc, curr) => acc + (curr.total || 0), 0);
@@ -89,15 +89,15 @@ export default function OfflineOrders() {
       {/* Header */}
       <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
         <div>
-          <h1 className="text-[22px] font-semibold text-gray-900 tracking-tight">Shop Orders</h1>
-          <p className="text-[12px] text-gray-400 font-medium tracking-tight">Manage manual sales and walk-in customer records</p>
+          <h1 className="text-[22px] font-semibold text-gray-900 tracking-tight">Purchase Orders</h1>
+          <p className="text-[12px] text-gray-400 font-medium tracking-tight">Manage purchase orders from vendors</p>
         </div>
         <button 
           onClick={() => setIsModalOpen(true)}
           className="flex items-center gap-2 bg-[#1BAFAF] hover:bg-[#17a0a0] text-white px-5 py-2.5 rounded-xl text-[13px] font-bold transition-all shadow-sm shadow-[#1BAFAF]/10 active:scale-95"
         >
           <Plus size={18} />
-          New Shop Order
+          New Purchase Order
         </button>
       </div>
 
@@ -107,7 +107,7 @@ export default function OfflineOrders() {
             <Search className="absolute left-4 top-1/2 -translate-y-1/2 w-4 h-4 text-gray-300 group-focus-within:text-[#1BAFAF] transition-colors" />
             <input 
                type="text" 
-               placeholder="Search by SO number or customer..."
+               placeholder="Search by PO number or vendor..."
                value={searchTerm}
                onChange={(e) => setSearchTerm(e.target.value)}
                className="w-full bg-gray-50 border-none py-2.5 pl-11 pr-4 text-[13px] rounded-xl outline-none focus:bg-white transition-all font-medium"
@@ -131,7 +131,7 @@ export default function OfflineOrders() {
                <thead>
                   <tr className="border-b border-gray-100 bg-gray-50/30">
                      <th className="px-8 py-5 text-[11px] font-black text-gray-400 uppercase tracking-[0.2em]">Record ID</th>
-                     <th className="px-8 py-5 text-[11px] font-black text-gray-400 uppercase tracking-[0.2em]">Customer</th>
+                     <th className="px-8 py-5 text-[11px] font-black text-gray-400 uppercase tracking-[0.2em]">Vendor</th>
                      <th className="px-8 py-5 text-[11px] font-black text-gray-400 uppercase tracking-[0.2em]">Date</th>
                      <th className="px-8 py-5 text-[11px] font-black text-gray-400 uppercase tracking-[0.2em]">Amount</th>
                      <th className="px-8 py-5 text-[11px] font-black text-gray-400 uppercase tracking-[0.2em]">Status</th>
@@ -142,21 +142,21 @@ export default function OfflineOrders() {
                   {filteredOrders.length > 0 ? filteredOrders.map(order => (
                     <tr key={order.id} className="hover:bg-gray-50/50 transition-all group">
                        <td className="px-8 py-5">
-                          <span className="text-[12px] font-black text-gray-300 group-hover:text-gray-500 transition-colors uppercase">{order.saleOrderNumber || `#${order.id.slice(-6)}`}</span>
+                          <span className="text-[12px] font-black text-gray-300 group-hover:text-gray-500 transition-colors uppercase">{order.purchaseOrderNumber || `#${order.id.slice(-6)}`}</span>
                        </td>
                        <td className="px-8 py-5">
                           <div className="flex items-center gap-3">
                              <div className="w-9 h-9 rounded-xl bg-gray-100 flex items-center justify-center text-gray-400 border border-white scroll-shadow">
                                 <User size={16} />
                              </div>
-                             <span className="text-[14px] font-bold text-gray-900">{order.customerName || 'Walk-in'}</span>
+                             <span className="text-[14px] font-bold text-gray-900">{order.vendorName || 'Vendor'}</span>
                           </div>
                        </td>
                        <td className="px-8 py-5">
                           <div className="flex items-center gap-2 text-gray-400">
                              <Clock size={12} />
                              <span className="text-[12px] font-medium">
-                                {order.saleOrderDate || formatDate(order.createdAt)}
+                                {order.purchaseOrderDate || formatDate(order.createdAt)}
                              </span>
                           </div>
                        </td>
@@ -181,7 +181,7 @@ export default function OfflineOrders() {
                           <div className="w-16 h-16 bg-gray-50 rounded-full flex items-center justify-center mx-auto mb-4 text-gray-200">
                              <ShoppingBag size={32} />
                           </div>
-                          <p className="text-[14px] font-bold text-gray-400 uppercase tracking-widest">No Shop Orders found</p>
+                          <p className="text-[14px] font-bold text-gray-400 uppercase tracking-widest">No Purchase Orders found</p>
                        </td>
                     </tr>
                   )}

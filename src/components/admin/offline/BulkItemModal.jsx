@@ -8,7 +8,7 @@ import {
   Loader2
 } from 'lucide-react';
 
-const BulkItemModal = ({ isOpen, onClose, products, onAdd }) => {
+const BulkItemModal = ({ isOpen, onClose, products, onAdd, onAddProduct }) => {
   const [searchTerm, setSearchTerm] = useState('');
   const [selectedIds, setSelectedIds] = useState([]);
 
@@ -49,15 +49,24 @@ const BulkItemModal = ({ isOpen, onClose, products, onAdd }) => {
         {/* Header */}
         <div className="px-8 py-6 border-b border-gray-100 flex items-center justify-between bg-white flex-shrink-0">
           <div>
-            <h2 className="text-[18px] font-bold text-gray-900">Add Items in Bulk</h2>
+            <h2 className="text-[18px] font-bold text-gray-900">Add Items</h2>
             <p className="text-[12px] text-gray-400 font-medium">Select multiple products to add to your order</p>
           </div>
-          <button 
-            onClick={onClose}
-            className="w-10 h-10 flex items-center justify-center rounded-2xl text-gray-400 hover:bg-gray-100 transition-all"
-          >
-            <X size={20} />
-          </button>
+          <div className="flex items-center gap-3">
+            <button 
+              onClick={onAddProduct}
+              className="w-10 h-10 flex items-center justify-center rounded-2xl bg-[#1BAFAF] text-white hover:bg-[#158e8e] transition-all shadow-sm"
+              title="Add New Product"
+            >
+              <Plus size={20} strokeWidth={3} />
+            </button>
+            <button 
+              onClick={onClose}
+              className="w-10 h-10 flex items-center justify-center rounded-2xl text-gray-400 hover:bg-gray-100 transition-all"
+            >
+              <X size={20} />
+            </button>
+          </div>
         </div>
 
         {/* Search Bar */}

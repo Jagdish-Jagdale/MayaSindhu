@@ -37,6 +37,7 @@ import OfflineInventoryLogs from './pages/admin/offline/InventoryLogs';
 import StoreCustomers from './pages/admin/offline/StoreCustomers';
 import Vendors from './pages/admin/offline/Vendors';
 import Invoices from './pages/admin/offline/Invoices';
+import Returns from './pages/admin/offline/Returns';
 
 // Super Admin Pages
 import SuperAdminLayout from './layouts/SuperAdminLayout';
@@ -162,7 +163,7 @@ function App() {
             <Route path="customers" element={<StoreCustomers />} />
             <Route path="users" element={<Navigate to="/admin-offline/customers" replace />} />
             <Route path="invoice" element={<Invoices />} />
-            <Route path="return" element={<OfflineOrders />} />
+            <Route path="return" element={<Returns />} />
             <Route path="vendors" element={<Vendors />} />
             <Route path="purchase-orders" element={<OfflineOrders />} />
           </Route>

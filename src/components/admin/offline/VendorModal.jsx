@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useRef } from 'react';
 import { 
   X, 
   Loader2, 
@@ -11,7 +11,8 @@ import {
   MapPin, 
   Upload,
   Globe,
-  Info
+  Info,
+  ChevronDown
 } from 'lucide-react';
 import { db } from '../../../firebase';
 import { 
@@ -22,6 +23,7 @@ import {
   serverTimestamp 
 } from 'firebase/firestore';
 import toast from 'react-hot-toast';
+import CustomSelect from '../../common/CustomSelect';
 
 const VendorModal = ({ isOpen, onClose, vendor = null }) => {
   const [loading, setLoading] = useState(false);
@@ -102,6 +104,23 @@ const VendorModal = ({ isOpen, onClose, vendor = null }) => {
       return;
     }
 
+    if (formData.phone && formData.phone.length !== 10) {
+      toast.error("Primary Phone must be exactly 10 digits");
+      return;
+    }
+
+    const panRegex = /^[A-Z]{5}[0-9]{4}[A-Z]{1}$/;
+    if (formData.pan && !panRegex.test(formData.pan)) {
+      toast.error("Invalid PAN format (e.g. ABCDE1234F)");
+      return;
+    }
+
+    const pincodeRegex = /^[1-9][0-9]{5}$/;
+    if (formData.pincode && !pincodeRegex.test(formData.pincode)) {
+      toast.error("Invalid Pincode (6 digits required)");
+      return;
+    }
+
     setLoading(true);
     try {
       if (vendor) {
@@ -113,8 +132,7 @@ const VendorModal = ({ isOpen, onClose, vendor = null }) => {
       } else {
         await addDoc(collection(db, 'storeVendors'), {
           ...formData,
-          createdAt: serverTimestamp(),
-          updatedAt: serverTimestamp()
+          createdAt: serverTimestamp()
         });
         toast.success("Vendor added successfully");
       }
@@ -127,7 +145,7 @@ const VendorModal = ({ isOpen, onClose, vendor = null }) => {
     }
   };
 
-  const tabs = ['Other Details', 'Address', 'Contact Persons', 'Bank Details', 'Custom Fields', 'Remarks'];
+  const tabs = ['Other Details', 'Address'];
 
   return (
     <div className="fixed inset-0 z-[100] flex items-center justify-center p-4">
@@ -136,14 +154,12 @@ const VendorModal = ({ isOpen, onClose, vendor = null }) => {
         onClick={onClose}
       />
       
-      <div className="relative w-full max-w-4xl bg-white rounded-[32px] shadow-2xl overflow-hidden animate-in zoom-in-95 duration-300 max-h-[95vh] flex flex-col">
+      <div className="relative w-full max-w-4xl bg-white rounded-[32px] shadow-2xl overflow-hidden animate-in zoom-in-95 duration-300 max-h-[90vh] flex flex-col">
         {/* Header */}
         <div className="px-8 py-6 border-b border-gray-100 flex items-center justify-between bg-gradient-to-r from-gray-50 to-white flex-shrink-0">
           <div>
-            <h2 className="text-[20px] font-bold text-gray-900 tracking-tight">
-              {vendor ? 'Edit Vendor' : 'New Vendor'}
-            </h2>
-            <p className="text-[12px] text-gray-400 font-medium">Register a new supplier or service provider</p>
+            <h2 className="text-[20px] font-bold text-gray-900 tracking-tight">{vendor ? 'Edit Vendor' : 'Add New Vendor'}</h2>
+            <p className="text-[12px] text-gray-400 font-medium">Manage your vendor relationships efficiently</p>
           </div>
           <button 
             onClick={onClose}
@@ -153,10 +169,9 @@ const VendorModal = ({ isOpen, onClose, vendor = null }) => {
           </button>
         </div>
 
-        <form onSubmit={handleSubmit} className="flex-1 overflow-y-auto p-8 custom-scrollbar">
+        <form onSubmit={handleSubmit} className="flex-1 overflow-y-auto p-8 space-y-8 custom-scrollbar">
           
-          {/* Primary Details Section */}
-          <div className="grid grid-cols-1 md:grid-cols-2 gap-6 mb-10">
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-8">
             <div className="space-y-4">
               <div className="space-y-1.5">
                 <label className="text-[11px] font-bold text-gray-400 uppercase tracking-widest ml-1">Vendor Name *</label>
@@ -167,7 +182,7 @@ const VendorModal = ({ isOpen, onClose, vendor = null }) => {
                     required
                     value={formData.vendorName}
                     onChange={(e) => setFormData({ ...formData, vendorName: e.target.value })}
-                    placeholder="John Doe"
+                    placeholder="Enter vendor full name"
                     className="w-full bg-gray-50 border-2 border-transparent py-3.5 pl-12 pr-4 text-[14px] font-medium rounded-2xl outline-none focus:bg-white focus:border-[#1BAFAF]/20 transition-all"
                   />
                 </div>
@@ -223,7 +238,10 @@ const VendorModal = ({ isOpen, onClose, vendor = null }) => {
                     <input
                       type="tel"
                       value={formData.phone}
-                      onChange={(e) => setFormData({ ...formData, phone: e.target.value })}
+                      onChange={(e) => {
+                        const val = e.target.value.replace(/\D/g, '').slice(0, 10);
+                        setFormData({ ...formData, phone: val });
+                      }}
                       placeholder="9876543210"
                       className="w-full bg-gray-50 border-2 border-transparent py-3.5 pl-12 pr-4 text-[14px] font-medium rounded-2xl outline-none focus:bg-white focus:border-[#1BAFAF]/20 transition-all"
                     />
@@ -236,7 +254,10 @@ const VendorModal = ({ isOpen, onClose, vendor = null }) => {
                     <input
                       type="tel"
                       value={formData.alternatePhone}
-                      onChange={(e) => setFormData({ ...formData, alternatePhone: e.target.value })}
+                      onChange={(e) => {
+                        const val = e.target.value.replace(/\D/g, '').slice(0, 10);
+                        setFormData({ ...formData, alternatePhone: val });
+                      }}
                       placeholder="9876543211"
                       className="w-full bg-gray-50 border-2 border-transparent py-3.5 pl-12 pr-4 text-[14px] font-medium rounded-2xl outline-none focus:bg-white focus:border-[#1BAFAF]/20 transition-all"
                     />
@@ -244,22 +265,15 @@ const VendorModal = ({ isOpen, onClose, vendor = null }) => {
                 </div>
               </div>
 
-              <div className="space-y-1.5">
-                <label className="text-[11px] font-bold text-gray-400 uppercase tracking-widest ml-1">Vendor Status</label>
-                <select
-                  value={formData.status}
-                  onChange={(e) => setFormData({ ...formData, status: e.target.value })}
-                  className="w-full bg-gray-50 border-2 border-transparent py-3.5 px-4 text-[14px] font-medium rounded-2xl outline-none focus:bg-white focus:border-[#1BAFAF]/20 transition-all"
-                >
-                  <option value="Active">Active</option>
-                  <option value="Inactive">Inactive</option>
-                  <option value="Blocked">Blocked</option>
-                </select>
-              </div>
+              <CustomSelect
+                label="Vendor Status"
+                value={formData.status}
+                onChange={(val) => setFormData({ ...formData, status: val })}
+                options={['Active', 'Inactive']}
+              />
             </div>
           </div>
 
-          {/* Tabs Section */}
           <div className="space-y-6">
             <div className="flex items-center gap-1 border-b border-gray-100">
               {tabs.map(tab => (
@@ -310,50 +324,28 @@ const VendorModal = ({ isOpen, onClose, vendor = null }) => {
                         </label>
                       </div>
 
-                      <div className="space-y-2">
-                        <label className="text-[11px] font-black text-gray-400 uppercase tracking-widest">Currency</label>
-                        <select
-                          value={formData.currency}
-                          onChange={(e) => setFormData({ ...formData, currency: e.target.value })}
-                          className="w-full bg-gray-50 border border-gray-100 py-3 px-4 text-[14px] font-bold rounded-xl outline-none focus:bg-white focus:border-[#1BAFAF]/30 transition-all"
-                        >
-                          <option>INR- Indian Rupee</option>
-                          <option>USD- US Dollar</option>
-                          <option>EUR- Euro</option>
-                        </select>
-                      </div>
+                      <CustomSelect
+                        label="Currency"
+                        value={formData.currency}
+                        onChange={(val) => setFormData({ ...formData, currency: val })}
+                        options={['INR- Indian Rupee', 'USD- US Dollar', 'EUR- Euro']}
+                      />
                     </div>
 
                     <div className="space-y-6">
-                      <div className="space-y-2">
-                        <label className="text-[11px] font-black text-gray-400 uppercase tracking-widest">Payment Terms</label>
-                        <select
-                          value={formData.paymentTerms}
-                          onChange={(e) => setFormData({ ...formData, paymentTerms: e.target.value })}
-                          className="w-full bg-gray-50 border border-gray-100 py-3 px-4 text-[14px] font-bold rounded-xl outline-none focus:bg-white focus:border-[#1BAFAF]/30 transition-all"
-                        >
-                          <option>Due on Receipt</option>
-                          <option>Net 15</option>
-                          <option>Net 30</option>
-                          <option>Net 45</option>
-                          <option>Net 60</option>
-                        </select>
-                      </div>
+                      <CustomSelect
+                        label="Payment Terms"
+                        value={formData.paymentTerms}
+                        onChange={(val) => setFormData({ ...formData, paymentTerms: val })}
+                        options={['Due on Receipt', 'Net 15', 'Net 30', 'Net 45', 'Net 60']}
+                      />
 
-                      <div className="space-y-2">
-                        <label className="text-[11px] font-black text-gray-400 uppercase tracking-widest">TDS</label>
-                        <select
-                          value={formData.tds}
-                          onChange={(e) => setFormData({ ...formData, tds: e.target.value })}
-                          className="w-full bg-gray-50 border border-gray-100 py-3 px-4 text-[14px] font-bold rounded-xl outline-none focus:bg-white focus:border-[#1BAFAF]/30 transition-all"
-                        >
-                          <option>Select a Tax</option>
-                          <option>GST 18%</option>
-                          <option>GST 5%</option>
-                          <option>TDS 1%</option>
-                          <option>TDS 2%</option>
-                        </select>
-                      </div>
+                      <CustomSelect
+                        label="TDS"
+                        value={formData.tds}
+                        onChange={(val) => setFormData({ ...formData, tds: val })}
+                        options={['Select a Tax', 'GST 18%', 'GST 5%', 'TDS 1%', 'TDS 2%']}
+                      />
 
                       <div className="space-y-2">
                         <label className="text-[11px] font-black text-gray-400 uppercase tracking-widest">Documents</label>
@@ -371,102 +363,82 @@ const VendorModal = ({ isOpen, onClose, vendor = null }) => {
               )}
 
               {activeTab === 'Address' && (
-                <div className="space-y-8">
-                  <div className="space-y-2">
-                    <label className="text-[11px] font-black text-gray-400 uppercase tracking-widest flex items-center gap-2">
-                      Full Address
-                    </label>
-                    <textarea
-                      rows="3"
-                      value={formData.address}
-                      onChange={(e) => setFormData({ ...formData, address: e.target.value })}
-                      placeholder="Door No, Street Name, Area..."
-                      className="w-full bg-gray-50 border border-gray-100 py-3 px-4 text-[14px] font-bold rounded-xl outline-none focus:bg-white focus:border-[#1BAFAF]/30 transition-all resize-none"
-                    />
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-8">
+                  <div className="space-y-4 md:col-span-2">
+                    <label className="text-[11px] font-bold text-gray-400 uppercase tracking-widest ml-1">Street Address</label>
+                    <div className="relative group">
+                      <MapPin className="absolute left-4 top-4 w-4 h-4 text-gray-300 group-focus-within:text-[#1BAFAF] transition-colors" />
+                      <textarea
+                        rows="3"
+                        value={formData.address}
+                        onChange={(e) => setFormData({ ...formData, address: e.target.value })}
+                        placeholder="Street address, building, apartment..."
+                        className="w-full bg-gray-50 border-2 border-transparent py-3.5 pl-12 pr-4 text-[14px] font-medium rounded-2xl outline-none focus:bg-white focus:border-[#1BAFAF]/20 transition-all resize-none"
+                      />
+                    </div>
                   </div>
-
-                  <div className="grid grid-cols-2 gap-6">
-                    <div className="space-y-2">
-                      <label className="text-[11px] font-black text-gray-400 uppercase tracking-widest">City</label>
+                  
+                  <div className="space-y-4">
+                    <div className="space-y-1.5">
+                      <label className="text-[11px] font-bold text-gray-400 uppercase tracking-widest ml-1">City</label>
                       <input
                         type="text"
                         value={formData.city}
                         onChange={(e) => setFormData({ ...formData, city: e.target.value })}
-                        placeholder="Mumbai"
-                        className="w-full bg-gray-50 border border-gray-100 py-3 px-4 text-[14px] font-bold rounded-xl outline-none focus:bg-white focus:border-[#1BAFAF]/30 transition-all"
+                        placeholder="City"
+                        className="w-full bg-gray-50 border-2 border-transparent py-3.5 px-4 text-[14px] font-medium rounded-2xl outline-none focus:bg-white focus:border-[#1BAFAF]/20 transition-all"
                       />
                     </div>
-                    <div className="space-y-2">
-                      <label className="text-[11px] font-black text-gray-400 uppercase tracking-widest">State</label>
+                    <div className="space-y-1.5">
+                      <label className="text-[11px] font-bold text-gray-400 uppercase tracking-widest ml-1">State</label>
                       <input
                         type="text"
                         value={formData.state}
                         onChange={(e) => setFormData({ ...formData, state: e.target.value })}
-                        placeholder="Maharashtra"
-                        className="w-full bg-gray-50 border border-gray-100 py-3 px-4 text-[14px] font-bold rounded-xl outline-none focus:bg-white focus:border-[#1BAFAF]/30 transition-all"
+                        placeholder="State"
+                        className="w-full bg-gray-50 border-2 border-transparent py-3.5 px-4 text-[14px] font-medium rounded-2xl outline-none focus:bg-white focus:border-[#1BAFAF]/20 transition-all"
                       />
                     </div>
                   </div>
 
-                  <div className="grid grid-cols-2 gap-6">
-                    <div className="space-y-2">
-                      <label className="text-[11px] font-black text-gray-400 uppercase tracking-widest">Country</label>
+                  <div className="space-y-4">
+                    <div className="space-y-1.5">
+                      <label className="text-[11px] font-bold text-gray-400 uppercase tracking-widest ml-1">Country</label>
                       <div className="relative group">
-                         <Globe className="absolute left-4 top-1/2 -translate-y-1/2 w-4 h-4 text-gray-300" />
-                         <input
+                        <Globe className="absolute left-4 top-1/2 -translate-y-1/2 w-4 h-4 text-gray-300" />
+                        <input
                           type="text"
                           value={formData.country}
                           onChange={(e) => setFormData({ ...formData, country: e.target.value })}
-                          className="w-full bg-gray-50 border border-gray-100 py-3 pl-12 pr-4 text-[14px] font-bold rounded-xl outline-none focus:bg-white focus:border-[#1BAFAF]/30 transition-all"
+                          placeholder="Country"
+                          className="w-full bg-gray-50 border-2 border-transparent py-3.5 pl-12 pr-4 text-[14px] font-medium rounded-2xl outline-none focus:bg-white focus:border-[#1BAFAF]/20 transition-all"
                         />
                       </div>
                     </div>
-                    <div className="space-y-2">
-                      <label className="text-[11px] font-black text-gray-400 uppercase tracking-widest">Pincode</label>
-                      <div className="relative group">
-                        <MapPin className="absolute left-4 top-1/2 -translate-y-1/2 w-4 h-4 text-gray-300" />
-                        <input
-                          type="text"
-                          value={formData.pincode}
-                          onChange={(e) => setFormData({ ...formData, pincode: e.target.value.replace(/\D/g, '') })}
-                          placeholder="400001"
-                          className="w-full bg-gray-50 border border-gray-100 py-3 pl-12 pr-4 text-[14px] font-bold rounded-xl outline-none focus:bg-white focus:border-[#1BAFAF]/30 transition-all"
-                        />
-                      </div>
+                    <div className="space-y-1.5">
+                      <label className="text-[11px] font-bold text-gray-400 uppercase tracking-widest ml-1">Pincode</label>
+                      <input
+                        type="text"
+                        value={formData.pincode}
+                        onChange={(e) => setFormData({ ...formData, pincode: e.target.value })}
+                        placeholder="411001"
+                        className="w-full bg-gray-50 border-2 border-transparent py-3.5 px-4 text-[14px] font-medium rounded-2xl outline-none focus:bg-white focus:border-[#1BAFAF]/20 transition-all"
+                      />
                     </div>
-                  </div>
-                </div>
-              )}
-
-              {['Contact Persons', 'Bank Details', 'Custom Fields', 'Remarks'].includes(activeTab) && (
-                <div className="h-full flex flex-col items-center justify-center text-center space-y-4 py-20">
-                  <div className="w-16 h-16 rounded-full bg-gray-50 flex items-center justify-center text-gray-300">
-                    <FileText size={32} />
-                  </div>
-                  <div>
-                    <h4 className="text-[16px] font-bold text-gray-900">{activeTab} Section</h4>
-                    <p className="text-[13px] text-gray-400 max-w-xs">This feature is currently in development and will be available in the next update.</p>
                   </div>
                 </div>
               )}
             </div>
           </div>
 
-          {/* Footer Buttons */}
-          <div className="pt-10 flex gap-4">
-            <button
-              type="button"
-              onClick={onClose}
-              className="px-10 py-4 text-[14px] font-bold text-gray-500 bg-gray-100 rounded-2xl hover:bg-gray-200 transition-all active:scale-95"
-            >
-              Cancel
-            </button>
+          <div className="pt-8 border-t border-gray-50 flex gap-4">
+            <button type="button" onClick={onClose} className="px-8 py-4 text-[14px] font-bold text-gray-500 bg-gray-100 rounded-2xl hover:bg-gray-200 transition-all">Cancel</button>
             <button
               type="submit"
               disabled={loading}
-              className="flex-1 py-4 text-[14px] font-bold text-white bg-[#1BAFAF] rounded-2xl hover:bg-[#158e8e] transition-all shadow-lg shadow-[#1BAFAF]/20 active:scale-95 disabled:opacity-50 disabled:scale-100 flex items-center justify-center gap-2"
+              className="flex-1 py-4 text-[14px] font-bold text-white bg-[#1BAFAF] rounded-2xl hover:bg-[#158e8e] transition-all shadow-lg flex items-center justify-center gap-2"
             >
-              {loading ? <Loader2 className="w-4 h-4 animate-spin" /> : null}
+              {loading && <Loader2 className="w-4 h-4 animate-spin" />}
               {loading ? 'Processing...' : (vendor ? 'Update Vendor' : 'Add Vendor')}
             </button>
           </div>

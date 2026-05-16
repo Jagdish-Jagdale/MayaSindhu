@@ -9,9 +9,9 @@ import {
   Clock, 
   Link as LinkIcon,
   Eye,
-  MessageCircle,
   Loader2,
-  ChevronRight
+  ChevronRight,
+  ArrowRight
 } from 'lucide-react';
 import { db } from '../../firebase';
 import { collection, doc, getDoc, getDocs, query, orderBy, limit, onSnapshot, addDoc, serverTimestamp } from 'firebase/firestore';
@@ -25,9 +25,6 @@ export default function BlogDetail() {
   const [blog, setBlog] = useState(null);
   const [recentBlogs, setRecentBlogs] = useState([]);
   const [loading, setLoading] = useState(true);
-  const [comment, setComment] = useState('');
-  const [comments, setComments] = useState([]);
-  const [isSubmitting, setIsSubmitting] = useState(false);
   const [blogSettings, setBlogSettings] = useState({
     heading: 'Our Cultural Essence',
     subheading: 'Stay updated with the latest news, projects, and insights from MayaSindhu.'
@@ -68,7 +65,7 @@ export default function BlogDetail() {
         const others = recentSnap.docs
           .map(d => ({ ...d.data(), id: d.id }))
           .filter(b => b.id !== cleanId)
-          .slice(0, 3);
+          .slice(0, 4);
         setRecentBlogs(others);
 
       } catch (error) {
@@ -80,19 +77,8 @@ export default function BlogDetail() {
 
     loadData();
 
-    const commentsQuery = query(
-      collection(db, 'blogs', id, 'comments'),
-      orderBy('createdAt', 'desc')
-    );
-    const unsubscribeComments = onSnapshot(commentsQuery, (snapshot) => {
-      if (isMounted) {
-        setComments(snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() })));
-      }
-    });
-
     return () => {
       isMounted = false;
-      unsubscribeComments();
     };
   }, [id]);
 
@@ -101,26 +87,7 @@ export default function BlogDetail() {
     toast.success("Link copied to clipboard!");
   };
 
-  const handlePostComment = async (e) => {
-    e.preventDefault();
-    if (!comment.trim()) return;
 
-    setIsSubmitting(true);
-    try {
-      await addDoc(collection(db, 'blogs', id, 'comments'), {
-        text: comment,
-        author: 'Guest Reader',
-        createdAt: serverTimestamp()
-      });
-      setComment('');
-      toast.success("Comment posted!");
-    } catch (error) {
-      console.error("Error posting comment:", error);
-      toast.error("Failed to post comment");
-    } finally {
-      setIsSubmitting(false);
-    }
-  };
 
   if (loading) {
     return (
@@ -263,17 +230,39 @@ export default function BlogDetail() {
               <div className="mt-16 pt-8 border-t border-gray-50">
                 {/* Social Icons Row */}
                 <div className="flex items-center gap-6 mb-6">
-                  <button className="text-gray-400 hover:text-[#1877F2] transition-colors" title="Share on Facebook"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round"><path d="M18 2h-3a5 5 0 0 0-5 5v3H7v4h3v8h4v-8h3l1-4h-4V7a1 1 0 0 1 1-1h3z"/></svg></button>
-                  <button className="text-gray-400 hover:text-black transition-colors" title="Share on X (Twitter)"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round"><path d="M4 4l11.733 16h4.267l-11.733 -16z"/><path d="M4 20l6.768 -6.768m2.46 -2.46l6.772 -6.772"/></svg></button>
-                  <button className="text-gray-400 hover:text-[#0A66C2] transition-colors" title="Share on LinkedIn"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round"><path d="M16 8a6 6 0 0 1 6 6v7h-4v-7a2 2 0 0 0-2-2 2 2 0 0 0-2 2v7h-4v-7a6 6 0 0 1 6-6z"/><rect width="4" height="12" x="2" y="9"/><circle cx="4" cy="4" r="2"/></svg></button>
+                  <button 
+                    onClick={() => {
+                      const url = encodeURIComponent(window.location.href);
+                      window.open(`https://www.facebook.com/sharer/sharer.php?u=${url}`, '_blank');
+                    }}
+                    className="text-gray-400 hover:text-[#1877F2] transition-colors" 
+                    title="Share on Facebook"
+                  >
+                    <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round"><path d="M18 2h-3a5 5 0 0 0-5 5v3H7v4h3v8h4v-8h3l1-4h-4V7a1 1 0 0 1 1-1h3z"/></svg>
+                  </button>
+                  <button 
+                    onClick={() => {
+                      const url = encodeURIComponent(window.location.href);
+                      const text = encodeURIComponent(blog?.title || '');
+                      window.open(`https://twitter.com/intent/tweet?url=${url}&text=${text}`, '_blank');
+                    }}
+                    className="text-gray-400 hover:text-black transition-colors" 
+                    title="Share on X (Twitter)"
+                  >
+                    <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round"><path d="M4 4l11.733 16h4.267l-11.733 -16z"/><path d="M4 20l6.768 -6.768m2.46 -2.46l6.772 -6.772"/></svg>
+                  </button>
+                  <button 
+                    onClick={() => window.open('https://instagram.com', '_blank')}
+                    className="text-gray-400 hover:text-[#E4405F] transition-colors" 
+                    title="Follow on Instagram"
+                  >
+                    <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round"><rect x="2" y="2" width="20" height="20" rx="5" ry="5"></rect><path d="M16 11.37A4 4 0 1 1 12.63 8 4 4 0 0 1 16 11.37z"></path><line x1="17.5" y1="6.5" x2="17.51" y2="6.5"></line></svg>
+                  </button>
                   <button onClick={handleShare} className="text-gray-400 hover:text-[#C5A059] transition-colors" title="Copy Link"><LinkIcon size={18} strokeWidth={2.5} /></button>
                 </div>
                 
-                {/* Stats Row - Sentence Case */}
-                <div className="flex items-center gap-6 text-[13px] text-gray-400 font-medium">
-                   <span>{blog.views || 0} views</span>
-                   <span>{comments.length} comments</span>
-                </div>
+                {/* Stats Row - Removed views and comments */}
+
               </div>
             </div>
           </div>
@@ -286,63 +275,70 @@ export default function BlogDetail() {
               <h3 className="text-[18px] font-bold text-[#0F172A]">Recent Articles</h3>
               <Link to="/blog" className="text-[12px] font-bold text-gray-400 hover:text-[#C5A059]">See All</Link>
             </div>
-            <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
-              {recentBlogs.map((item) => (
-                <Link key={item.id} to={`/blog/${item.id}`} className="bg-white rounded-2xl border border-gray-100 overflow-hidden shadow-sm hover:shadow-md transition-all group">
-                  <div className="aspect-[16/9] overflow-hidden">
-                    <img src={item.image} className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-500" />
-                  </div>
-                  <div className="p-5">
-                    <h4 className="text-[14px] font-bold text-[#0F172A] leading-snug mb-4 line-clamp-2">{item.title}</h4>
-                    <div className="flex items-center gap-4 text-[11px] text-gray-300 font-bold">
-                      <div className="flex items-center gap-1.5"><Eye size={12} /> {item.views || 0}</div>
-                      <div className="flex items-center gap-1.5"><MessageCircle size={12} /> 0</div>
+            <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-6">
+              {recentBlogs.map((item, idx) => (
+                <motion.div 
+                  key={item.id}
+                  initial={{ opacity: 0, y: 20 }}
+                  whileInView={{ opacity: 1, y: 0 }}
+                  viewport={{ once: true }}
+                  transition={{ delay: idx * 0.1 }}
+                  className="group bg-white rounded-2xl overflow-hidden shadow-sm border border-gray-100 flex flex-col h-full hover:shadow-xl transition-all duration-500"
+                >
+                  {/* Card Image Wrapper */}
+                  <div className="aspect-[16/10] relative overflow-hidden">
+                    <img 
+                      src={item.image} 
+                      alt={item.title} 
+                      className="w-full h-full object-cover transition-transform duration-700 group-hover:scale-110"
+                    />
+                    {/* Category Badge */}
+                    <div className="absolute top-4 left-4">
+                      <span className="px-4 py-1.5 bg-[#C5A059]/90 backdrop-blur-sm text-white text-[10px] font-bold uppercase tracking-wider rounded shadow-lg">
+                        {item.category || 'Stories'}
+                      </span>
                     </div>
                   </div>
-                </Link>
+
+                  {/* Card Content */}
+                  <div className="p-6 flex flex-col flex-1">
+                    {/* Meta Info */}
+                    <div className="flex items-center gap-4 text-gray-400 text-[11px] font-medium mb-3">
+                      <div className="flex items-center gap-1.5">
+                        <Calendar size={13} className="text-[#C5A059]" />
+                        <span>{formatDate(item.updatedAt || item.createdAt)}</span>
+                      </div>
+                      <div className="flex items-center gap-1.5">
+                        <User size={13} className="text-[#C5A059]" />
+                        <span>{item.author || 'MayaSindhu'}</span>
+                      </div>
+                    </div>
+
+                    {/* Title */}
+                    <h4 className="text-lg font-fashion font-bold leading-tight text-[#1A1A1A] mb-3">
+                      {item.title}
+                    </h4>
+
+                    {/* Summary */}
+                    <p className="text-gray-500 text-sm leading-relaxed line-clamp-3 font-light mb-4 flex-1">
+                      {item.summary}
+                    </p>
+
+                    {/* Call to Action */}
+                    <div className="border-t border-gray-100 pt-4">
+                      <Link to={`/blog/${item.id}`} className="flex items-center gap-2 text-[12px] font-bold uppercase tracking-widest text-[#1A1A1A] hover:text-brand-orange transition-all group/btn">
+                        Read Full Article
+                        <ArrowRight size={14} className="group-hover/btn:translate-x-1 transition-transform" />
+                      </Link>
+                    </div>
+                  </div>
+                </motion.div>
               ))}
             </div>
           </section>
         )}
 
-        {/* Comments Section */}
-        <section className="mt-12 bg-white rounded-[2rem] border border-gray-100 shadow-sm p-8 md:p-12">
-          <h3 className="text-[18px] font-bold text-[#0F172A] mb-8">Comments</h3>
-          <form onSubmit={handlePostComment} className="space-y-6">
-            <textarea 
-              placeholder="Write a comment..."
-              value={comment}
-              onChange={(e) => setComment(e.target.value)}
-              className="w-full bg-gray-50/50 rounded-2xl p-6 min-h-[140px] text-[15px] focus:outline-none focus:ring-2 focus:ring-[#C5A059]/10 border border-gray-50 focus:border-[#C5A059]/20 transition-all resize-none"
-            />
-            <div className="flex justify-end">
-              <button 
-                type="submit"
-                disabled={isSubmitting || !comment.trim()}
-                className="bg-[#C5A059] hover:bg-[#B38E48] disabled:opacity-50 text-white px-10 py-3 rounded-xl text-[13px] font-bold transition-all active:scale-95"
-              >
-                {isSubmitting ? 'Posting...' : 'Post Comment'}
-              </button>
-            </div>
-          </form>
 
-          {/* Existing Comments List */}
-          {comments.length > 0 && (
-            <div className="mt-12 space-y-8">
-              {comments.map((c) => (
-                <div key={c.id} className="flex gap-4 border-b border-gray-50 pb-6 last:border-0">
-                  <div className="flex-1">
-                    <div className="flex items-center justify-between mb-2">
-                      <h5 className="text-[13px] font-bold text-[#0F172A]">{c.author}</h5>
-                      <span className="text-[11px] text-gray-400">{formatDate(c.createdAt)}</span>
-                    </div>
-                    <p className="text-[14px] text-gray-600 leading-relaxed">{c.text}</p>
-                  </div>
-                </div>
-              ))}
-            </div>
-          )}
-        </section>
       </div>
     </div>
   );
