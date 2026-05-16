@@ -180,8 +180,8 @@ export default function CategoryView() {
               {breadcrumbs.map(bc => (
                 <React.Fragment key={bc.id}>
                   <span className="w-1 h-1 bg-gray-300 rounded-full"></span>
-                  <Link 
-                    to={bc.fullPath} 
+                  <Link
+                    to={bc.fullPath}
                     className={`hover:text-brand-orange transition-colors line-clamp-1 ${bc.id === currentCategory.id ? 'text-brand-orange' : ''}`}
                   >
                     {bc.name}
@@ -189,13 +189,10 @@ export default function CategoryView() {
                 </React.Fragment>
               ))}
             </nav>
-            
-            <h1 className="text-4xl md:text-5xl font-sans font-medium text-[#111111] capitalize tracking-tight leading-tight">
+
+            <h1 className="text-4xl md:text-5xl font-sans font-medium text-[#111111] capitalize tracking-tight leading-tight mb-12">
               {currentCategory.name}
             </h1>
-            <p className="text-brand-orange text-[10px] font-bold uppercase tracking-[0.4em] mt-4 mb-8">
-              {breadcrumbs.length > 1 ? breadcrumbs[breadcrumbs.length - 2].name : 'The Collection'}
-            </p>
 
           </motion.div>
 

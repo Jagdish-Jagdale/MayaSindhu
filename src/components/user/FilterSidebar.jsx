@@ -2,6 +2,7 @@ import React, { useState, useEffect } from 'react';
 import { ChevronDown, ArrowRight } from 'lucide-react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { Link, useLocation } from 'react-router-dom';
+import useCategories from '../../hooks/useCategories';
 
 const CategoryNode = ({ category, currentPath }) => {
   const hasChildren = category.children && category.children.length > 0;
@@ -98,9 +99,12 @@ const FilterAccordion = ({ title, children, isOpen, onToggle }) => {
 
 export default function FilterSidebar({ className = "", categories = [], onFilterChange }) {
   const location = useLocation();
+  const { categories: allCategories } = useCategories();
+  
+  const displayCategories = categories.length > 0 ? categories : allCategories;
 
   const [openSections, setOpenSections] = useState({
-    categories: false,
+    categories: true,
     availability: false,
     price: false,
     size: false
@@ -151,7 +155,7 @@ export default function FilterSidebar({ className = "", categories = [], onFilte
           onToggle={() => toggleSection('categories')}
         >
           <div className="space-y-1">
-            {categories.map((category) => (
+            {displayCategories.map((category) => (
               <CategoryNode key={category.id} category={category} currentPath={location.pathname} />
             ))}
           </div>

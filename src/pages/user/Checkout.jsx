@@ -98,9 +98,7 @@ export default function Checkout() {
   const subtotal = items.reduce((acc, item) => acc + (item.price * item.qty), 0);
   const total = subtotal + (subtotal > 25000 ? 0 : shipping);
 
-  const handlePlaceOrder = async () => {
-    if (items.length === 0) return;
-
+  const processOrder = async (razorpayPaymentId = null) => {
     try {
       const orderId = `#ORD-${Math.floor(10000 + Math.random() * 90000)}`;
 
@@ -125,11 +123,12 @@ export default function Checkout() {
         customerName: `${formData.firstName} ${formData.lastName}`,
         totalAmount: total,
         paymentMethod: paymentMethod,
+        razorpayPaymentId: razorpayPaymentId,
         items: items.map(i => ({ name: i.name, qty: i.qty, price: i.price, productType: i.productType || 'Standard' })),
         subtotal,
         shipping: subtotal > 25000 ? 0 : shipping,
         total,
-        status: 'Pending',
+        status: paymentMethod === 'cod' ? 'Pending' : 'Paid',
         shippingAddress: formData,
         createdAt: serverTimestamp(),
       });
@@ -154,6 +153,57 @@ export default function Checkout() {
     } catch (error) {
       console.error("Order Error:", error);
       alert("Failed to place order. Please try again.");
+    }
+  };
+
+  const handleRazorpayPayment = () => {
+    if (!window.Razorpay) {
+      alert("Razorpay SDK failed to load. Please check your internet connection.");
+      return;
+    }
+
+    const options = {
+      key: import.meta.env.VITE_RAZORPAY_KEY_ID,
+      amount: total * 100, // Razorpay works in paise
+      currency: "INR",
+      name: "MayaSindhu",
+      description: "Heritage Purchase",
+      image: "/src/assets/mstitle.png",
+      handler: async function (response) {
+        await processOrder(response.razorpay_payment_id);
+      },
+      prefill: {
+        name: `${formData.firstName} ${formData.lastName}`,
+        email: user.email,
+        contact: formData.phone
+      },
+      theme: {
+        color: "#F27121"
+      },
+      modal: {
+        ondismiss: function() {
+          console.log("Payment cancelled by user");
+        }
+      }
+    };
+
+    const rzp = new window.Razorpay(options);
+    rzp.open();
+  };
+
+  const handlePlaceOrder = async () => {
+    if (items.length === 0) return;
+    
+    // Validate form
+    if (!formData.firstName || !formData.address || !formData.phone) {
+      alert("Please fill in all required shipping details.");
+      return;
+    }
+
+    if (paymentMethod === 'upi') {
+      handleRazorpayPayment();
+    } else {
+      await processOrder();
     }
   };
 

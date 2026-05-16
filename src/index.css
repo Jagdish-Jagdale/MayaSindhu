@@ -17,14 +17,14 @@
   --color-text-muted: #666666;
   --color-bg-alt: #FCFBF9;
   --color-brand-gray: #F7F7F7;
-  
+
   --color-brand-white: #FFFFFF;
   --color-brand-black: #111111;
 }
 
 @layer base {
   html {
-    scroll-behavior: smooth;
+    scroll-behavior: auto !important;
   }
 
   body {
@@ -35,12 +35,17 @@
     @apply bg-brand-orange/20 text-brand-orange;
   }
 
-  h1, h2, h3, h4, h5, h6 {
+  h1,
+  h2,
+  h3,
+  h4,
+  h5,
+  h6 {
     @apply font-sans text-text-main tracking-tight;
     font-weight: 500 !important;
   }
 
-  button, 
+  button,
   a,
   input,
   select,
@@ -70,6 +75,7 @@
   .no-scrollbar::-webkit-scrollbar {
     display: none;
   }
+
   .no-scrollbar {
     -ms-overflow-style: none;
     scrollbar-width: none;
