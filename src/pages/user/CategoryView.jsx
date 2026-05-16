@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { useParams, Link, useNavigate } from 'react-router-dom';
+import { useParams, Link, useNavigate, useLocation } from 'react-router-dom';
 import { motion, AnimatePresence } from 'framer-motion';
 import { ChevronRight, ChevronDown, SlidersHorizontal, X, Loader2, ArrowLeft } from 'lucide-react';
 import ProductCard from '../../components/user/ProductCard';
@@ -10,6 +10,7 @@ import { db } from '../../firebase';
 import { collection, onSnapshot, query, orderBy } from 'firebase/firestore';
 
 export default function CategoryView() {
+  const location = useLocation();
   const params = useParams();
   const goBack = useGoBack();
   const pathSegments = params['*'] ? params['*'].split('/') : [];
@@ -43,6 +44,16 @@ export default function CategoryView() {
   // 2. Resolve the current category and breadcrumbs from the URL
   useEffect(() => {
     if (categories.length > 0) {
+      if (location.pathname === '/collections') {
+        setCurrentCategory({
+          id: 'all',
+          name: 'All Collections',
+          fullPath: '/collections',
+          description: 'Explore our entire collection of handcrafted heritage treasures.'
+        });
+        setBreadcrumbs([]);
+        return;
+      }
       let current = categories;
       let targetCat = null;
       let path = [];
@@ -65,33 +76,37 @@ export default function CategoryView() {
 
   // 3. Filter products based on the resolved category
   const filteredProducts = (() => {
+    let result = products;
+
     if (!currentCategory) return [];
 
-    // Get all valid category IDs (including the current and all children recursively)
-    const getAllCategoryIds = (cat) => {
-      let ids = [cat.id];
-      if (cat.children && cat.children.length > 0) {
-        cat.children.forEach(child => {
-          ids = [...ids, ...getAllCategoryIds(child)];
-        });
-      }
-      return ids;
-    };
+    if (currentCategory.id !== 'all') {
+      // Get all valid category IDs (including the current and all children recursively)
+      const getAllCategoryIds = (cat) => {
+        let ids = [cat.id];
+        if (cat.children && cat.children.length > 0) {
+          cat.children.forEach(child => {
+            ids = [...ids, ...getAllCategoryIds(child)];
+          });
+        }
+        return ids;
+      };
 
-    const targetCategoryIds = getAllCategoryIds(currentCategory);
+      const targetCategoryIds = getAllCategoryIds(currentCategory);
 
-    let result = products.filter(p => {
-      const pCatId = p.categoryId || '';
-      const pCol = p.collection?.toLowerCase() || '';
+      result = products.filter(p => {
+        const pCatId = p.categoryId || '';
+        const pCol = p.collection?.toLowerCase() || '';
 
-      // Match by category ID
-      const matchesCategory = targetCategoryIds.includes(pCatId);
+        // Match by category ID
+        const matchesCategory = targetCategoryIds.includes(pCatId);
 
-      // Fallback: match by collection name
-      const matchesCollection = currentCategory.name && pCol.includes(currentCategory.name.toLowerCase());
+        // Fallback: match by collection name
+        const matchesCollection = currentCategory.name && pCol.includes(currentCategory.name.toLowerCase());
 
-      return matchesCategory || matchesCollection;
-    });
+        return matchesCategory || matchesCollection;
+      });
+    }
 
     // Apply Active Filters
     if (activeFilters.availability?.length > 0) {
@@ -131,8 +146,8 @@ export default function CategoryView() {
     return (
       <div className="min-h-screen pt-40 pb-20 text-center">
         <h2 className="text-2xl font-sans mb-4">Category not found</h2>
-        <Link to="/shop" className="text-brand-orange font-bold uppercase tracking-widest text-sm underline">
-          Return to Shop
+        <Link to="/collections" className="text-brand-orange font-bold uppercase tracking-widest text-sm underline">
+          Browse All Collections
         </Link>
       </div>
     );
@@ -162,12 +177,15 @@ export default function CategoryView() {
           >
             <nav className="mb-4 flex items-center gap-2 text-[10px] font-bold uppercase tracking-[0.2em] text-gray-400">
               <Link to="/" className="hover:text-brand-orange transition-colors">Home</Link>
-              <span className="w-1 h-1 bg-gray-300 rounded-full"></span>
-              <Link to="/shop" className="hover:text-brand-orange transition-colors">Shop</Link>
-              {breadcrumbs.slice(0, -1).map(bc => (
+              {breadcrumbs.map(bc => (
                 <React.Fragment key={bc.id}>
                   <span className="w-1 h-1 bg-gray-300 rounded-full"></span>
-                  <Link to={bc.fullPath} className="hover:text-brand-orange transition-colors line-clamp-1">{bc.name}</Link>
+                  <Link 
+                    to={bc.fullPath} 
+                    className={`hover:text-brand-orange transition-colors line-clamp-1 ${bc.id === currentCategory.id ? 'text-brand-orange' : ''}`}
+                  >
+                    {bc.name}
+                  </Link>
                 </React.Fragment>
               ))}
             </nav>
@@ -201,7 +219,7 @@ export default function CategoryView() {
               ) : (
                 <div className="col-span-full py-20 text-center bg-gray-50 rounded-3xl">
                   <p className="text-gray-400 font-sans text-xl mb-4">No treasures found in this range yet.</p>
-                  <Link to="/shop" className="text-brand-orange font-bold uppercase tracking-widest text-[10px]">Explore All Collections</Link>
+                  <Link to="/collections" className="text-brand-orange font-bold uppercase tracking-widest text-[10px]">Explore All Collections</Link>
                 </div>
               )}
             </div>

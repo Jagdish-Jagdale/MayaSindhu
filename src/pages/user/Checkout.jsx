@@ -350,7 +350,7 @@ export default function Checkout() {
                   <p className="text-gray-500 text-lg mb-12 max-w-md mx-auto leading-relaxed">
                     Your order has been successfully placed. We've sent the confirmation details to your email.
                   </p>
-                  <Link to="/shop" className="btn btn-primary px-12 py-5 rounded-full inline-block shadow-xl shadow-brand-orange/20">Continue Shopping</Link>
+                  <Link to="/" className="btn btn-primary px-12 py-5 rounded-full inline-block shadow-xl shadow-brand-orange/20">Continue Shopping</Link>
                 </motion.div>
               )}
             </AnimatePresence>

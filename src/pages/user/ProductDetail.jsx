@@ -234,7 +234,7 @@ export default function ProductDetail() {
     return (
       <div className="min-h-screen flex flex-col items-center justify-center bg-[#FDFBF7] p-6 text-center">
         <h2 className="text-3xl font-sans font-bold text-[#1A1A1A] mb-4">Treasure Not Found</h2>
-        <button onClick={() => navigate('/shop')} className="btn btn-primary px-12">Return to Shop</button>
+        <button onClick={() => navigate('/')} className="btn btn-primary px-12">Return to Shop</button>
       </div>
     );
   }
