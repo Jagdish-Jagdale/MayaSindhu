@@ -25,6 +25,7 @@ import { db } from '../../firebase';
 import { collection, onSnapshot, query, orderBy, doc, deleteDoc, updateDoc } from 'firebase/firestore';
 import { motion, AnimatePresence } from 'framer-motion';
 import toast from 'react-hot-toast';
+import CustomSelect from '../../components/common/CustomSelect';
 
 const STATUS_CONFIG = {
   'Pending': { color: 'text-amber-500 bg-amber-50', icon: Clock },
@@ -38,8 +39,15 @@ export default function Orders() {
   const [orders, setOrders] = useState([]);
   const [loading, setLoading] = useState(true);
   const [searchTerm, setSearchTerm] = useState('');
+  const [rowsPerPage, setRowsPerPage] = useState(10);
+  const [currentPage, setCurrentPage] = useState(1);
+  const [direction, setDirection] = useState(0);
   const [selectedOrder, setSelectedOrder] = useState(null);
   const [isViewModalOpen, setIsViewModalOpen] = useState(false);
+
+  useEffect(() => {
+    setCurrentPage(1);
+  }, [searchTerm, rowsPerPage]);
 
   useEffect(() => {
     const q = query(collection(db, 'orders'), orderBy('createdAt', 'desc'));
@@ -171,6 +179,24 @@ export default function Orders() {
     );
   };
 
+  const rowVariants = {
+    initial: ({ direction }) => ({ opacity: 0, x: direction * 30 }),
+    animate: ({ index }) => ({ 
+      opacity: 1, 
+      x: 0,
+      transition: { 
+        delay: index * 0.03,
+        duration: 0.4,
+        ease: [0.22, 1, 0.36, 1]
+      }
+    }),
+    exit: ({ direction }) => ({ 
+      opacity: 0, 
+      x: direction * -30,
+      transition: { duration: 0.2 }
+    })
+  };
+
   const OrderViewModal = ({ order, isOpen, onClose }) => {
     if (!order) return null;
     const config = STATUS_CONFIG[order.status] || STATUS_CONFIG['Pending'];
@@ -204,7 +230,7 @@ export default function Orders() {
                       <h2 className="text-xl font-bold text-gray-900 leading-none">Order Details</h2>
                       <span className="text-gray-200 font-light text-lg">|</span>
                       <span className="px-3 py-1 bg-gray-50 text-[#1BAFAF] text-[10px] font-bold rounded-full border border-gray-100 uppercase tracking-widest">
-                        {order.orderId}
+                        {order.orderId?.replace('#', '')}
                       </span>
                     </div>
                     <div className="flex items-center gap-2 text-[12px] font-medium text-gray-400 pl-1">
@@ -290,7 +316,9 @@ export default function Orders() {
                               <div className="w-8 h-8 rounded-xl bg-white border border-gray-100 flex items-center justify-center text-[11px] font-black text-[#1BAFAF] shadow-sm">01</div>
                             </td>
                             <td className="px-6 py-5">
-                              <span className="text-[13px] font-bold text-gray-900 tracking-tight leading-tight">{order.productName || 'Handmade Creation'}</span>
+                              <span className="text-[13px] font-bold text-gray-900 tracking-tight leading-tight">
+                                {order.productName || (order.items?.[0]?.name) || 'Handmade Creation'}
+                              </span>
                             </td>
                             <td className="px-6 py-5 text-center">
                               <span className="text-[12px] font-black text-gray-500">{order.quantity || 1}</span>
@@ -358,7 +386,7 @@ export default function Orders() {
       </div>
 
       {/* Action Bar */}
-      <div className="flex flex-col sm:flex-row items-center justify-between gap-4 bg-white p-2 rounded-2xl border border-gray-100 shadow-sm transition-all hover:shadow-md">
+      <div className="flex flex-col sm:flex-row items-center justify-between gap-4 bg-white p-1.5 rounded-2xl border border-gray-100 shadow-sm transition-all hover:shadow-md">
         <div className="relative group w-full sm:max-w-[480px]">
           <Search className="absolute left-3.5 top-1/2 -translate-y-1/2 w-4 h-4 text-gray-300 group-focus-within:text-[#1BAFAF] transition-colors" />
           <input
@@ -370,6 +398,21 @@ export default function Orders() {
           />
         </div>
         <div className="flex items-center gap-3 pr-2">
+           <div className="flex items-center px-3 border-r border-gray-100">
+             <CustomSelect
+               value={rowsPerPage}
+               onChange={(val) => setRowsPerPage(Number(val))}
+               options={[
+                 { value: 5, label: '5 rows' },
+                 { value: 10, label: '10 rows' },
+                 { value: 20, label: '20 rows' },
+                 { value: 50, label: '50 rows' }
+               ]}
+               className="w-28"
+               minimal={true}
+               valuePrefix="Rows:"
+             />
+           </div>
            <button className="flex items-center gap-2 px-3 py-1.5 text-[12px] font-bold text-gray-400 hover:text-gray-900 transition-colors">
               <Filter size={14} strokeWidth={2.5} />
               Filters
@@ -394,16 +437,17 @@ export default function Orders() {
               </tr>
             </thead>
             <tbody className="divide-y divide-gray-50/50">
-              <AnimatePresence mode="popLayout">
+              <AnimatePresence mode="wait" custom={direction}>
                 {filteredOrders.length > 0 ? (
-                  filteredOrders.map((order, index) => {
+                  filteredOrders.slice((currentPage - 1) * rowsPerPage, currentPage * rowsPerPage).map((order, index) => {
                     const config = STATUS_CONFIG[order.status] || STATUS_CONFIG['Pending'];
                     return (
                       <motion.tr 
-                        layout
-                        initial={{ opacity: 0 }}
-                        animate={{ opacity: 1 }}
-                        exit={{ opacity: 0 }}
+                        custom={{ direction, index }}
+                        variants={rowVariants}
+                        initial="initial"
+                        animate="animate"
+                        exit="exit"
                         key={order.id} 
                         onClick={() => {
                           setSelectedOrder(order);
@@ -415,7 +459,9 @@ export default function Orders() {
                           <span className="text-[13px] font-bold text-gray-300">{(index + 1).toString().padStart(2, '0')}</span>
                         </td>
                         <td className="px-6 py-5 whitespace-nowrap">
-                          <span className="text-[13px] font-bold text-gray-900 group-hover:text-[#1BAFAF] transition-colors">{order.orderId}</span>
+                          <span className="px-3 py-1 bg-[#1BAFAF]/5 text-[#1BAFAF] text-[11px] font-bold rounded-full border border-[#1BAFAF]/10 uppercase tracking-wider group-hover:bg-[#1BAFAF]/10 transition-colors">
+                            {order.orderId?.replace('#', '')}
+                          </span>
                         </td>
                         <td className="px-6 py-5">
                           <div className="flex items-center gap-3">
@@ -426,13 +472,15 @@ export default function Orders() {
                           </div>
                         </td>
                         <td className="px-6 py-5">
-                          <span className="text-[13px] text-gray-600 font-medium line-clamp-1">{order.productName || 'Multiple Items'}</span>
+                          <span className="text-[13px] text-gray-600 font-medium line-clamp-1">
+                            {order.productName || (order.items?.[0]?.name) || (order.quantity > 1 ? 'Multiple Items' : 'Handmade Creation')}
+                          </span>
                         </td>
                         <td className="px-6 py-5">
                           <span className="text-[13px] text-gray-800 font-bold">{order.quantity || 1}</span>
                         </td>
                         <td className="px-6 py-5 whitespace-nowrap">
-                          <span className="text-[13px] font-bold text-gray-900">{order.total}</span>
+                          <span className="text-[13px] font-bold text-gray-900">₹{order.total}</span>
                         </td>
                         <td className="px-6 py-5 whitespace-nowrap">
                            <span className="text-[13px] text-gray-500 font-medium">{formatDate(order.createdAt)}</span>
@@ -462,7 +510,44 @@ export default function Orders() {
           </table>
         </div>
       </div>
-      
+
+      {/* Page Footer */}
+      <div className="flex items-center justify-between px-2 pt-3">
+        <span className="text-[11px] font-bold text-gray-300 uppercase tracking-widest">
+          Showing {filteredOrders.length > 0 ? (currentPage - 1) * rowsPerPage + 1 : 0}-{Math.min(currentPage * rowsPerPage, filteredOrders.length)} of {filteredOrders.length} Orders
+        </span>
+        <div className="flex items-center gap-2">
+          <button 
+            onClick={() => {
+              setDirection(-1);
+              setCurrentPage(prev => Math.max(1, prev - 1));
+            }}
+            disabled={currentPage === 1}
+            className={`w-8 h-8 rounded-lg flex items-center justify-center transition-all ${
+              currentPage === 1 
+                ? 'bg-gray-50 text-gray-300 cursor-not-allowed' 
+                : 'bg-white border border-gray-100 text-gray-900 hover:shadow-sm hover:text-[#1BAFAF]'
+            }`}
+          >
+            <ArrowUpRight size={14} className="rotate-[225deg]" />
+          </button>
+          <button 
+            onClick={() => {
+              setDirection(1);
+              setCurrentPage(prev => Math.min(Math.ceil(filteredOrders.length / rowsPerPage), prev + 1));
+            }}
+            disabled={currentPage >= Math.ceil(filteredOrders.length / rowsPerPage)}
+            className={`w-8 h-8 rounded-lg flex items-center justify-center transition-all ${
+              currentPage >= Math.ceil(filteredOrders.length / rowsPerPage)
+                ? 'bg-gray-50 text-gray-300 cursor-not-allowed' 
+                : 'bg-white border border-gray-100 text-gray-900 hover:shadow-sm hover:text-[#1BAFAF]'
+            }`}
+          >
+            <ArrowUpRight size={14} className="rotate-45" />
+          </button>
+        </div>
+      </div>
+
       {loading && (
         <div className="flex items-center justify-center py-10">
           <div className="w-8 h-8 border-4 border-[#1BAFAF]/20 border-t-[#1BAFAF] rounded-full animate-spin" />

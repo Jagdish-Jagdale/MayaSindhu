@@ -24,6 +24,8 @@ import {
   deleteDoc
 } from 'firebase/firestore';
 import toast from 'react-hot-toast';
+import CustomSelect from '../../components/common/CustomSelect';
+import { motion, AnimatePresence } from 'framer-motion';
 
 import { useAdminUI } from '../../context/AdminUIContext';
 import DeleteConfirmationModal from '../../components/admin/DeleteConfirmationModal';
@@ -38,7 +40,13 @@ const Users = () => {
   const [rowsOpen, setRowsOpen] = useState(false);
   const [activeFilter, setActiveFilter] = useState('All');
   const [rowsPerPage, setRowsPerPage] = useState(10);
+  const [currentPage, setCurrentPage] = useState(1);
+  const [direction, setDirection] = useState(0);
   const [sortConfig, setSortConfig] = useState({ key: 'createdAt', dir: 'desc' });
+
+  useEffect(() => {
+    setCurrentPage(1);
+  }, [searchTerm, activeFilter, rowsPerPage]);
 
   // Delete Modal States
   const [isDeleteModalOpen, setIsDeleteModalOpen] = useState(false);
@@ -161,6 +169,24 @@ const Users = () => {
     return list;
   })();
 
+  const rowVariants = {
+    initial: ({ direction }) => ({ opacity: 0, x: direction * 30 }),
+    animate: ({ index }) => ({ 
+      opacity: 1, 
+      x: 0,
+      transition: { 
+        delay: index * 0.03,
+        duration: 0.4,
+        ease: [0.22, 1, 0.36, 1]
+      }
+    }),
+    exit: ({ direction }) => ({ 
+      opacity: 0, 
+      x: direction * -30,
+      transition: { duration: 0.2 }
+    })
+  };
+
   // Close filter/rows dropdown on outside click
   useEffect(() => {
     const handler = (e) => {
@@ -216,30 +242,15 @@ const Users = () => {
           />
         </div>
         <div className="flex items-center gap-3 pr-2">
-          {/* Rows Selection */}
-          <div className="relative" ref={rowsRef}>
-            <button
-              onClick={() => setRowsOpen(prev => !prev)}
-              className="flex items-center gap-2 px-3 py-1.5 text-[12px] font-semibold text-gray-500 hover:text-gray-900 transition-colors border-r border-gray-100"
-            >
-              Rows: <span className="text-[#1BAFAF]">{rowsPerPage}</span>
-              <ChevronDown size={12} className={`transition-transform duration-200 ${rowsOpen ? 'rotate-180' : ''}`} />
-            </button>
-            {rowsOpen && (
-              <div className="absolute right-0 top-full mt-2 w-24 bg-white border border-gray-100 rounded-xl shadow-lg z-50 py-1 overflow-hidden">
-                {rowOptions.map(opt => (
-                  <button
-                    key={opt}
-                    onClick={() => { setRowsPerPage(opt); setRowsOpen(false); }}
-                    className={`w-full text-left px-3 py-2 text-[13px] transition-colors ${
-                      rowsPerPage === opt ? 'text-[#1BAFAF] font-semibold bg-[#1BAFAF]/5' : 'text-gray-600 hover:bg-gray-50'
-                    }`}
-                  >
-                    {opt} rows
-                  </button>
-                ))}
-              </div>
-            )}
+          <div className="flex items-center px-3 border-r border-gray-100">
+            <CustomSelect
+              value={rowsPerPage}
+              onChange={(val) => setRowsPerPage(Number(val))}
+              options={rowOptions.map(opt => ({ value: opt, label: `${opt} rows` }))}
+              className="w-28"
+              minimal={true}
+              valuePrefix="Rows:"
+            />
           </div>
 
           {/* Filters Selection */}
@@ -314,66 +325,105 @@ const Users = () => {
               </tr>
             </thead>
             <tbody className="divide-y divide-gray-50/50">
-              {filteredUsers.length > 0 ? (
-                filteredUsers.slice(0, rowsPerPage).map((user, idx) => (
-                  <tr key={user.id} className="hover:bg-gray-50 group transition-colors">
-                    <td className="px-6 py-4 whitespace-nowrap text-[14px] text-gray-400 font-medium">{(idx + 1).toString().padStart(2, '0')}</td>
-                    <td className="px-6 py-4 min-w-[200px]">
-                      <span className="text-[14px] font-bold text-gray-900">{user.fullName}</span>
-                    </td>
-                    <td className="px-6 py-4">
-                      <span className="text-[14px] text-gray-500 font-medium">{user.email}</span>
-                    </td>
-                    <td className="px-6 py-4">
-                      <span className="text-[14px] text-gray-500 font-medium">{user.phone || '---'}</span>
-                    </td>
-                    <td className="px-6 py-4 whitespace-nowrap">
-                      <span className={`text-[11px] font-bold uppercase tracking-wider px-2.5 py-1 rounded-lg ${
-                        (user.status || 'Active') === 'Active' ? 'text-[#1BAFAF] bg-[#eaf6f6]' :
-                        'text-red-500 bg-red-50'
-                      }`}>
-                        {user.status || 'Active'}
-                      </span>
-                    </td>
-                    <td className="px-6 py-4 whitespace-nowrap text-[14px] text-gray-500 font-medium">
-                      {formatDate(user.createdAt)}
-                    </td>
-                    <td className="px-6 py-4 text-right">
-                      <div className="flex items-center justify-end gap-2">
-                        <button 
-                          onClick={() => handleEdit(user)}
-                          className="w-8 h-8 flex items-center justify-center text-[#1BAFAF] hover:bg-[#1BAFAF]/5 rounded-lg transition-all active:scale-90"
-                        >
-                          <Pencil size={14} strokeWidth={2.5} />
-                        </button>
-                        <button 
-                          onClick={() => handleDelete(user)}
-                          className="w-8 h-8 flex items-center justify-center text-red-600 hover:bg-red-50 rounded-lg transition-all active:scale-90"
-                        >
-                          <Trash2 size={14} strokeWidth={2.5} />
-                        </button>
-                      </div>
+              <AnimatePresence mode="wait" custom={direction}>
+                {filteredUsers.length > 0 ? (
+                  filteredUsers.slice((currentPage - 1) * rowsPerPage, currentPage * rowsPerPage).map((user, idx) => (
+                    <motion.tr 
+                      key={user.id} 
+                      custom={{ direction, index: idx }}
+                      variants={rowVariants}
+                      initial="initial"
+                      animate="animate"
+                      exit="exit"
+                      className="hover:bg-gray-50 group transition-colors"
+                    >
+                      <td className="px-6 py-4 whitespace-nowrap text-[14px] text-gray-400 font-medium">
+                        {((currentPage - 1) * rowsPerPage + idx + 1).toString().padStart(2, '0')}
+                      </td>
+                      <td className="px-6 py-4 min-w-[200px]">
+                        <span className="text-[14px] font-bold text-gray-900">{user.fullName}</span>
+                      </td>
+                      <td className="px-6 py-4">
+                        <span className="text-[14px] text-gray-500 font-medium">{user.email}</span>
+                      </td>
+                      <td className="px-6 py-4">
+                        <span className="text-[14px] text-gray-500 font-medium">{user.phone || '---'}</span>
+                      </td>
+                      <td className="px-6 py-4 whitespace-nowrap">
+                        <span className={`text-[11px] font-bold uppercase tracking-wider px-2.5 py-1 rounded-lg ${
+                          (user.status || 'Active') === 'Active' ? 'text-[#1BAFAF] bg-[#eaf6f6]' :
+                          'text-red-500 bg-red-50'
+                        }`}>
+                          {user.status || 'Active'}
+                        </span>
+                      </td>
+                      <td className="px-6 py-4 whitespace-nowrap text-[14px] text-gray-500 font-medium">
+                        {formatDate(user.createdAt)}
+                      </td>
+                      <td className="px-6 py-4 text-right">
+                        <div className="flex items-center justify-end gap-2">
+                          <button 
+                            onClick={() => handleEdit(user)}
+                            className="w-8 h-8 flex items-center justify-center text-[#1BAFAF] hover:bg-[#1BAFAF]/5 rounded-lg transition-all active:scale-90"
+                          >
+                            <Pencil size={14} strokeWidth={2.5} />
+                          </button>
+                          <button 
+                            onClick={() => handleDelete(user)}
+                            className="w-8 h-8 flex items-center justify-center text-red-600 hover:bg-red-50 rounded-lg transition-all active:scale-90"
+                          >
+                            <Trash2 size={14} strokeWidth={2.5} />
+                          </button>
+                        </div>
+                      </td>
+                    </motion.tr>
+                  ))
+                ) : (
+                  <tr>
+                    <td colSpan="7" className="px-6 py-12 text-center text-gray-400 font-medium">
+                      No users found matching your criteria
                     </td>
                   </tr>
-                ))
-              ) : (
-                <tr>
-                  <td colSpan="7" className="px-6 py-12 text-center text-gray-400 font-medium">
-                    No users found matching your criteria
-                  </td>
-                </tr>
-              )}
+                )}
+              </AnimatePresence>
             </tbody>
           </table>
         </div>
 
-        {/* Footer info */}
-        <div className="flex items-center justify-between px-2 pt-1">
-          <span className="text-[11px] font-semibold text-gray-300 uppercase tracking-widest">
-            Total Records: {filteredUsers.length}
+        {/* Page Footer */}
+        <div className="flex items-center justify-between px-2 pt-3">
+          <span className="text-[11px] font-bold text-gray-300 uppercase tracking-widest">
+            Showing {filteredUsers.length > 0 ? (currentPage - 1) * rowsPerPage + 1 : 0}-{Math.min(currentPage * rowsPerPage, filteredUsers.length)} of {filteredUsers.length} Users
           </span>
           <div className="flex items-center gap-2">
-             <p className="text-[11px] text-gray-400 italic">Showing top {Math.min(rowsPerPage, filteredUsers.length)} results</p>
+            <button 
+              onClick={() => {
+                setDirection(-1);
+                setCurrentPage(prev => Math.max(1, prev - 1));
+              }}
+              disabled={currentPage === 1}
+              className={`w-8 h-8 rounded-lg flex items-center justify-center transition-all ${
+                currentPage === 1 
+                  ? 'bg-gray-50 text-gray-300 cursor-not-allowed' 
+                  : 'bg-white border border-gray-100 text-gray-900 hover:shadow-sm hover:text-[#1BAFAF]'
+              }`}
+            >
+              <ArrowUpRight size={14} className="rotate-[225deg]" />
+            </button>
+            <button 
+              onClick={() => {
+                setDirection(1);
+                setCurrentPage(prev => Math.min(Math.ceil(filteredUsers.length / rowsPerPage), prev + 1));
+              }}
+              disabled={currentPage >= Math.ceil(filteredUsers.length / rowsPerPage)}
+              className={`w-8 h-8 rounded-lg flex items-center justify-center transition-all ${
+                currentPage >= Math.ceil(filteredUsers.length / rowsPerPage)
+                  ? 'bg-gray-50 text-gray-300 cursor-not-allowed' 
+                  : 'bg-white border border-gray-100 text-gray-900 hover:shadow-sm hover:text-[#1BAFAF]'
+              }`}
+            >
+              <ArrowUpRight size={14} className="rotate-45" />
+            </button>
           </div>
         </div>
       </div>

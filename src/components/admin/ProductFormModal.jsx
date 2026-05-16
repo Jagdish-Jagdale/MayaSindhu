@@ -424,12 +424,14 @@ export default function ProductFormModal({ isOpen, onClose, product = null, init
                             }}
                           >
                             <div className={`relative ${isDisabled ? 'cursor-pointer' : ''}`}>
-                            <CustomSelect
-                              value={selectedId || ''}
-                              onChange={(val) => handleLevelChange(level, val)}
-                              options={options}
-                              label={level === 0 ? 'Main Category *' : `Sub Category ${level} ${level === 1 ? '*' : ''}`}
-                            />
+                              <label className="text-[13px] font-bold text-gray-700 ml-1 mb-1.5 block">
+                                {level === 0 ? 'Main Category *' : `Sub Category ${level} ${level === 1 ? '*' : ''}`}
+                              </label>
+                              <CustomSelect
+                                value={selectedId || ''}
+                                onChange={(val) => handleLevelChange(level, val)}
+                                options={options}
+                              />
                             </div>
                           </div>
                         );
@@ -494,7 +496,6 @@ export default function ProductFormModal({ isOpen, onClose, product = null, init
                     <div className="space-y-1.5">
                       <label className="text-[13px] font-bold text-gray-700 ml-1">Product Type</label>
                       <CustomSelect
-                        label="Product Type"
                         value={formData.productType}
                         onChange={(val) => setFormData(prev => ({ ...prev, productType: val, stock: val === 'Unique' ? '1' : prev.stock }))}
                         options={['Repeat', 'Unique']}

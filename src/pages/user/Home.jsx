@@ -789,7 +789,7 @@ export default function Home() {
             <div className="mx-auto w-16 md:w-24 h-1 bg-brand-orange mt-4 md:mt-6 rounded-none opacity-30" />
           </motion.div>
 
-          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-8">
+          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-8">
             {workshops.map((ws, idx) => (
               <motion.div
                 key={ws.id}
@@ -799,7 +799,7 @@ export default function Home() {
                 transition={{ delay: idx * 0.1, duration: 0.8 }}
                 className="group"
               >
-                <div className="relative aspect-[4/3] rounded-2xl overflow-hidden mb-6 shadow-lg bg-[#FAF9F6] flex items-center justify-center">
+                <div className="relative aspect-square rounded-2xl overflow-hidden mb-6 shadow-lg bg-[#FAF9F6] flex items-center justify-center">
                   {ws.image ? (
                     <img src={ws.image} alt={ws.name} className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-700" />
                   ) : (
