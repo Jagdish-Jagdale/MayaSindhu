@@ -86,7 +86,7 @@ export default function Wishlist() {
         </div>
         <h2 className="text-3xl font-sans font-bold text-[#1A1A1A] mb-4">Your wishlist is empty</h2>
         <p className="text-gray-500 mb-10 max-w-md">Save your favorite handcrafted pieces for later.</p>
-        <Link to="/shop" className="btn btn-primary px-12">Browse Collection</Link>
+        <Link to="/collections" className="btn btn-primary px-12">Browse Collection</Link>
       </div>
     );
   }

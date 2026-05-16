@@ -434,7 +434,7 @@ export default function Home() {
             return {
               title: realm.title || (category ? category.name : ''),
               subtitle: realm.subtitle || '',
-              path: category ? category.fullPath : '/shop',
+              path: category ? category.fullPath : '/',
               imageUrl: realm.imageUrl
             };
           });
@@ -520,7 +520,7 @@ export default function Home() {
               <span className="text-[10px] md:text-[11px] uppercase font-bold tracking-[0.5em] text-gray-400 mb-4 block">The Selection</span>
               <h2 className="text-4xl md:text-[64px] font-sans font-medium text-[#111111] tracking-tight leading-[0.9]">Customer <br className="hidden md:block" /> <span className="text-brand-orange">Favourites</span></h2>
             </div>
-            <Link to="/shop" className="group flex items-center gap-4 text-[11px] font-bold uppercase tracking-[0.2em] border-b border-gray-200 pb-2 hover:text-brand-orange hover:border-brand-orange transition-all">
+            <Link to="/collections" className="group flex items-center gap-4 text-[11px] font-bold uppercase tracking-[0.2em] border-b border-gray-200 pb-2 hover:text-brand-orange hover:border-brand-orange transition-all">
               View All Collection
               <ChevronRight size={16} className="group-hover:translate-x-1 transition-transform" />
             </Link>
@@ -570,7 +570,7 @@ export default function Home() {
                     <p className="text-text-muted text-[12px] md:text-sm leading-relaxed mb-4 md:mb-6 line-clamp-2 md:line-clamp-none">
                       {trend.description}
                     </p>
-                    <Link to={trend.link || "/shop"} className="text-[11px] md:text-[12px] font-bold text-text-main border-b-2 border-text-main/20 pb-0.5 hover:text-brand-orange hover:border-brand-orange transition-all duration-300 inline-flex items-center gap-1 group/link">
+                    <Link to={trend.link || "/"} className="text-[11px] md:text-[12px] font-bold text-text-main border-b-2 border-text-main/20 pb-0.5 hover:text-brand-orange hover:border-brand-orange transition-all duration-300 inline-flex items-center gap-1 group/link">
                       Discover More
                       <ChevronRight size={14} className="group-hover/link:translate-x-0.5 transition-transform" />
                     </Link>

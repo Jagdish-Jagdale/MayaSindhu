@@ -75,7 +75,7 @@ export default function Footer() {
               ) : (
                 ['Sarees', 'Jewellery', 'Dresses', 'Accessories'].map((link) => (
                   <li key={link}>
-                    <Link to="/shop" className="text-[#1A1A1A] text-[11px] uppercase tracking-widest hover:text-brand-orange transition-colors duration-300">
+                    <Link to="/" className="text-[#1A1A1A] text-[11px] uppercase tracking-widest hover:text-brand-orange transition-colors duration-300">
                       {link}
                     </Link>
                   </li>

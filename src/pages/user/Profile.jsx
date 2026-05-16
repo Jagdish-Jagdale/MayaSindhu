@@ -131,18 +131,15 @@ export default function Profile() {
                     {activeTab === tab.id && <ChevronRight size={14} className="ml-auto" />}
                   </button>
                 ))}
-              </div>
-
-              {/* Bottom Actions */}
-              <div className="mt-8 pt-8 border-t border-gray-50 px-6">
                 <button
                   onClick={handleLogout}
-                  className="flex items-center gap-3 text-red-500 hover:text-red-600 transition-colors font-bold text-[11px] uppercase tracking-widest"
+                  className="w-full flex items-center gap-4 px-6 py-4 rounded-xl transition-all font-bold text-[13px] text-red-500 hover:bg-red-50 mt-4 border-t border-gray-100 pt-6"
                 >
-                  <LogOut size={16} />
-                  <span>Sign Out</span>
+                  <LogOut size={18} />
+                  <span className="uppercase tracking-widest">Sign Out</span>
                 </button>
               </div>
+
             </nav>
           </div>
         </aside>

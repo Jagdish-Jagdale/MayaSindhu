@@ -7,7 +7,6 @@ import ScrollToTop from './components/common/ScrollToTop';
 
 // User Pages
 import Home from './pages/user/Home';
-import Shop from './pages/user/Shop';
 import ProductDetail from './pages/user/ProductDetail';
 import CategoryView from './pages/user/CategoryView';
 import Cart from './pages/user/Cart';
@@ -94,10 +93,9 @@ function App() {
           }}
         />
         <Routes>
-          {/* User Routes */}
           <Route path="/" element={<UserLayout />}>
             <Route index element={<Home />} />
-            <Route path="shop" element={<Shop />} />
+            <Route path="collections" element={<CategoryView />} />
             <Route path="product/:slug" element={<ProductDetail />} />
             <Route path="c/*" element={<CategoryView />} />
             <Route path="cart" element={<Cart />} />

@@ -88,7 +88,7 @@ export default function Cart() {
         </div>
         <h2 className="text-3xl font-sans font-bold text-[#1A1A1A] mb-4">Your bag is empty</h2>
         <p className="text-gray-500 mb-10 max-w-md">Looks like you haven't added any handcrafted treasures to your bag yet.</p>
-        <Link to="/shop" className="btn btn-primary px-12">Return to Shop</Link>
+        <Link to="/collections" className="btn btn-primary px-12">Return to Shop</Link>
       </div>
     );
   }
