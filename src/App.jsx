@@ -17,6 +17,9 @@ import Profile from './pages/user/Profile';
 import Checkout from './pages/user/Checkout';
 import Blog from './pages/user/Blog';
 import BlogDetail from './pages/user/BlogDetail';
+import Terms from './pages/user/Terms';
+import Privacy from './pages/user/Privacy';
+import Disclaimer from './pages/user/Disclaimer';
 
 // Admin Pages
 import Dashboard from './pages/admin/Dashboard';
@@ -110,6 +113,9 @@ function App() {
               <Route index element={<Blog />} />
               <Route path=":id" element={<BlogDetail />} />
             </Route>
+            <Route path="terms" element={<Terms />} />
+            <Route path="privacy" element={<Privacy />} />
+            <Route path="disclaimer" element={<Disclaimer />} />
           </Route>
 
           {/* Standalone User Routes */}
