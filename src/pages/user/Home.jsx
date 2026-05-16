@@ -157,11 +157,11 @@ export default function Home() {
       const hydrated = ftData.map(ft => {
         const product = products.find(p => p.id === ft.productId);
         if (!product) return null;
-        
-        return { 
-          ...product, 
+
+        return {
+          ...product,
           price: product.discountedPrice || product.price || 0,
-          originalFeaturedId: ft.id 
+          originalFeaturedId: ft.id
         };
       }).filter(Boolean);
 
@@ -528,16 +528,13 @@ export default function Home() {
             initial={{ opacity: 0, y: 20 }}
             whileInView={{ opacity: 1, y: 0 }}
             viewport={{ once: true }}
-            className="mb-16 md:mb-24 flex flex-col md:flex-row md:items-end md:justify-between gap-8"
+            className="mb-16 md:mb-24 text-center"
           >
-            <div className="text-left">
-              <span className="text-[10px] md:text-[11px] uppercase font-bold tracking-[0.5em] text-gray-400 mb-4 block">The Selection</span>
-              <h2 className="text-4xl md:text-[64px] font-sans font-medium text-[#111111] tracking-tight leading-[0.9]">Customer <br className="hidden md:block" /> <span className="text-brand-orange">Favourites</span></h2>
+            <div className="mb-8">
+              <span className="text-[10px] md:text-[11px] uppercase font-bold tracking-[0.5em] text-brand-orange mb-4 block">The Selection</span>
+              <h2 className="text-4xl md:text-6xl font-sans font-medium text-text-main tracking-tight mb-8">Customer Favourites</h2>
+              <div className="w-16 md:w-32 h-[1px] bg-brand-orange/30 mx-auto" />
             </div>
-            <Link to="/collections" className="group flex items-center gap-4 text-[11px] font-bold uppercase tracking-[0.2em] border-b border-gray-200 pb-2 hover:text-brand-orange hover:border-brand-orange transition-all">
-              View All Collection
-              <ChevronRight size={16} className="group-hover:translate-x-1 transition-transform" />
-            </Link>
           </motion.div>
 
           <div
@@ -549,6 +546,13 @@ export default function Home() {
                 <ProductCard {...product} />
               </div>
             ))}
+          </div>
+
+          <div className="flex justify-center pt-1">
+            <Link to="/collections" className="inline-flex group items-center gap-4 text-[11px] font-bold uppercase tracking-[0.2em] border-b border-gray-200 pb-2 hover:text-brand-orange hover:border-brand-orange transition-all">
+              View All Collection
+              <ChevronRight size={16} className="group-hover:translate-x-1 transition-transform" />
+            </Link>
           </div>
         </section>
       )}
@@ -809,7 +813,7 @@ export default function Home() {
                 </div>
                 <h3 className="text-xl font-sans font-medium text-text-main mb-3 group-hover:text-brand-orange transition-colors">{ws.name}</h3>
                 <p className="text-gray-500 text-sm leading-relaxed mb-6 line-clamp-2">{ws.summary}</p>
-                <button 
+                <button
                   onClick={() => {
                     setSelectedWorkshop(ws);
                     setWorkshopModalOpen(true);
@@ -875,10 +879,10 @@ export default function Home() {
       </section>
 
       {/* Workshop Modal */}
-      <WorkshopModal 
-        isOpen={workshopModalOpen} 
-        onClose={() => setWorkshopModalOpen(false)} 
-        workshop={selectedWorkshop} 
+      <WorkshopModal
+        isOpen={workshopModalOpen}
+        onClose={() => setWorkshopModalOpen(false)}
+        workshop={selectedWorkshop}
       />
     </div>
   );

@@ -269,11 +269,11 @@ export default function FeaturedTreasures() {
           <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-8">
             {featuredItems.map((product) => (
               <div key={product.id} className="group relative animate-in fade-in zoom-in duration-500">
-                <div className="relative aspect-[1/1.1] overflow-hidden bg-white border border-gray-100 rounded-[2.5rem] shadow-sm hover:shadow-xl transition-all duration-500">
+                <div className="relative aspect-[3/4] overflow-hidden bg-[#F9F8F6] border border-gray-100 rounded-2xl shadow-sm hover:shadow-xl transition-all duration-500 p-2">
                   <img
                     src={product.images?.[0] || product.image}
                     alt={product.name}
-                    className="w-full h-full object-cover transition-transform duration-1000 group-hover:scale-105"
+                    className="w-full h-full object-contain transition-transform duration-1000 group-hover:scale-105"
                   />
                   
                   {/* Remove Button Overlay */}
