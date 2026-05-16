@@ -247,7 +247,7 @@ export default function Navbar() {
                           key={p.id}
                           to={`/product/${p.slug || p.id}`}
                           onClick={() => setSuggestions([])}
-                          className="flex items-center gap-3 p-3 hover:bg-gray-50 rounded-xl transition-colors group/item"
+                          className="flex items-center gap-3 p-3 hover:bg-gray-50 rounded-lg transition-colors group/item"
                         >
                           <div className="w-12 h-12 rounded-lg bg-gray-50 overflow-hidden flex-shrink-0 border border-gray-100 p-1">
                             <img src={p.image || (p.images && p.images[0])} alt="" className="w-full h-full object-contain" />
@@ -422,19 +422,15 @@ function NavItem({ category, location, activeId, onEnter, onLeave }) {
             transition={{ duration: 0.2 }}
             style={{
               position: 'fixed',
-              top: rect.bottom + 8,
+              top: rect.bottom + 4,
               left: preferredDirection === 'right' ? Math.max(16, rect.left) : 'auto',
               right: preferredDirection === 'left' ? Math.max(16, window.innerWidth - rect.right) : 'auto',
               maxWidth: 'calc(100vw - 32px)',
               zIndex: 1100
             }}
           >
-            <div className="bg-white shadow-2xl border border-gray-100 rounded-[28px] min-w-[220px] py-4 max-h-[350px] overflow-y-auto custom-scrollbar">
-              <ul className="space-y-0.5">
-                {category.children.map((child) => (
-                  <RecursiveMenuItem key={child.id} item={child} location={location} parentDirection={preferredDirection} />
-                ))}
-              </ul>
+            <div className="bg-white shadow-2xl border border-gray-100 rounded-2xl min-w-[220px] py-4 max-h-[350px] overflow-y-auto overscroll-contain custom-scrollbar">
+              <RecursiveMenuList items={category.children} location={location} direction={preferredDirection} />
             </div>
           </motion.div>
         )}
@@ -443,15 +439,41 @@ function NavItem({ category, location, activeId, onEnter, onLeave }) {
   );
 }
 
-function RecursiveMenuItem({ item, location, parentDirection }) {
-  const [activeChildId, setActiveChildId] = useState(null);
+function RecursiveMenuList({ items, location, direction }) {
+  const [activeId, setActiveId] = useState(null);
+  const timeoutRef = useRef(null);
+
+  const handleItemEnter = (id) => {
+    if (timeoutRef.current) clearTimeout(timeoutRef.current);
+    setActiveId(id);
+  };
+
+  const handleListLeave = () => {
+    timeoutRef.current = setTimeout(() => setActiveId(null), 300);
+  };
+
+  return (
+    <ul className="space-y-0.5" onMouseLeave={handleListLeave}>
+      {items.map((child) => (
+        <RecursiveMenuItem 
+          key={child.id} 
+          item={child} 
+          location={location} 
+          parentDirection={direction} 
+          isHovered={activeId === child.id}
+          onHoverEnter={() => handleItemEnter(child.id)}
+        />
+      ))}
+    </ul>
+  );
+}
+
+function RecursiveMenuItem({ item, location, parentDirection, isHovered, onHoverEnter }) {
   const liRef = useRef(null);
   const [rect, setRect] = useState(null);
   const [direction, setDirection] = useState(parentDirection);
-  const timeoutRef = useRef(null);
 
   const handleMouseEnter = () => {
-    if (timeoutRef.current) clearTimeout(timeoutRef.current);
     if (liRef.current) {
       const currentRect = liRef.current.getBoundingClientRect();
       setRect(currentRect);
@@ -464,17 +486,10 @@ function RecursiveMenuItem({ item, location, parentDirection }) {
         setDirection(parentDirection);
       }
     }
-    setActiveChildId(item.id);
-  };
-
-  const handleMouseLeave = () => {
-    timeoutRef.current = setTimeout(() => {
-      setActiveChildId(null);
-    }, 400);
+    onHoverEnter();
   };
 
   const isActive = location.pathname.startsWith(item.fullPath) || location.pathname === item.fullPath;
-  const isHovered = activeChildId === item.id;
   const hasSubCategories = item.children && item.children.length > 0;
 
   return (
@@ -482,11 +497,10 @@ function RecursiveMenuItem({ item, location, parentDirection }) {
       ref={liRef}
       className="relative px-3"
       onMouseEnter={handleMouseEnter}
-      onMouseLeave={handleMouseLeave}
     >
       <Link
         to={item.fullPath}
-        className={`flex items-center justify-between w-full px-6 py-3 rounded-[20px] text-[15px] font-medium tracking-normal font-sans whitespace-nowrap gap-8 transition-all ${isHovered || isActive ? 'bg-brand-orange/5 text-brand-orange' : 'text-gray-600 hover:bg-gray-50 hover:text-brand-black'
+        className={`flex items-center justify-between w-full px-6 py-3 rounded-lg text-[15px] font-medium tracking-normal font-sans whitespace-nowrap gap-8 transition-all ${isHovered || isActive ? 'bg-brand-orange/5 text-brand-orange' : 'text-gray-600 hover:bg-gray-50 hover:text-brand-black'
           }`}
       >
         <div className="flex items-center gap-1.5">
@@ -505,23 +519,18 @@ function RecursiveMenuItem({ item, location, parentDirection }) {
             exit={{ opacity: 0, x: direction === 'right' ? 10 : -10 }}
             transition={{ duration: 0.2 }}
             onMouseEnter={handleMouseEnter}
-            onMouseLeave={handleMouseLeave}
             style={{
               position: 'fixed',
               top: rect.top - 12,
-              left: direction === 'right' ? rect.right - 4 : 'auto',
-              right: direction === 'left' ? (window.innerWidth - rect.left) - 4 : 'auto',
+              left: direction === 'right' ? rect.right - 2 : 'auto',
+              right: direction === 'left' ? (window.innerWidth - rect.left) - 2 : 'auto',
               zIndex: 1250,
-              paddingLeft: direction === 'right' ? '20px' : '0',
-              paddingRight: direction === 'left' ? '20px' : '0'
+              paddingLeft: direction === 'right' ? '6px' : '0',
+              paddingRight: direction === 'left' ? '6px' : '0'
             }}
           >
-            <div className="bg-white shadow-2xl border border-gray-100 rounded-[28px] min-w-[220px] py-4 max-h-[350px] overflow-y-auto custom-scrollbar">
-              <ul className="space-y-0.5">
-                {item.children.map((child) => (
-                  <RecursiveMenuItem key={child.id} item={child} location={location} parentDirection={direction} />
-                ))}
-              </ul>
+            <div className="bg-white shadow-2xl border border-gray-100 rounded-2xl min-w-[220px] py-4 max-h-[350px] overflow-y-auto overscroll-contain custom-scrollbar">
+              <RecursiveMenuList items={item.children} location={location} direction={direction} />
             </div>
           </motion.div>
         )}

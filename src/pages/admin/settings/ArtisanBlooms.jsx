@@ -303,16 +303,16 @@ export default function ArtisanBlooms() {
       ) : (
         <div className="grid grid-cols-1 lg:grid-cols-2 gap-8 pb-12">
           {trends.map((trend) => (
-            <div key={trend.id} className="bg-white border border-gray-100 rounded-[3rem] p-8 flex flex-col sm:flex-row gap-8 shadow-sm hover:shadow-xl transition-all group relative overflow-hidden">
+            <div key={trend.id} className="bg-white border border-gray-100 rounded-3xl p-8 flex flex-col sm:flex-row gap-8 shadow-sm hover:shadow-xl transition-all group relative overflow-hidden">
               {/* Image Cluster */}
               <div className="relative flex-shrink-0 flex items-center justify-center">
                 <div className="relative w-40 h-40 md:w-48 md:h-48 group/img">
-                  <div className="absolute inset-0 bg-gray-50 rounded-full overflow-hidden border-4 border-white shadow-inner">
-                    <img src={trend.imageUrl} className="w-full h-full object-cover" alt="" />
+                  <div className="absolute inset-0 bg-gray-50 rounded-2xl overflow-hidden border-4 border-white shadow-inner p-2">
+                    <img src={trend.imageUrl} className="w-full h-full object-contain" alt="" />
                   </div>
                   <button 
                     onClick={() => triggerEditImage(trend.id)}
-                    className="absolute inset-0 bg-black/40 opacity-0 group-hover/img:opacity-100 rounded-full flex flex-col items-center justify-center text-white transition-all duration-300 backdrop-blur-[2px]"
+                    className="absolute inset-0 bg-black/40 opacity-0 group-hover/img:opacity-100 rounded-2xl flex flex-col items-center justify-center text-white transition-all duration-300 backdrop-blur-[2px]"
                   >
                     <Camera size={24} className="mb-1" />
                     <span className="text-[10px] font-bold uppercase tracking-widest">Change</span>
