@@ -164,11 +164,9 @@ export default function Blog() {
                       </div>
 
                       {/* Title */}
-                      <Link to={`/blog/${blog.id}`}>
-                        <h4 className="text-lg font-fashion font-bold leading-tight text-[#1A1A1A] group-hover:text-brand-orange transition-colors mb-3">
-                          {blog.title}
-                        </h4>
-                      </Link>
+                      <h4 className="text-lg font-fashion font-bold leading-tight text-[#1A1A1A] mb-3">
+                        {blog.title}
+                      </h4>
 
                       {/* Summary */}
                       <p className="text-gray-500 text-sm leading-relaxed line-clamp-3 font-light mb-4 flex-1">

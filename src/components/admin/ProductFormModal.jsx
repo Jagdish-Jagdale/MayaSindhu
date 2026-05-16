@@ -5,6 +5,7 @@ import { collection, addDoc, updateDoc, doc, serverTimestamp } from 'firebase/fi
 import useCategories from '../../hooks/useCategories';
 import toast from 'react-hot-toast';
 import { uploadToCloudinary, deleteMultipleFromCloudinary } from '../../utils/cloudinary';
+import CustomSelect from '../common/CustomSelect';
 
 export default function ProductFormModal({ isOpen, onClose, product = null, initialCategoryId = null }) {
   const { categories: heirarchy } = useCategories();
@@ -300,7 +301,7 @@ export default function ProductFormModal({ isOpen, onClose, product = null, init
   if (!isOpen) return null;
 
   return (
-    <div className="fixed inset-0 z-[100] flex items-center justify-center p-4 bg-black/60 backdrop-blur-sm transition-all animate-in fade-in duration-300">
+    <div className="fixed inset-0 z-[200] flex items-center justify-center p-4 bg-black/60 backdrop-blur-sm transition-all animate-in fade-in duration-300">
       <div
         className="bg-white w-full max-w-4xl max-h-[90vh] rounded-[24px] shadow-2xl flex flex-col overflow-hidden animate-in zoom-in-95 duration-300"
         onClick={(e) => e.stopPropagation()}
@@ -410,19 +411,12 @@ export default function ProductFormModal({ isOpen, onClose, product = null, init
                               {level === 0 ? 'Main Category *' : `Sub Category ${level} ${level === 1 ? '*' : ''}`}
                             </label>
                             <div className={`relative ${isDisabled ? 'cursor-pointer' : ''}`}>
-                              <select
-                                required={!isDisabled && (level === 0 || level === 1)}
-                                value={selectedId || ''}
-                                onChange={(e) => handleLevelChange(level, e.target.value)}
-                                className={`w-full bg-gray-50 border-none px-4 py-3 rounded-xl text-[14px] outline-none focus:ring-2 focus:ring-[#1BAFAF]/20 focus:bg-white transition-all font-bold text-gray-700 appearance-none ${
-                                  isDisabled ? 'pointer-events-none' : ''
-                                }`}
-                              >
-                                <option value="">Select {level === 0 ? 'Category' : `Sub Category ${level}`}</option>
-                                {options.map(cat => (
-                                  <option key={cat.id} value={cat.id}>{cat.name}</option>
-                                ))}
-                              </select>
+                            <CustomSelect
+                              value={selectedId || ''}
+                              onChange={(val) => handleLevelChange(level, val)}
+                              options={options}
+                              label={level === 0 ? 'Main Category *' : `Sub Category ${level} ${level === 1 ? '*' : ''}`}
+                            />
                             </div>
                           </div>
                         );
@@ -486,15 +480,12 @@ export default function ProductFormModal({ isOpen, onClose, product = null, init
                   <div className="grid grid-cols-2 gap-4">
                     <div className="space-y-1.5">
                       <label className="text-[13px] font-bold text-gray-700 ml-1">Product Type</label>
-                      <select
-                        name="productType"
+                      <CustomSelect
+                        label="Product Type"
                         value={formData.productType}
-                        onChange={handleInputChange}
-                        className="w-full bg-gray-50 border-none px-4 py-3 rounded-xl text-[14px] outline-none focus:ring-2 focus:ring-[#1BAFAF]/20 focus:bg-white transition-all font-bold text-gray-700 appearance-none"
-                      >
-                        <option value="Repeat">Repeat</option>
-                        <option value="Unique">Unique</option>
-                      </select>
+                        onChange={(val) => setFormData(prev => ({ ...prev, productType: val, stock: val === 'Unique' ? '1' : prev.stock }))}
+                        options={['Repeat', 'Unique']}
+                      />
                     </div>
 
                     <div className="space-y-1.5">

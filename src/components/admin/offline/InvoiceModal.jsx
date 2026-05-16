@@ -27,6 +27,7 @@ import {
 import toast from 'react-hot-toast';
 import StoreCustomerModal from './StoreCustomerModal';
 import BulkItemModal from './BulkItemModal';
+import CustomSelect from '../../common/CustomSelect';
 
 const InvoiceModal = ({ isOpen, onClose }) => {
   const [loading, setLoading] = useState(false);
@@ -55,7 +56,7 @@ const InvoiceModal = ({ isOpen, onClose }) => {
     invoiceNumber: '',
     orderNumber: '',
     invoiceDate: new Date().toLocaleDateString('en-GB'), // dd/mm/yyyy
-    items: [{ id: Date.now(), productId: '', name: '', quantity: 1, rate: 0, discount: 0, amount: 0 }],
+    items: [],
     subTotal: 0,
     tax: 18, // Default 18%
     adjustment: 0,
@@ -197,13 +198,6 @@ const InvoiceModal = ({ isOpen, onClose }) => {
   };
 
   const handleRemoveItem = (id) => {
-    if (formData.items.length === 1) {
-      setFormData(prev => ({
-        ...prev,
-        items: [{ id: Date.now(), productId: '', name: '', quantity: 1, rate: 0, discount: 0, amount: 0 }]
-      }));
-      return;
-    }
     setFormData(prev => ({
       ...prev,
       items: prev.items.filter(item => item.id !== id)
@@ -367,9 +361,10 @@ const InvoiceModal = ({ isOpen, onClose }) => {
                           setSearchCustomer(c.fullName);
                           setShowCustomerDropdown(false);
                         }}
-                        className="w-full text-left px-4 py-3 hover:bg-gray-50 text-[14px] font-medium text-gray-700 transition-colors"
+                        className="w-full text-left px-4 py-3 hover:bg-[#EAF6F6] hover:text-[#1BAFAF] text-[14px] font-bold text-gray-700 transition-all flex items-center justify-between group"
                       >
-                        {c.fullName}
+                        <span>{c.fullName}</span>
+                        <div className="w-1.5 h-1.5 rounded-full bg-[#1BAFAF] opacity-0 group-hover:opacity-100 transition-opacity" />
                       </button>
                     ))}
                 </div>
@@ -509,13 +504,13 @@ const InvoiceModal = ({ isOpen, onClose }) => {
                         key={o.id}
                         type="button"
                         onClick={() => handleOrderSelect(o)}
-                        className="w-full text-left px-4 py-3 hover:bg-gray-50 text-[14px] font-medium text-gray-700 transition-colors flex items-center justify-between"
+                        className="w-full text-left px-4 py-3 hover:bg-[#EAF6F6] text-[14px] font-bold text-gray-700 transition-all flex items-center justify-between group"
                       >
                         <div>
-                          <p className="font-bold">{o.saleOrderNumber}</p>
-                          <p className="text-[11px] text-gray-400">{o.customerName}</p>
+                          <p className="font-bold group-hover:text-[#1BAFAF] transition-colors">{o.saleOrderNumber}</p>
+                          <p className="text-[11px] text-gray-400 group-hover:text-[#1BAFAF]/60 transition-colors">{o.customerName}</p>
                         </div>
-                        <span className="text-[12px] font-black text-[#1BAFAF]">₹{o.total?.toLocaleString()}</span>
+                        <span className="text-[12px] font-black text-[#1BAFAF] bg-white px-2 py-1 rounded-lg">₹{o.total?.toLocaleString()}</span>
                       </button>
                     ))}
                   {orders.filter(o => {
@@ -622,41 +617,11 @@ const InvoiceModal = ({ isOpen, onClose }) => {
                 </tbody>
               </table>
             </div>
-            <div className="p-4 bg-gray-50/30 flex items-center gap-3">
-              <button
-                type="button"
-                onClick={handleAddItem}
-                className="flex items-center gap-2 px-4 py-2 bg-white border border-gray-100 rounded-xl text-[12px] font-bold text-gray-600 hover:bg-gray-50 transition-all shadow-sm active:scale-95"
-              >
-                <Plus size={14} className="text-[#1BAFAF]" />
-                Add New Row
-              </button>
-              <button
-                type="button"
-                onClick={() => setIsBulkModalOpen(true)}
-                className="flex items-center gap-2 px-4 py-2 bg-white border border-gray-100 rounded-xl text-[12px] font-bold text-gray-600 hover:bg-gray-50 transition-all shadow-sm active:scale-95"
-              >
-                <Search size={14} className="text-[#1BAFAF]" />
-                Add Items in Bulk
-              </button>
-            </div>
+
           </div>
 
           {/* Bottom Section */}
-          <div className="grid grid-cols-1 md:grid-cols-2 gap-12 pt-4">
-            <div className="space-y-4">
-              <div className="space-y-1.5">
-                <label className="text-[11px] font-bold text-gray-400 uppercase tracking-widest ml-1">Customer Notes</label>
-                <textarea
-                  rows="4"
-                  value={formData.customerNotes}
-                  onChange={(e) => setFormData({ ...formData, customerNotes: e.target.value })}
-                  placeholder="Enter any notes..."
-                  className="w-full bg-gray-50 border-2 border-transparent p-4 text-[14px] font-medium rounded-2xl outline-none focus:bg-white focus:border-[#1BAFAF]/20 transition-all resize-none"
-                />
-              </div>
-            </div>
-
+          <div className="pt-4">
             <div className="bg-gray-50/50 rounded-[32px] p-8 space-y-6">
               <div className="flex items-center justify-between">
                 <span className="text-[14px] font-bold text-gray-500">Sub Total</span>
@@ -674,15 +639,15 @@ const InvoiceModal = ({ isOpen, onClose }) => {
                      <span className="text-[12px] font-bold text-gray-500 uppercase tracking-widest">TCS</span>
                    </div>
                 </div>
-                <select 
-                  value={formData.tax}
-                  onChange={(e) => setFormData({ ...formData, tax: parseFloat(e.target.value) || 0 })}
-                  className="bg-white border border-gray-100 rounded-xl px-3 py-1.5 text-[12px] font-bold text-gray-600 outline-none"
-                >
-                  <option value="18">GST 18%</option>
-                  <option value="5">GST 5%</option>
-                  <option value="0">No Tax</option>
-                </select>
+                <CustomSelect
+                   value={formData.tax === 0 ? 'No Tax' : `GST ${formData.tax}%`}
+                   onChange={(val) => {
+                     const num = val === 'No Tax' ? 0 : parseFloat(val.replace('GST ', '').replace('%', '')) || 0;
+                     setFormData({ ...formData, tax: num });
+                   }}
+                   options={['GST 18%', 'GST 5%', 'No Tax']}
+                   className="w-32"
+                 />
               </div>
 
               <div className="flex items-center justify-between gap-8">
@@ -706,12 +671,18 @@ const InvoiceModal = ({ isOpen, onClose }) => {
             </div>
           </div>
 
-          <div className="pt-8 border-t border-gray-50 flex gap-4">
-            <button type="button" onClick={onClose} className="px-8 py-4 text-[14px] font-bold text-gray-500 bg-gray-100 rounded-2xl hover:bg-gray-200 transition-all">Cancel</button>
+          <div className="pt-8 border-t border-gray-50 flex justify-end gap-3">
+            <button 
+              type="button" 
+              onClick={onClose} 
+              className="px-8 py-3 text-[14px] font-bold text-gray-500 bg-gray-50 rounded-2xl hover:bg-gray-100 transition-all active:scale-95"
+            >
+              Cancel
+            </button>
             <button
               type="submit"
               disabled={loading}
-              className="flex-1 py-4 text-[14px] font-bold text-white bg-[#1BAFAF] rounded-2xl hover:bg-[#158e8e] transition-all shadow-lg flex items-center justify-center gap-2"
+              className="px-10 py-3 text-[14px] font-bold text-white bg-[#1BAFAF] rounded-2xl hover:bg-[#158e8e] transition-all shadow-lg shadow-[#1BAFAF]/20 flex items-center justify-center gap-2 active:scale-95 disabled:opacity-50"
             >
               {loading && <Loader2 className="w-4 h-4 animate-spin" />}
               {loading ? 'Processing...' : 'Generate Invoice'}

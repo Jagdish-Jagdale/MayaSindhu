@@ -3,6 +3,7 @@ import { X, Loader2, User, Mail, Phone, ShieldCheck } from 'lucide-react';
 import { db } from '../../firebase';
 import { collection, addDoc, updateDoc, doc, serverTimestamp } from 'firebase/firestore';
 import toast from 'react-hot-toast';
+import CustomSelect from '../common/CustomSelect';
 
 export default function UserModal({ isOpen, onClose, user = null }) {
   const [loading, setLoading] = useState(false);
@@ -172,22 +173,13 @@ export default function UserModal({ isOpen, onClose, user = null }) {
               </div>
             </div>
 
-            {/* Status */}
-            <div className="space-y-1.5">
-              <label className="text-[11px] font-bold text-gray-400 uppercase tracking-widest ml-1">Status</label>
-              <div className="relative group">
-                <ShieldCheck className="absolute left-4 top-1/2 -translate-y-1/2 w-4 h-4 text-gray-300 group-focus-within:text-[#1BAFAF] transition-colors" />
-                <select
-                  value={formData.status}
-                  onChange={(e) => setFormData({ ...formData, status: e.target.value })}
-                  className="w-full bg-gray-50 border-2 border-transparent py-3.5 pl-12 pr-4 text-[14px] font-medium rounded-2xl outline-none focus:bg-white focus:border-[#1BAFAF]/20 transition-all appearance-none"
-                >
-                  <option value="Active">Active</option>
-                  <option value="Inactive">Inactive</option>
-                  <option value="Suspended">Suspended</option>
-                </select>
-              </div>
-            </div>
+            <CustomSelect
+              label="Status"
+              value={formData.status}
+              onChange={(val) => setFormData({ ...formData, status: val })}
+              options={['Active', 'Inactive', 'Suspended']}
+              icon={ShieldCheck}
+            />
           </div>
 
           <div className="pt-4 flex gap-3">

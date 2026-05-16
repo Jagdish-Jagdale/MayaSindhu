@@ -190,29 +190,6 @@ export default function Vendors() {
          </div>
       </div>
       
-      {/* Summary Row */}
-      <div className="grid grid-cols-1 md:grid-cols-2 gap-6 pt-4">
-         <div className="bg-white p-8 rounded-[2rem] border border-gray-100 shadow-sm flex items-center justify-between">
-            <div>
-               <p className="text-[11px] text-gray-400 font-bold uppercase tracking-widest mb-1">Total Active Vendors</p>
-               <h3 className="text-2xl font-black text-gray-900 tracking-tightest">
-                 {vendors.filter(v => v.status === 'Active').length}
-               </h3>
-            </div>
-            <div className="w-12 h-12 rounded-2xl bg-[#1BAFAF]/10 text-[#1BAFAF] flex items-center justify-center">
-               <Building2 size={20} />
-            </div>
-         </div>
-         <div className="bg-white p-8 rounded-[2rem] border border-gray-100 shadow-sm flex items-center justify-between">
-            <div>
-               <p className="text-[11px] text-gray-400 font-bold uppercase tracking-widest mb-1">Total Database</p>
-               <h3 className="text-2xl font-black text-gray-900 tracking-tightest">{vendors.length} Vendors</h3>
-            </div>
-            <div className="w-12 h-12 rounded-2xl bg-gray-50 text-gray-400 flex items-center justify-center">
-               <ArrowUpRight size={20} />
-            </div>
-         </div>
-      </div>
 
       <VendorModal 
         isOpen={isModalOpen}
