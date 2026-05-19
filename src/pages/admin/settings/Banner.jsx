@@ -21,7 +21,9 @@ import {
   Layout,
   Camera,
   X,
-  Pencil
+  Pencil,
+  ChevronLeft,
+  ChevronRight
 } from 'lucide-react';
 import toast from 'react-hot-toast';
 import { uploadToCloudinary, deleteMultipleFromCloudinary, deleteFromCloudinary } from '../../../utils/cloudinary';
@@ -36,6 +38,8 @@ export default function Banner() {
   const [hasChanges, setHasChanges] = useState(false);
   const [deletedBannerIds, setDeletedBannerIds] = useState([]);
   const [deletedImageUrls, setDeletedImageUrls] = useState([]);
+  const [currentPage, setCurrentPage] = useState(1);
+  const rowsPerPage = 10;
 
   const fileInputRef = useRef(null);
   const [editingBannerId, setEditingBannerId] = useState(null);
@@ -268,30 +272,36 @@ export default function Banner() {
       <input type="file" ref={fileInputRef} className="hidden" accept="image/*" onChange={handleFileSelect} />
 
       {/* Header Section */}
-      <div className="space-y-4 py-2">
-        <div className="flex flex-col md:flex-row md:items-center justify-between gap-4">
+      <div className="space-y-2 py-2">
+        <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
           <div>
             <h1 className="text-[22px] font-semibold text-gray-900 tracking-tight">Banner Configuration</h1>
             <p className="text-[12px] text-gray-400 font-medium font-inter tracking-tight">Manage the cinematic hero slider on your homepage.</p>
           </div>
-          <div className="flex items-center gap-3">
-            {hasChanges && (
+          <div className="flex items-center gap-4">
+            <span className="text-[11px] font-semibold text-gray-400 uppercase tracking-widest">
+              TOTAL RECORDS: {banners.length}
+            </span>
+            <span className="text-gray-200 text-sm">|</span>
+            <div className="flex items-center gap-3">
+              {hasChanges && (
+                <button
+                  onClick={handleSave}
+                  disabled={isSaving}
+                  className="flex items-center gap-2 bg-[#1BAFAF] hover:bg-[#17a0a0] text-white px-5 py-2.5 rounded-xl text-[13px] font-bold transition-all shadow-sm shadow-[#1BAFAF]/10 active:scale-95 disabled:opacity-50"
+                >
+                  {isSaving ? <Loader2 size={16} className="animate-spin" /> : <Save size={16} strokeWidth={2.5} />}
+                  Save Changes
+                </button>
+              )}
               <button
-                onClick={handleSave}
-                disabled={isSaving}
-                className="flex items-center gap-2 bg-[#1BAFAF] hover:bg-[#17a0a0] text-white px-6 py-2.5 rounded-xl text-[13px] font-bold transition-all shadow-lg shadow-[#1BAFAF]/10 active:scale-95 disabled:opacity-50"
+                onClick={() => { setEditingBannerId(null); fileInputRef.current?.click(); }}
+                className="flex items-center gap-2 bg-[#1BAFAF] hover:bg-[#17a0a0] text-white px-5 py-2.5 rounded-xl text-[13px] font-bold transition-all shadow-sm shadow-[#1BAFAF]/10 active:scale-95 group"
               >
-                {isSaving ? <Loader2 size={16} className="animate-spin" /> : <Save size={16} strokeWidth={2.5} />}
-                Save Changes
+                <Plus size={18} className="group-hover:rotate-90 transition-transform duration-300" strokeWidth={2.5} />
+                Add Banner
               </button>
-            )}
-            <button
-              onClick={() => { setEditingBannerId(null); fileInputRef.current?.click(); }}
-              className="flex items-center gap-2 border border-gray-200 hover:bg-gray-50 text-gray-900 px-5 py-2.5 rounded-xl text-[13px] font-semibold transition-all active:scale-95"
-            >
-              <Plus size={16} strokeWidth={2.5} />
-              Add Banner
-            </button>
+            </div>
           </div>
         </div>
         <hr className="border-gray-100" />
@@ -314,18 +324,19 @@ export default function Banner() {
       ) : (
         <div className="bg-white rounded-[24px] border border-gray-100 shadow-sm">
           <div>
-            <table className="w-full text-left border-collapse">
-              <thead>
-                <tr className="bg-gray-50/50 border-b border-gray-100">
-                  <th className="px-6 py-2 text-[13px] font-bold text-[#1BAFAF] uppercase tracking-wider w-20 whitespace-nowrap">Sr No</th>
-                  <th className="px-4 py-2 text-[13px] font-bold text-[#1BAFAF] uppercase tracking-wider w-48">Banner Image</th>
-                  <th className="px-4 py-2 text-[13px] font-bold text-[#1BAFAF] uppercase tracking-wider w-32 whitespace-nowrap">Banner Position</th>
-                  <th className="px-4 py-2 text-[13px] font-bold text-[#1BAFAF] uppercase tracking-wider w-28 whitespace-nowrap">Status</th>
-                  <th className="px-6 py-2 text-[13px] font-bold text-[#1BAFAF] uppercase tracking-wider text-right w-24 whitespace-nowrap">Actions</th>
-                </tr>
-              </thead>
-              <tbody className="divide-y divide-gray-50/50">
-                {banners.map((banner, idx) => (
+            <div>
+              <table className="w-full text-left border-collapse">
+                <thead>
+                  <tr className="bg-gray-50/50 border-b border-gray-100">
+                    <th className="px-6 py-2 text-[13px] font-bold text-[#1BAFAF] uppercase tracking-wider w-20 whitespace-nowrap">Sr No</th>
+                    <th className="px-4 py-2 text-[13px] font-bold text-[#1BAFAF] uppercase tracking-wider w-48">Banner Image</th>
+                    <th className="px-4 py-2 text-[13px] font-bold text-[#1BAFAF] uppercase tracking-wider w-32 whitespace-nowrap">Banner Position</th>
+                    <th className="px-4 py-2 text-[13px] font-bold text-[#1BAFAF] uppercase tracking-wider w-28 whitespace-nowrap">Status</th>
+                    <th className="px-6 py-2 text-[13px] font-bold text-[#1BAFAF] uppercase tracking-wider text-right w-24 whitespace-nowrap">Actions</th>
+                  </tr>
+                </thead>
+                <tbody className="divide-y divide-gray-50/50">
+                  {banners.slice((currentPage - 1) * rowsPerPage, currentPage * rowsPerPage).map((banner, idx) => (
                   <tr key={banner.id} className="hover:bg-gray-50/50 transition-colors group">
                     <td className="px-6 py-2 text-[14px] font-medium text-gray-400">
                       {(idx + 1).toString().padStart(2, '0')}
@@ -376,12 +387,36 @@ export default function Banner() {
                       </div>
                     </td>
                   </tr>
-                ))}
-              </tbody>
-            </table>
+                  ))}
+                </tbody>
+              </table>
+            </div>
           </div>
         </div>
       )}
+
+      {/* Pagination Footer */}
+      <div className="flex items-center justify-end px-2 pt-1">
+        <div className="flex items-center gap-2">
+          <button
+            onClick={() => currentPage > 1 && setCurrentPage(currentPage - 1)}
+            disabled={currentPage === 1}
+            className="w-8 h-8 rounded-lg flex items-center justify-center text-gray-400 hover:text-[#1BAFAF] hover:bg-[#1BAFAF]/5 transition-all disabled:opacity-30"
+          >
+            <ChevronLeft size={16} strokeWidth={2.5} />
+          </button>
+          <span className="text-[12px] font-semibold text-gray-400">
+            Page {currentPage} of {Math.ceil(banners.length / rowsPerPage) || 1}
+          </span>
+          <button
+            onClick={() => currentPage < Math.ceil(banners.length / rowsPerPage) && setCurrentPage(currentPage + 1)}
+            disabled={currentPage >= Math.ceil(banners.length / rowsPerPage)}
+            className="w-8 h-8 rounded-lg flex items-center justify-center text-gray-400 hover:text-[#1BAFAF] hover:bg-[#1BAFAF]/5 transition-all disabled:opacity-30"
+          >
+            <ChevronRight size={16} strokeWidth={2.5} />
+          </button>
+        </div>
+      </div>
 
       <DeleteConfirmationModal
         isOpen={isDeleteModalOpen}

@@ -27,7 +27,9 @@ import {
   Info,
   Camera,
   Image as ImageIcon,
-  Link as LinkIcon
+  Link as LinkIcon,
+  ChevronLeft,
+  ChevronRight
 } from 'lucide-react';
 import toast from 'react-hot-toast';
 import { formatDate } from '../../../utils/dateHelper';
@@ -42,12 +44,17 @@ export default function Workshops() {
   const [searchTerm, setSearchTerm] = useState('');
   const [dateFilter, setDateFilter] = useState('');
   const [rowsPerPage, setRowsPerPage] = useState(10);
+  const [currentPage, setCurrentPage] = useState(1);
+
+  useEffect(() => {
+    setCurrentPage(1);
+  }, [searchTerm, dateFilter, rowsPerPage]);
 
   // Modal State
   const [isModalOpen, setIsModalOpen] = useState(false);
   const [isSaving, setIsSaving] = useState(false);
   const [editingWorkshop, setEditingWorkshop] = useState(null);
-  
+
   // Delete Modal State
   const [isDeleteModalOpen, setIsDeleteModalOpen] = useState(false);
   const [isDeleting, setIsDeleting] = useState(false);
@@ -182,8 +189,8 @@ export default function Workshops() {
   };
 
   const filteredWorkshops = workshops.filter(w => {
-    const matchesSearch = w.name?.toLowerCase().includes(searchTerm.toLowerCase()) || 
-                          w.summary?.toLowerCase().includes(searchTerm.toLowerCase());
+    const matchesSearch = w.name?.toLowerCase().includes(searchTerm.toLowerCase()) ||
+      w.summary?.toLowerCase().includes(searchTerm.toLowerCase());
     const matchesDate = dateFilter ? w.date === dateFilter : true;
     return matchesSearch && matchesDate;
   });
@@ -202,20 +209,26 @@ export default function Workshops() {
 
       {/* Header Section */}
       <div className="space-y-2 py-2">
-        <div className="flex items-center justify-between">
+        <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
           <div>
             <h1 className="text-[22px] font-semibold text-gray-900 tracking-tight">
               Artician Workshop Management
             </h1>
-            <p className="text-[12px] text-gray-400 font-medium tracking-normal">Manage workshops and artisan events</p>
+            <p className="text-[12px] text-gray-400 font-medium tracking-tight">Manage workshops and artisan events</p>
           </div>
-          <button
-            onClick={() => handleOpenModal()}
-            className="flex items-center gap-2 bg-[#1BAFAF] hover:bg-[#17a0a0] text-white px-4 py-2 rounded-xl text-[13px] font-semibold transition-all shadow-sm shadow-[#1BAFAF]/10 active:scale-95"
-          >
-            <Plus size={16} strokeWidth={2.5} />
-            Add Workshop
-          </button>
+          <div className="flex items-center gap-4">
+            <span className="text-[11px] font-semibold text-gray-400 uppercase tracking-widest">
+              TOTAL RECORDS: {filteredWorkshops.length}
+            </span>
+            <span className="text-gray-200 text-sm">|</span>
+            <button
+              onClick={() => handleOpenModal()}
+              className="flex items-center gap-2 bg-[#1BAFAF] hover:bg-[#17a0a0] text-white px-5 py-2.5 rounded-xl text-[13px] font-bold transition-all shadow-sm shadow-[#1BAFAF]/10 active:scale-95 group"
+            >
+              <Plus size={18} className="group-hover:rotate-90 transition-transform duration-300" strokeWidth={2.5} />
+              Add Workshop
+            </button>
+          </div>
         </div>
         <hr className="border-gray-100" />
       </div>
@@ -252,14 +265,14 @@ export default function Workshops() {
 
           <div className="flex items-center gap-2 px-3 text-[12px] font-semibold text-gray-500 relative group/filter">
             <Filter size={14} strokeWidth={2.5} className={dateFilter ? 'text-[#1BAFAF]' : ''} />
-            <input 
+            <input
               type="date"
               value={dateFilter}
               onChange={(e) => setDateFilter(e.target.value)}
               className="bg-transparent border-none outline-none text-[12px] font-bold text-gray-500 focus:text-[#1BAFAF] cursor-pointer"
             />
             {dateFilter && (
-              <button 
+              <button
                 onClick={() => setDateFilter('')}
                 className="p-1 hover:bg-gray-100 rounded-full text-gray-400"
               >
@@ -285,7 +298,7 @@ export default function Workshops() {
               </tr>
             </thead>
             <tbody className="divide-y divide-gray-50/50">
-              {filteredWorkshops.length > 0 ? filteredWorkshops.slice(0, rowsPerPage).map((workshop, idx) => (
+              {filteredWorkshops.length > 0 ? filteredWorkshops.slice((currentPage - 1) * rowsPerPage, currentPage * rowsPerPage).map((workshop, idx) => (
                 <tr key={workshop.id} className="hover:bg-gray-50/40 transition-colors group cursor-pointer">
                   <td className="pl-10 pr-4 py-6 text-[14px] font-medium text-gray-400">
                     {(idx + 1).toString().padStart(2, '0')}
@@ -345,6 +358,29 @@ export default function Workshops() {
               )}
             </tbody>
           </table>
+        </div>
+      </div>
+
+      {/* Pagination Footer */}
+      <div className="flex items-center justify-end px-2 pt-1">
+        <div className="flex items-center gap-2">
+          <button
+            onClick={() => currentPage > 1 && setCurrentPage(currentPage - 1)}
+            disabled={currentPage === 1}
+            className="w-8 h-8 rounded-lg flex items-center justify-center text-gray-400 hover:text-[#1BAFAF] hover:bg-[#1BAFAF]/5 transition-all disabled:opacity-30"
+          >
+            <ChevronLeft size={16} strokeWidth={2.5} />
+          </button>
+          <span className="text-[12px] font-semibold text-gray-400">
+            Page {currentPage} of {Math.ceil(filteredWorkshops.length / rowsPerPage) || 1}
+          </span>
+          <button
+            onClick={() => currentPage < Math.ceil(filteredWorkshops.length / rowsPerPage) && setCurrentPage(currentPage + 1)}
+            disabled={currentPage >= Math.ceil(filteredWorkshops.length / rowsPerPage)}
+            className="w-8 h-8 rounded-lg flex items-center justify-center text-gray-400 hover:text-[#1BAFAF] hover:bg-[#1BAFAF]/5 transition-all disabled:opacity-30"
+          >
+            <ChevronRight size={16} strokeWidth={2.5} />
+          </button>
         </div>
       </div>
 

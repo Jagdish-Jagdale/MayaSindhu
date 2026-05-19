@@ -8,7 +8,7 @@ import {
   Loader2
 } from 'lucide-react';
 
-const BulkItemModal = ({ isOpen, onClose, products, onAdd, onAddProduct }) => {
+const BulkItemModal = ({ isOpen, onClose, products, onAdd, onAddProduct, alreadyAddedIds = [] }) => {
   const [searchTerm, setSearchTerm] = useState('');
   const [selectedIds, setSelectedIds] = useState([]);
 
@@ -86,43 +86,61 @@ const BulkItemModal = ({ isOpen, onClose, products, onAdd, onAddProduct }) => {
         {/* Product List */}
         <div className="flex-1 overflow-y-auto p-4 custom-scrollbar">
           <div className="grid grid-cols-1 gap-2">
-            {filteredProducts.map(product => (
-              <button
-                key={product.id}
-                onClick={() => toggleProduct(product.id)}
-                className={`flex items-center gap-4 p-4 rounded-2xl border-2 transition-all text-left ${
-                  selectedIds.includes(product.id) 
-                    ? 'border-[#1BAFAF] bg-[#1BAFAF]/5 shadow-sm' 
-                    : 'border-transparent hover:bg-gray-50'
-                }`}
-              >
-                <div className={`w-6 h-6 rounded-lg border-2 flex items-center justify-center transition-all ${
-                  selectedIds.includes(product.id) 
-                    ? 'bg-[#1BAFAF] border-[#1BAFAF]' 
-                    : 'border-gray-200 bg-white'
-                }`}>
-                  {selectedIds.includes(product.id) && <Check size={14} className="text-white" />}
-                </div>
-                
-                <div className="w-12 h-12 rounded-xl bg-gray-100 flex items-center justify-center text-gray-400 overflow-hidden">
-                  {product.imageUrl ? (
-                    <img src={product.imageUrl} alt="" className="w-full h-full object-cover" />
-                  ) : (
-                    <Package size={20} />
-                  )}
-                </div>
+            {filteredProducts.map(product => {
+              const isAlreadyAdded = alreadyAddedIds.includes(product.id);
+              return (
+                <button
+                  key={product.id}
+                  disabled={isAlreadyAdded}
+                  onClick={() => toggleProduct(product.id)}
+                  className={`flex items-center gap-4 p-4 rounded-2xl border-2 transition-all text-left ${
+                    isAlreadyAdded
+                      ? 'opacity-65 cursor-not-allowed bg-gray-50 border-transparent'
+                      : selectedIds.includes(product.id) 
+                        ? 'border-[#1BAFAF] bg-[#1BAFAF]/5 shadow-sm' 
+                        : 'border-transparent hover:bg-gray-50'
+                  }`}
+                >
+                  <div className={`w-6 h-6 rounded-lg border-2 flex items-center justify-center transition-all ${
+                    isAlreadyAdded
+                      ? 'border-gray-200 bg-gray-100 text-gray-400'
+                      : selectedIds.includes(product.id) 
+                        ? 'bg-[#1BAFAF] border-[#1BAFAF]' 
+                        : 'border-gray-200 bg-white'
+                  }`}>
+                    {isAlreadyAdded ? (
+                      <Check size={14} className="text-gray-400" />
+                    ) : (
+                      selectedIds.includes(product.id) && <Check size={14} className="text-white" />
+                    )}
+                  </div>
+                  
+                  <div className="w-12 h-12 rounded-xl bg-gray-100 flex items-center justify-center text-gray-400 overflow-hidden">
+                    {product.imageUrl ? (
+                      <img src={product.imageUrl} alt="" className="w-full h-full object-cover" />
+                    ) : (
+                      <Package size={20} />
+                    )}
+                  </div>
 
-                <div className="flex-1 min-w-0">
-                  <h4 className="text-[14px] font-bold text-gray-900 truncate">{product.name}</h4>
-                  <p className="text-[12px] text-gray-400 font-medium">SKU: {product.sku || 'N/A'}</p>
-                </div>
+                  <div className="flex-1 min-w-0">
+                    <h4 className="text-[14px] font-bold text-gray-900 truncate">{product.name}</h4>
+                    <p className="text-[12px] text-gray-400 font-medium">SKU: {product.sku || 'N/A'}</p>
+                  </div>
 
-                <div className="text-right">
-                  <p className="text-[14px] font-black text-[#1BAFAF]">₹{(product.price || 0).toLocaleString()}</p>
-                  <p className="text-[10px] font-bold text-gray-300 uppercase tracking-widest">In Stock: {product.stock || 0}</p>
-                </div>
-              </button>
-            ))}
+                  <div className="text-right flex flex-col items-end gap-1.5">
+                    <p className="text-[14px] font-black text-[#1BAFAF]">
+                      {isAlreadyAdded ? (
+                        <span className="text-[11px] font-bold text-gray-400 uppercase bg-gray-200/60 px-2 py-0.5 rounded-lg tracking-wider">Added</span>
+                      ) : (
+                        `₹${(product.discountedPrice || product.price || 0).toLocaleString()}`
+                      )}
+                    </p>
+                    <p className="text-[10px] font-bold text-gray-300 uppercase tracking-widest">In Stock: {product.stock || 0}</p>
+                  </div>
+                </button>
+              );
+            })}
 
             {filteredProducts.length === 0 && (
               <div className="py-12 text-center">
