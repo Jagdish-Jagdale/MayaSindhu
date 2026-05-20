@@ -35,6 +35,7 @@ import Settings from './pages/admin/Settings';
 import NotFound from './components/common/NotFound';
 import OfflineDashboard from './pages/admin/offline/Dashboard';
 import OfflineOrders from './pages/admin/offline/Orders';
+import PurchaseOrdersOffline from './pages/admin/offline/PurchaseOrders';
 import OfflineInventoryLogs from './pages/admin/offline/InventoryLogs';
 import StoreCustomers from './pages/admin/offline/StoreCustomers';
 import Vendors from './pages/admin/offline/Vendors';
@@ -173,7 +174,7 @@ function App() {
             <Route path="invoice" element={<Invoices />} />
             <Route path="return" element={<Returns />} />
             <Route path="vendors" element={<Vendors />} />
-            <Route path="purchase-orders" element={<OfflineOrders />} />
+            <Route path="purchase-orders" element={<PurchaseOrdersOffline />} />
           </Route>
 
           {/* Super Admin Route */}

@@ -13,7 +13,6 @@ import {
   Package,
   AlertCircle,
   Image,
-  Star,
   Share2,
   Minus,
   Calendar,
@@ -21,7 +20,9 @@ import {
   ShoppingBag,
   Layers,
   Info,
-  History
+  History,
+  ChevronLeft,
+  ChevronRight
 } from 'lucide-react';
 import { useAdminUI } from '../../context/AdminUIContext';
 import { formatDate } from '../../utils/dateHelper';
@@ -43,9 +44,13 @@ import DeleteConfirmationModal from '../../components/admin/DeleteConfirmationMo
 import toast from 'react-hot-toast';
 import { deleteMultipleFromCloudinary } from '../../utils/cloudinary';
 import CustomSelect from '../../components/common/CustomSelect';
+import { useLocation } from 'react-router-dom';
+import { AiFillThunderbolt } from 'react-icons/ai';
 
 export default function ProductManagement() {
   const { isCollapsed } = useAdminUI();
+  const { pathname } = useLocation();
+  const isOnlinePanel = pathname.startsWith('/admin') && !pathname.startsWith('/admin-offline');
   const { categories: hierarchy } = useCategories();
   
   const [products, setProducts] = useState([]);
@@ -276,7 +281,10 @@ export default function ProductManagement() {
         let aVal = a[sortConfig.key] ?? '';
         let bVal = b[sortConfig.key] ?? '';
         
-        if (sortConfig.key === 'updatedAt' || sortConfig.key === 'createdAt') {
+        if (sortConfig.key === 'isFeatured') {
+          aVal = featuredProductIds.has(a.id) ? 1 : 0;
+          bVal = featuredProductIds.has(b.id) ? 1 : 0;
+        } else if (sortConfig.key === 'updatedAt' || sortConfig.key === 'createdAt') {
           aVal = aVal?.toDate ? aVal.toDate() : new Date(aVal);
           bVal = bVal?.toDate ? bVal.toDate() : new Date(bVal);
         }
@@ -312,20 +320,26 @@ export default function ProductManagement() {
 
       {/* Header Section */}
       <div className="space-y-2 py-2">
-        <div className="flex items-center justify-between">
+        <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
           <div>
             <h1 className="text-[22px] font-semibold text-gray-900 tracking-tight">
               Product Management
             </h1>
-            <p className="text-[12px] text-gray-400 font-medium">Manage your collection of handmade sarees and textiles</p>
+            <p className="text-[12px] text-gray-400 font-medium tracking-tight">Manage your collection of handmade sarees and textiles</p>
           </div>
-          <button 
-            onClick={openAddModal}
-            className="flex items-center gap-2 bg-[#1BAFAF] hover:bg-[#17a0a0] text-white px-4 py-2 rounded-xl text-[13px] font-semibold transition-all shadow-sm shadow-[#1BAFAF]/10 active:scale-95"
-          >
-            <Plus size={16} strokeWidth={2.5} />
-            Add Product
-          </button>
+          <div className="flex items-center gap-4">
+            <span className="text-[11px] font-semibold text-gray-400 uppercase tracking-widest">
+               TOTAL RECORDS: {filteredProducts.length}
+            </span>
+            <span className="text-gray-200 text-sm">|</span>
+            <button 
+              onClick={openAddModal}
+              className="flex items-center gap-2 bg-[#1BAFAF] hover:bg-[#17a0a0] text-white px-5 py-2.5 rounded-xl text-[13px] font-bold transition-all shadow-sm shadow-[#1BAFAF]/10 active:scale-95 group"
+            >
+              <Plus size={18} className="group-hover:rotate-90 transition-transform duration-300" />
+              Add Product
+            </button>
+          </div>
         </div>
         <hr className="border-gray-100" />
       </div>
@@ -399,12 +413,12 @@ export default function ProductManagement() {
 
       {/* Table + Footer */}
       <div className="space-y-3">
-        <div className="bg-white rounded-[20px] border border-gray-100 shadow-sm overflow-x-auto custom-scrollbar min-h-[400px]">
+        <div className="bg-white rounded-[20px] border border-gray-100 shadow-sm overflow-x-auto custom-scrollbar">
           <table className="w-full border-collapse">
             <thead>
               <tr className="border-b border-gray-50 bg-white">
-                <th className="px-6 py-4 text-left text-[14px] font-bold text-[#1BAFAF]">Sr No</th>
-                <th className="px-6 py-4 text-left text-[14px] font-bold text-[#1BAFAF]">Product ID</th>
+                <th className="px-6 py-4 text-left text-[14px] font-bold text-[#1BAFAF] whitespace-nowrap">Sr No</th>
+                <th className="px-6 py-4 text-left text-[14px] font-bold text-[#1BAFAF] whitespace-nowrap">Product ID</th>
                 <th className="px-6 py-4 text-left text-[14px] font-bold text-[#1BAFAF]">
                   <button onClick={() => handleSort('name')} className="flex items-center gap-1 hover:opacity-75 transition-opacity">
                     Product <SortIcon colKey="name" />
@@ -426,7 +440,13 @@ export default function ProductManagement() {
                   </button>
                 </th>
                 <th className="px-6 py-4 text-left text-[14px] font-bold text-[#1BAFAF]">Status</th>
-                <th className="px-6 py-4 text-left text-[14px] font-bold text-[#1BAFAF]">Featured</th>
+                {isOnlinePanel && (
+                  <th className="px-6 py-4 text-left text-[14px] font-bold text-[#1BAFAF]">
+                    <button onClick={() => handleSort('isFeatured')} className="flex items-center gap-1 hover:opacity-75 transition-opacity">
+                      Featured <SortIcon colKey="isFeatured" />
+                    </button>
+                  </th>
+                )}
                 <th className="px-6 py-4 text-left text-[14px] font-bold text-[#1BAFAF]">
                   <button onClick={() => handleSort('updatedAt')} className="flex items-center gap-1 hover:opacity-75 transition-opacity">
                     Modified <SortIcon colKey="updatedAt" />
@@ -509,19 +529,21 @@ export default function ProductManagement() {
                         {product.isAvailable ? 'Available' : 'Hidden'}
                       </span>
                     </td>
-                    <td className="px-6 py-4 whitespace-nowrap">
-                      <button 
-                        onClick={(e) => { e.stopPropagation(); toggleFeatured(product); }}
-                        className={`w-8 h-8 flex items-center justify-center rounded-lg transition-all active:scale-90 ${
-                          featuredProductIds.has(product.id) 
-                            ? 'text-brand-orange bg-brand-orange/10 shadow-sm' 
-                            : 'text-gray-200 hover:text-brand-orange hover:bg-gray-50'
-                        }`}
-                        title={featuredProductIds.has(product.id) ? "Remove from favorites" : "Add to favorites"}
-                      >
-                        <Star size={16} fill={featuredProductIds.has(product.id) ? "currentColor" : "none"} strokeWidth={2.5} />
-                      </button>
-                    </td>
+                    {isOnlinePanel && (
+                      <td className="px-6 py-4 whitespace-nowrap" onClick={(e) => e.stopPropagation()}>
+                        <button 
+                          onClick={() => toggleFeatured(product)}
+                          className={`transition-all duration-300 hover:scale-125 ${
+                            featuredProductIds.has(product.id) 
+                              ? 'text-orange-500' 
+                              : 'text-gray-300 hover:text-orange-400'
+                          }`}
+                          title={featuredProductIds.has(product.id) ? "Remove from favorites" : "Add to favorites"}
+                        >
+                          <AiFillThunderbolt size={20} />
+                        </button>
+                      </td>
+                    )}
                     <td className="px-6 py-4 whitespace-nowrap">
                       <div className="text-[13px] font-medium text-gray-500">
                         {product.updatedAt ? formatDate(product.updatedAt) : '---'}
@@ -572,43 +594,27 @@ export default function ProductManagement() {
           </table>
         </div>
 
-        {/* Page Footer */}
-        <div className="flex items-center justify-between px-2 pt-3">
-          <span className="text-[11px] font-bold text-gray-300 uppercase tracking-widest">
-            Showing {filteredProducts.length > 0 ? (currentPage - 1) * rowsPerPage + 1 : 0}-{Math.min(currentPage * rowsPerPage, filteredProducts.length)} of {filteredProducts.length} Items
-          </span>
-          <div className="flex items-center gap-2">
-            <button 
-              onClick={(e) => {
-                e.stopPropagation();
-                setDirection(-1);
-                setCurrentPage(prev => Math.max(1, prev - 1));
-              }}
-              disabled={currentPage === 1}
-              className={`w-8 h-8 rounded-lg flex items-center justify-center transition-all ${
-                currentPage === 1 
-                  ? 'bg-gray-50 text-gray-300 cursor-not-allowed' 
-                  : 'bg-white border border-gray-100 text-gray-900 hover:shadow-sm hover:text-[#1BAFAF]'
-              }`}
-            >
-              <ArrowUpRight size={14} className="rotate-[225deg]" />
-            </button>
-            <button 
-              onClick={(e) => {
-                e.stopPropagation();
-                setDirection(1);
-                setCurrentPage(prev => Math.min(Math.ceil(filteredProducts.length / rowsPerPage), prev + 1));
-              }}
-              disabled={currentPage >= Math.ceil(filteredProducts.length / rowsPerPage)}
-              className={`w-8 h-8 rounded-lg flex items-center justify-center transition-all ${
-                currentPage >= Math.ceil(filteredProducts.length / rowsPerPage)
-                  ? 'bg-gray-50 text-gray-300 cursor-not-allowed' 
-                  : 'bg-white border border-gray-100 text-gray-900 hover:shadow-sm hover:text-[#1BAFAF]'
-              }`}
-            >
-              <ArrowUpRight size={14} className="rotate-45" />
-            </button>
-          </div>
+        {/* Pagination Footer */}
+        <div className="flex items-center justify-end px-2 pt-1">
+           <div className="flex items-center gap-2">
+              <button 
+                onClick={() => currentPage > 1 && setCurrentPage(currentPage - 1)}
+                disabled={currentPage === 1}
+                className="w-8 h-8 rounded-lg flex items-center justify-center text-gray-400 hover:text-[#1BAFAF] hover:bg-[#1BAFAF]/5 transition-all disabled:opacity-30 disabled:hover:bg-transparent disabled:hover:text-gray-400"
+              >
+                <ChevronLeft size={16} strokeWidth={2.5} />
+              </button>
+              <span className="text-[12px] font-semibold text-gray-400">
+                 Page {currentPage} of {Math.ceil(filteredProducts.length / rowsPerPage) || 1}
+              </span>
+              <button 
+                onClick={() => currentPage < Math.ceil(filteredProducts.length / rowsPerPage) && setCurrentPage(currentPage + 1)}
+                disabled={currentPage >= Math.ceil(filteredProducts.length / rowsPerPage)}
+                className="w-8 h-8 rounded-lg flex items-center justify-center text-gray-400 hover:text-[#1BAFAF] hover:bg-[#1BAFAF]/5 transition-all disabled:opacity-30 disabled:hover:bg-transparent disabled:hover:text-gray-400"
+              >
+                <ChevronRight size={16} strokeWidth={2.5} />
+              </button>
+           </div>
         </div>
       </div>
 

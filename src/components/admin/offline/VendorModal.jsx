@@ -202,16 +202,6 @@ const VendorModal = ({ isOpen, onClose, vendor = null }) => {
                 </div>
               </div>
 
-              <div className="space-y-1.5">
-                <label className="text-[11px] font-bold text-gray-400 uppercase tracking-widest ml-1">Vendor Display Name</label>
-                <input
-                  type="text"
-                  value={formData.displayName}
-                  onChange={(e) => setFormData({ ...formData, displayName: e.target.value })}
-                  placeholder="ACME-VND"
-                  className="w-full bg-gray-50 border-2 border-transparent py-3.5 px-4 text-[14px] font-medium rounded-2xl outline-none focus:bg-white focus:border-[#1BAFAF]/20 transition-all"
-                />
-              </div>
             </div>
 
             <div className="space-y-4">
@@ -265,12 +255,6 @@ const VendorModal = ({ isOpen, onClose, vendor = null }) => {
                 </div>
               </div>
 
-              <CustomSelect
-                label="Vendor Status"
-                value={formData.status}
-                onChange={(val) => setFormData({ ...formData, status: val })}
-                options={['Active', 'Inactive']}
-              />
             </div>
           </div>
 
@@ -311,18 +295,7 @@ const VendorModal = ({ isOpen, onClose, vendor = null }) => {
                         />
                       </div>
 
-                      <div className="flex items-center gap-3 bg-gray-50/50 p-4 rounded-2xl border border-gray-100">
-                        <input
-                          type="checkbox"
-                          id="msme"
-                          checked={formData.isMsmeRegistered}
-                          onChange={(e) => setFormData({ ...formData, isMsmeRegistered: e.target.checked })}
-                          className="w-5 h-5 rounded-lg accent-[#1BAFAF] cursor-pointer"
-                        />
-                        <label htmlFor="msme" className="text-[13px] font-bold text-gray-700 cursor-pointer">
-                          This vendor is MSME registered
-                        </label>
-                      </div>
+
 
                       <CustomSelect
                         label="Currency"
@@ -431,12 +404,18 @@ const VendorModal = ({ isOpen, onClose, vendor = null }) => {
             </div>
           </div>
 
-          <div className="pt-8 border-t border-gray-50 flex gap-4">
-            <button type="button" onClick={onClose} className="px-8 py-4 text-[14px] font-bold text-gray-500 bg-gray-100 rounded-2xl hover:bg-gray-200 transition-all">Cancel</button>
+          <div className="pt-8 border-t border-gray-50 flex justify-end gap-4">
+            <button
+              type="button"
+              onClick={onClose}
+              className="px-8 py-4 text-[14px] font-bold text-gray-500 bg-gray-100 rounded-2xl hover:bg-gray-200 transition-all active:scale-95"
+            >
+              Cancel
+            </button>
             <button
               type="submit"
               disabled={loading}
-              className="flex-1 py-4 text-[14px] font-bold text-white bg-[#1BAFAF] rounded-2xl hover:bg-[#158e8e] transition-all shadow-lg flex items-center justify-center gap-2"
+              className="px-12 py-4 text-[14px] font-bold text-white bg-[#1BAFAF] rounded-2xl hover:bg-[#158e8e] transition-all shadow-lg shadow-[#1BAFAF]/20 active:scale-95 disabled:opacity-50 disabled:scale-100 flex items-center justify-center gap-2"
             >
               {loading && <Loader2 className="w-4 h-4 animate-spin" />}
               {loading ? 'Processing...' : (vendor ? 'Update Vendor' : 'Add Vendor')}

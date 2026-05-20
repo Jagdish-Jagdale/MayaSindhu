@@ -12,7 +12,9 @@ import {
   EyeOff,
   User as UserIcon,
   Loader2,
-  Calendar
+  Calendar,
+  ChevronLeft,
+  ChevronRight
 } from 'lucide-react';
 import { db } from '../../firebase';
 import { 
@@ -211,20 +213,26 @@ const Users = () => {
 
       {/* Header Section */}
       <div className="space-y-2 py-2">
-        <div className="flex items-center justify-between">
+        <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
           <div>
             <h1 className="text-[22px] font-semibold text-gray-900 tracking-tight">
               User Directory
             </h1>
-            <p className="text-[12px] text-gray-400 font-medium font-inter">Monitor and manage all registered accounts in the system</p>
+            <p className="text-[12px] text-gray-400 font-medium font-inter tracking-tight">Monitor and manage all registered accounts in the system</p>
           </div>
-          <button 
-            onClick={handleAdd}
-            className="flex items-center gap-2 px-6 py-3 bg-[#1BAFAF] text-white rounded-2xl text-[13px] font-bold shadow-lg shadow-[#1BAFAF]/20 hover:bg-[#158e8e] transition-all active:scale-95 group"
-          >
-            <Plus size={18} className="group-hover:rotate-90 transition-transform duration-300" />
-            Add User
-          </button>
+          <div className="flex items-center gap-4">
+            <span className="text-[11px] font-semibold text-gray-400 uppercase tracking-widest">
+               TOTAL RECORDS: {filteredUsers.length}
+            </span>
+            <span className="text-gray-200 text-sm">|</span>
+            <button 
+              onClick={handleAdd}
+              className="flex items-center gap-2 bg-[#1BAFAF] hover:bg-[#17a0a0] text-white px-5 py-2.5 rounded-xl text-[13px] font-bold transition-all shadow-sm shadow-[#1BAFAF]/10 active:scale-95 group"
+            >
+              <Plus size={18} className="group-hover:rotate-90 transition-transform duration-300" />
+              Add User
+            </button>
+          </div>
         </div>
         <hr className="border-gray-100" />
       </div>
@@ -295,7 +303,7 @@ const Users = () => {
           <table className="w-full border-collapse">
             <thead>
               <tr className="border-b border-gray-50 bg-white">
-                <th className="px-6 py-4 text-left text-[14px] font-bold text-[#1BAFAF]">Sr No</th>
+                <th className="px-6 py-4 text-left text-[14px] font-bold text-[#1BAFAF] whitespace-nowrap">Sr No</th>
                 <th className="px-6 py-4 text-left text-[14px] font-bold text-[#1BAFAF]">
                   <button onClick={() => handleSort('fullName')} className="flex items-center gap-1 hover:opacity-75 transition-opacity">
                     Full Name <SortIcon colKey="fullName" />
@@ -390,41 +398,27 @@ const Users = () => {
           </table>
         </div>
 
-        {/* Page Footer */}
-        <div className="flex items-center justify-between px-2 pt-3">
-          <span className="text-[11px] font-bold text-gray-300 uppercase tracking-widest">
-            Showing {filteredUsers.length > 0 ? (currentPage - 1) * rowsPerPage + 1 : 0}-{Math.min(currentPage * rowsPerPage, filteredUsers.length)} of {filteredUsers.length} Users
-          </span>
-          <div className="flex items-center gap-2">
-            <button 
-              onClick={() => {
-                setDirection(-1);
-                setCurrentPage(prev => Math.max(1, prev - 1));
-              }}
-              disabled={currentPage === 1}
-              className={`w-8 h-8 rounded-lg flex items-center justify-center transition-all ${
-                currentPage === 1 
-                  ? 'bg-gray-50 text-gray-300 cursor-not-allowed' 
-                  : 'bg-white border border-gray-100 text-gray-900 hover:shadow-sm hover:text-[#1BAFAF]'
-              }`}
-            >
-              <ArrowUpRight size={14} className="rotate-[225deg]" />
-            </button>
-            <button 
-              onClick={() => {
-                setDirection(1);
-                setCurrentPage(prev => Math.min(Math.ceil(filteredUsers.length / rowsPerPage), prev + 1));
-              }}
-              disabled={currentPage >= Math.ceil(filteredUsers.length / rowsPerPage)}
-              className={`w-8 h-8 rounded-lg flex items-center justify-center transition-all ${
-                currentPage >= Math.ceil(filteredUsers.length / rowsPerPage)
-                  ? 'bg-gray-50 text-gray-300 cursor-not-allowed' 
-                  : 'bg-white border border-gray-100 text-gray-900 hover:shadow-sm hover:text-[#1BAFAF]'
-              }`}
-            >
-              <ArrowUpRight size={14} className="rotate-45" />
-            </button>
-          </div>
+        {/* Pagination Footer */}
+        <div className="flex items-center justify-end px-2 pt-1">
+           <div className="flex items-center gap-2">
+              <button 
+                onClick={() => currentPage > 1 && setCurrentPage(currentPage - 1)}
+                disabled={currentPage === 1}
+                className="w-8 h-8 rounded-lg flex items-center justify-center text-gray-400 hover:text-[#1BAFAF] hover:bg-[#1BAFAF]/5 transition-all disabled:opacity-30 disabled:hover:bg-transparent disabled:hover:text-gray-400"
+              >
+                <ChevronLeft size={16} strokeWidth={2.5} />
+              </button>
+              <span className="text-[12px] font-semibold text-gray-400">
+                 Page {currentPage} of {Math.ceil(filteredUsers.length / rowsPerPage) || 1}
+              </span>
+              <button 
+                onClick={() => currentPage < Math.ceil(filteredUsers.length / rowsPerPage) && setCurrentPage(currentPage + 1)}
+                disabled={currentPage >= Math.ceil(filteredUsers.length / rowsPerPage)}
+                className="w-8 h-8 rounded-lg flex items-center justify-center text-gray-400 hover:text-[#1BAFAF] hover:bg-[#1BAFAF]/5 transition-all disabled:opacity-30 disabled:hover:bg-transparent disabled:hover:text-gray-400"
+              >
+                <ChevronRight size={16} strokeWidth={2.5} />
+              </button>
+           </div>
         </div>
       </div>
 

@@ -7,7 +7,6 @@ import {
   Settings, 
   Plus, 
   Trash2, 
-  Search,
   ChevronDown,
   Info,
   Circle
@@ -31,13 +30,13 @@ import BulkItemModal from './BulkItemModal';
 import ProductFormModal from '../ProductFormModal';
 import CustomSelect from '../../common/CustomSelect';
 
-const StoreOrderModal = ({ isOpen, onClose }) => {
+const OfflineOrderModal = ({ isOpen, onClose }) => {
   const [loading, setLoading] = useState(false);
-  const [vendors, setVendors] = useState([]);
+  const [customers, setCustomers] = useState([]);
   const [products, setProducts] = useState([]);
-  const [searchVendor, setSearchVendor] = useState('');
-  const [showVendorDropdown, setShowVendorDropdown] = useState(false);
-  const [isVendorModalOpen, setIsVendorModalOpen] = useState(false);
+  const [searchCustomer, setSearchCustomer] = useState('');
+  const [showCustomerDropdown, setShowCustomerDropdown] = useState(false);
+  const [isCustomerModalOpen, setIsCustomerModalOpen] = useState(false);
   const [isBulkModalOpen, setIsBulkModalOpen] = useState(false);
   const [isProductModalOpen, setIsProductModalOpen] = useState(false);
   const [isSettingsOpen, setIsSettingsOpen] = useState(false);
@@ -45,31 +44,31 @@ const StoreOrderModal = ({ isOpen, onClose }) => {
   // Order Number Settings
   const [orderSettings, setOrderSettings] = useState({
     mode: 'auto',
-    prefix: 'PO-',
+    prefix: 'SO-',
     nextNumber: '00001'
   });
 
   // Form Data
   const [formData, setFormData] = useState({
-    vendorId: '',
-    vendorName: '',
-    purchaseOrderNumber: '',
-    purchaseOrderDate: new Date().toLocaleDateString('en-GB'), // dd/mm/yyyy
-    deliveryDate: '',
+    customerId: '',
+    customerName: '',
+    saleOrderNumber: '',
+    saleOrderDate: new Date().toLocaleDateString('en-GB'), // dd/mm/yyyy
+    deliveryDate: new Date().toLocaleDateString('en-GB'),
     items: [],
     subTotal: 0,
     tax: 18, // Default 18%
     adjustment: 0,
     total: 0,
-    vendorNotes: ''
+    customerNotes: ''
   });
 
-  const vendorRef = useRef(null);
+  const customerRef = useRef(null);
 
   useEffect(() => {
     const handleClickOutside = (event) => {
-      if (vendorRef.current && !vendorRef.current.contains(event.target)) {
-        setShowVendorDropdown(false);
+      if (customerRef.current && !customerRef.current.contains(event.target)) {
+        setShowCustomerDropdown(false);
       }
     };
     document.addEventListener('mousedown', handleClickOutside);
@@ -79,35 +78,35 @@ const StoreOrderModal = ({ isOpen, onClose }) => {
   useEffect(() => {
     if (isOpen) {
       setFormData({
-        vendorId: '',
-        vendorName: '',
-        purchaseOrderNumber: '',
-        purchaseOrderDate: new Date().toLocaleDateString('en-GB'), // dd/mm/yyyy
-        deliveryDate: '',
+        customerId: '',
+        customerName: '',
+        saleOrderNumber: '',
+        saleOrderDate: new Date().toLocaleDateString('en-GB'), // dd/mm/yyyy
+        deliveryDate: new Date().toLocaleDateString('en-GB'),
         items: [],
         subTotal: 0,
         tax: 18,
         adjustment: 0,
         total: 0,
-        vendorNotes: ''
+        customerNotes: ''
       });
-      setSearchVendor('');
+      setSearchCustomer('');
       setLoading(false);
-      fetchVendors();
+      fetchCustomers();
       fetchProducts();
       if (orderSettings.mode === 'auto') {
-        generatePONumber();
+        generateSONumber();
       }
     }
   }, [isOpen]);
 
-  const fetchVendors = async () => {
+  const fetchCustomers = async () => {
     try {
-      const q = query(collection(db, 'storeVendors'), orderBy('vendorName'));
+      const q = query(collection(db, 'storeCustomers'), orderBy('fullName'));
       const snapshot = await getDocs(q);
-      setVendors(snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() })));
+      setCustomers(snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() })));
     } catch (error) {
-      console.error("Error fetching vendors:", error);
+      console.error("Error fetching customers:", error);
     }
   };
 
@@ -120,16 +119,16 @@ const StoreOrderModal = ({ isOpen, onClose }) => {
     }
   };
 
-  const generatePONumber = async () => {
+  const generateSONumber = async () => {
     try {
-      const q = query(collection(db, 'purchaseOrders'), orderBy('createdAt', 'desc'), limit(1));
+      const q = query(collection(db, 'storeOrders'), orderBy('createdAt', 'desc'), limit(1));
       const snapshot = await getDocs(q);
       let nextNum = 1;
       
       if (!snapshot.empty) {
         const lastOrder = snapshot.docs[0].data();
-        if (lastOrder.purchaseOrderNumber && lastOrder.purchaseOrderNumber.includes(orderSettings.prefix)) {
-           const numPart = lastOrder.purchaseOrderNumber.split(orderSettings.prefix)[1];
+        if (lastOrder.saleOrderNumber && lastOrder.saleOrderNumber.includes(orderSettings.prefix)) {
+           const numPart = lastOrder.saleOrderNumber.split(orderSettings.prefix)[1];
            nextNum = (parseInt(numPart) || 0) + 1;
         }
       } else {
@@ -137,11 +136,11 @@ const StoreOrderModal = ({ isOpen, onClose }) => {
       }
       
       const formattedNum = `${orderSettings.prefix}${nextNum.toString().padStart(orderSettings.nextNumber.length, '0')}`;
-      setFormData(prev => ({ ...prev, purchaseOrderNumber: formattedNum }));
+      setFormData(prev => ({ ...prev, saleOrderNumber: formattedNum }));
     } catch (error) {
       console.error("Error generating PO number:", error);
       const fallback = `${orderSettings.prefix}${orderSettings.nextNumber}`;
-      setFormData(prev => ({ ...prev, purchaseOrderNumber: fallback }));
+      setFormData(prev => ({ ...prev, saleOrderNumber: fallback }));
     }
   };
 
@@ -158,8 +157,8 @@ const StoreOrderModal = ({ isOpen, onClose }) => {
       productId: p.id,
       name: p.name,
       quantity: 1,
-      rate: p.price || 0,
-      amount: p.price || 0
+      rate: p.discountedPrice || p.price || 0,
+      amount: p.discountedPrice || p.price || 0
     }));
 
     setFormData(prev => {
@@ -188,7 +187,7 @@ const StoreOrderModal = ({ isOpen, onClose }) => {
           const prod = products.find(p => p.id === value);
           if (prod) {
             updatedItem.name = prod.name;
-            updatedItem.rate = prod.price || 0;
+            updatedItem.rate = prod.discountedPrice || prod.price || 0;
           }
         }
         updatedItem.amount = updatedItem.rate * updatedItem.quantity;
@@ -207,8 +206,8 @@ const StoreOrderModal = ({ isOpen, onClose }) => {
 
   const handleSubmit = async (e) => {
     e.preventDefault();
-    if (!formData.vendorId) {
-      toast.error("Please select a vendor");
+    if (!formData.customerId) {
+      toast.error("Please select a Customer");
       return;
     }
     if (formData.items.length === 0 || formData.items.every(item => !item.productId)) {
@@ -218,20 +217,22 @@ const StoreOrderModal = ({ isOpen, onClose }) => {
 
     setLoading(true);
     try {
-      const orderItems = formData.items.filter(item => item.productId); // Filter out empty rows
-      await addDoc(collection(db, 'purchaseOrders'), {
+      const orderItems = formData.items.filter(item => item.productId);
+
+      // Save order to storeOrders collection
+      await addDoc(collection(db, 'storeOrders'), {
         ...formData,
         items: orderItems,
         createdAt: serverTimestamp(),
         status: 'Confirmed'
       });
 
-      // Increment product stock in products collection
+      // Reduce product stock in products collection
       const updatePromises = orderItems.map(async (item) => {
         try {
           const productRef = doc(db, 'products', item.productId);
           await updateDoc(productRef, {
-            stock: increment(Number(item.quantity || 0))
+            stock: increment(-Number(item.quantity || 0))
           });
         } catch (err) {
           console.error(`Error updating stock for product ${item.productId}:`, err);
@@ -239,7 +240,7 @@ const StoreOrderModal = ({ isOpen, onClose }) => {
       });
       await Promise.all(updatePromises);
 
-      toast.success("Purchase Order created successfully!");
+      toast.success("sales order created successfully!");
       onClose();
     } catch (error) {
       console.error("Error saving order:", error);
@@ -249,16 +250,16 @@ const StoreOrderModal = ({ isOpen, onClose }) => {
     }
   };
 
-  const handleClearVendor = () => {
-    setFormData(prev => ({ ...prev, vendorId: '', vendorName: '' }));
-    setSearchVendor('');
+  const handleClearCustomer = () => {
+    setFormData(prev => ({ ...prev, customerId: '', customerName: '' }));
+    setSearchCustomer('');
   };
 
   const handleSettingsSave = (e) => {
     e.preventDefault();
     setIsSettingsOpen(false);
     if (orderSettings.mode === 'auto') {
-      generatePONumber();
+      generateSONumber();
     }
   };
 
@@ -275,8 +276,8 @@ const StoreOrderModal = ({ isOpen, onClose }) => {
         {/* Header */}
         <div className="px-8 py-6 border-b border-gray-100 flex items-center justify-between bg-gradient-to-r from-gray-50 to-white flex-shrink-0">
           <div>
-            <h2 className="text-[20px] font-bold text-gray-900 tracking-tight">New Purchase Order</h2>
-            <p className="text-[12px] text-gray-400 font-medium">Create a manual purchase order for vendors</p>
+            <h2 className="text-[20px] font-bold text-gray-900 tracking-tight">New Sales Order</h2>
+            <p className="text-[12px] text-gray-400 font-medium">Create a manual sales order for customers</p>
           </div>
           <button 
             onClick={onClose}
@@ -289,29 +290,156 @@ const StoreOrderModal = ({ isOpen, onClose }) => {
         <form onSubmit={handleSubmit} className="flex-1 overflow-y-auto p-8 space-y-8 custom-scrollbar">
           
           {/* Top Section: Customer & Details */}
-          <div className="grid grid-cols-1 md:grid-cols-2 gap-8">
-            {/* Vendor Selection */}
-            <div className="space-y-2 relative" ref={vendorRef}>
+          <div className="space-y-8">
+            {/* Sales Order# & Sale Date Row */}
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-8">
+              {/* sales order # */}
+              <div className="space-y-2 relative">
+                <label className="text-[11px] font-bold text-gray-400 uppercase tracking-widest ml-1 flex items-center gap-2">
+                  sales order# * 
+                  <Info size={12} className="text-gray-300" />
+                </label>
+                <div className="relative group">
+                  <Settings 
+                    onClick={() => setIsSettingsOpen(!isSettingsOpen)}
+                    className="absolute right-4 top-1/2 -translate-y-1/2 w-4 h-4 text-[#1BAFAF] cursor-pointer hover:rotate-90 transition-transform z-10" 
+                  />
+                  <input
+                    type="text"
+                    required
+                    value={formData.saleOrderNumber}
+                    onChange={(e) => setFormData({ ...formData, saleOrderNumber: e.target.value })}
+                    readOnly={orderSettings.mode === 'auto'}
+                    className={`w-full bg-gray-50 border-2 border-transparent py-3.5 px-4 text-[14px] font-bold text-gray-900 rounded-2xl outline-none ${orderSettings.mode === 'auto' ? 'cursor-not-allowed' : 'focus:bg-white focus:border-[#1BAFAF]/20'}`}
+                  />
+                </div>
+
+                {/* Order Number Settings Popup */}
+                {isSettingsOpen && (
+                  <div className="absolute top-full right-0 mt-2 w-[400px] bg-white border border-gray-100 rounded-3xl shadow-2xl z-[120] overflow-hidden animate-in slide-in-from-top-2 duration-200">
+                    <div className="p-6 space-y-6">
+                      <p className="text-[12px] text-gray-500 font-medium leading-relaxed">
+                        Your sales order numbers are set on auto-generate mode to save your time. Are you sure about changing this setting?
+                      </p>
+                      
+                      <div className="space-y-4">
+                        {/* Auto Generate Option */}
+                        <label className="flex items-start gap-3 cursor-pointer group">
+                          <div className="pt-0.5">
+                            <input 
+                              type="radio" 
+                              name="po_mode"
+                              checked={orderSettings.mode === 'auto'}
+                              onChange={() => setOrderSettings({ ...orderSettings, mode: 'auto' })}
+                              className="hidden" 
+                            />
+                            <div className={`w-5 h-5 rounded-full border-2 flex items-center justify-center transition-all ${orderSettings.mode === 'auto' ? 'border-[#1BAFAF]' : 'border-gray-200'}`}>
+                              {orderSettings.mode === 'auto' && <div className="w-2.5 h-2.5 rounded-full bg-[#1BAFAF]" />}
+                            </div>
+                          </div>
+                          <div className="flex-1">
+                            <div className="flex items-center gap-2 mb-3">
+                              <span className="text-[13px] font-bold text-gray-700">Continue auto-generating sales order numbers</span>
+                              <Info size={12} className="text-gray-300" />
+                            </div>
+                            
+                            {orderSettings.mode === 'auto' && (
+                              <div className="space-y-3 animate-in fade-in duration-200">
+                                <div className="space-y-1">
+                                  <span className="text-[10px] font-bold text-gray-400 uppercase">Prefix</span>
+                                  <input 
+                                    type="text" 
+                                    value={orderSettings.prefix}
+                                    onChange={(e) => setOrderSettings({ ...orderSettings, prefix: e.target.value })}
+                                    className="w-full bg-gray-50 border border-gray-100 rounded-xl px-3 py-2 text-[13px] font-medium focus:bg-white outline-none" 
+                                  />
+                                </div>
+                                <div className="space-y-1">
+                                  <span className="text-[10px] font-bold text-gray-400 uppercase">Next Number</span>
+                                  <input 
+                                    type="text" 
+                                    value={orderSettings.nextNumber}
+                                    onChange={(e) => setOrderSettings({ ...orderSettings, nextNumber: e.target.value })}
+                                    className="w-full bg-gray-50 border border-gray-100 rounded-xl px-3 py-2 text-[13px] font-medium focus:bg-white outline-none" 
+                                  />
+                                </div>
+                              </div>
+                            )}
+                          </div>
+                        </label>
+
+                        {/* Manual Option */}
+                        <label className="flex items-center gap-3 cursor-pointer">
+                          <input 
+                            type="radio" 
+                            name="po_mode"
+                            checked={orderSettings.mode === 'manual'}
+                            onChange={() => setOrderSettings({ ...orderSettings, mode: 'manual' })}
+                            className="hidden" 
+                          />
+                          <div className={`w-5 h-5 rounded-full border-2 flex items-center justify-center transition-all ${orderSettings.mode === 'manual' ? 'border-[#1BAFAF]' : 'border-gray-200'}`}>
+                            {orderSettings.mode === 'manual' && <div className="w-2.5 h-2.5 rounded-full bg-[#1BAFAF]" />}
+                          </div>
+                          <span className="text-[13px] font-bold text-gray-700">Enter sales order numbers manually</span>
+                        </label>
+                      </div>
+
+                      <div className="flex gap-2 pt-2">
+                        <button 
+                          onClick={handleSettingsSave}
+                          className="flex-1 bg-[#1BAFAF] text-white py-2.5 rounded-xl text-[12px] font-bold hover:bg-[#158e8e] transition-all"
+                        >
+                          Save
+                        </button>
+                        <button 
+                          onClick={() => setIsSettingsOpen(false)}
+                          className="flex-1 bg-gray-50 text-gray-500 py-2.5 rounded-xl text-[12px] font-bold hover:bg-gray-100 transition-all"
+                        >
+                          Cancel
+                        </button>
+                      </div>
+                    </div>
+                  </div>
+                )}
+              </div>
+
+              {/* Sale Date */}
+              <div className="space-y-2">
+                <label className="text-[11px] font-bold text-gray-400 uppercase tracking-widest ml-1">Sale Date</label>
+                <div className="relative group">
+                  <Calendar className="absolute left-4 top-1/2 -translate-y-1/2 w-4 h-4 text-gray-300" />
+                  <input
+                    type="text"
+                    value={formData.deliveryDate}
+                    readOnly
+                    className="w-full bg-gray-100 border-2 border-transparent py-3.5 pl-12 pr-4 text-[14px] font-medium rounded-2xl outline-none text-gray-500 cursor-not-allowed"
+                  />
+                </div>
+              </div>
+            </div>
+
+            {/* Customer Selection (Full Width) */}
+            <div className="space-y-2 relative" ref={customerRef}>
               <div className="flex items-center justify-between px-1">
-                <label className="text-[11px] font-bold text-gray-400 uppercase tracking-widest">Vendor Name *</label>
+                <label className="text-[11px] font-bold text-gray-400 uppercase tracking-widest">Customer Name *</label>
               </div>
               <div className="relative group">
                 <User className="absolute left-4 top-1/2 -translate-y-1/2 w-4 h-4 text-gray-300 group-focus-within:text-[#1BAFAF] transition-colors" />
                 <input
                   type="text"
-                  value={searchVendor || formData.vendorName}
+                  value={searchCustomer || formData.customerName}
                   onChange={(e) => {
-                    setSearchVendor(e.target.value);
-                    setShowVendorDropdown(true);
+                    setSearchCustomer(e.target.value);
+                    setShowCustomerDropdown(true);
                   }}
-                  onFocus={() => setShowVendorDropdown(true)}
-                  placeholder="Select or Search Vendor"
+                  onFocus={() => setShowCustomerDropdown(true)}
+                  placeholder="Select or Search Customer"
                   className="w-full bg-gray-50 border-2 border-transparent py-3.5 pl-12 pr-10 text-[14px] font-medium rounded-2xl outline-none focus:bg-white focus:border-[#1BAFAF]/20 transition-all"
                 />
-                {(formData.vendorId || searchVendor) && (
+                {(formData.customerId || searchCustomer) && (
                   <button 
                     type="button"
-                    onClick={handleClearVendor}
+                    onClick={handleClearCustomer}
                     className="absolute right-4 top-1/2 -translate-y-1/2 text-gray-300 hover:text-gray-500 transition-colors"
                   >
                     <X size={16} />
@@ -319,168 +447,30 @@ const StoreOrderModal = ({ isOpen, onClose }) => {
                 )}
               </div>
               
-              {showVendorDropdown && (
+              {showCustomerDropdown && (
                 <div className="absolute top-full left-0 right-0 mt-2 bg-white border border-gray-100 rounded-2xl shadow-xl z-[110] py-2 max-h-48 overflow-y-auto custom-scrollbar">
-                  {vendors
-                    .filter(v => v.vendorName?.toLowerCase().includes(searchVendor.toLowerCase()))
+                  {customers
+                    .filter(v => v.fullName?.toLowerCase().includes(searchCustomer.toLowerCase()))
                     .map(v => (
                       <button
                         key={v.id}
                         type="button"
                         onClick={() => {
-                          setFormData({ ...formData, vendorId: v.id, vendorName: v.vendorName });
-                          setSearchVendor(v.vendorName);
-                          setShowVendorDropdown(false);
+                          setFormData({ ...formData, customerId: v.id, customerName: v.fullName });
+                          setSearchCustomer(v.fullName);
+                          setShowCustomerDropdown(false);
                         }}
                         className="w-full text-left px-4 py-3 hover:bg-[#EAF6F6] hover:text-[#1BAFAF] text-[14px] font-bold text-gray-700 transition-all flex items-center justify-between group"
                       >
-                        <span>{v.vendorName}</span>
+                        <span>{v.fullName}</span>
                         <div className="w-1.5 h-1.5 rounded-full bg-[#1BAFAF] opacity-0 group-hover:opacity-100 transition-opacity" />
                       </button>
                     ))}
-                  {vendors.length === 0 && (
-                    <p className="px-4 py-2 text-[12px] text-gray-400">No vendors found</p>
+                  {customers.length === 0 && (
+                    <p className="px-4 py-2 text-[12px] text-gray-400">No customers found</p>
                   )}
                 </div>
               )}
-            </div>
-
-            {/* Purchase Order # */}
-            <div className="space-y-2 relative">
-              <label className="text-[11px] font-bold text-gray-400 uppercase tracking-widest ml-1 flex items-center gap-2">
-                Purchase Order# * 
-                <Info size={12} className="text-gray-300" />
-              </label>
-              <div className="relative group">
-                <Settings 
-                  onClick={() => setIsSettingsOpen(!isSettingsOpen)}
-                  className="absolute right-4 top-1/2 -translate-y-1/2 w-4 h-4 text-[#1BAFAF] cursor-pointer hover:rotate-90 transition-transform z-10" 
-                />
-                <input
-                  type="text"
-                  required
-                  value={formData.purchaseOrderNumber}
-                  onChange={(e) => setFormData({ ...formData, purchaseOrderNumber: e.target.value })}
-                  readOnly={orderSettings.mode === 'auto'}
-                  className={`w-full bg-gray-50 border-2 border-transparent py-3.5 px-4 text-[14px] font-bold text-gray-900 rounded-2xl outline-none ${orderSettings.mode === 'auto' ? 'cursor-not-allowed' : 'focus:bg-white focus:border-[#1BAFAF]/20'}`}
-                />
-              </div>
-
-              {/* Order Number Settings Popup */}
-              {isSettingsOpen && (
-                <div className="absolute top-full right-0 mt-2 w-[400px] bg-white border border-gray-100 rounded-3xl shadow-2xl z-[120] overflow-hidden animate-in slide-in-from-top-2 duration-200">
-                  <div className="p-6 space-y-6">
-                    <p className="text-[12px] text-gray-500 font-medium leading-relaxed">
-                      Your purchase order numbers are set on auto-generate mode to save your time. Are you sure about changing this setting?
-                    </p>
-                    
-                    <div className="space-y-4">
-                      {/* Auto Generate Option */}
-                      <label className="flex items-start gap-3 cursor-pointer group">
-                        <div className="pt-0.5">
-                          <input 
-                            type="radio" 
-                            name="po_mode"
-                            checked={orderSettings.mode === 'auto'}
-                            onChange={() => setOrderSettings({ ...orderSettings, mode: 'auto' })}
-                            className="hidden" 
-                          />
-                          <div className={`w-5 h-5 rounded-full border-2 flex items-center justify-center transition-all ${orderSettings.mode === 'auto' ? 'border-[#1BAFAF]' : 'border-gray-200'}`}>
-                            {orderSettings.mode === 'auto' && <div className="w-2.5 h-2.5 rounded-full bg-[#1BAFAF]" />}
-                          </div>
-                        </div>
-                        <div className="flex-1">
-                          <div className="flex items-center gap-2 mb-3">
-                            <span className="text-[13px] font-bold text-gray-700">Continue auto-generating purchase order numbers</span>
-                            <Info size={12} className="text-gray-300" />
-                          </div>
-                          
-                          {orderSettings.mode === 'auto' && (
-                            <div className="space-y-3 animate-in fade-in duration-200">
-                              <div className="space-y-1">
-                                <span className="text-[10px] font-bold text-gray-400 uppercase">Prefix</span>
-                                <input 
-                                  type="text" 
-                                  value={orderSettings.prefix}
-                                  onChange={(e) => setOrderSettings({ ...orderSettings, prefix: e.target.value })}
-                                  className="w-full bg-gray-50 border border-gray-100 rounded-xl px-3 py-2 text-[13px] font-medium focus:bg-white outline-none" 
-                                />
-                              </div>
-                              <div className="space-y-1">
-                                <span className="text-[10px] font-bold text-gray-400 uppercase">Next Number</span>
-                                <input 
-                                  type="text" 
-                                  value={orderSettings.nextNumber}
-                                  onChange={(e) => setOrderSettings({ ...orderSettings, nextNumber: e.target.value })}
-                                  className="w-full bg-gray-50 border border-gray-100 rounded-xl px-3 py-2 text-[13px] font-medium focus:bg-white outline-none" 
-                                />
-                              </div>
-                            </div>
-                          )}
-                        </div>
-                      </label>
-
-                      {/* Manual Option */}
-                      <label className="flex items-center gap-3 cursor-pointer">
-                        <input 
-                          type="radio" 
-                          name="po_mode"
-                          checked={orderSettings.mode === 'manual'}
-                          onChange={() => setOrderSettings({ ...orderSettings, mode: 'manual' })}
-                          className="hidden" 
-                        />
-                        <div className={`w-5 h-5 rounded-full border-2 flex items-center justify-center transition-all ${orderSettings.mode === 'manual' ? 'border-[#1BAFAF]' : 'border-gray-200'}`}>
-                          {orderSettings.mode === 'manual' && <div className="w-2.5 h-2.5 rounded-full bg-[#1BAFAF]" />}
-                        </div>
-                        <span className="text-[13px] font-bold text-gray-700">Enter purchase order numbers manually</span>
-                      </label>
-                    </div>
-
-                    <div className="flex gap-2 pt-2">
-                      <button 
-                        onClick={handleSettingsSave}
-                        className="flex-1 bg-[#1BAFAF] text-white py-2.5 rounded-xl text-[12px] font-bold hover:bg-[#158e8e] transition-all"
-                      >
-                        Save
-                      </button>
-                      <button 
-                        onClick={() => setIsSettingsOpen(false)}
-                        className="flex-1 bg-gray-50 text-gray-500 py-2.5 rounded-xl text-[12px] font-bold hover:bg-gray-100 transition-all"
-                      >
-                        Cancel
-                      </button>
-                    </div>
-                  </div>
-                </div>
-              )}
-            </div>
-
-            {/* Purchase Order Date */}
-            <div className="space-y-2">
-              <label className="text-[11px] font-bold text-gray-400 uppercase tracking-widest ml-1">Date</label>
-              <div className="relative group">
-                <Calendar className="absolute left-4 top-1/2 -translate-y-1/2 w-4 h-4 text-gray-300" />
-                <input
-                  type="text"
-                  value={formData.purchaseOrderDate}
-                  readOnly
-                  className="w-full bg-gray-100 border-2 border-transparent py-3.5 pl-12 pr-4 text-[14px] font-medium rounded-2xl outline-none text-gray-500 cursor-not-allowed"
-                />
-              </div>
-            </div>
-
-            {/* Delivery Date */}
-            <div className="space-y-2">
-              <label className="text-[11px] font-bold text-gray-400 uppercase tracking-widest ml-1">Delivery Date</label>
-              <div className="relative group">
-                <Calendar className="absolute left-4 top-1/2 -translate-y-1/2 w-4 h-4 text-gray-300" />
-                <input
-                  type="date"
-                  value={formData.deliveryDate}
-                  onChange={(e) => setFormData({ ...formData, deliveryDate: e.target.value })}
-                  className="w-full bg-gray-50 border-2 border-transparent py-3.5 pl-12 pr-4 text-[14px] font-medium rounded-2xl outline-none focus:bg-white focus:border-[#1BAFAF]/20 transition-all"
-                />
-              </div>
             </div>
           </div>
 
@@ -537,18 +527,21 @@ const StoreOrderModal = ({ isOpen, onClose }) => {
                       </td>
                     </tr>
                   ))}
+                  {/* Add Items — last row of table */}
+                  <tr>
+                    <td colSpan={5} className="px-4 py-3">
+                      <button
+                        type="button"
+                        onClick={() => setIsBulkModalOpen(true)}
+                        className="flex items-center gap-2 px-4 py-2 bg-white border border-gray-100 rounded-xl text-[12px] font-bold text-gray-600 hover:bg-gray-50 transition-all shadow-sm active:scale-95"
+                      >
+                        <Plus size={14} className="text-[#1BAFAF]" />
+                        Add Items
+                      </button>
+                    </td>
+                  </tr>
                 </tbody>
               </table>
-            </div>
-            <div className="p-4 bg-gray-50/30 flex items-center gap-3">
-              <button
-                type="button"
-                onClick={() => setIsBulkModalOpen(true)}
-                className="flex items-center gap-2 px-4 py-2 bg-white border border-gray-100 rounded-xl text-[12px] font-bold text-gray-600 hover:bg-gray-50 transition-all shadow-sm active:scale-95"
-              >
-                <Search size={14} className="text-[#1BAFAF]" />
-                Add Items
-              </button>
             </div>
           </div>
 
@@ -647,4 +640,4 @@ const StoreOrderModal = ({ isOpen, onClose }) => {
   );
 };
 
-export default StoreOrderModal;
+export default OfflineOrderModal;

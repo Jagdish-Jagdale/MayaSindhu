@@ -3,7 +3,6 @@ import {
   ShoppingBag, 
   Search, 
   Filter, 
-  ArrowUpRight, 
   Clock,
   CheckCircle2,
   Truck,
@@ -19,7 +18,10 @@ import {
   Phone,
   CreditCard,
   User,
-  ShoppingBag as BagIcon
+  ShoppingBag as BagIcon,
+  ChevronLeft,
+  ChevronRight,
+  ChevronUp
 } from 'lucide-react';
 import { db } from '../../firebase';
 import { collection, onSnapshot, query, orderBy, doc, deleteDoc, updateDoc } from 'firebase/firestore';
@@ -44,6 +46,30 @@ export default function Orders() {
   const [direction, setDirection] = useState(0);
   const [selectedOrder, setSelectedOrder] = useState(null);
   const [isViewModalOpen, setIsViewModalOpen] = useState(false);
+  const [sortField, setSortField] = useState('createdAt');
+  const [sortOrder, setSortOrder] = useState('desc');
+
+  const handleSort = (field) => {
+    if (sortField === field) {
+      setSortOrder(sortOrder === 'asc' ? 'desc' : 'asc');
+    } else {
+      setSortField(field);
+      setSortOrder('asc');
+    }
+  };
+
+  const SortIndicator = ({ field }) => {
+    if (sortField !== field) {
+      return (
+        <ChevronDown size={12} className="text-gray-300 ml-1 inline-block" strokeWidth={2.5} />
+      );
+    }
+    return sortOrder === 'asc' ? (
+      <ChevronUp size={12} className="text-[#1BAFAF] ml-1 inline-block" strokeWidth={3} />
+    ) : (
+      <ChevronDown size={12} className="text-[#1BAFAF] ml-1 inline-block" strokeWidth={3} />
+    );
+  };
 
   useEffect(() => {
     setCurrentPage(1);
@@ -66,6 +92,46 @@ export default function Orders() {
     order.orderId?.toLowerCase().includes(searchTerm.toLowerCase()) ||
     order.customerName?.toLowerCase().includes(searchTerm.toLowerCase())
   );
+
+  const sortedOrders = (() => {
+    let list = [...filteredOrders];
+    if (sortField) {
+      list.sort((a, b) => {
+        let valA, valB;
+        if (sortField === 'orderId') {
+          valA = a.orderId || '';
+          valB = b.orderId || '';
+          return sortOrder === 'asc' ? valA.localeCompare(valB) : valB.localeCompare(valA);
+        } else if (sortField === 'customerName') {
+          valA = a.customerName || '';
+          valB = b.customerName || '';
+          return sortOrder === 'asc' ? valA.localeCompare(valB) : valB.localeCompare(valA);
+        } else if (sortField === 'productName') {
+          valA = a.productName || (a.items?.[0]?.name) || '';
+          valB = b.productName || (b.items?.[0]?.name) || '';
+          return sortOrder === 'asc' ? valA.localeCompare(valB) : valB.localeCompare(valA);
+        } else if (sortField === 'quantity') {
+          valA = a.quantity || 1;
+          valB = b.quantity || 1;
+        } else if (sortField === 'total') {
+          valA = a.total || 0;
+          valB = b.total || 0;
+        } else if (sortField === 'createdAt') {
+          valA = a.createdAt?.seconds || 0;
+          valB = b.createdAt?.seconds || 0;
+        } else if (sortField === 'status') {
+          valA = a.status || '';
+          valB = b.status || '';
+          return sortOrder === 'asc' ? valA.localeCompare(valB) : valB.localeCompare(valA);
+        }
+
+        if (valA < valB) return sortOrder === 'asc' ? -1 : 1;
+        if (valA > valB) return sortOrder === 'asc' ? 1 : -1;
+        return 0;
+      });
+    }
+    return list;
+  })();
 
   const updateStatus = async (orderId, orderNo, newStatus) => {
     try {
@@ -376,10 +442,15 @@ export default function Orders() {
       
       {/* Header */}
       <div className="space-y-2 py-2">
-        <div className="flex items-center justify-between">
+        <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
           <div>
             <h1 className="text-[22px] font-bold text-gray-900 tracking-tight">Orders</h1>
-            <p className="text-[12px] text-gray-400 font-medium">Manage and monitor all customer orders in real-time</p>
+            <p className="text-[12px] text-gray-400 font-medium tracking-tight">Manage and monitor all customer orders in real-time</p>
+          </div>
+          <div className="flex items-center gap-4">
+            <span className="text-[11px] font-semibold text-gray-400 uppercase tracking-widest">
+              TOTAL RECORDS: {filteredOrders.length}
+            </span>
           </div>
         </div>
         <hr className="border-gray-100" />
@@ -427,19 +498,54 @@ export default function Orders() {
             <thead>
               <tr className="border-b border-gray-50 bg-white">
                 <th className="px-6 py-5 text-left text-[14px] font-bold text-[#1BAFAF]">Sr No</th>
-                <th className="px-6 py-5 text-left text-[14px] font-bold text-[#1BAFAF]">Order ID</th>
-                <th className="px-6 py-5 text-left text-[14px] font-bold text-[#1BAFAF]">Customer Name</th>
-                <th className="px-6 py-5 text-left text-[14px] font-bold text-[#1BAFAF]">Product Name</th>
-                <th className="px-6 py-5 text-left text-[14px] font-bold text-[#1BAFAF]">Quantity</th>
-                <th className="px-6 py-5 text-left text-[14px] font-bold text-[#1BAFAF]">Total</th>
-                <th className="px-6 py-5 text-left text-[14px] font-bold text-[#1BAFAF]">Date</th>
-                <th className="px-6 py-5 text-left text-[14px] font-bold text-[#1BAFAF]">Status</th>
+                <th className="px-6 py-5 text-left text-[14px] font-bold text-[#1BAFAF] cursor-pointer select-none" onClick={() => handleSort('orderId')}>
+                  <div className="flex items-center gap-1">
+                    Order ID
+                    <SortIndicator field="orderId" />
+                  </div>
+                </th>
+                <th className="px-6 py-5 text-left text-[14px] font-bold text-[#1BAFAF] cursor-pointer select-none" onClick={() => handleSort('customerName')}>
+                  <div className="flex items-center gap-1">
+                    Customer Name
+                    <SortIndicator field="customerName" />
+                  </div>
+                </th>
+                <th className="px-6 py-5 text-left text-[14px] font-bold text-[#1BAFAF] cursor-pointer select-none" onClick={() => handleSort('productName')}>
+                  <div className="flex items-center gap-1">
+                    Product Name
+                    <SortIndicator field="productName" />
+                  </div>
+                </th>
+                <th className="px-6 py-5 text-left text-[14px] font-bold text-[#1BAFAF] cursor-pointer select-none" onClick={() => handleSort('quantity')}>
+                  <div className="flex items-center gap-1">
+                    Quantity
+                    <SortIndicator field="quantity" />
+                  </div>
+                </th>
+                <th className="px-6 py-5 text-left text-[14px] font-bold text-[#1BAFAF] cursor-pointer select-none" onClick={() => handleSort('total')}>
+                  <div className="flex items-center gap-1">
+                    Total
+                    <SortIndicator field="total" />
+                  </div>
+                </th>
+                <th className="px-6 py-5 text-left text-[14px] font-bold text-[#1BAFAF] cursor-pointer select-none" onClick={() => handleSort('createdAt')}>
+                  <div className="flex items-center gap-1">
+                    Date
+                    <SortIndicator field="createdAt" />
+                  </div>
+                </th>
+                <th className="px-6 py-5 text-left text-[14px] font-bold text-[#1BAFAF] cursor-pointer select-none" onClick={() => handleSort('status')}>
+                  <div className="flex items-center gap-1">
+                    Status
+                    <SortIndicator field="status" />
+                  </div>
+                </th>
               </tr>
             </thead>
             <tbody className="divide-y divide-gray-50/50">
               <AnimatePresence mode="wait" custom={direction}>
-                {filteredOrders.length > 0 ? (
-                  filteredOrders.slice((currentPage - 1) * rowsPerPage, currentPage * rowsPerPage).map((order, index) => {
+                {sortedOrders.length > 0 ? (
+                  sortedOrders.slice((currentPage - 1) * rowsPerPage, currentPage * rowsPerPage).map((order, index) => {
                     const config = STATUS_CONFIG[order.status] || STATUS_CONFIG['Pending'];
                     return (
                       <motion.tr 
@@ -511,39 +617,25 @@ export default function Orders() {
         </div>
       </div>
 
-      {/* Page Footer */}
-      <div className="flex items-center justify-between px-2 pt-3">
-        <span className="text-[11px] font-bold text-gray-300 uppercase tracking-widest">
-          Showing {filteredOrders.length > 0 ? (currentPage - 1) * rowsPerPage + 1 : 0}-{Math.min(currentPage * rowsPerPage, filteredOrders.length)} of {filteredOrders.length} Orders
-        </span>
+      {/* Pagination Footer */}
+      <div className="flex items-center justify-end px-2 pt-1">
         <div className="flex items-center gap-2">
           <button 
-            onClick={() => {
-              setDirection(-1);
-              setCurrentPage(prev => Math.max(1, prev - 1));
-            }}
+            onClick={() => currentPage > 1 && setCurrentPage(currentPage - 1)}
             disabled={currentPage === 1}
-            className={`w-8 h-8 rounded-lg flex items-center justify-center transition-all ${
-              currentPage === 1 
-                ? 'bg-gray-50 text-gray-300 cursor-not-allowed' 
-                : 'bg-white border border-gray-100 text-gray-900 hover:shadow-sm hover:text-[#1BAFAF]'
-            }`}
+            className="w-8 h-8 rounded-lg flex items-center justify-center text-gray-400 hover:text-[#1BAFAF] hover:bg-[#1BAFAF]/5 transition-all disabled:opacity-30 disabled:hover:bg-transparent disabled:hover:text-gray-400"
           >
-            <ArrowUpRight size={14} className="rotate-[225deg]" />
+            <ChevronLeft size={16} strokeWidth={2.5} />
           </button>
+          <span className="text-[12px] font-semibold text-gray-400">
+            Page {currentPage} of {Math.ceil(filteredOrders.length / rowsPerPage) || 1}
+          </span>
           <button 
-            onClick={() => {
-              setDirection(1);
-              setCurrentPage(prev => Math.min(Math.ceil(filteredOrders.length / rowsPerPage), prev + 1));
-            }}
+            onClick={() => currentPage < Math.ceil(filteredOrders.length / rowsPerPage) && setCurrentPage(currentPage + 1)}
             disabled={currentPage >= Math.ceil(filteredOrders.length / rowsPerPage)}
-            className={`w-8 h-8 rounded-lg flex items-center justify-center transition-all ${
-              currentPage >= Math.ceil(filteredOrders.length / rowsPerPage)
-                ? 'bg-gray-50 text-gray-300 cursor-not-allowed' 
-                : 'bg-white border border-gray-100 text-gray-900 hover:shadow-sm hover:text-[#1BAFAF]'
-            }`}
+            className="w-8 h-8 rounded-lg flex items-center justify-center text-gray-400 hover:text-[#1BAFAF] hover:bg-[#1BAFAF]/5 transition-all disabled:opacity-30 disabled:hover:bg-transparent disabled:hover:text-gray-400"
           >
-            <ArrowUpRight size={14} className="rotate-45" />
+            <ChevronRight size={16} strokeWidth={2.5} />
           </button>
         </div>
       </div>

@@ -7,6 +7,8 @@ import {
   Trash2, 
   X, 
   ChevronDown, 
+  ChevronLeft,
+  ChevronRight,
   User as UserIcon,
   Loader2
 } from 'lucide-react';
@@ -34,6 +36,7 @@ const StoreCustomers = () => {
   const [rowsOpen, setRowsOpen] = useState(false);
   const [activeFilter, setActiveFilter] = useState('All');
   const [rowsPerPage, setRowsPerPage] = useState(10);
+  const [currentPage, setCurrentPage] = useState(1);
   const [sortConfig, setSortConfig] = useState({ key: 'createdAt', dir: 'desc' });
 
   // Modal States
@@ -154,6 +157,12 @@ const StoreCustomers = () => {
     return list;
   })();
 
+  // Pagination logic
+  const totalRecords = filteredCustomers.length;
+  const totalPages = Math.ceil(totalRecords / rowsPerPage) || 1;
+  const startIndex = (currentPage - 1) * rowsPerPage;
+  const currentCustomers = filteredCustomers.slice(startIndex, startIndex + rowsPerPage);
+
   // Close filter/rows dropdown on outside click
   useEffect(() => {
     const handler = (e) => {
@@ -178,20 +187,26 @@ const StoreCustomers = () => {
 
       {/* Header Section */}
       <div className="space-y-2 py-2">
-        <div className="flex items-center justify-between">
+        <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
           <div>
             <h1 className="text-[22px] font-semibold text-gray-900 tracking-tight">
               Store Customers
             </h1>
             <p className="text-[12px] text-gray-400 font-medium font-inter">Manage your offline store customer database</p>
           </div>
-          <button 
-            onClick={handleAdd}
-            className="flex items-center gap-2 px-6 py-3 bg-[#1BAFAF] text-white rounded-2xl text-[13px] font-bold shadow-lg shadow-[#1BAFAF]/20 hover:bg-[#158e8e] transition-all active:scale-95 group"
-          >
-            <Plus size={18} className="group-hover:rotate-90 transition-transform duration-300" />
-            Add Customer
-          </button>
+          <div className="flex items-center gap-4">
+            <span className="text-[11px] font-semibold text-gray-400 uppercase tracking-widest">
+               TOTAL RECORDS: {totalRecords}
+            </span>
+            <span className="text-gray-200 text-sm">|</span>
+            <button 
+              onClick={handleAdd}
+              className="flex items-center gap-2 px-6 py-3 bg-[#1BAFAF] text-white rounded-2xl text-[13px] font-bold shadow-lg shadow-[#1BAFAF]/20 hover:bg-[#158e8e] transition-all active:scale-95 group"
+            >
+              <Plus size={18} className="group-hover:rotate-90 transition-transform duration-300" />
+              Add Customer
+            </button>
+          </div>
         </div>
         <hr className="border-gray-100" />
       </div>
@@ -204,7 +219,10 @@ const StoreCustomers = () => {
             type="text"
             placeholder="Search by name, email or phone..."
             value={searchTerm}
-            onChange={(e) => setSearchTerm(e.target.value)}
+            onChange={(e) => {
+              setSearchTerm(e.target.value);
+              setCurrentPage(1);
+            }}
             className="w-full bg-gray-50 border-none py-2 pl-10 pr-4 text-[13px] rounded-xl outline-none focus:bg-white transition-all font-medium"
           />
         </div>
@@ -223,7 +241,11 @@ const StoreCustomers = () => {
                 {rowOptions.map(opt => (
                   <button
                     key={opt}
-                    onClick={() => { setRowsPerPage(opt); setRowsOpen(false); }}
+                    onClick={() => { 
+                      setRowsPerPage(opt); 
+                      setCurrentPage(1);
+                      setRowsOpen(false); 
+                    }}
                     className={`w-full text-left px-3 py-2 text-[13px] transition-colors ${
                       rowsPerPage === opt ? 'text-[#1BAFAF] font-semibold bg-[#1BAFAF]/5' : 'text-gray-600 hover:bg-gray-50'
                     }`}
@@ -251,7 +273,11 @@ const StoreCustomers = () => {
                 {['All', 'Active', 'Inactive'].map(opt => (
                   <button
                     key={opt}
-                    onClick={() => { setActiveFilter(opt); setFilterOpen(false); }}
+                    onClick={() => { 
+                      setActiveFilter(opt); 
+                      setCurrentPage(1);
+                      setFilterOpen(false); 
+                    }}
                     className={`w-full text-left px-3 py-2 text-[13px] transition-colors ${
                       activeFilter === opt ? 'text-[#1BAFAF] font-semibold bg-[#1BAFAF]/5' : 'text-gray-600 hover:bg-gray-50'
                     }`}
@@ -301,10 +327,10 @@ const StoreCustomers = () => {
               </tr>
             </thead>
             <tbody className="divide-y divide-gray-50/50">
-              {filteredCustomers.length > 0 ? (
-                filteredCustomers.slice(0, rowsPerPage).map((c, idx) => (
+              {currentCustomers.length > 0 ? (
+                currentCustomers.map((c, idx) => (
                   <tr key={c.id} className="hover:bg-gray-50 group transition-colors">
-                    <td className="px-6 py-4 whitespace-nowrap text-[14px] text-gray-400 font-medium">{(idx + 1).toString().padStart(2, '0')}</td>
+                    <td className="px-6 py-4 whitespace-nowrap text-[14px] text-gray-400 font-medium">{(startIndex + idx + 1).toString().padStart(2, '0')}</td>
                     <td className="px-6 py-4 min-w-[200px]">
                       <span className="text-[14px] font-bold text-gray-900">{c.fullName}</span>
                     </td>
@@ -354,10 +380,26 @@ const StoreCustomers = () => {
           </table>
         </div>
 
-        <div className="flex items-center justify-between px-2 pt-1">
-          <span className="text-[11px] font-semibold text-gray-300 uppercase tracking-widest">
-            Total Records: {filteredCustomers.length}
-          </span>
+        <div className="flex items-center justify-end px-2 pt-1">
+          <div className="flex items-center gap-2">
+            <button 
+              onClick={() => currentPage > 1 && setCurrentPage(currentPage - 1)}
+              disabled={currentPage === 1}
+              className="w-8 h-8 rounded-lg flex items-center justify-center text-gray-400 hover:text-[#1BAFAF] hover:bg-[#1BAFAF]/5 transition-all disabled:opacity-30 disabled:hover:bg-transparent disabled:hover:text-gray-400"
+            >
+              <ChevronLeft size={16} strokeWidth={2.5} />
+            </button>
+            <span className="text-[12px] font-semibold text-gray-400">
+              Page {currentPage} of {totalPages}
+            </span>
+            <button 
+              onClick={() => currentPage < totalPages && setCurrentPage(currentPage + 1)}
+              disabled={currentPage === totalPages}
+              className="w-8 h-8 rounded-lg flex items-center justify-center text-gray-400 hover:text-[#1BAFAF] hover:bg-[#1BAFAF]/5 transition-all disabled:opacity-30 disabled:hover:bg-transparent disabled:hover:text-gray-400"
+            >
+              <ChevronRight size={16} strokeWidth={2.5} />
+            </button>
+          </div>
         </div>
       </div>
 

@@ -93,9 +93,17 @@ const InvoiceModal = ({ isOpen, onClose }) => {
 
   const fetchCustomers = async () => {
     try {
-      const q = query(collection(db, 'storeCustomers'), orderBy('fullName'));
-      const snapshot = await getDocs(q);
-      setCustomers(snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() })));
+      let snapshot;
+      try {
+        const q = query(collection(db, 'storeCustomers'), orderBy('fullName'));
+        snapshot = await getDocs(q);
+      } catch (err) {
+        console.warn("Fallback: fetching storeCustomers without orderBy");
+        snapshot = await getDocs(collection(db, 'storeCustomers'));
+      }
+      let fetchedCustomers = snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() }));
+      fetchedCustomers.sort((a, b) => (a.fullName || '').localeCompare(b.fullName || ''));
+      setCustomers(fetchedCustomers);
     } catch (error) {
       console.error("Error fetching customers:", error);
     }
@@ -112,9 +120,21 @@ const InvoiceModal = ({ isOpen, onClose }) => {
 
   const fetchOrders = async () => {
     try {
-      const q = query(collection(db, 'storeOrders'), orderBy('createdAt', 'desc'));
-      const snapshot = await getDocs(q);
-      setOrders(snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() })));
+      let snapshot;
+      try {
+        const q = query(collection(db, 'storeOrders'), orderBy('createdAt', 'desc'));
+        snapshot = await getDocs(q);
+      } catch (err) {
+        console.warn("Fallback: fetching storeOrders without orderBy");
+        snapshot = await getDocs(collection(db, 'storeOrders'));
+      }
+      let fetchedOrders = snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() }));
+      fetchedOrders.sort((a, b) => {
+        const dateA = a.createdAt?.toDate ? a.createdAt.toDate() : new Date(a.createdAt || 0);
+        const dateB = b.createdAt?.toDate ? b.createdAt.toDate() : new Date(b.createdAt || 0);
+        return dateB - dateA;
+      });
+      setOrders(fetchedOrders);
     } catch (error) {
       console.error("Error fetching orders:", error);
     }
@@ -351,19 +371,19 @@ const InvoiceModal = ({ isOpen, onClose }) => {
               {showCustomerDropdown && (
                 <div className="absolute top-full left-0 right-0 mt-2 bg-white border border-gray-100 rounded-2xl shadow-xl z-[110] py-2 max-h-48 overflow-y-auto custom-scrollbar">
                   {customers
-                    .filter(c => c.fullName.toLowerCase().includes(searchCustomer.toLowerCase()))
+                    .filter(c => (c.fullName || '').toLowerCase().includes(searchCustomer.toLowerCase()))
                     .map(c => (
                       <button
                         key={c.id}
                         type="button"
                         onClick={() => {
-                          setFormData({ ...formData, customerId: c.id, customerName: c.fullName });
-                          setSearchCustomer(c.fullName);
+                          setFormData({ ...formData, customerId: c.id, customerName: c.fullName || '' });
+                          setSearchCustomer(c.fullName || '');
                           setShowCustomerDropdown(false);
                         }}
                         className="w-full text-left px-4 py-3 hover:bg-[#EAF6F6] hover:text-[#1BAFAF] text-[14px] font-bold text-gray-700 transition-all flex items-center justify-between group"
                       >
-                        <span>{c.fullName}</span>
+                        <span>{c.fullName || 'No Name'}</span>
                         <div className="w-1.5 h-1.5 rounded-full bg-[#1BAFAF] opacity-0 group-hover:opacity-100 transition-opacity" />
                       </button>
                     ))}
@@ -495,9 +515,7 @@ const InvoiceModal = ({ isOpen, onClose }) => {
                   {orders
                     .filter(o => {
                       const matchesSearch = (o.saleOrderNumber || '').toLowerCase().includes(searchOrder.toLowerCase());
-                      // Only show orders for the selected customer if one is selected
-                      const matchesCustomer = formData.customerId ? o.customerId === formData.customerId : true;
-                      return matchesSearch && matchesCustomer;
+                      return matchesSearch;
                     })
                     .map(o => (
                       <button
@@ -515,11 +533,10 @@ const InvoiceModal = ({ isOpen, onClose }) => {
                     ))}
                   {orders.filter(o => {
                     const matchesSearch = (o.saleOrderNumber || '').toLowerCase().includes(searchOrder.toLowerCase());
-                    const matchesCustomer = formData.customerId ? o.customerId === formData.customerId : true;
-                    return matchesSearch && matchesCustomer;
+                    return matchesSearch;
                   }).length === 0 && (
                     <p className="px-4 py-3 text-[12px] text-gray-400 text-center font-medium">
-                      {formData.customerId ? 'No orders found for this customer' : 'No matching orders found'}
+                      No matching orders found
                     </p>
                   )}
                 </div>

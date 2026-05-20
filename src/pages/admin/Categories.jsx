@@ -18,13 +18,15 @@ import {
   Loader2,
   ExternalLink,
   ChevronLeft,
-  Star,
   MoreVertical,
-  AlertCircle
+  AlertCircle,
+  ChevronUp
 } from 'lucide-react';
 import { useAdminUI } from '../../context/AdminUIContext';
 import { db } from '../../firebase';
 import { collection, onSnapshot, query, orderBy, doc, deleteDoc, addDoc, updateDoc, serverTimestamp } from 'firebase/firestore';
+import { useLocation } from 'react-router-dom';
+import { AiFillThunderbolt } from 'react-icons/ai';
 import useCategories from '../../hooks/useCategories';
 import ProductFormModal from '../../components/admin/ProductFormModal';
 import DeleteConfirmationModal from '../../components/admin/DeleteConfirmationModal';
@@ -33,6 +35,8 @@ import CustomSelect from '../../components/common/CustomSelect';
 
 export default function Categories() {
   const { isCollapsed } = useAdminUI();
+  const { pathname } = useLocation();
+  const isOnlinePanel = pathname.startsWith('/admin') && !pathname.startsWith('/admin-offline');
   const { categories: fullHierarchy, loading: catsLoading } = useCategories();
 
   const [products, setProducts] = useState([]);
@@ -42,6 +46,30 @@ export default function Categories() {
   const [currentPage, setCurrentPage] = useState(1);
   const [direction, setDirection] = useState(0);
   const [rowsOpen, setRowsOpen] = useState(false);
+  const [sortField, setSortField] = useState(null);
+  const [sortOrder, setSortOrder] = useState('asc');
+
+  const handleSort = (field) => {
+    if (sortField === field) {
+      setSortOrder(sortOrder === 'asc' ? 'desc' : 'asc');
+    } else {
+      setSortField(field);
+      setSortOrder('asc');
+    }
+  };
+
+  const SortIndicator = ({ field }) => {
+    if (sortField !== field) {
+      return (
+        <ChevronDown size={12} className="text-gray-300 ml-1 inline-block" strokeWidth={2.5} />
+      );
+    }
+    return sortOrder === 'asc' ? (
+      <ChevronUp size={12} className="text-[#1BAFAF] ml-1 inline-block" strokeWidth={3} />
+    ) : (
+      <ChevronDown size={12} className="text-[#1BAFAF] ml-1 inline-block" strokeWidth={3} />
+    );
+  };
 
   // Navigation State
   const [currentPath, setCurrentPath] = useState([]); // Array of category IDs
@@ -113,8 +141,37 @@ export default function Categories() {
     }
 
     if (searchTerm && list.length > 0) {
-      return list.filter(c => c.name.toLowerCase().includes(searchTerm.toLowerCase()));
+      list = list.filter(c => c.name.toLowerCase().includes(searchTerm.toLowerCase()));
     }
+
+    if (sortField) {
+      list = [...list].sort((a, b) => {
+        let valA, valB;
+        if (sortField === 'name') {
+          valA = a.name || '';
+          valB = b.name || '';
+          return sortOrder === 'asc' ? valA.localeCompare(valB) : valB.localeCompare(valA);
+        } else if (sortField === 'layer') {
+          valA = currentPath.length === 0 ? 0 : currentPath.length;
+          valB = currentPath.length === 0 ? 0 : currentPath.length;
+        } else if (sortField === 'products') {
+          valA = products.filter(p => p.categoryId === a.id).length;
+          valB = products.filter(p => p.categoryId === b.id).length;
+        } else if (sortField === 'sublayers') {
+          valA = a.children?.length || 0;
+          valB = b.children?.length || 0;
+
+        } else if (sortField === 'isTrendy') {
+          valA = a.isTrendy ? 1 : 0;
+          valB = b.isTrendy ? 1 : 0;
+        }
+
+        if (valA < valB) return sortOrder === 'asc' ? -1 : 1;
+        if (valA > valB) return sortOrder === 'asc' ? 1 : -1;
+        return 0;
+      });
+    }
+
     return list;
   })();
 
@@ -196,6 +253,7 @@ export default function Categories() {
           parentId: parentId,
           level: currentPath.length,
           isTrendy: false,
+
           createdAt: serverTimestamp(),
           updatedAt: serverTimestamp()
         };
@@ -265,6 +323,8 @@ export default function Categories() {
     }
   };
 
+
+
   if (catsLoading || productsLoading) {
     return (
       <div className="h-[60vh] w-full flex flex-col items-center justify-center gap-4">
@@ -279,30 +339,40 @@ export default function Categories() {
 
       {/* Header Section */}
       <div className="space-y-2 py-2">
-        <div className="flex items-center justify-between">
+        <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
           <div>
             <h1 className="text-[22px] font-semibold text-gray-900 tracking-tight">
               Manage Categories
             </h1>
-            <p className="text-[12px] text-gray-400 font-medium">Manage your multi-level heritage collections and products</p>
+            <p className="text-[12px] text-gray-400 font-medium tracking-tight">Manage your multi-level heritage collections and products</p>
           </div>
-          <div className="flex items-center gap-3">
-            {currentPath.length > 0 && (
+          <div className="flex items-center gap-4">
+            <span className="text-[11px] font-semibold text-gray-400 uppercase tracking-widest">
+               TOTAL RECORDS: {(() => {
+                 return visibleCategories.length > 0 
+                   ? visibleCategories.length 
+                   : (products.filter(p => p.categoryId === currentPath[currentPath.length - 1]).length);
+               })()}
+            </span>
+            <span className="text-gray-200 text-sm">|</span>
+            <div className="flex items-center gap-3">
+              {currentPath.length > 0 && (
+                <button
+                  onClick={() => setIsProductModalOpen(true)}
+                  className="flex items-center gap-2 bg-white border border-[#1BAFAF] text-[#1BAFAF] hover:bg-[#1BAFAF]/5 px-4 py-2.5 rounded-xl text-[13px] font-bold transition-all active:scale-95 group"
+                >
+                  <Package size={18} className="group-hover:rotate-90 transition-transform duration-300" strokeWidth={2.5} />
+                  Add Product
+                </button>
+              )}
               <button
-                onClick={() => setIsProductModalOpen(true)}
-                className="flex items-center gap-2 bg-white border border-[#1BAFAF] text-[#1BAFAF] hover:bg-[#1BAFAF]/5 px-4 py-2 rounded-xl text-[13px] font-semibold transition-all active:scale-95"
+                onClick={() => { setEditingCategory(null); setCategoryDraft({ name: '' }); setIsModalOpen(true); }}
+                className="flex items-center gap-2 bg-[#1BAFAF] hover:bg-[#17a0a0] text-white px-5 py-2.5 rounded-xl text-[13px] font-bold transition-all shadow-sm shadow-[#1BAFAF]/10 active:scale-95 group"
               >
-                <Package size={16} strokeWidth={2.5} />
-                Add Product
+                <Plus size={18} className="group-hover:rotate-90 transition-transform duration-300" strokeWidth={2.5} />
+                {currentPath.length > 0 ? 'Add Sub Category' : 'Add Category'}
               </button>
-            )}
-            <button
-              onClick={() => { setEditingCategory(null); setCategoryDraft({ name: '' }); setIsModalOpen(true); }}
-              className="flex items-center gap-2 bg-[#1BAFAF] hover:bg-[#17a0a0] text-white px-4 py-2 rounded-xl text-[13px] font-semibold transition-all shadow-sm shadow-[#1BAFAF]/10 active:scale-95"
-            >
-              <Plus size={16} strokeWidth={2.5} />
-              {currentPath.length > 0 ? 'Add Sub Category' : 'Add Category'}
-            </button>
+            </div>
           </div>
         </div>
         <hr className="border-gray-100" />
@@ -365,19 +435,47 @@ export default function Categories() {
 
       {/* Table Section */}
       <div className="space-y-3">
-        <div className="bg-white rounded-[22px] border border-gray-100 shadow-sm overflow-hidden min-h-[400px] overflow-x-auto custom-scrollbar">
+        <div className="bg-white rounded-[22px] border border-gray-100 shadow-sm overflow-hidden overflow-x-auto custom-scrollbar">
           {visibleCategories.length > 0 ? (
             <table className="w-full border-collapse">
               <thead>
                 <tr className="border-b border-gray-50 bg-white text-[#1BAFAF]">
-                  <th className="px-6 py-4 text-left text-[14px] font-bold w-20">Sr No</th>
-                  <th className="px-6 py-4 text-left text-[14px] font-bold">Category</th>
-                  <th className="px-6 py-4 text-left text-[14px] font-bold">Trendy</th>
-                  <th className="px-6 py-4 text-left text-[14px] font-bold">Layer</th>
-                  {visibleCategories.some(cat => !cat.children || cat.children.length === 0) && (
-                    <th className="px-6 py-4 text-left text-[14px] font-bold">Products</th>
+                  <th className="px-6 py-4 text-left text-[14px] font-bold w-20 whitespace-nowrap">Sr No</th>
+                  <th className="px-6 py-4 text-left text-[14px] font-bold cursor-pointer select-none" onClick={() => handleSort('name')}>
+                    <div className="flex items-center gap-1">
+                      Category
+                      <SortIndicator field="name" />
+                    </div>
+                  </th>
+
+                  {isOnlinePanel && (
+                    <th className="px-6 py-4 text-left text-[14px] font-bold cursor-pointer select-none" onClick={() => handleSort('isTrendy')}>
+                      <div className="flex items-center gap-1">
+                        Trendy
+                        <SortIndicator field="isTrendy" />
+                      </div>
+                    </th>
                   )}
-                  <th className="px-6 py-4 text-left text-[14px] font-bold">Sub-layers</th>
+                  <th className="px-6 py-4 text-left text-[14px] font-bold cursor-pointer select-none" onClick={() => handleSort('layer')}>
+                    <div className="flex items-center gap-1">
+                      Layer
+                      <SortIndicator field="layer" />
+                    </div>
+                  </th>
+                  {visibleCategories.some(cat => !cat.children || cat.children.length === 0) && (
+                    <th className="px-6 py-4 text-left text-[14px] font-bold cursor-pointer select-none" onClick={() => handleSort('products')}>
+                      <div className="flex items-center gap-1">
+                        Products
+                        <SortIndicator field="products" />
+                      </div>
+                    </th>
+                  )}
+                  <th className="px-6 py-4 text-left text-[14px] font-bold cursor-pointer select-none" onClick={() => handleSort('sublayers')}>
+                    <div className="flex items-center gap-1">
+                      Sub-layers
+                      <SortIndicator field="sublayers" />
+                    </div>
+                  </th>
                   <th className="px-6 py-4 text-right text-[14px] font-bold">Actions</th>
                 </tr>
               </thead>
@@ -417,19 +515,22 @@ export default function Categories() {
                           </div>
                         </div>
                       </td>
-                      <td className="px-6 py-4 whitespace-nowrap">
-                        {currentPath.length === 0 ? (
-                          <button 
-                            onClick={(e) => toggleTrendy(e, cat)}
-                            className={`transition-all duration-300 hover:scale-125 ${cat.isTrendy ? 'text-amber-400 fill-amber-400' : 'text-gray-200 hover:text-amber-200'}`}
-                            title={cat.isTrendy ? "Remove from Trendy" : "Mark as Trendy"}
-                          >
-                            <Star size={18} strokeWidth={cat.isTrendy ? 2 : 2.5} />
-                          </button>
-                        ) : (
-                          <span className="text-gray-200">---</span>
-                        )}
-                      </td>
+
+                      {isOnlinePanel && (
+                        <td className="px-6 py-4 whitespace-nowrap" onClick={e => e.stopPropagation()}>
+                          {currentPath.length === 0 ? (
+                            <button 
+                              onClick={(e) => toggleTrendy(e, cat)}
+                              className={`transition-all duration-300 hover:scale-125 ${cat.isTrendy ? 'text-orange-500' : 'text-gray-300 hover:text-orange-500'}`}
+                              title={cat.isTrendy ? "Remove from Trendy" : "Mark as Trendy"}
+                            >
+                              <AiFillThunderbolt size={20} className={cat.isTrendy ? 'text-orange-500' : 'text-gray-300 group-hover:text-orange-400'} />
+                            </button>
+                          ) : (
+                            <span className="text-gray-200">---</span>
+                          )}
+                        </td>
+                      )}
                       <td className="px-6 py-4 whitespace-nowrap">
                         <span className={`text-[10px] font-bold uppercase tracking-wider px-2.5 py-1 rounded-lg ${currentPath.length === 0 ? 'text-[#1BAFAF] bg-[#eaf6f6]' : 'text-gray-400 bg-gray-100'
                           }`}>
@@ -604,62 +705,36 @@ export default function Categories() {
           )}
         </div>
 
-        {/* Table Footer */}
-        <div className="flex items-center justify-between px-2 pt-3">
-          <span className="text-[11px] font-bold text-gray-300 uppercase tracking-widest">
-            {(() => {
-              const totalItems = visibleCategories.length > 0 ? visibleCategories.length : (products.filter(p => p.categoryId === currentPath[currentPath.length - 1]).length);
-              const label = visibleCategories.length > 0 ? "Layers" : "Products";
-              if (totalItems === 0 && visibleCategories.length === 0) return "End of hierarchy reached • No Products found";
-              return `Showing ${totalItems > 0 ? (currentPage - 1) * rowsPerPage + 1 : 0}-${Math.min(currentPage * rowsPerPage, totalItems)} of ${totalItems} ${label}`;
-            })()}
-          </span>
-          <div className="flex items-center gap-4">
-            <div className="flex items-center gap-2 text-[12px] font-bold text-gray-400">
-              {visibleCategories.length > rowsPerPage 
-                ? 'Click rows to explore deeper' 
-                : (visibleCategories.length === 0 && (products.filter(p => p.categoryId === currentPath[currentPath.length - 1]).length) > rowsPerPage ? 'Scroll to see more products' : '')}
-            </div>
-            <div className="flex items-center gap-2">
+        {/* Pagination Footer */}
+        <div className="flex items-center justify-end px-2 pt-1">
+           <div className="flex items-center gap-2">
               <button 
-                onClick={(e) => {
-                  e.stopPropagation();
-                  setDirection(-1);
-                  setCurrentPage(prev => Math.max(1, prev - 1));
-                }}
+                onClick={() => currentPage > 1 && setCurrentPage(currentPage - 1)}
                 disabled={currentPage === 1}
-                className={`w-8 h-8 rounded-lg flex items-center justify-center transition-all ${
-                  currentPage === 1 
-                    ? 'bg-gray-50 text-gray-300 cursor-not-allowed' 
-                    : 'bg-white border border-gray-100 text-gray-900 hover:shadow-sm hover:text-[#1BAFAF]'
-                }`}
+                className="w-8 h-8 rounded-lg flex items-center justify-center text-gray-400 hover:text-[#1BAFAF] hover:bg-[#1BAFAF]/5 transition-all disabled:opacity-30 disabled:hover:bg-transparent disabled:hover:text-gray-400"
               >
-                <ArrowUpRight size={14} className="rotate-[225deg]" />
+                <ChevronLeft size={16} strokeWidth={2.5} />
               </button>
+              <span className="text-[12px] font-semibold text-gray-400">
+                 Page {currentPage} of {(() => {
+                   const totalItems = visibleCategories.length > 0 ? visibleCategories.length : (products.filter(p => p.categoryId === currentPath[currentPath.length - 1]).length);
+                   return Math.ceil(totalItems / rowsPerPage) || 1;
+                 })()}
+              </span>
               <button 
-                onClick={(e) => {
-                  e.stopPropagation();
-                  setDirection(1);
-                  const totalItems = visibleCategories.length > 0 ? visibleCategories.length : (products.filter(p => p.categoryId === currentPath[currentPath.length - 1]).length);
-                  setCurrentPage(prev => Math.min(Math.ceil(totalItems / rowsPerPage), prev + 1));
+                onClick={() => {
+                   const totalItems = visibleCategories.length > 0 ? visibleCategories.length : (products.filter(p => p.categoryId === currentPath[currentPath.length - 1]).length);
+                   if(currentPage < Math.ceil(totalItems / rowsPerPage)) setCurrentPage(currentPage + 1);
                 }}
                 disabled={(() => {
-                  const totalItems = visibleCategories.length > 0 ? visibleCategories.length : (products.filter(p => p.categoryId === currentPath[currentPath.length - 1]).length);
-                  return currentPage >= Math.ceil(totalItems / rowsPerPage);
+                   const totalItems = visibleCategories.length > 0 ? visibleCategories.length : (products.filter(p => p.categoryId === currentPath[currentPath.length - 1]).length);
+                   return currentPage >= Math.ceil(totalItems / rowsPerPage);
                 })()}
-                className={`w-8 h-8 rounded-lg flex items-center justify-center transition-all ${
-                  (() => {
-                    const totalItems = visibleCategories.length > 0 ? visibleCategories.length : (products.filter(p => p.categoryId === currentPath[currentPath.length - 1]).length);
-                    return currentPage >= Math.ceil(totalItems / rowsPerPage);
-                  })()
-                    ? 'bg-gray-50 text-gray-300 cursor-not-allowed' 
-                    : 'bg-white border border-gray-100 text-gray-900 hover:shadow-sm hover:text-[#1BAFAF]'
-                }`}
+                className="w-8 h-8 rounded-lg flex items-center justify-center text-gray-400 hover:text-[#1BAFAF] hover:bg-[#1BAFAF]/5 transition-all disabled:opacity-30 disabled:hover:bg-transparent disabled:hover:text-gray-400"
               >
-                <ArrowUpRight size={14} className="rotate-45" />
+                <ChevronRight size={16} strokeWidth={2.5} />
               </button>
-            </div>
-          </div>
+           </div>
         </div>
       </div>
       {/* Category Modal */}
