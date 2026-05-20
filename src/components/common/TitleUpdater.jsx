@@ -1,6 +1,5 @@
 import { useEffect } from 'react';
 import { useLocation } from 'react-router-dom';
-import { PRODUCTS } from '../../data/products';
 
 const TitleUpdater = () => {
   const location = useLocation();
@@ -17,8 +16,7 @@ const TitleUpdater = () => {
       // Special handling for Product Detail pages
       if (segments[0] === 'product' && segments[1]) {
         const slug = segments[1];
-        const product = PRODUCTS.find(p => p.slug === slug);
-        title = product ? product.name : formatSegment(slug);
+        title = formatSegment(slug);
       } 
       // Special handling for Category pages
       else if (segments[0] === 'category' && segments[1]) {

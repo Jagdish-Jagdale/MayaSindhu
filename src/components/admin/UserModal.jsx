@@ -15,6 +15,51 @@ export default function UserModal({ isOpen, onClose, user = null }) {
     role: 'Client'
   });
 
+  const [errors, setErrors] = useState({});
+  const [touched, setTouched] = useState({});
+
+  const validateField = (name, value) => {
+    let error = '';
+    if (name === 'fullName') {
+      if (!value.trim()) {
+        error = 'Full name is required';
+      } else if (value.trim().length < 2) {
+        error = 'Full name must be at least 2 characters';
+      } else if (!/^[a-zA-Z\s.-]+$/.test(value.trim())) {
+        error = 'Full name can only contain letters, spaces, dots, and hyphens';
+      }
+    } else if (name === 'email') {
+      if (!value.trim()) {
+        error = 'Email address is required';
+      } else {
+        const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+        if (!emailRegex.test(value.trim())) {
+          error = 'Please enter a valid email address';
+        }
+      }
+    } else if (name === 'phone') {
+      if (value && value.trim()) {
+        const phoneRegex = /^\d{10}$/;
+        if (!phoneRegex.test(value.trim())) {
+          error = 'Phone number must be exactly 10 digits';
+        }
+      }
+    }
+    return error;
+  };
+
+  const handleChange = (name, value) => {
+    setFormData(prev => ({ ...prev, [name]: value }));
+    const error = validateField(name, value);
+    setErrors(prev => ({ ...prev, [name]: error }));
+  };
+
+  const handleBlur = (name) => {
+    setTouched(prev => ({ ...prev, [name]: true }));
+    const error = validateField(name, formData[name]);
+    setErrors(prev => ({ ...prev, [name]: error }));
+  };
+
   useEffect(() => {
     if (user) {
       setFormData({
@@ -33,6 +78,8 @@ export default function UserModal({ isOpen, onClose, user = null }) {
         role: 'Client'
       });
     }
+    setErrors({});
+    setTouched({});
   }, [user, isOpen]);
 
   if (!isOpen) return null;
@@ -40,27 +87,24 @@ export default function UserModal({ isOpen, onClose, user = null }) {
   const handleSubmit = async (e) => {
     e.preventDefault();
     
-    // Validation
-    const nameRegex = /^([^0-9]*)$/;
-    if (!nameRegex.test(formData.fullName)) {
-      toast.error("Full Name should not contain digits");
-      return;
-    }
+    // Validate all fields
+    const formErrors = {
+      fullName: validateField('fullName', formData.fullName),
+      email: validateField('email', formData.email),
+      phone: validateField('phone', formData.phone)
+    };
 
-    const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
-    if (!emailRegex.test(formData.email)) {
-      toast.error("Please enter a valid email address");
-      return;
-    }
+    const hasErrors = Object.values(formErrors).some(err => err !== '');
 
-    const phoneRegex = /^\d{10}$/;
-    if (formData.phone && !phoneRegex.test(formData.phone)) {
-      toast.error("Phone number must be exactly 10 digits");
-      return;
-    }
-
-    if (!formData.fullName || !formData.email) {
-      toast.error("Name and Email are required");
+    if (hasErrors) {
+      setErrors(formErrors);
+      setTouched({
+        fullName: true,
+        email: true,
+        phone: true
+      });
+      const firstError = Object.values(formErrors).find(err => err !== '');
+      toast.error(firstError || "Please check the form for errors");
       return;
     }
 
@@ -120,7 +164,11 @@ export default function UserModal({ isOpen, onClose, user = null }) {
             <div className="space-y-1.5">
               <label className="text-[11px] font-bold text-gray-400 uppercase tracking-widest ml-1">Full Name</label>
               <div className="relative group">
-                <User className="absolute left-4 top-1/2 -translate-y-1/2 w-4 h-4 text-gray-300 group-focus-within:text-[#1BAFAF] transition-colors" />
+                <User className={`absolute left-4 top-1/2 -translate-y-1/2 w-4 h-4 transition-colors ${
+                  touched.fullName && errors.fullName 
+                    ? 'text-red-400 group-focus-within:text-red-500' 
+                    : 'text-gray-300 group-focus-within:text-[#1BAFAF]'
+                }`} />
                 <input
                   type="text"
                   required
@@ -128,49 +176,87 @@ export default function UserModal({ isOpen, onClose, user = null }) {
                   onChange={(e) => {
                     const val = e.target.value;
                     if (/^([^0-9]*)$/.test(val)) {
-                      setFormData({ ...formData, fullName: val });
+                      handleChange('fullName', val);
                     }
                   }}
+                  onBlur={() => handleBlur('fullName')}
                   placeholder="Enter full name"
-                  className="w-full bg-gray-50 border-2 border-transparent py-3.5 pl-12 pr-4 text-[14px] font-medium rounded-2xl outline-none focus:bg-white focus:border-[#1BAFAF]/20 transition-all"
+                  className={`w-full bg-gray-50 border-2 py-3.5 pl-12 pr-4 text-[14px] font-medium rounded-2xl outline-none transition-all ${
+                    touched.fullName && errors.fullName
+                      ? 'border-red-300 focus:border-red-500 focus:bg-white focus:ring-2 focus:ring-red-500/20'
+                      : 'border-transparent focus:bg-white focus:border-[#1BAFAF]/20'
+                  }`}
                 />
               </div>
+              {touched.fullName && errors.fullName && (
+                <span className="text-[12px] text-red-500 font-semibold mt-1 ml-1 block animate-in fade-in slide-in-from-top-1 duration-200">
+                  {errors.fullName}
+                </span>
+              )}
             </div>
 
             {/* Email */}
             <div className="space-y-1.5">
               <label className="text-[11px] font-bold text-gray-400 uppercase tracking-widest ml-1">Email Address</label>
               <div className="relative group">
-                <Mail className="absolute left-4 top-1/2 -translate-y-1/2 w-4 h-4 text-gray-300 group-focus-within:text-[#1BAFAF] transition-colors" />
+                <Mail className={`absolute left-4 top-1/2 -translate-y-1/2 w-4 h-4 transition-colors ${
+                  touched.email && errors.email
+                    ? 'text-red-400 group-focus-within:text-red-500'
+                    : 'text-gray-300 group-focus-within:text-[#1BAFAF]'
+                }`} />
                 <input
                   type="email"
                   required
                   value={formData.email}
-                  onChange={(e) => setFormData({ ...formData, email: e.target.value })}
+                  onChange={(e) => handleChange('email', e.target.value)}
+                  onBlur={() => handleBlur('email')}
                   placeholder="customer@example.com"
-                  className="w-full bg-gray-50 border-2 border-transparent py-3.5 pl-12 pr-4 text-[14px] font-medium rounded-2xl outline-none focus:bg-white focus:border-[#1BAFAF]/20 transition-all"
+                  className={`w-full bg-gray-50 border-2 py-3.5 pl-12 pr-4 text-[14px] font-medium rounded-2xl outline-none transition-all ${
+                    touched.email && errors.email
+                      ? 'border-red-300 focus:border-red-500 focus:bg-white focus:ring-2 focus:ring-red-500/20'
+                      : 'border-transparent focus:bg-white focus:border-[#1BAFAF]/20'
+                  }`}
                 />
               </div>
+              {touched.email && errors.email && (
+                <span className="text-[12px] text-red-500 font-semibold mt-1 ml-1 block animate-in fade-in slide-in-from-top-1 duration-200">
+                  {errors.email}
+                </span>
+              )}
             </div>
 
             {/* Phone */}
             <div className="space-y-1.5">
               <label className="text-[11px] font-bold text-gray-400 uppercase tracking-widest ml-1">Phone Number</label>
               <div className="relative group">
-                <Phone className="absolute left-4 top-1/2 -translate-y-1/2 w-4 h-4 text-gray-300 group-focus-within:text-[#1BAFAF] transition-colors" />
+                <Phone className={`absolute left-4 top-1/2 -translate-y-1/2 w-4 h-4 transition-colors ${
+                  touched.phone && errors.phone
+                    ? 'text-red-400 group-focus-within:text-red-500'
+                    : 'text-gray-300 group-focus-within:text-[#1BAFAF]'
+                }`} />
                 <input
                   type="tel"
                   value={formData.phone}
                   onChange={(e) => {
                     const val = e.target.value.replace(/\D/g, '');
                     if (val.length <= 10) {
-                      setFormData({ ...formData, phone: val });
+                      handleChange('phone', val);
                     }
                   }}
+                  onBlur={() => handleBlur('phone')}
                   placeholder="Enter 10-digit phone number"
-                  className="w-full bg-gray-50 border-2 border-transparent py-3.5 pl-12 pr-4 text-[14px] font-medium rounded-2xl outline-none focus:bg-white focus:border-[#1BAFAF]/20 transition-all"
+                  className={`w-full bg-gray-50 border-2 py-3.5 pl-12 pr-4 text-[14px] font-medium rounded-2xl outline-none transition-all ${
+                    touched.phone && errors.phone
+                      ? 'border-red-300 focus:border-red-500 focus:bg-white focus:ring-2 focus:ring-red-500/20'
+                      : 'border-transparent focus:bg-white focus:border-[#1BAFAF]/20'
+                  }`}
                 />
               </div>
+              {touched.phone && errors.phone && (
+                <span className="text-[12px] text-red-500 font-semibold mt-1 ml-1 block animate-in fade-in slide-in-from-top-1 duration-200">
+                  {errors.phone}
+                </span>
+              )}
             </div>
 
             <CustomSelect

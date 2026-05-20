@@ -1,11 +1,23 @@
 import React, { useState, useEffect, useRef } from 'react';
-import { X, Upload, Plus, Trash2, Loader2, Image as ImageIcon } from 'lucide-react';
+import { X, Upload, Plus, Trash2, Loader2, Image as ImageIcon, Settings, Info } from 'lucide-react';
 import { db } from '../../firebase';
-import { collection, addDoc, updateDoc, doc, serverTimestamp } from 'firebase/firestore';
+import { collection, addDoc, updateDoc, doc, serverTimestamp, getDocs, query, orderBy, limit } from 'firebase/firestore';
 import useCategories from '../../hooks/useCategories';
 import toast from 'react-hot-toast';
 import { uploadToCloudinary, deleteMultipleFromCloudinary } from '../../utils/cloudinary';
 import CustomSelect from '../common/CustomSelect';
+
+// Helper to find the full path of category IDs for a given leaf category ID
+const findPathToCategory = (id, items, currentPath = []) => {
+  for (const item of items) {
+    if (item.id === id) return [...currentPath, item.id];
+    if (item.children && item.children.length > 0) {
+      const found = findPathToCategory(id, item.children, [...currentPath, item.id]);
+      if (found) return found;
+    }
+  }
+  return null;
+};
 
 export default function ProductFormModal({ isOpen, onClose, product = null, initialCategoryId = null }) {
   const { categories: heirarchy } = useCategories();
@@ -32,18 +44,64 @@ export default function ProductFormModal({ isOpen, onClose, product = null, init
   const [removedImageUrls, setRemovedImageUrls] = useState([]);
   const fileInputRef = useRef(null);
 
-  // Helper to find the full path of category IDs for a given leaf category ID
-  const findPathToCategory = (id, items, currentPath = []) => {
-    for (const item of items) {
-      if (item.id === id) return [...currentPath, item.id];
-      if (item.children && item.children.length > 0) {
-        const found = findPathToCategory(id, item.children, [...currentPath, item.id]);
-        if (found) return found;
+  // SKU generation settings
+  const [skuSettings, setSkuSettings] = useState(() => {
+    const saved = localStorage.getItem('sku_generation_settings');
+    return saved ? JSON.parse(saved) : {
+      mode: 'auto',
+      prefix: 'MS-',
+      nextNumber: '00001'
+    };
+  });
+  const [isSkuSettingsOpen, setIsSkuSettingsOpen] = useState(false);
+
+  const generateSKUNumber = async (settings = skuSettings) => {
+    try {
+      const q = query(collection(db, 'products'), orderBy('createdAt', 'desc'), limit(10));
+      const snapshot = await getDocs(q);
+      let nextNum = 1;
+      
+      if (!snapshot.empty) {
+        const lastProductWithSku = snapshot.docs
+          .map(doc => doc.data())
+          .find(p => p.sku && p.sku.startsWith(settings.prefix));
+          
+        if (lastProductWithSku) {
+          const numPart = lastProductWithSku.sku.split(settings.prefix)[1];
+          const parsed = parseInt(numPart);
+          if (!isNaN(parsed)) {
+            nextNum = parsed + 1;
+          } else {
+            nextNum = (parseInt(settings.nextNumber) || 1);
+          }
+        } else {
+          nextNum = (parseInt(settings.nextNumber) || 1);
+        }
+      } else {
+        nextNum = (parseInt(settings.nextNumber) || 1);
       }
+      
+      const formattedNum = `${settings.prefix}${nextNum.toString().padStart(settings.nextNumber.length, '0')}`;
+      setFormData(prev => ({ ...prev, sku: formattedNum }));
+    } catch (error) {
+      console.error("Error generating SKU number:", error);
+      const fallback = `${settings.prefix}${settings.nextNumber}`;
+      setFormData(prev => ({ ...prev, sku: fallback }));
     }
-    return null;
   };
+
+  const handleSkuSettingsSave = (e) => {
+    e.preventDefault();
+    localStorage.setItem('sku_generation_settings', JSON.stringify(skuSettings));
+    setIsSkuSettingsOpen(false);
+    if (skuSettings.mode === 'auto' && !product) {
+      generateSKUNumber(skuSettings);
+    }
+  };
+
+
   useEffect(() => {
+    setIsSkuSettingsOpen(false);
     if (product) {
       setFormData({
         name: product.name || '',
@@ -68,6 +126,10 @@ export default function ProductFormModal({ isOpen, onClose, product = null, init
 
       setPreviews(product.images || []);
       setImageFiles([]);
+      
+      if (!product.sku && isOpen && skuSettings.mode === 'auto') {
+        generateSKUNumber(skuSettings);
+      }
     } else {
       setFormData({
         name: '',
@@ -93,8 +155,13 @@ export default function ProductFormModal({ isOpen, onClose, product = null, init
       setPreviews([]);
       setImageFiles([]);
       setRemovedImageUrls([]);
+
+      if (isOpen && skuSettings.mode === 'auto') {
+        generateSKUNumber(skuSettings);
+      }
     }
-  }, [product, isOpen, heirarchy, initialCategoryId]);
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [product, isOpen, heirarchy, initialCategoryId, skuSettings.mode, skuSettings.prefix, skuSettings.nextNumber]);
 
   const handleInputChange = (e) => {
     const { name, value, type, checked } = e.target;
@@ -173,7 +240,6 @@ export default function ProductFormModal({ isOpen, onClose, product = null, init
     // Only set the final categoryId if it's a leaf node
     if (!hasChildren) {
       setFormData(prev => ({ ...prev, categoryId: id }));
-    } else {
     }
   };
 
@@ -279,7 +345,7 @@ export default function ProductFormModal({ isOpen, onClose, product = null, init
         toast.success("Product updated successfully");
       } else {
         const customId = generateProductId();
-        const docRef = await addDoc(collection(db, 'products'), {
+        await addDoc(collection(db, 'products'), {
           ...productData,
           productId: customId,
           createdAt: serverTimestamp()
@@ -337,7 +403,7 @@ export default function ProductFormModal({ isOpen, onClose, product = null, init
 
         {/* Form Body */}
         <form onSubmit={handleSubmit} className="flex-1 overflow-y-auto custom-scrollbar bg-[#FAFAFA]">
-          <div className="p-8 space-y-8">
+          <div className="p-8 pb-32 space-y-8">
 
             <div className="grid grid-cols-1 lg:grid-cols-2 gap-8">
 
@@ -372,16 +438,117 @@ export default function ProductFormModal({ isOpen, onClose, product = null, init
                         className="w-full bg-gray-50 border-none px-4 py-3 rounded-xl text-[14px] outline-none focus:ring-2 focus:ring-[#1BAFAF]/20 focus:bg-white transition-all font-medium"
                       />
                     </div>
-                    <div className="space-y-1.5">
-                      <label className="text-[13px] font-bold text-gray-700 ml-1">SKU</label>
-                      <input
-                        type="text"
-                        name="sku"
-                        value={formData.sku}
-                        onChange={handleInputChange}
-                        placeholder="e.g. MS-2024-001"
-                        className="w-full bg-gray-50 border-none px-4 py-3 rounded-xl text-[14px] outline-none focus:ring-2 focus:ring-[#1BAFAF]/20 focus:bg-white transition-all font-medium uppercase"
-                      />
+                    <div className={`space-y-1.5 relative ${isSkuSettingsOpen ? 'z-[130]' : ''}`}>
+                      <label className="text-[13px] font-bold text-gray-700 ml-1 flex items-center gap-2">
+                        SKU
+                        <Info size={12} className="text-gray-300" />
+                      </label>
+                      <div className="relative group">
+                        <Settings
+                          onClick={() => setIsSkuSettingsOpen(!isSkuSettingsOpen)}
+                          className="absolute right-4 top-1/2 -translate-y-1/2 w-4 h-4 text-[#1BAFAF] cursor-pointer hover:rotate-90 transition-transform z-10"
+                        />
+                        <input
+                          type="text"
+                          name="sku"
+                          value={formData.sku}
+                          onChange={handleInputChange}
+                          readOnly={skuSettings.mode === 'auto'}
+                          placeholder="e.g. MS-2024-001"
+                          className={`w-full bg-gray-50 border-2 border-transparent py-3 px-4 text-[14px] font-medium rounded-xl outline-none transition-all uppercase ${
+                            skuSettings.mode === 'auto' ? 'cursor-not-allowed text-gray-400 font-bold bg-gray-100' : 'focus:bg-white focus:border-[#1BAFAF]/20'
+                          }`}
+                        />
+                      </div>
+
+                      {/* SKU Generation Settings Popup */}
+                      {isSkuSettingsOpen && (
+                        <div className="absolute bottom-full right-0 mb-2 w-[300px] sm:w-[360px] bg-white border border-gray-100 rounded-3xl shadow-2xl z-[120] overflow-hidden animate-in slide-in-from-bottom-2 duration-200">
+                          <div className="p-6 space-y-6">
+                            <p className="text-[12px] text-gray-500 font-medium leading-relaxed normal-case">
+                              Your product SKUs are set on auto-generate mode to save your time. Are you sure about changing this setting?
+                            </p>
+
+                            <div className="space-y-4">
+                              {/* Auto Generate Option */}
+                              <label className="flex items-start gap-3 cursor-pointer group">
+                                <div className="pt-0.5">
+                                  <input
+                                    type="radio"
+                                    name="sku_mode"
+                                    checked={skuSettings.mode === 'auto'}
+                                    onChange={() => setSkuSettings({ ...skuSettings, mode: 'auto' })}
+                                    className="hidden"
+                                  />
+                                  <div className={`w-5 h-5 rounded-full border-2 flex items-center justify-center transition-all ${skuSettings.mode === 'auto' ? 'border-[#1BAFAF]' : 'border-gray-200'}`}>
+                                    {skuSettings.mode === 'auto' && <div className="w-2.5 h-2.5 rounded-full bg-[#1BAFAF]" />}
+                                  </div>
+                                </div>
+                                <div className="flex-1">
+                                  <div className="flex items-center gap-2 mb-3">
+                                    <span className="text-[13px] font-bold text-gray-700 normal-case">Continue auto-generating SKUs</span>
+                                  </div>
+
+                                  {skuSettings.mode === 'auto' && (
+                                    <div className="space-y-3 animate-in fade-in duration-200">
+                                      <div className="space-y-1">
+                                        <span className="text-[10px] font-bold text-gray-400 uppercase">Prefix</span>
+                                        <input
+                                          type="text"
+                                          value={skuSettings.prefix}
+                                          onChange={(e) => setSkuSettings({ ...skuSettings, prefix: e.target.value.toUpperCase() })}
+                                          className="w-full bg-gray-50 border border-gray-100 rounded-xl px-3 py-2 text-[13px] font-medium focus:bg-white outline-none"
+                                        />
+                                      </div>
+                                      <div className="space-y-1">
+                                        <span className="text-[10px] font-bold text-gray-400 uppercase">Next Number</span>
+                                        <input
+                                          type="text"
+                                          value={skuSettings.nextNumber}
+                                          onChange={(e) => setSkuSettings({ ...skuSettings, nextNumber: e.target.value })}
+                                          className="w-full bg-gray-50 border border-gray-100 rounded-xl px-3 py-2 text-[13px] font-medium focus:bg-white outline-none"
+                                        />
+                                      </div>
+                                    </div>
+                                  )}
+                                </div>
+                              </label>
+
+                              {/* Manual Option */}
+                              <label className="flex items-center gap-3 cursor-pointer">
+                                <input
+                                  type="radio"
+                                  name="sku_mode"
+                                  checked={skuSettings.mode === 'manual'}
+                                  onChange={() => setSkuSettings({ ...skuSettings, mode: 'manual' })}
+                                  className="hidden"
+                                />
+                                <div className={`w-5 h-5 rounded-full border-2 flex items-center justify-center transition-all ${skuSettings.mode === 'manual' ? 'border-[#1BAFAF]' : 'border-gray-200'}`}>
+                                  {skuSettings.mode === 'manual' && <div className="w-2.5 h-2.5 rounded-full bg-[#1BAFAF]" />}
+                                </div>
+                                <span className="text-[13px] font-bold text-gray-700 normal-case">Enter SKUs manually</span>
+                              </label>
+                            </div>
+
+                            <div className="flex gap-2 pt-2">
+                              <button
+                                type="button"
+                                onClick={handleSkuSettingsSave}
+                                className="flex-1 bg-[#1BAFAF] text-white py-2.5 rounded-xl text-[12px] font-bold hover:bg-[#158e8e] transition-all normal-case"
+                              >
+                                Save
+                              </button>
+                              <button
+                                type="button"
+                                onClick={() => setIsSkuSettingsOpen(false)}
+                                className="flex-1 bg-gray-50 text-gray-500 py-2.5 rounded-xl text-[12px] font-bold hover:bg-gray-100 transition-all normal-case"
+                              >
+                                Cancel
+                              </button>
+                            </div>
+                          </div>
+                        </div>
+                      )}
                     </div>
                   </div>
 

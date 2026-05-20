@@ -188,6 +188,18 @@ const OfflineOrderModal = ({ isOpen, onClose }) => {
           if (prod) {
             updatedItem.name = prod.name;
             updatedItem.rate = prod.discountedPrice || prod.price || 0;
+            updatedItem.stock = prod.stock ?? Infinity;
+          }
+        }
+        if (field === 'quantity') {
+          const prod = products.find(p => p.id === item.productId);
+          const maxStock = prod?.stock ?? Infinity;
+          const requestedQty = Number(value) || 0;
+          if (requestedQty > maxStock) {
+            toast.error(`Only ${maxStock} units available in stock for "${item.name}"`);
+            updatedItem.quantity = maxStock;
+          } else {
+            updatedItem.quantity = requestedQty;
           }
         }
         updatedItem.amount = updatedItem.rate * updatedItem.quantity;
@@ -272,7 +284,7 @@ const OfflineOrderModal = ({ isOpen, onClose }) => {
         onClick={onClose}
       />
       
-      <div className="relative w-full max-w-5xl bg-white rounded-[32px] shadow-2xl overflow-hidden animate-in zoom-in-95 duration-300 max-h-[90vh] flex flex-col">
+      <div className="relative w-full max-w-2xl bg-white rounded-[32px] shadow-2xl overflow-hidden animate-in zoom-in-95 duration-300 max-h-[85vh] flex flex-col">
         {/* Header */}
         <div className="px-8 py-6 border-b border-gray-100 flex items-center justify-between bg-gradient-to-r from-gray-50 to-white flex-shrink-0">
           <div>
@@ -500,6 +512,8 @@ const OfflineOrderModal = ({ isOpen, onClose }) => {
                         <input
                           type="number"
                           value={item.quantity}
+                          min={0}
+                          max={products.find(p => p.id === item.productId)?.stock ?? undefined}
                           onChange={(e) => handleItemChange(item.id, 'quantity', parseFloat(e.target.value) || 0)}
                           className="w-full bg-transparent text-center border-none outline-none text-[14px] font-bold text-gray-900"
                         />

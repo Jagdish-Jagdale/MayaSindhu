@@ -36,7 +36,6 @@ import NotFound from './components/common/NotFound';
 import OfflineDashboard from './pages/admin/offline/Dashboard';
 import OfflineOrders from './pages/admin/offline/Orders';
 import PurchaseOrdersOffline from './pages/admin/offline/PurchaseOrders';
-import OfflineInventoryLogs from './pages/admin/offline/InventoryLogs';
 import StoreCustomers from './pages/admin/offline/StoreCustomers';
 import Vendors from './pages/admin/offline/Vendors';
 import Invoices from './pages/admin/offline/Invoices';
@@ -168,7 +167,6 @@ function App() {
             <Route path="products" element={<ProductManagement />} />
             <Route path="categories" element={<Categories />} />
             <Route path="reports" element={<Reports />} />
-            <Route path="inventory-logs" element={<OfflineInventoryLogs />} />
             <Route path="customers" element={<StoreCustomers />} />
             <Route path="users" element={<Navigate to="/admin-offline/customers" replace />} />
             <Route path="invoice" element={<Invoices />} />

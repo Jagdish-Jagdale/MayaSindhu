@@ -37,7 +37,7 @@ const PAGE_TITLES = {
   '/admin/settings/artician-workshop': { title: 'Artician Workshop' },
   '/admin/settings/blogs': { title: 'Blog Management' },
   '/admin-offline/dashboard': { title: 'Shop Dashboard' },
-  '/admin-offline/orders': { title: 'Shop Orders' },
+  '/admin-offline/orders': { title: 'Sales Orders' },
   '/admin-offline/products': { title: 'Products' },
   '/admin-offline/categories': { title: 'Categories' },
   '/admin-offline/inventory-logs': { title: 'Inventory Logs' },
