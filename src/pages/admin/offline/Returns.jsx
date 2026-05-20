@@ -43,7 +43,7 @@ export default function Returns() {
   const [rowsPerPage, setRowsPerPage] = useState(10);
   const [rowsOpen, setRowsOpen] = useState(false);
   const rowsRef = useRef(null);
-  const [sortConfig, setSortConfig] = useState({ key: 'createdAt', dir: 'desc' });
+  const [sortConfig, setSortConfig] = useState({ key: 'saleOrderNumber', dir: 'asc' });
   const [selectedReturn, setSelectedReturn] = useState(null);
   const [isPreviewOpen, setIsPreviewOpen] = useState(false);
   const [isReturnFormOpen, setIsReturnFormOpen] = useState(false);
@@ -328,8 +328,8 @@ export default function Returns() {
 
     if (sortConfig.key) {
       list = [...list].sort((a, b) => {
-        let aVal = a[sortConfig.key] || '';
-        let bVal = b[sortConfig.key] || '';
+        let aVal = a[sortConfig.key] ?? '';
+        let bVal = b[sortConfig.key] ?? '';
 
         if (sortConfig.key === 'createdAt') {
           if (aVal?.toDate) aVal = aVal.toDate();
@@ -337,6 +337,11 @@ export default function Returns() {
         } else if (sortConfig.key === 'amount') {
           aVal = Number(a.amount || a.total) || 0;
           bVal = Number(b.amount || b.total) || 0;
+        } else if (sortConfig.key === 'saleOrderNumber' || sortConfig.key === 'invoiceNumber') {
+          // Numeric suffix ordering so SO-00002 > SO-00001
+          const numA = parseInt((String(aVal || '')).replace(/\D+/g, '')) || 0;
+          const numB = parseInt((String(bVal || '')).replace(/\D+/g, '')) || 0;
+          return sortConfig.dir === 'asc' ? numA - numB : numB - numA;
         }
 
         if (aVal < bVal) return sortConfig.dir === 'asc' ? -1 : 1;
@@ -665,7 +670,7 @@ export default function Returns() {
           />
           <form 
             onSubmit={handleReturnSubmit}
-            className="relative w-full max-w-4xl bg-white rounded-[32px] shadow-2xl overflow-hidden max-h-[90vh] flex flex-col animate-in zoom-in-95 duration-200"
+            className="relative w-full max-w-2xl bg-white rounded-[32px] shadow-2xl overflow-hidden max-h-[85vh] flex flex-col animate-in zoom-in-95 duration-200"
           >
             {/* Header */}
             <div className="px-8 py-6 border-b border-gray-100 flex items-center justify-between bg-gradient-to-r from-gray-50 to-white flex-shrink-0">

@@ -19,8 +19,7 @@ import {
   collection, 
   onSnapshot, 
   query, 
-  orderBy, 
-  where 
+  orderBy
 } from 'firebase/firestore';
 import {
   AreaChart,
@@ -63,9 +62,15 @@ export default function OfflineDashboard() {
   const [salesData, setSalesData] = useState([]);
   const [loading, setLoading] = useState(true);
 
+  const getOrderDateString = (o) => {
+    if (!o.createdAt) return '';
+    const date = o.createdAt.toDate ? o.createdAt.toDate() : new Date(o.createdAt);
+    return date.toLocaleDateString('en-IN', { weekday: 'short', day: 'numeric' });
+  };
+
   useEffect(() => {
-    // 1. Fetch Offline Orders
-    const ordersQuery = query(collection(db, 'offline_orders'), orderBy('createdAt', 'desc'));
+    // 1. Fetch Offline Orders (using storeOrders collection)
+    const ordersQuery = query(collection(db, 'storeOrders'), orderBy('createdAt', 'desc'));
     const unsubOrders = onSnapshot(ordersQuery, (snapshot) => {
       const orders = snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() }));
       const totalRev = orders.reduce((sum, order) => sum + parseCurrency(order.total), 0);
@@ -85,16 +90,15 @@ export default function OfflineDashboard() {
       });
 
       const trend = last7Days.map(label => {
-        const dayOrders = orders.filter(o => 
-          o.createdAt && 
-          o.createdAt.toDate().toLocaleDateString('en-IN', { weekday: 'short', day: 'numeric' }) === label
-        );
+        const dayOrders = orders.filter(o => getOrderDateString(o) === label);
         return {
           name: label,
           revenue: dayOrders.reduce((sum, o) => sum + parseCurrency(o.total), 0)
         };
       });
       setSalesData(trend);
+    }, (error) => {
+      console.error("Error fetching store orders for dashboard:", error);
     });
 
     // 2. Fetch Products
@@ -194,20 +198,27 @@ export default function OfflineDashboard() {
             <p className="text-[11px] text-gray-400 font-medium">Latest manual entries</p>
           </div>
           <div className="flex-1 space-y-4">
-             {recentOrders.length > 0 ? recentOrders.map(order => (
-               <div key={order.id} className="flex items-center justify-between p-4 bg-gray-50 rounded-xl">
-                  <div className="flex items-center gap-3">
-                     <div className="w-8 h-8 rounded-lg bg-white flex items-center justify-center text-gray-400">
-                        <Clock size={16} />
-                     </div>
-                     <div>
-                        <p className="text-[12px] font-bold text-gray-800">{order.customerName || 'Walk-in Customer'}</p>
-                        <p className="text-[10px] text-gray-400 uppercase font-black tracking-widest">{order.id.slice(-6)}</p>
-                     </div>
-                  </div>
-                  <span className="text-[12px] font-black text-[#1BAFAF]">{order.total}</span>
-               </div>
-             )) : (
+             {recentOrders.length > 0 ? recentOrders.map(order => {
+               const totalProducts = order.items ? order.items.reduce((sum, item) => sum + (Number(item.quantity) || 0), 0) : 0;
+               return (
+                 <div key={order.id} className="flex items-center justify-between p-4 bg-gray-50 rounded-xl">
+                    <div className="flex items-center gap-3">
+                       <div className="w-8 h-8 rounded-lg bg-white flex items-center justify-center text-gray-400 shrink-0">
+                          <Clock size={16} />
+                       </div>
+                       <div>
+                          <p className="text-[12px] font-bold text-gray-800">{order.customerName || 'Walk-in Customer'}</p>
+                          <div className="flex items-center gap-2 mt-0.5">
+                             <span className="text-[10px] text-gray-400 uppercase font-black tracking-widest">{order.saleOrderNumber || order.id.slice(-6)}</span>
+                             <span className="text-gray-300 text-[10px]">•</span>
+                             <span className="text-[10px] text-[#1BAFAF] font-bold">{totalProducts} {totalProducts === 1 ? 'Product' : 'Products'}</span>
+                          </div>
+                       </div>
+                    </div>
+                    <span className="text-[13px] font-black text-gray-900">{formatIndianCurrency(parseCurrency(order.total))}</span>
+                 </div>
+               );
+             }) : (
                <div className="h-full flex flex-col items-center justify-center text-gray-300">
                   <Store size={40} className="mb-2 opacity-20" />
                   <p className="text-[11px] font-bold tracking-widest uppercase">No Sales Yet</p>
