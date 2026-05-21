@@ -7,7 +7,7 @@ import { db } from '../../firebase';
 import { doc, getDoc, setDoc, updateDoc, deleteDoc, serverTimestamp, onSnapshot } from 'firebase/firestore';
 import { addToCart } from '../../utils/cartUtils';
 
-export default function ProductCard({ id, slug, name, price, discountedPrice, image, imageUrl, images, rating = 4.8, showWishlist = true }) {
+export default function ProductCard({ id, slug, name, price, discountedPrice, image, imageUrl, images, rating = 4.8, showWishlist = true, stock, isUniquePiece, productType }) {
   const displayPrice = discountedPrice || price || 0;
   const displayImage = image || imageUrl || (images && images.length > 0 ? images[0] : '');
   const [isAdded, setIsAdded] = useState(false);
@@ -16,6 +16,9 @@ export default function ProductCard({ id, slug, name, price, discountedPrice, im
   const [isInCart, setIsInCart] = useState(false);
   const navigate = useNavigate();
   const location = useLocation();
+
+  const isUnique = isUniquePiece === true || productType === 'Unique';
+  const stockVal = typeof stock === 'number' ? stock : (isUnique ? 1 : 15);
 
   // Listen for wishlist and cart status
   useEffect(() => {
@@ -143,17 +146,23 @@ export default function ProductCard({ id, slug, name, price, discountedPrice, im
         <div className="absolute bottom-4 md:bottom-6 left-0 right-0 md:translate-y-10 md:opacity-0 group-hover:translate-y-0 group-hover:opacity-100 transition-all duration-700 ease-out z-10 px-4 md:px-6">
           <div className="flex flex-row gap-1.5 md:gap-2">
             <button
+              disabled={stockVal === 0 && !isInCart}
               onClick={isInCart ? (e) => { e.preventDefault(); e.stopPropagation(); navigate('/cart'); } : handleAddToCart}
-              className={`flex-1 flex items-center justify-center space-x-1 md:space-x-2 backdrop-blur-md border border-white/30 text-white py-2.5 md:py-3 rounded-full shadow-2xl active:scale-95 transition-all duration-500 ${
-                isInCart ? 'bg-brand-orange hover:bg-brand-orange-dark' : 'bg-black/30 hover:bg-white hover:text-brand-black'
+              className={`flex-1 flex items-center justify-center space-x-1 md:space-x-2 backdrop-blur-md border text-white py-2.5 md:py-3 rounded-full shadow-2xl active:scale-95 transition-all duration-500 ${
+                isInCart 
+                ? 'bg-brand-orange hover:bg-brand-orange-dark border-brand-orange/30' 
+                : (stockVal === 0 
+                   ? 'bg-gray-400/50 hover:bg-gray-400/50 border-gray-400/20 cursor-not-allowed opacity-50' 
+                   : 'bg-black/30 hover:bg-white hover:text-brand-black border-white/30')
               }`}
             >
               <ShoppingBag size={12} className="md:w-3.5 md:h-3.5" strokeWidth={2} />
               <span className="text-[8px] md:text-[10px] font-bold uppercase tracking-[0.1em] whitespace-nowrap">
-                {isInCart ? "In Bag" : "Add"}
+                {stockVal === 0 && !isInCart ? "Sold Out" : (isInCart ? "In Bag" : "Add")}
               </span>
             </button>
             <button
+              disabled={stockVal === 0}
               onClick={(e) => {
                 e.preventDefault();
                 e.stopPropagation();
@@ -170,14 +179,22 @@ export default function ProductCard({ id, slug, name, price, discountedPrice, im
                       price: displayPrice,
                       image: displayImage,
                       qty: 1,
-                      isDirectBuy: true
+                      isDirectBuy: true,
+                      isUniquePiece: isUniquePiece,
+                      productType: productType
                     } 
                   } 
                 });
               }}
-              className="flex-1 flex items-center justify-center space-x-1 md:space-x-2 bg-brand-orange hover:bg-brand-orange-dark text-white py-2.5 md:py-3 rounded-full shadow-2xl active:scale-95 transition-all duration-500 border border-brand-orange/30"
+              className={`flex-1 flex items-center justify-center space-x-1 md:space-x-2 py-2.5 md:py-3 rounded-full shadow-2xl active:scale-95 transition-all duration-500 ${
+                stockVal === 0 
+                ? 'bg-gray-400/50 text-white/80 cursor-not-allowed opacity-50 border border-gray-400/20' 
+                : 'bg-brand-orange hover:bg-brand-orange-dark text-white border border-brand-orange/30'
+              }`}
             >
-              <span className="text-[8px] md:text-[10px] font-bold uppercase tracking-[0.1em] whitespace-nowrap">Buy Now</span>
+              <span className="text-[8px] md:text-[10px] font-bold uppercase tracking-[0.1em] whitespace-nowrap">
+                {stockVal === 0 ? "Sold Out" : "Buy Now"}
+              </span>
             </button>
           </div>
         </div>

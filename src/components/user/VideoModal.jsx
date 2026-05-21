@@ -183,33 +183,48 @@ export default function VideoModal({ isOpen, onClose, look, onNext, onPrev }) {
 
                   {/* Add to Cart Actions */}
                   <div className="my-6 flex gap-3 items-center">
-                    {addedToCart ? (
-                      <button
-                        className="flex-1 bg-brand-orange hover:bg-brand-orange-dark text-white font-bold py-4 rounded-md transition-all active:scale-[0.98] text-[14px]"
-                        onClick={() => navigate('/cart')}
-                      >
-                        Go to cart
-                      </button>
-                    ) : (
-                      <button
-                        className="flex-1 bg-brand-orange hover:bg-brand-orange-dark text-white font-bold py-4 rounded-md transition-all active:scale-[0.98] text-[14px]"
-                        onClick={async () => {
-                          if (!user) {
-                            navigate('/login');
-                            return;
-                          }
-                          try {
-                            await addToCart(user, productData);
-                            setAddedToCart(true);
-                            toast.success('Added to Bag');
-                          } catch (error) {
-                            toast.error('Failed to add to bag');
-                          }
-                        }}
-                      >
-                        Add to cart
-                      </button>
-                    )}
+                    {(() => {
+                      const isUnique = productData?.isUniquePiece === true || productData?.productType === 'Unique';
+                      const stockVal = typeof productData?.stock === 'number' ? productData.stock : (isUnique ? 1 : 15);
+                      const isOutOfStock = stockVal === 0;
+
+                      if (addedToCart) {
+                        return (
+                          <button
+                            className="flex-1 bg-brand-orange hover:bg-brand-orange-dark text-white font-bold py-4 rounded-md transition-all active:scale-[0.98] text-[14px]"
+                            onClick={() => navigate('/cart')}
+                          >
+                            Go to cart
+                          </button>
+                        );
+                      }
+
+                      return (
+                        <button
+                          disabled={isOutOfStock}
+                          className={`flex-1 font-bold py-4 rounded-md transition-all text-[14px] ${
+                            isOutOfStock
+                              ? 'bg-gray-300 text-gray-500 cursor-not-allowed opacity-50'
+                              : 'bg-brand-orange hover:bg-brand-orange-dark text-white active:scale-[0.98]'
+                          }`}
+                          onClick={async () => {
+                            if (!user) {
+                              navigate('/login');
+                              return;
+                            }
+                            try {
+                              await addToCart(user, productData);
+                              setAddedToCart(true);
+                              toast.success('Added to Bag');
+                            } catch (error) {
+                              toast.error(error.message || 'Failed to add to bag');
+                            }
+                          }}
+                        >
+                          {isOutOfStock ? "Sold Out" : "Add to cart"}
+                        </button>
+                      );
+                    })()}
 
                     <div className="relative">
                       <button className="w-12 h-11 bg-white border border-gray-200 rounded-md flex items-center justify-center text-gray-800 transition-all">

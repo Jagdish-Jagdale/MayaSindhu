@@ -168,12 +168,12 @@ export default function CategoryView() {
         </aside>
 
 
-        <div className="flex-1 py-12 px-6 md:px-12 lg:px-20">
+        <div className="flex-1 py-6 md:py-12 px-3 md:px-12 lg:px-20">
           {/* Category Header */}
           <motion.div
             initial={{ opacity: 0, y: 20 }}
             animate={{ opacity: 1, y: 0 }}
-            className="mb-12"
+            className="mb-8 md:mb-12"
           >
             <nav className="mb-4 flex items-center gap-2 text-[10px] font-bold uppercase tracking-[0.2em] text-gray-400">
               <Link to="/" className="hover:text-brand-orange transition-colors">Home</Link>
@@ -190,14 +190,14 @@ export default function CategoryView() {
               ))}
             </nav>
 
-            <h1 className="text-4xl md:text-5xl font-sans font-medium text-[#111111] capitalize tracking-tight leading-tight mb-12">
+            <h1 className="text-2xl md:text-4xl lg:text-5xl font-sans font-medium text-[#111111] capitalize tracking-tight leading-tight mb-6 md:mb-12">
               {currentCategory.name}
             </h1>
 
           </motion.div>
 
           {/* Product Grid Area */}
-          <section className="mb-24">
+          <section className="mb-16 md:mb-24">
             <div className="flex items-center justify-end mb-4 pb-4 border-b border-gray-100">
               <button
                 onClick={() => setIsMobileFiltersOpen(true)}
@@ -208,7 +208,7 @@ export default function CategoryView() {
               </button>
             </div>
 
-            <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-x-6 gap-y-12">
+            <div className="grid grid-cols-2 lg:grid-cols-3 gap-x-3 gap-y-8 md:gap-x-6 md:gap-y-12">
               {filteredProducts.length > 0 ? (
                 filteredProducts.map((product) => (
                   <ProductCard key={product.id} {...product} />

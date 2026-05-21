@@ -4,7 +4,7 @@ import { Check, ChevronRight, Lock, CreditCard, Truck, ShoppingBag, MapPin, MapP
 import { Link, useNavigate, useLocation } from 'react-router-dom';
 import { useGoBack } from '../../hooks/useGoBack';
 import { db } from '../../firebase';
-import { collection, addDoc, serverTimestamp, query, onSnapshot, getDocs, deleteDoc, doc, updateDoc } from 'firebase/firestore';
+import { collection, addDoc, serverTimestamp, query, onSnapshot, getDocs, deleteDoc, doc, updateDoc, getDoc } from 'firebase/firestore';
 import { useAuth } from '../../context/AuthContext';
 
 const steps = ['Shipping', 'Payment', 'Confirmation'];
@@ -98,21 +98,81 @@ export default function Checkout() {
   const subtotal = items.reduce((acc, item) => acc + (item.price * item.qty), 0);
   const total = subtotal + (subtotal > 25000 ? 0 : shipping);
 
+  const validateStock = async () => {
+    try {
+      for (const item of items) {
+        const productId = item.id?.toString();
+        if (!productId) {
+          alert(`Unable to validate stock for "${item.name}". Invalid Product ID.`);
+          return false;
+        }
+        const productRef = doc(db, 'products', productId);
+        const productSnap = await getDoc(productRef);
+        if (!productSnap.exists()) {
+          alert(`Product "${item.name}" was not found in our collection.`);
+          return false;
+        }
+        const productData = productSnap.data();
+        const isUnique = productData.isUniquePiece === true || productData.productType === 'Unique';
+        const currentStock = typeof productData.stock === 'number' ? productData.stock : (isUnique ? 1 : 15);
+
+        if (isUnique) {
+          if (currentStock === 0 || productData.isAvailable === false) {
+            alert(`Apologies! The unique piece "${item.name}" is already sold out.`);
+            return false;
+          }
+        } else {
+          if (currentStock === 0) {
+            alert(`Apologies! The product "${item.name}" is out of stock.`);
+            return false;
+          }
+          if (item.qty > currentStock) {
+            alert(`Apologies! The product "${item.name}" has insufficient stock. Only ${currentStock} left in stock.`);
+            return false;
+          }
+        }
+      }
+      return true;
+    } catch (error) {
+      console.error("Stock validation error:", error);
+      alert("An error occurred while validating stock. Please try again.");
+      return false;
+    }
+  };
+
   const processOrder = async (razorpayPaymentId = null) => {
     try {
       const orderId = `#ORD-${Math.floor(10000 + Math.random() * 90000)}`;
 
-      // 1. Update Product Availability for Unique Items
+      // Re-verify stock before modifying DB
+      const isStockAvailable = await validateStock();
+      if (!isStockAvailable) return;
+
+      // 1. Update Product Availability & Stock for all Items in standard / unique patterns
       const availabilityPromises = items.map(async (item) => {
-        if (item.productType === 'Unique') {
-          const productRef = doc(db, 'products', item.id);
-          return updateDoc(productRef, {
-            isAvailable: false,
-            stock: 0,
-            updatedAt: serverTimestamp()
-          });
+        const productId = item.id?.toString();
+        const productRef = doc(db, 'products', productId);
+        const productSnap = await getDoc(productRef);
+        if (productSnap.exists()) {
+          const productData = productSnap.data();
+          const isUnique = productData.isUniquePiece === true || productData.productType === 'Unique';
+          const currentStock = typeof productData.stock === 'number' ? productData.stock : (isUnique ? 1 : 15);
+
+          if (isUnique) {
+            return updateDoc(productRef, {
+              isAvailable: false,
+              stock: 0,
+              updatedAt: serverTimestamp()
+            });
+          } else {
+            const newStock = Math.max(0, currentStock - item.qty);
+            return updateDoc(productRef, {
+              stock: newStock,
+              isAvailable: newStock > 0,
+              updatedAt: serverTimestamp()
+            });
+          }
         }
-        return Promise.resolve();
       });
       await Promise.all(availabilityPromises);
 
@@ -199,6 +259,10 @@ export default function Checkout() {
       alert("Please fill in all required shipping details.");
       return;
     }
+
+    // Pre-checkout stock validation
+    const isStockAvailable = await validateStock();
+    if (!isStockAvailable) return;
 
     if (paymentMethod === 'upi') {
       handleRazorpayPayment();
