@@ -41,33 +41,59 @@ export default function ProductDetail() {
   const [activeImage, setActiveImage] = useState(0);
   const [quantity, setQuantity] = useState(1);
 
-  // Fetch Product by Slug
+  const isUnique = product ? (product.isUniquePiece === true || product.productType === 'Unique') : false;
+  const stockVal = product ? (typeof product.stock === 'number' ? product.stock : (isUnique ? 1 : 15)) : 15;
+
+  // Fetch Product by Slug (Real-time Firestore listener for stock updates)
   useEffect(() => {
-    const fetchProduct = async () => {
-      setLoading(true);
-      try {
-        const q = query(collection(db, 'products'), where('slug', '==', slug));
-        const querySnapshot = await getDocs(q);
+    setLoading(true);
+    let unsubDoc = null;
 
-        if (!querySnapshot.empty) {
-          const doc = querySnapshot.docs[0];
-          setProduct({ id: doc.id, ...doc.data() });
-        } else {
-          const docRef = doc(db, 'products', slug);
-          const docSnap = await getDoc(docRef);
-          if (docSnap.exists()) {
-            setProduct({ id: docSnap.id, ...docSnap.data() });
-          }
-        }
-      } catch (error) {
-        console.error("Error fetching product:", error);
-      } finally {
+    const q = query(collection(db, 'products'), where('slug', '==', slug));
+    const unsubscribe = onSnapshot(q, (querySnapshot) => {
+      if (!querySnapshot.empty) {
+        const docSnap = querySnapshot.docs[0];
+        setProduct({ id: docSnap.id, ...docSnap.data() });
         setLoading(false);
+      } else {
+        // Fallback to fetch by document ID
+        const docRef = doc(db, 'products', slug);
+        if (!unsubDoc) {
+          unsubDoc = onSnapshot(docRef, (docSnap) => {
+            if (docSnap.exists()) {
+              setProduct({ id: docSnap.id, ...docSnap.data() });
+            }
+            setLoading(false);
+          }, (err) => {
+            console.error("Error fallback onSnapshot:", err);
+            setLoading(false);
+          });
+        }
       }
-    };
+    }, (error) => {
+      console.error("Error listening to product slug in real-time:", error);
+      setLoading(false);
+    });
 
-    fetchProduct();
+    return () => {
+      unsubscribe();
+      if (unsubDoc) unsubDoc();
+    };
   }, [slug]);
+
+  // Lock quantity to 1 for unique items
+  useEffect(() => {
+    if (isUnique) {
+      setQuantity(1);
+    }
+  }, [isUnique]);
+
+  // Prevent quantity from exceeding available stock
+  useEffect(() => {
+    if (product && quantity > stockVal && stockVal > 0) {
+      setQuantity(stockVal);
+    }
+  }, [stockVal, product]);
 
   // Listen for wishlist status
   useEffect(() => {
@@ -314,14 +340,23 @@ export default function ProductDetail() {
                   <span className="text-[10px] font-black text-[#1A1A1A]">{product.rating || 4.8}</span>
                 </div>
                 <div className="h-3 w-px bg-gray-200" />
-                <span className="text-[8px] sm:text-[9px] font-bold uppercase tracking-widest text-green-600">Premium Stock</span>
-                <div className="h-3 w-px bg-gray-200 hidden sm:block" />
-                {product.productType === 'Unique' && (
-                  <>
-                    <span className="text-[8px] sm:text-[9px] font-bold uppercase tracking-widest text-[#1BAFAF] bg-[#1BAFAF]/10 px-2 py-0.5 rounded-full">Unique Piece</span>
-                    <div className="h-3 w-px bg-gray-200 hidden sm:block" />
-                  </>
-                )}
+                {(() => {
+                  if (stockVal > 0) {
+                    return (
+                      <>
+                        <span className="text-[8px] sm:text-[9px] font-bold uppercase tracking-widest text-green-600 bg-green-50 px-2 py-0.5 rounded-full">Available</span>
+                        <div className="h-3 w-px bg-gray-200 hidden sm:block" />
+                      </>
+                    );
+                  } else {
+                    return (
+                      <>
+                        <span className="text-[8px] sm:text-[9px] font-bold uppercase tracking-widest text-red-600 bg-red-50 px-2 py-0.5 rounded-full">Sold Out</span>
+                        <div className="h-3 w-px bg-gray-200 hidden sm:block" />
+                      </>
+                    );
+                  }
+                })()}
                 <button 
                   onClick={handleShare}
                   className="text-[8px] sm:text-[9px] font-bold uppercase tracking-widest text-gray-400 hover:text-black transition-colors flex items-center gap-1.5"
@@ -368,12 +403,25 @@ export default function ProductDetail() {
               <div className="flex items-center justify-between bg-[#FDFBF7] p-3 sm:p-4 rounded-2xl border border-orange-50">
                 <span className="text-[9px] sm:text-[10px] font-black uppercase tracking-[0.2em] text-[#1A1A1A]">Quantity</span>
                 <div className="flex items-center bg-white rounded-xl shadow-sm p-1 border border-gray-100">
-                  <button onClick={() => setQuantity(Math.max(1, quantity - 1))} className="p-1.5 text-gray-400 hover:text-black transition-colors"><Minus size={14} /></button>
-                  <span className="w-8 sm:w-12 text-center font-bold text-sm sm:text-base">{quantity}</span>
                   <button 
-                    onClick={() => product.productType !== 'Unique' && setQuantity(quantity + 1)} 
-                    disabled={product.productType === 'Unique'}
-                    className={`p-1.5 transition-colors ${product.productType === 'Unique' ? 'text-gray-200 cursor-not-allowed' : 'text-gray-400 hover:text-black'}`}
+                    onClick={() => setQuantity(Math.max(1, quantity - 1))} 
+                    disabled={isUnique || stockVal === 0}
+                    className={`p-1.5 transition-colors ${(isUnique || stockVal === 0) ? 'text-gray-200 cursor-not-allowed' : 'text-gray-400 hover:text-black'}`}
+                  >
+                    <Minus size={14} />
+                  </button>
+                  <span className="w-8 sm:w-12 text-center font-bold text-sm sm:text-base">{stockVal === 0 ? 0 : quantity}</span>
+                  <button 
+                    onClick={() => {
+                      if (isUnique) return;
+                      if (quantity < stockVal) {
+                        setQuantity(quantity + 1);
+                      } else {
+                        toast.error(`Only ${stockVal} items available in stock.`);
+                      }
+                    }} 
+                    disabled={isUnique || quantity >= stockVal || stockVal === 0}
+                    className={`p-1.5 transition-colors ${(isUnique || quantity >= stockVal || stockVal === 0) ? 'text-gray-200 cursor-not-allowed' : 'text-gray-400 hover:text-black'}`}
                   >
                     <Plus size={14} />
                   </button>
@@ -383,20 +431,26 @@ export default function ProductDetail() {
               <div className="grid grid-cols-2 gap-3 sm:gap-4">
                 <button
                   onClick={alreadyInBag ? () => navigate('/cart') : handleAddToCart}
-                  disabled={adding}
+                  disabled={adding || (stockVal === 0 && !alreadyInBag)}
                   className={`flex items-center justify-center gap-2 py-3.5 sm:py-4 rounded-2xl font-black text-[9px] sm:text-[10px] uppercase tracking-[0.2em] transition-all active:scale-95 ${
                     alreadyInBag 
                     ? 'bg-[#1A1A1A] text-white hover:bg-black shadow-lg shadow-black/10' 
-                    : 'bg-white border-2 border-brand-orange text-brand-orange hover:bg-brand-orange-light'
+                    : (stockVal === 0 
+                       ? 'bg-gray-100 border-2 border-gray-200 text-gray-400 cursor-not-allowed opacity-60' 
+                       : 'bg-white border-2 border-brand-orange text-brand-orange hover:bg-brand-orange-light')
                   }`}
                 >
-                  {adding ? <Loader2 className="animate-spin" size={14} /> : alreadyInBag ? <CheckCircle2 size={16} /> : <ShoppingBag size={16} />}
-                  {alreadyInBag ? 'Go to Bag' : 'Add to Bag'}
+                  {adding ? <Loader2 className="animate-spin" size={14} /> : alreadyInBag ? <CheckCircle2 size={16} /> : (stockVal === 0 ? null : <ShoppingBag size={16} />)}
+                  {stockVal === 0 ? 'Sold Out' : (alreadyInBag ? 'Go to Bag' : 'Add to Bag')}
                 </button>
                 <button 
                   onClick={handleBuyNow}
-                  disabled={adding}
-                  className="py-3.5 sm:py-4 bg-brand-orange text-white rounded-2xl font-black text-[9px] sm:text-[10px] uppercase tracking-[0.2em] hover:bg-brand-orange-dark transition-all active:scale-95 shadow-md shadow-brand-orange/10 flex items-center justify-center gap-2"
+                  disabled={adding || stockVal === 0}
+                  className={`py-3.5 sm:py-4 rounded-2xl font-black text-[9px] sm:text-[10px] uppercase tracking-[0.2em] transition-all active:scale-95 shadow-md flex items-center justify-center gap-2 ${
+                    stockVal === 0 
+                    ? 'bg-gray-100 text-gray-400 cursor-not-allowed opacity-60 shadow-none' 
+                    : 'bg-brand-orange text-white hover:bg-brand-orange-dark shadow-brand-orange/10'
+                  }`}
                 >
                   {adding ? <Loader2 className="animate-spin" size={14} /> : 'Buy Now'}
                 </button>

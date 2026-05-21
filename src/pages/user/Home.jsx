@@ -457,7 +457,7 @@ export default function Home() {
 
           return (
             <div className="max-w-5xl mx-auto">
-              <div className="grid grid-cols-1 md:grid-cols-4 gap-4 md:gap-6 auto-rows-[250px]">
+              <div className="grid grid-cols-2 md:grid-cols-4 gap-3 md:gap-6 auto-rows-[180px] md:auto-rows-[250px]">
                 {listToDisplay.map((item, index) => {
                   // Dynamic bento box sizing pattern
                   const pos = index % 4;
@@ -489,7 +489,7 @@ export default function Home() {
 
                       {/* Text Content */}
                       {(item.title || item.subtitle) && (
-                        <div className="absolute inset-x-0 bottom-0 p-8 md:p-10 z-20">
+                        <div className="absolute inset-x-0 bottom-0 p-3 md:p-8 lg:p-10 z-20">
                           <div className="transform translate-y-4 group-hover:translate-y-0 transition-transform duration-500">
                             {item.subtitle && (
                               <p className="text-brand-orange text-[10px] md:text-[11px] uppercase font-bold tracking-[0.3em] mb-3 opacity-0 group-hover:opacity-100 transition-all duration-500 delay-75">
@@ -497,7 +497,7 @@ export default function Home() {
                               </p>
                             )}
                             {item.title && (
-                              <h4 className="text-white text-2xl md:text-4xl font-medium font-sans leading-tight">
+                              <h4 className="text-white text-sm md:text-2xl lg:text-4xl font-medium font-sans leading-tight">
                                 {item.title}
                               </h4>
                             )}
@@ -777,7 +777,7 @@ export default function Home() {
       )}
 
       {/* Workshop Section */}
-      <section className="py-20 md:py-32 bg-white px-6 lg:px-24">
+      <section className="py-10 md:py-20 lg:py-32 bg-white px-4 md:px-6 lg:px-24">
         <div className="max-w-[1536px] mx-auto">
           <motion.div
             initial={{ opacity: 0, y: 20 }}

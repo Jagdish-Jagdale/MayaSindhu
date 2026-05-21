@@ -189,7 +189,7 @@ export default function Navbar() {
     } bg-white border-b border-gray-200`}>
       {/* Top Navbar: Brand & Search & Icons */}
       <div className="border-b border-gray-200">
-        <div className="max-w-[1536px] mx-auto px-6 h-[95px] flex items-center justify-between gap-8">
+        <div className="max-w-[1536px] mx-auto px-4 md:px-6 h-[68px] md:h-[95px] flex items-center justify-between gap-4 md:gap-8">
 
           {/* 1. Logo (Left) */}
           <div className="flex items-center h-full">
@@ -343,8 +343,73 @@ export default function Navbar() {
         </div>
       </div>
 
+      {/* Mobile Search Drawer */}
+      <AnimatePresence>
+        {isMobileSearchOpen && (
+          <motion.div
+            initial={{ height: 0, opacity: 0 }}
+            animate={{ height: 'auto', opacity: 1 }}
+            exit={{ height: 0, opacity: 0 }}
+            transition={{ duration: 0.25, ease: 'easeOut' }}
+            className="md:hidden overflow-hidden border-b border-gray-100 bg-white"
+          >
+            <div className="px-4 py-3" ref={suggestionRef}>
+              <div className="relative">
+                <input
+                  type="text"
+                  placeholder="Search curated art..."
+                  value={searchQuery}
+                  onChange={(e) => setSearchQuery(e.target.value)}
+                  onKeyDown={handleSearch}
+                  autoFocus
+                  className="w-full bg-gray-50 border border-gray-200 rounded-full py-2.5 pl-5 pr-12 focus:outline-none focus:bg-white focus:ring-4 focus:ring-brand-orange/10 transition-all text-sm placeholder-brand-black/40 text-brand-black shadow-sm"
+                />
+                <div
+                  onClick={handleSearch}
+                  className="absolute right-4 top-1/2 -translate-y-1/2 text-brand-black/50 hover:text-brand-orange transition-colors cursor-pointer"
+                >
+                  <Search size={16} strokeWidth={2} />
+                </div>
+              </div>
+
+              <AnimatePresence>
+                {suggestions.length > 0 && (
+                  <motion.div
+                    initial={{ opacity: 0, y: 8 }}
+                    animate={{ opacity: 1, y: 0 }}
+                    exit={{ opacity: 0, y: 8 }}
+                    className="mt-2 bg-white rounded-2xl shadow-2xl border border-gray-100 overflow-hidden z-[1100]"
+                  >
+                    <div className="p-2">
+                      {suggestions.map((p) => (
+                        <Link
+                          key={p.id}
+                          to={`/product/${p.slug || p.id}`}
+                          onClick={() => { setSuggestions([]); setIsMobileSearchOpen(false); }}
+                          className="flex items-center gap-3 p-3 hover:bg-gray-50 rounded-lg transition-colors group/item"
+                        >
+                          <div className="w-10 h-10 rounded-lg bg-gray-50 overflow-hidden flex-shrink-0 border border-gray-100 p-1">
+                            <img src={p.image || (p.images && p.images[0])} alt="" className="w-full h-full object-contain" />
+                          </div>
+                          <div className="flex-1 min-w-0">
+                            <h4 className="text-xs font-bold text-[#1A1A1A] truncate group-hover/item:text-brand-orange transition-colors">{p.name}</h4>
+                            <p className="text-[10px] text-gray-400 font-medium">₹{p.price?.toLocaleString()}</p>
+                          </div>
+                          <ChevronRight size={14} className="text-gray-300 group-hover/item:text-brand-orange group-hover/item:translate-x-1 transition-all" />
+                        </Link>
+                      ))}
+                    </div>
+                  </motion.div>
+                )}
+              </AnimatePresence>
+            </div>
+          </motion.div>
+        )}
+      </AnimatePresence>
+
       {/* Category Navigation (Desktop) - Centered */}
       <nav className={`hidden md:block transition-all duration-500 bg-white`}>
+
         <div className="max-w-[1536px] mx-auto px-6">
           <ul className="flex items-center justify-center gap-8 lg:gap-12 overflow-x-auto no-scrollbar py-0 w-full">
             {sortedCategories.map((category) => (
