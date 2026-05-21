@@ -321,7 +321,7 @@ export default function SalesOrders() {
                      <th className="px-6 py-4 text-left text-[14px] font-bold text-[#1BAFAF]">Sr No</th>
                      <th className="px-6 py-4 text-left text-[14px] font-bold text-[#1BAFAF]">
                        <button onClick={() => handleSort('saleOrderNumber')} className="flex items-center gap-1 hover:opacity-75 transition-opacity">
-                         Record ID <SortIcon colKey="saleOrderNumber" />
+                         Order ID <SortIcon colKey="saleOrderNumber" />
                        </button>
                      </th>
                      <th className="px-6 py-4 text-left text-[14px] font-bold text-[#1BAFAF]">

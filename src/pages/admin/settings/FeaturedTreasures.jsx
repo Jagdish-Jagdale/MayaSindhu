@@ -221,7 +221,7 @@ export default function FeaturedTreasures() {
                       </div>
                       <div className="flex-1 min-w-0">
                         <p className="text-[13px] font-semibold text-gray-900 truncate group-hover:text-brand-orange transition-colors">{product.name}</p>
-                        <p className="text-[11px] text-gray-400 font-medium">₹{(product.discountedPrice || product.price || 0).toLocaleString('en-IN')}</p>
+                        <p className="text-[11px] text-gray-400 font-medium">₹{(product.discountedPrice || product.price || product.actualPrice || 0).toLocaleString('en-IN')}</p>
                       </div>
                       <Plus size={16} className="text-gray-300 group-hover:text-brand-orange" />
                     </button>
@@ -300,7 +300,7 @@ export default function FeaturedTreasures() {
                       <span className="text-[11px] font-bold">{product.rating || '4.8'}</span>
                     </div>
                   </div>
-                  <p className="text-brand-orange font-bold text-[16px]">₹{(product.discountedPrice || product.price || 0).toLocaleString('en-IN')}</p>
+                  <p className="text-brand-orange font-bold text-[16px]">₹{(product.discountedPrice || product.price || product.actualPrice || 0).toLocaleString('en-IN')}</p>
                 </div>
               </div>
             ))}

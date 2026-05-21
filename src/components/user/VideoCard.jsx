@@ -127,11 +127,11 @@ export default function VideoCard({ videoUrl, title, category, thumbnail, produc
               </h4>
               <div className="flex items-center gap-2">
                 <span className="text-[10px] md:text-[13px] font-bold text-brand-orange">
-                  ₹{productData.price}
+                  ₹{Number(productData.discountedPrice || productData.price || productData.actualPrice || 0).toLocaleString('en-IN')}
                 </span>
-                {productData.originalPrice && (
+                {productData.actualPrice && Number(productData.actualPrice) > Number(productData.discountedPrice || productData.price || 0) && (
                   <span className="text-[8px] md:text-[10px] text-gray-400 line-through">
-                    ₹{productData.originalPrice}
+                    ₹{Number(productData.actualPrice).toLocaleString('en-IN')}
                   </span>
                 )}
               </div>

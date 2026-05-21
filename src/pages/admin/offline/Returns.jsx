@@ -1,7 +1,7 @@
 import React, { useState, useEffect, useRef } from 'react';
-import { 
-  Search, 
-  RotateCcw, 
+import {
+  Search,
+  RotateCcw,
   Loader2,
   Calendar,
   Filter,
@@ -15,13 +15,14 @@ import {
   Undo2,
   X,
   Settings,
-  Info
+  Info,
+  Eye
 } from 'lucide-react';
 import { db } from '../../../firebase';
-import { 
-  collection, 
-  onSnapshot, 
-  query, 
+import {
+  collection,
+  onSnapshot,
+  query,
   orderBy,
   deleteDoc,
   doc,
@@ -29,15 +30,19 @@ import {
   serverTimestamp,
   getDoc,
   getDocs,
-  limit
+  limit,
+  updateDoc,
+  increment
 } from 'firebase/firestore';
 import toast from 'react-hot-toast';
+import DeleteConfirmationModal from '../../../components/admin/DeleteConfirmationModal';
 
 export default function Returns() {
   const [returns, setReturns] = useState([]);
+  const [offlineReturns, setOfflineReturns] = useState([]);
   const [loading, setLoading] = useState(true);
   const [searchTerm, setSearchTerm] = useState('');
-  
+
   // Pagination State
   const [currentPage, setCurrentPage] = useState(1);
   const [rowsPerPage, setRowsPerPage] = useState(10);
@@ -45,7 +50,16 @@ export default function Returns() {
   const rowsRef = useRef(null);
   const [sortConfig, setSortConfig] = useState({ key: 'saleOrderNumber', dir: 'asc' });
   const [selectedReturn, setSelectedReturn] = useState(null);
+  const [activeDropdownOrderId, setActiveDropdownOrderId] = useState(null);
   const [isPreviewOpen, setIsPreviewOpen] = useState(false);
+  const [deleteConfirmOpen, setDeleteConfirmOpen] = useState(false);
+  const [deleteLoading, setDeleteLoading] = useState(false);
+  const [deleteConfirmData, setDeleteConfirmData] = useState({
+    title: 'Confirm Deletion',
+    itemName: '',
+    message: null,
+    onConfirm: null
+  });
   const [isReturnFormOpen, setIsReturnFormOpen] = useState(false);
   const [isSettingsOpen, setIsSettingsOpen] = useState(false);
   const [returnSettings, setReturnSettings] = useState({
@@ -70,12 +84,31 @@ export default function Returns() {
   const handleOpenReturnForm = async (order) => {
     setSelectedOrder(order);
     const today = new Date().toISOString().split('T')[0];
-    
-    const initializedItems = (order.items || []).map(item => ({
-      ...item,
-      returnQty: 0,
-      reason: ''
-    }));
+
+    const existingReturns = offlineReturns.filter(ret => ret.originalOrderId === order.id);
+
+    const initializedItems = (order.items || []).map(item => {
+      const previouslyReturned = existingReturns.reduce((sum, ret) => {
+        const retItem = (ret.items || []).find(ri =>
+          (ri.productId && item.productId && ri.productId === item.productId) ||
+          (ri.name === item.name)
+        );
+        return sum + (retItem ? Number(retItem.quantity || 0) : 0);
+      }, 0);
+
+      const remainingQty = Math.max(0, Number(item.quantity || 0) - previouslyReturned);
+
+      return {
+        ...item,
+        originalOrderedQty: item.originalOrderedQty || item.quantity,
+        quantity: remainingQty,
+        returnQty: 0,
+        reason: ''
+      };
+    });
+
+    const totalPreviouslyReturnedAmount = existingReturns.reduce((sum, ret) => sum + Number(ret.returnAmount || 0), 0);
+    const remainingActualPrice = Math.max(0, (order.total || 0) - totalPreviouslyReturnedAmount);
 
     setReturnFormData({
       returnId: '',
@@ -84,9 +117,9 @@ export default function Returns() {
       customerName: order.customerName || '---',
       customerMobile: order.customerPhone || order.phone || '---',
       items: initializedItems,
-      actualPrice: order.total || 0,
+      actualPrice: remainingActualPrice,
       returnAmount: 0,
-      total: order.total || 0
+      total: remainingActualPrice
     });
 
     if (returnSettings.mode === 'auto') {
@@ -94,17 +127,17 @@ export default function Returns() {
         const q = query(collection(db, 'offlineReturns'), orderBy('createdAt', 'desc'), limit(1));
         const snapshot = await getDocs(q);
         let nextNum = 1;
-        
+
         if (!snapshot.empty) {
           const lastReturn = snapshot.docs[0].data();
           if (lastReturn.returnId && lastReturn.returnId.includes(returnSettings.prefix)) {
-             const numPart = lastReturn.returnId.split(returnSettings.prefix)[1];
-             nextNum = (parseInt(numPart) || 0) + 1;
+            const numPart = lastReturn.returnId.split(returnSettings.prefix)[1];
+            nextNum = (parseInt(numPart) || 0) + 1;
           }
         } else {
           nextNum = parseInt(returnSettings.nextNumber) || 1;
         }
-        
+
         const formattedNum = `${returnSettings.prefix}${nextNum.toString().padStart(returnSettings.nextNumber.length, '0')}`;
         setReturnFormData(prev => ({ ...prev, returnId: formattedNum }));
       } catch (error) {
@@ -144,17 +177,17 @@ export default function Returns() {
         const q = query(collection(db, 'offlineReturns'), orderBy('createdAt', 'desc'), limit(1));
         const snapshot = await getDocs(q);
         let nextNum = 1;
-        
+
         if (!snapshot.empty) {
           const lastReturn = snapshot.docs[0].data();
           if (lastReturn.returnId && lastReturn.returnId.includes(returnSettings.prefix)) {
-             const numPart = lastReturn.returnId.split(returnSettings.prefix)[1];
-             nextNum = (parseInt(numPart) || 0) + 1;
+            const numPart = lastReturn.returnId.split(returnSettings.prefix)[1];
+            nextNum = (parseInt(numPart) || 0) + 1;
           }
         } else {
           nextNum = parseInt(returnSettings.nextNumber) || 1;
         }
-        
+
         const formattedNum = `${returnSettings.prefix}${nextNum.toString().padStart(returnSettings.nextNumber.length, '0')}`;
         setReturnFormData(prev => ({ ...prev, returnId: formattedNum }));
       } catch (error) {
@@ -199,7 +232,7 @@ export default function Returns() {
   const handleReturnSubmit = async (e) => {
     e.preventDefault();
     const returnedItems = returnFormData.items.filter(item => item.returnQty > 0);
-    
+
     if (returnedItems.length === 0) {
       toast.error("Please specify a return quantity of at least 1 for any product.");
       return;
@@ -261,6 +294,9 @@ export default function Returns() {
   useEffect(() => {
     const handler = (e) => {
       if (rowsRef.current && !rowsRef.current.contains(e.target)) setRowsOpen(false);
+      if (!e.target.closest('.return-dropdown-container')) {
+        setActiveDropdownOrderId(null);
+      }
     };
     document.addEventListener('mousedown', handler);
     return () => document.removeEventListener('mousedown', handler);
@@ -280,15 +316,93 @@ export default function Returns() {
     return () => unsubscribe();
   }, []);
 
-  const handleDelete = async (id) => {
-    if (!window.confirm("Are you sure you want to delete this return record?")) return;
-    try {
-      await deleteDoc(doc(db, 'storeOrders', id));
-      toast.success("Return record deleted successfully");
-    } catch (error) {
-      console.error("Error deleting return:", error);
-      toast.error("Failed to delete record");
-    }
+  useEffect(() => {
+    const q = query(collection(db, 'offlineReturns'), orderBy('createdAt', 'desc'));
+    const unsubscribe = onSnapshot(q, (snapshot) => {
+      setOfflineReturns(snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() })));
+    }, (error) => {
+      console.error("Error fetching offline returns:", error);
+    });
+
+    return () => unsubscribe();
+  }, []);
+
+  const handleDelete = (id, customerName) => {
+    setDeleteConfirmData({
+      title: 'Confirm Deletion',
+      itemName: customerName || 'this record',
+      message: (
+        <>
+          Are you sure you want to delete the return record of <span className="font-bold text-[#111827]">"{customerName || 'this record'}"</span>?
+        </>
+      ),
+      onConfirm: async () => {
+        setDeleteLoading(true);
+        try {
+          await deleteDoc(doc(db, 'storeOrders', id));
+          const matched = offlineReturns.filter(r => r.originalOrderId === id);
+          const deletePromises = matched.map(m => deleteDoc(doc(db, 'offlineReturns', m.id)));
+          await Promise.all(deletePromises);
+          toast.success("Return record deleted successfully");
+          setDeleteConfirmOpen(false);
+        } catch (error) {
+          console.error("Error deleting return:", error);
+          toast.error("Failed to delete record");
+        } finally {
+          setDeleteLoading(false);
+        }
+      }
+    });
+    setDeleteConfirmOpen(true);
+  };
+
+  const handleDeleteReturn = (ret) => {
+    setDeleteConfirmData({
+      title: 'Confirm Deletion',
+      itemName: ret.returnId,
+      message: (
+        <div className="space-y-1">
+          <p>
+            Are you sure you want to delete return record <span className="font-bold text-[#111827]">"{ret.returnId}"</span>?
+          </p>
+          <p className="text-[13px] text-amber-600 font-semibold mt-1">
+            This will also reverse the stock updates.
+          </p>
+        </div>
+      ),
+      onConfirm: async () => {
+        setDeleteLoading(true);
+        try {
+          // 1. Revert stock updates in products collection
+          const revertPromises = (ret.items || []).map(async (item) => {
+            if (!item.productId) return;
+            try {
+              const productRef = doc(db, 'products', item.productId);
+              await updateDoc(productRef, {
+                stock: increment(-Number(item.quantity || 0))
+              });
+            } catch (err) {
+              console.error(`Error reverting stock for product ${item.productId}:`, err);
+            }
+          });
+          await Promise.all(revertPromises);
+
+          // 2. Delete offlineReturns document
+          await deleteDoc(doc(db, 'offlineReturns', ret.id));
+
+          toast.success(`Return ${ret.returnId} deleted successfully`);
+          setIsPreviewOpen(false);
+          setSelectedReturn(null);
+          setDeleteConfirmOpen(false);
+        } catch (error) {
+          console.error("Error deleting return:", error);
+          toast.error("Failed to delete return record.");
+        } finally {
+          setDeleteLoading(false);
+        }
+      }
+    });
+    setDeleteConfirmOpen(true);
   };
 
   const formatDate = (timestamp) => {
@@ -320,11 +434,16 @@ export default function Returns() {
   };
 
   const processedReturns = (() => {
-    let list = returns.filter(r => 
-      (r.customerName || '').toLowerCase().includes(searchTerm.toLowerCase()) ||
-      (r.returnId || r.saleOrderNumber || '').toLowerCase().includes(searchTerm.toLowerCase()) ||
-      (r.orderNumber || r.saleOrderNumber || '').toLowerCase().includes(searchTerm.toLowerCase())
-    );
+    let list = returns.filter(r => {
+      const matchedReturnsForOrder = offlineReturns.filter(ret => ret.originalOrderId === r.id);
+      const returnIdsStr = matchedReturnsForOrder.map(ret => ret.returnId).join(', ');
+      return (
+        (r.customerName || '').toLowerCase().includes(searchTerm.toLowerCase()) ||
+        (returnIdsStr || '').toLowerCase().includes(searchTerm.toLowerCase()) ||
+        (r.saleOrderNumber || '').toLowerCase().includes(searchTerm.toLowerCase()) ||
+        (r.orderNumber || r.saleOrderNumber || '').toLowerCase().includes(searchTerm.toLowerCase())
+      );
+    });
 
     if (sortConfig.key) {
       list = [...list].sort((a, b) => {
@@ -337,6 +456,11 @@ export default function Returns() {
         } else if (sortConfig.key === 'amount') {
           aVal = Number(a.amount || a.total) || 0;
           bVal = Number(b.amount || b.total) || 0;
+        } else if (sortConfig.key === 'returnId') {
+          const matchedA = offlineReturns.filter(ret => ret.originalOrderId === a.id);
+          const matchedB = offlineReturns.filter(ret => ret.originalOrderId === b.id);
+          aVal = matchedA.map(ret => ret.returnId).join(', ');
+          bVal = matchedB.map(ret => ret.returnId).join(', ');
         } else if (sortConfig.key === 'saleOrderNumber' || sortConfig.key === 'invoiceNumber') {
           // Numeric suffix ordering so SO-00002 > SO-00001
           const numA = parseInt((String(aVal || '')).replace(/\D+/g, '')) || 0;
@@ -368,7 +492,7 @@ export default function Returns() {
 
   return (
     <div className="space-y-6 animate-in fade-in duration-500 pb-20">
-      
+
       {/* Header Section */}
       <div className="space-y-2 py-2">
         <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
@@ -378,7 +502,7 @@ export default function Returns() {
           </div>
           <div className="flex items-center gap-4">
             <span className="text-[11px] font-semibold text-gray-400 uppercase tracking-widest">
-               TOTAL RECORDS: {totalRecords}
+              TOTAL RECORDS: {totalRecords}
             </span>
           </div>
         </div>
@@ -387,168 +511,252 @@ export default function Returns() {
 
       {/* Filter Bar */}
       <div className="flex flex-col sm:flex-row items-center gap-4 bg-white p-2 rounded-2xl border border-gray-100 shadow-sm">
-         <div className="relative flex-1 group">
-            <Search className="absolute left-4 top-1/2 -translate-y-1/2 w-4 h-4 text-gray-300 group-focus-within:text-[#1BAFAF] transition-colors" />
-            <input 
-               type="text" 
-               placeholder="Search by Return ID, Customer or Order #..."
-               value={searchTerm}
-               onChange={(e) => {
-                 setSearchTerm(e.target.value);
-                 setCurrentPage(1); // Reset to first page on search
-               }}
-               className="w-full bg-gray-50 border-none py-2.5 pl-11 pr-4 text-[13px] rounded-xl outline-none focus:bg-white transition-all font-medium"
-            />
-         </div>
-         <div className="flex items-center gap-2">
-            <button className="p-2.5 text-gray-400 hover:text-gray-900 hover:bg-gray-50 rounded-xl transition-all"><Calendar size={18} /></button>
-            <button className="p-2.5 text-gray-400 hover:text-gray-900 hover:bg-gray-50 rounded-xl transition-all"><Filter size={18} /></button>
-            <div className="h-6 w-[1px] bg-gray-100 mx-1" />
-            <div className="relative" ref={rowsRef}>
-              <button
-                onClick={() => setRowsOpen(prev => !prev)}
-                className="flex items-center gap-2 px-3 py-1.5 text-[12px] font-semibold text-gray-500 hover:text-gray-900 transition-colors"
-              >
-                Rows: <span className="text-[#1BAFAF]">{rowsPerPage}</span>
-                <ChevronDown size={12} className={`transition-transform duration-200 ${rowsOpen ? 'rotate-180' : ''}`} />
-              </button>
-              {rowsOpen && (
-                <div className="absolute right-0 top-full mt-2 w-24 bg-white border border-gray-100 rounded-xl shadow-lg z-50 py-1 overflow-hidden">
-                  {rowOptions.map(opt => (
-                    <button
-                      key={opt}
-                      onClick={() => { 
-                        setRowsPerPage(opt); 
-                        setCurrentPage(1);
-                        setRowsOpen(false); 
-                      }}
-                      className={`w-full text-left px-3 py-2 text-[13px] transition-colors ${
-                        rowsPerPage === opt ? 'text-[#1BAFAF] font-semibold bg-[#1BAFAF]/5' : 'text-gray-600 hover:bg-gray-50'
+        <div className="relative flex-1 group">
+          <Search className="absolute left-4 top-1/2 -translate-y-1/2 w-4 h-4 text-gray-300 group-focus-within:text-[#1BAFAF] transition-colors" />
+          <input
+            type="text"
+            placeholder="Search by Return ID, Customer or Order #..."
+            value={searchTerm}
+            onChange={(e) => {
+              setSearchTerm(e.target.value);
+              setCurrentPage(1); // Reset to first page on search
+            }}
+            className="w-full bg-gray-50 border-none py-2.5 pl-11 pr-4 text-[13px] rounded-xl outline-none focus:bg-white transition-all font-medium"
+          />
+        </div>
+        <div className="flex items-center gap-2">
+          <button className="p-2.5 text-gray-400 hover:text-gray-900 hover:bg-gray-50 rounded-xl transition-all"><Calendar size={18} /></button>
+          <button className="p-2.5 text-gray-400 hover:text-gray-900 hover:bg-gray-50 rounded-xl transition-all"><Filter size={18} /></button>
+          <div className="h-6 w-[1px] bg-gray-100 mx-1" />
+          <div className="relative" ref={rowsRef}>
+            <button
+              onClick={() => setRowsOpen(prev => !prev)}
+              className="flex items-center gap-2 px-3 py-1.5 text-[12px] font-semibold text-gray-500 hover:text-gray-900 transition-colors"
+            >
+              Rows: <span className="text-[#1BAFAF]">{rowsPerPage}</span>
+              <ChevronDown size={12} className={`transition-transform duration-200 ${rowsOpen ? 'rotate-180' : ''}`} />
+            </button>
+            {rowsOpen && (
+              <div className="absolute right-0 top-full mt-2 w-24 bg-white border border-gray-100 rounded-xl shadow-lg z-50 py-1 overflow-hidden">
+                {rowOptions.map(opt => (
+                  <button
+                    key={opt}
+                    onClick={() => {
+                      setRowsPerPage(opt);
+                      setCurrentPage(1);
+                      setRowsOpen(false);
+                    }}
+                    className={`w-full text-left px-3 py-2 text-[13px] transition-colors ${rowsPerPage === opt ? 'text-[#1BAFAF] font-semibold bg-[#1BAFAF]/5' : 'text-gray-600 hover:bg-gray-50'
                       }`}
-                    >
-                      {opt} rows
-                    </button>
-                  ))}
-                </div>
-              )}
-            </div>
-         </div>
+                  >
+                    {opt} rows
+                  </button>
+                ))}
+              </div>
+            )}
+          </div>
+        </div>
       </div>
 
       {/* Returns Table */}
       <div className="space-y-3">
-         <div className="bg-white rounded-[20px] border border-gray-100 shadow-sm overflow-x-auto custom-scrollbar">
-            <table className="w-full text-left border-collapse">
-               <thead>
-                  <tr className="border-b border-gray-50 bg-white">
-                     <th className="px-6 py-4 text-left text-[14px] font-bold text-[#1BAFAF]">Sr No</th>
-                     <th className="px-6 py-4 text-left text-[14px] font-bold text-[#1BAFAF]">
-                       <button onClick={() => handleSort('returnId')} className="flex items-center gap-1 hover:opacity-75 transition-opacity">
-                         Return ID <SortIcon colKey="returnId" />
-                       </button>
-                     </th>
-                     <th className="px-6 py-4 text-left text-[14px] font-bold text-[#1BAFAF]">
-                       <button onClick={() => handleSort('customerName')} className="flex items-center gap-1 hover:opacity-75 transition-opacity">
-                         Customer <SortIcon colKey="customerName" />
-                       </button>
-                     </th>
-                     <th className="px-6 py-4 text-left text-[14px] font-bold text-[#1BAFAF]">
-                       <button onClick={() => handleSort('orderNumber')} className="flex items-center gap-1 hover:opacity-75 transition-opacity">
-                         Order # <SortIcon colKey="orderNumber" />
-                       </button>
-                     </th>
-                     <th className="px-6 py-4 text-left text-[14px] font-bold text-[#1BAFAF]">
-                       <button onClick={() => handleSort('createdAt')} className="flex items-center gap-1 hover:opacity-75 transition-opacity">
-                         Date <SortIcon colKey="createdAt" />
-                       </button>
-                     </th>
-                     <th className="px-6 py-4 text-left text-[14px] font-bold text-[#1BAFAF]">
-                       <button onClick={() => handleSort('amount')} className="flex items-center gap-1 hover:opacity-75 transition-opacity">
-                         Amount <SortIcon colKey="amount" />
-                       </button>
-                     </th>
-                     <th className="px-6 py-4 text-center text-[14px] font-bold text-[#1BAFAF]">Preview</th>
-                     <th className="px-6 py-4 text-center text-[14px] font-bold text-[#1BAFAF]">Actions</th>
-                  </tr>
-               </thead>
-               <tbody className="divide-y divide-gray-50/50">
-                  {currentItems.length > 0 ? currentItems.map((item, idx) => (
-                    <tr key={item.id} className="hover:bg-gray-50 group transition-colors">
-                       <td className="px-6 py-4 whitespace-nowrap text-[14px] text-gray-400 font-medium">
-                          {(startIndex + idx + 1).toString().padStart(2, '0')}
-                       </td>
-                       <td className="px-6 py-4 min-w-[150px]">
-                          <span className="text-[14px] font-bold text-gray-900 uppercase tracking-wider">{item.saleOrderNumber || item.returnId || `#RET-${item.id.slice(-6)}`}</span>
-                       </td>
-                       <td className="px-6 py-4">
-                          <span className="text-[14px] text-gray-500 font-medium">{item.customerName || 'Customer'}</span>
-                       </td>
-                       <td className="px-6 py-4 whitespace-nowrap text-[13px] font-semibold text-gray-500">{item.saleOrderNumber || item.orderNumber || '---'}</td>
-                       <td className="px-6 py-4 whitespace-nowrap text-[14px] text-gray-500 font-medium">
-                          {item.saleOrderDate || formatDate(item.createdAt)}
-                       </td>
-                       <td className="px-6 py-4 whitespace-nowrap text-[14px] text-gray-500 font-medium">₹{(item.amount || item.total || 0).toFixed(2)}</td>
-                       <td className="px-6 py-4 text-center">
-                         <button 
-                           onClick={() => handleOpenReturnForm(item)}
-                           className="w-8 h-8 inline-flex items-center justify-center text-gray-400 hover:text-[#1BAFAF] hover:bg-[#1BAFAF]/5 rounded-lg transition-all active:scale-90"
-                         >
-                           <Undo2 size={16} strokeWidth={2.5} />
-                         </button>
-                       </td>
-                       <td className="px-6 py-4 text-center">
-                         <div className="flex items-center justify-center gap-2">
-                           <button 
-                             onClick={() => handleDelete(item.id)}
-                             className="w-8 h-8 flex items-center justify-center text-red-600 hover:bg-red-50 rounded-lg transition-all active:scale-90"
-                           >
-                             <Trash2 size={14} strokeWidth={2.5} />
-                           </button>
-                         </div>
-                       </td>
-                    </tr>
-                  )) : (
-                    <tr>
-                       <td colSpan="8" className="py-20 text-center">
-                          <div className="w-16 h-16 bg-gray-50 rounded-full flex items-center justify-center mx-auto mb-4 text-gray-200">
-                             <RotateCcw size={32} />
-                          </div>
-                          <p className="text-[14px] font-bold text-gray-400 uppercase tracking-widest">No returns found</p>
-                       </td>
-                    </tr>
-                  )}
-               </tbody>
-            </table>
-         </div>
+        <div className="bg-white rounded-[20px] border border-gray-100 shadow-sm overflow-x-auto custom-scrollbar">
+          <table className="w-full text-left border-collapse">
+            <thead>
+              <tr className="border-b border-gray-50 bg-white">
+                <th className="px-6 py-4 text-left text-[14px] font-bold text-[#1BAFAF]">Sr No</th>
+                <th className="px-6 py-4 text-left text-[14px] font-bold text-[#1BAFAF]">
+                  <button onClick={() => handleSort('returnId')} className="flex items-center gap-1 hover:opacity-75 transition-opacity">
+                    Return ID <SortIcon colKey="returnId" />
+                  </button>
+                </th>
+                <th className="px-6 py-4 text-left text-[14px] font-bold text-[#1BAFAF]">
+                  <button onClick={() => handleSort('customerName')} className="flex items-center gap-1 hover:opacity-75 transition-opacity">
+                    Customer Name <SortIcon colKey="customerName" />
+                  </button>
+                </th>
+                <th className="px-6 py-4 text-left text-[14px] font-bold text-[#1BAFAF]">
+                  <button onClick={() => handleSort('orderNumber')} className="flex items-center gap-1 hover:opacity-75 transition-opacity">
+                    Order ID <SortIcon colKey="orderNumber" />
+                  </button>
+                </th>
+                <th className="px-6 py-4 text-left text-[14px] font-bold text-[#1BAFAF]">
+                  <button onClick={() => handleSort('createdAt')} className="flex items-center gap-1 hover:opacity-75 transition-opacity">
+                    Date <SortIcon colKey="createdAt" />
+                  </button>
+                </th>
+                <th className="px-6 py-4 text-left text-[14px] font-bold text-[#1BAFAF]">
+                  <button onClick={() => handleSort('amount')} className="flex items-center gap-1 hover:opacity-75 transition-opacity">
+                    Amount <SortIcon colKey="amount" />
+                  </button>
+                </th>
+                <th className="px-6 py-4 text-center text-[14px] font-bold text-[#1BAFAF]">Preview</th>
+                <th className="px-6 py-4 text-center text-[14px] font-bold text-[#1BAFAF]">Actions</th>
+              </tr>
+            </thead>
+            <tbody className="divide-y divide-gray-50/50">
+              {currentItems.length > 0 ? currentItems.map((item, idx) => {
+                const matchedReturns = offlineReturns.filter(ret => ret.originalOrderId === item.id);
+                return (
+                  <tr key={item.id} className="hover:bg-gray-50 group transition-colors">
+                    <td className="px-6 py-4 whitespace-nowrap text-[14px] text-gray-400 font-medium">
+                      {(startIndex + idx + 1).toString().padStart(2, '0')}
+                    </td>
+                    <td className="px-6 py-4">
+                      <div className="flex flex-wrap gap-1.5 max-w-[200px]">
+                        {matchedReturns.length > 0 ? (
+                          matchedReturns.map(ret => (
+                            <span
+                              key={ret.id}
+                              className="inline-flex items-center px-2 py-0.5 rounded-md text-[11px] font-bold bg-[#1BAFAF]/10 text-[#1BAFAF] border border-[#1BAFAF]/20 uppercase tracking-wider"
+                            >
+                              {ret.returnId}
+                            </span>
+                          ))
+                        ) : (
+                          <span className="text-gray-400 font-medium">-</span>
+                        )}
+                      </div>
+                    </td>
+                    <td className="px-6 py-4">
+                      <span className="text-[14px] text-gray-500 font-medium">{item.customerName || 'Customer'}</span>
+                    </td>
+                    <td className="px-6 py-4 whitespace-nowrap text-[13px] font-semibold text-gray-500">{item.saleOrderNumber || item.orderNumber || '---'}</td>
+                    <td className="px-6 py-4 whitespace-nowrap text-[14px] text-gray-500 font-medium">
+                      {item.saleOrderDate || formatDate(item.createdAt)}
+                    </td>
+                    <td className="px-6 py-4 whitespace-nowrap text-[14px] text-gray-500 font-medium">₹{(item.amount || item.total || 0).toFixed(2)}</td>
+                    <td className="px-6 py-4 text-center">
+                      <div className="flex items-center justify-center gap-2">
+                        {matchedReturns.length > 0 && (
+                          <div className="relative return-dropdown-container">
+                            <button
+                              onClick={() => {
+                                if (matchedReturns.length === 1) {
+                                  setSelectedReturn(matchedReturns[0]);
+                                  setIsPreviewOpen(true);
+                                } else {
+                                  setActiveDropdownOrderId(prev => prev === item.id ? null : item.id);
+                                }
+                              }}
+                              className={`w-8 h-8 inline-flex items-center justify-center rounded-lg transition-all active:scale-90 ${activeDropdownOrderId === item.id
+                                ? 'text-[#1BAFAF] bg-[#1BAFAF]/10 border border-[#1BAFAF]/20'
+                                : 'text-gray-400 hover:text-[#1BAFAF] hover:bg-[#1BAFAF]/5 border border-transparent'
+                                }`}
+                              title={matchedReturns.length === 1 ? `View Return Details (${matchedReturns[0].returnId})` : 'Select Return to View'}
+                              type="button"
+                            >
+                              <Eye size={16} strokeWidth={2.5} />
+                            </button>
 
-         {/* Pagination Footer */}
-         <div className="flex items-center justify-end px-2 pt-1">
-            <div className="flex items-center gap-2">
-               <button 
-                 onClick={() => currentPage > 1 && setCurrentPage(currentPage - 1)}
-                 disabled={currentPage === 1}
-                 className="w-8 h-8 rounded-lg flex items-center justify-center text-gray-400 hover:text-[#1BAFAF] hover:bg-[#1BAFAF]/5 transition-all disabled:opacity-30 disabled:hover:bg-transparent disabled:hover:text-gray-400"
-               >
-                 <ChevronLeft size={16} strokeWidth={2.5} />
-               </button>
-               <span className="text-[12px] font-semibold text-gray-400">
-                  Page {currentPage} of {totalPages}
-               </span>
-               <button 
-                 onClick={() => currentPage < totalPages && setCurrentPage(currentPage + 1)}
-                 disabled={currentPage === totalPages}
-                 className="w-8 h-8 rounded-lg flex items-center justify-center text-gray-400 hover:text-[#1BAFAF] hover:bg-[#1BAFAF]/5 transition-all disabled:opacity-30 disabled:hover:bg-transparent disabled:hover:text-gray-400"
-               >
-                 <ChevronRight size={16} strokeWidth={2.5} />
-               </button>
-            </div>
-         </div>
+                            {/* Dropdown Menu for Multiple Returns */}
+                            {matchedReturns.length > 1 && activeDropdownOrderId === item.id && (
+                              <div className="absolute right-0 bottom-full mb-2 w-48 bg-white border border-gray-100 rounded-xl shadow-xl z-[100] py-1.5 overflow-hidden animate-in fade-in slide-in-from-bottom-2 duration-150">
+                                <div className="px-3 py-1 border-b border-gray-50 mb-1 text-left">
+                                  <span className="text-[10px] font-bold text-gray-400 uppercase tracking-wider">Select Return ID</span>
+                                </div>
+                                {matchedReturns.map(ret => (
+                                  <button
+                                    key={ret.id}
+                                    onClick={() => {
+                                      setSelectedReturn(ret);
+                                      setIsPreviewOpen(true);
+                                      setActiveDropdownOrderId(null);
+                                    }}
+                                    className="w-full text-left px-3 py-2 text-[12px] font-semibold text-gray-600 hover:text-[#1BAFAF] hover:bg-[#1BAFAF]/5 transition-colors flex items-center justify-between"
+                                    type="button"
+                                  >
+                                    <span>{ret.returnId}</span>
+                                    <Eye size={12} className="text-gray-400" />
+                                  </button>
+                                ))}
+                              </div>
+                            )}
+                          </div>
+                        )}
+                        {(() => {
+                          const hasReturnableItems = (item.items || []).some(orderItem => {
+                            const previouslyReturned = matchedReturns.reduce((sum, ret) => {
+                              const retItem = (ret.items || []).find(ri =>
+                                (ri.productId && orderItem.productId && ri.productId === orderItem.productId) ||
+                                (ri.name === orderItem.name)
+                              );
+                              return sum + (retItem ? Number(retItem.quantity || 0) : 0);
+                            }, 0);
+                            return Number(orderItem.quantity || 0) - previouslyReturned > 0;
+                          });
+
+                          if (hasReturnableItems) {
+                            return (
+                              <button
+                                onClick={() => handleOpenReturnForm(item)}
+                                className="w-8 h-8 inline-flex items-center justify-center text-gray-400 hover:text-[#1BAFAF] hover:bg-[#1BAFAF]/5 rounded-lg transition-all active:scale-90"
+                                title="Process Return"
+                                type="button"
+                              >
+                                <Undo2 size={16} strokeWidth={2.5} />
+                              </button>
+                            );
+                          }
+                          return null;
+                        })()}
+                      </div>
+                    </td>
+                    <td className="px-6 py-4 text-center">
+                      <div className="flex items-center justify-center gap-2">
+                        <button
+                          onClick={() => handleDelete(item.id, item.customerName)}
+                          className="w-8 h-8 flex items-center justify-center text-red-600 hover:bg-red-50 rounded-lg transition-all active:scale-90"
+                          type="button"
+                        >
+                          <Trash2 size={14} strokeWidth={2.5} />
+                        </button>
+                      </div>
+                    </td>
+                  </tr>
+                );
+              }) : (
+                <tr>
+                  <td colSpan="8" className="py-20 text-center">
+                    <div className="w-16 h-16 bg-gray-50 rounded-full flex items-center justify-center mx-auto mb-4 text-gray-200">
+                      <RotateCcw size={32} />
+                    </div>
+                    <p className="text-[14px] font-bold text-gray-400 uppercase tracking-widest">No returns found</p>
+                  </td>
+                </tr>
+              )}
+            </tbody>
+          </table>
+        </div>
+
+        {/* Pagination Footer */}
+        <div className="flex items-center justify-end px-2 pt-1">
+          <div className="flex items-center gap-2">
+            <button
+              onClick={() => currentPage > 1 && setCurrentPage(currentPage - 1)}
+              disabled={currentPage === 1}
+              className="w-8 h-8 rounded-lg flex items-center justify-center text-gray-400 hover:text-[#1BAFAF] hover:bg-[#1BAFAF]/5 transition-all disabled:opacity-30 disabled:hover:bg-transparent disabled:hover:text-gray-400"
+            >
+              <ChevronLeft size={16} strokeWidth={2.5} />
+            </button>
+            <span className="text-[12px] font-semibold text-gray-400">
+              Page {currentPage} of {totalPages}
+            </span>
+            <button
+              onClick={() => currentPage < totalPages && setCurrentPage(currentPage + 1)}
+              disabled={currentPage === totalPages}
+              className="w-8 h-8 rounded-lg flex items-center justify-center text-gray-400 hover:text-[#1BAFAF] hover:bg-[#1BAFAF]/5 transition-all disabled:opacity-30 disabled:hover:bg-transparent disabled:hover:text-gray-400"
+            >
+              <ChevronRight size={16} strokeWidth={2.5} />
+            </button>
+          </div>
+        </div>
       </div>
 
       {/* View Preview Modal */}
       {isPreviewOpen && selectedReturn && (
         <div className="fixed inset-0 z-[150] flex items-center justify-center p-4 animate-in fade-in duration-200">
-          <div 
+          <div
             className="absolute inset-0 bg-black/40 backdrop-blur-sm"
             onClick={() => setIsPreviewOpen(false)}
           />
@@ -556,10 +764,12 @@ export default function Returns() {
             {/* Header */}
             <div className="px-8 py-6 border-b border-gray-100 flex items-center justify-between bg-gradient-to-r from-gray-50 to-white flex-shrink-0">
               <div>
-                <h2 className="text-[20px] font-bold text-gray-900 tracking-tight">Order Details</h2>
+                <h2 className="text-[20px] font-bold text-gray-900 tracking-tight">
+                  {selectedReturn.returnId ? 'Return Details' : 'Order Details'}
+                </h2>
                 <p className="text-[12px] text-gray-400 font-medium">Record Information</p>
               </div>
-              <button 
+              <button
                 onClick={() => setIsPreviewOpen(false)}
                 className="w-10 h-10 flex items-center justify-center rounded-2xl text-gray-400 hover:bg-gray-100 hover:text-gray-900 transition-all"
               >
@@ -572,25 +782,37 @@ export default function Returns() {
               {/* Summary Info */}
               <div className="grid grid-cols-2 gap-6 bg-gray-50/50 p-6 rounded-2xl border border-gray-100">
                 <div className="space-y-1">
-                  <p className="text-[11px] font-bold text-gray-400 uppercase tracking-wider">Order ID</p>
-                  <p className="font-bold text-gray-900 uppercase">{selectedReturn.saleOrderNumber || selectedReturn.returnId || '---'}</p>
+                  <p className="text-[11px] font-bold text-gray-400 uppercase tracking-wider">
+                    {selectedReturn.returnId ? 'Return ID' : 'Order ID'}
+                  </p>
+                  <p className="font-bold text-gray-900 uppercase">
+                    {selectedReturn.returnId || selectedReturn.saleOrderNumber || '---'}
+                  </p>
                 </div>
-                <div className="space-y-1">
-                  <p className="text-[11px] font-bold text-gray-400 uppercase tracking-wider">Status</p>
-                  <span className={`inline-block text-[11px] font-bold uppercase tracking-wider px-2.5 py-1 rounded-lg ${
-                    (selectedReturn.status || 'Confirmed').toLowerCase() === 'paid' || (selectedReturn.status || 'Confirmed').toLowerCase() === 'confirmed' ? 'text-[#1BAFAF] bg-[#eaf6f6]' :
-                    'text-amber-500 bg-amber-50'
-                  }`}>
-                    {selectedReturn.status || 'Confirmed'}
-                  </span>
-                </div>
+                {selectedReturn.returnId ? (
+                  <div className="space-y-1">
+                    <p className="text-[11px] font-bold text-gray-400 uppercase tracking-wider">Order ID</p>
+                    <p className="font-bold text-gray-900 uppercase">{selectedReturn.orderNumber || '---'}</p>
+                  </div>
+                ) : (
+                  <div className="space-y-1">
+                    <p className="text-[11px] font-bold text-gray-400 uppercase tracking-wider">Status</p>
+                    <span className={`inline-block text-[11px] font-bold uppercase tracking-wider px-2.5 py-1 rounded-lg ${(selectedReturn.status || 'Confirmed').toLowerCase() === 'paid' || (selectedReturn.status || 'Confirmed').toLowerCase() === 'confirmed' ? 'text-[#1BAFAF] bg-[#eaf6f6]' :
+                      'text-amber-500 bg-amber-50'
+                      }`}>
+                      {selectedReturn.status || 'Confirmed'}
+                    </span>
+                  </div>
+                )}
                 <div className="space-y-1">
                   <p className="text-[11px] font-bold text-gray-400 uppercase tracking-wider">Customer Name</p>
                   <p className="font-bold text-gray-700">{selectedReturn.customerName || '---'}</p>
                 </div>
                 <div className="space-y-1">
                   <p className="text-[11px] font-bold text-gray-400 uppercase tracking-wider">Date</p>
-                  <p className="font-bold text-gray-700">{selectedReturn.saleOrderDate || formatDate(selectedReturn.createdAt)}</p>
+                  <p className="font-bold text-gray-700">
+                    {selectedReturn.returnDate || selectedReturn.saleOrderDate || formatDate(selectedReturn.createdAt)}
+                  </p>
                 </div>
               </div>
 
@@ -629,30 +851,62 @@ export default function Returns() {
 
               {/* Totals Section */}
               <div className="border-t border-gray-100 pt-6 space-y-3 max-w-sm ml-auto">
-                <div className="flex justify-between text-gray-500 font-medium">
-                  <span>Sub Total</span>
-                  <span className="text-gray-900">₹{(selectedReturn.subTotal || 0).toFixed(2)}</span>
-                </div>
-                <div className="flex justify-between text-gray-500 font-medium">
-                  <span>Tax (GST)</span>
-                  <span className="text-gray-900">{selectedReturn.tax || 0}%</span>
-                </div>
-                <div className="flex justify-between text-gray-500 font-medium">
-                  <span>Adjustment</span>
-                  <span className="text-gray-900">₹{(selectedReturn.adjustment || 0).toFixed(2)}</span>
-                </div>
-                <div className="flex justify-between items-center text-base font-black border-t border-dashed border-gray-200 pt-3">
-                  <span className="text-gray-900">Total ( ₹ )</span>
-                  <span className="text-[#1BAFAF]">₹{(selectedReturn.total || 0).toFixed(2)}</span>
-                </div>
+                {selectedReturn.returnId ? (
+                  <>
+                    <div className="flex justify-between text-gray-500 font-medium">
+                      <span>Actual Price</span>
+                      <span className="text-gray-900 font-bold">₹{(selectedReturn.actualPrice || 0).toFixed(2)}</span>
+                    </div>
+                    <div className="flex justify-between text-red-500 font-semibold bg-red-50/50 p-3 rounded-2xl border border-red-100/50">
+                      <span>Return Amount</span>
+                      <span>- ₹{(selectedReturn.returnAmount || 0).toFixed(2)}</span>
+                    </div>
+                    <div className="flex justify-between items-center text-base font-black border-t border-dashed border-gray-200 pt-3">
+                      <span className="text-gray-900">Total ( ₹ )</span>
+                      <span className="text-[#1BAFAF]">₹{(selectedReturn.total || 0).toFixed(2)}</span>
+                    </div>
+                  </>
+                ) : (
+                  <>
+                    <div className="flex justify-between text-gray-500 font-medium">
+                      <span>Sub Total</span>
+                      <span className="text-gray-900">₹{(selectedReturn.subTotal || 0).toFixed(2)}</span>
+                    </div>
+                    <div className="flex justify-between text-gray-500 font-medium">
+                      <span>Tax (GST)</span>
+                      <span className="text-gray-900">{selectedReturn.tax || 0}%</span>
+                    </div>
+                    <div className="flex justify-between text-gray-500 font-medium">
+                      <span>Adjustment</span>
+                      <span className="text-gray-900">₹{(selectedReturn.adjustment || 0).toFixed(2)}</span>
+                    </div>
+                    <div className="flex justify-between items-center text-base font-black border-t border-dashed border-gray-200 pt-3">
+                      <span className="text-gray-900">Total ( ₹ )</span>
+                      <span className="text-[#1BAFAF]">₹{(selectedReturn.total || 0).toFixed(2)}</span>
+                    </div>
+                  </>
+                )}
               </div>
             </div>
 
             {/* Footer */}
-            <div className="px-8 py-5 border-t border-gray-100 flex justify-end bg-gray-50 flex-shrink-0">
-              <button 
+            <div className="px-8 py-5 border-t border-gray-100 flex justify-between bg-gray-50 flex-shrink-0">
+              {selectedReturn.returnId ? (
+                <button
+                  onClick={() => handleDeleteReturn(selectedReturn)}
+                  className="px-6 py-2.5 bg-red-50 text-red-600 rounded-xl text-[13px] font-bold hover:bg-red-100 transition-all flex items-center gap-1.5 active:scale-95"
+                  type="button"
+                >
+                  <Trash2 size={14} />
+                  Delete Return
+                </button>
+              ) : (
+                <div />
+              )}
+              <button
                 onClick={() => setIsPreviewOpen(false)}
                 className="px-8 py-2.5 bg-[#1BAFAF] text-white rounded-xl text-[13px] font-bold hover:bg-[#158e8e] transition-all"
+                type="button"
               >
                 Close Preview
               </button>
@@ -664,11 +918,11 @@ export default function Returns() {
       {/* Return Form Modal */}
       {isReturnFormOpen && (
         <div className="fixed inset-0 z-[150] flex items-center justify-center p-4 animate-in fade-in duration-200">
-          <div 
+          <div
             className="absolute inset-0 bg-black/40 backdrop-blur-sm"
             onClick={() => setIsReturnFormOpen(false)}
           />
-          <form 
+          <form
             onSubmit={handleReturnSubmit}
             className="relative w-full max-w-2xl bg-white rounded-[32px] shadow-2xl overflow-hidden max-h-[85vh] flex flex-col animate-in zoom-in-95 duration-200"
           >
@@ -678,7 +932,7 @@ export default function Returns() {
                 <h2 className="text-[20px] font-bold text-gray-900 tracking-tight">Create Return</h2>
                 <p className="text-[12px] text-gray-400 font-medium">Process returned items from customer</p>
               </div>
-              <button 
+              <button
                 type="button"
                 onClick={() => setIsReturnFormOpen(false)}
                 className="w-10 h-10 flex items-center justify-center rounded-2xl text-gray-400 hover:bg-gray-100 hover:text-gray-900 transition-all"
@@ -689,18 +943,18 @@ export default function Returns() {
 
             {/* Content Body */}
             <div className="flex-1 overflow-y-auto p-8 space-y-6 custom-scrollbar text-[14px]">
-              
+
               {/* Row 1: Return ID & Return Date */}
               <div className="grid grid-cols-2 gap-6">
                 <div className="space-y-2 relative">
                   <label className="text-[11px] font-bold text-gray-400 uppercase tracking-widest ml-1 flex items-center gap-2">
-                    Return ID * 
+                    Return ID *
                     <Info size={12} className="text-gray-300" />
                   </label>
                   <div className="relative group">
-                    <Settings 
+                    <Settings
                       onClick={() => setIsSettingsOpen(!isSettingsOpen)}
-                      className="absolute right-4 top-1/2 -translate-y-1/2 w-4 h-4 text-[#1BAFAF] cursor-pointer hover:rotate-90 transition-transform z-10" 
+                      className="absolute right-4 top-1/2 -translate-y-1/2 w-4 h-4 text-[#1BAFAF] cursor-pointer hover:rotate-90 transition-transform z-10"
                     />
                     <input
                       type="text"
@@ -719,17 +973,17 @@ export default function Returns() {
                         <p className="text-[12px] text-gray-500 font-medium leading-relaxed">
                           Your return numbers are set on auto-generate mode to save your time. Are you sure about changing this setting?
                         </p>
-                        
+
                         <div className="space-y-4 text-left">
                           {/* Auto Generate Option */}
                           <label className="flex items-start gap-3 cursor-pointer group">
                             <div className="pt-0.5">
-                              <input 
-                                type="radio" 
+                              <input
+                                type="radio"
                                 name="return_mode"
                                 checked={returnSettings.mode === 'auto'}
                                 onChange={() => setReturnSettings({ ...returnSettings, mode: 'auto' })}
-                                className="hidden" 
+                                className="hidden"
                               />
                               <div className={`w-5 h-5 rounded-full border-2 flex items-center justify-center transition-all ${returnSettings.mode === 'auto' ? 'border-[#1BAFAF]' : 'border-gray-200'}`}>
                                 {returnSettings.mode === 'auto' && <div className="w-2.5 h-2.5 rounded-full bg-[#1BAFAF]" />}
@@ -740,25 +994,25 @@ export default function Returns() {
                                 <span className="text-[13px] font-bold text-gray-700">Continue auto-generating return numbers</span>
                                 <Info size={12} className="text-gray-300" />
                               </div>
-                              
+
                               {returnSettings.mode === 'auto' && (
                                 <div className="space-y-3 animate-in fade-in duration-200">
                                   <div className="space-y-1">
                                     <span className="text-[10px] font-bold text-gray-400 uppercase">Prefix</span>
-                                    <input 
-                                      type="text" 
+                                    <input
+                                      type="text"
                                       value={returnSettings.prefix}
                                       onChange={(e) => setReturnSettings({ ...returnSettings, prefix: e.target.value })}
-                                      className="w-full bg-gray-50 border border-gray-100 rounded-xl px-3 py-2 text-[13px] font-medium focus:bg-white outline-none" 
+                                      className="w-full bg-gray-50 border border-gray-100 rounded-xl px-3 py-2 text-[13px] font-medium focus:bg-white outline-none"
                                     />
                                   </div>
                                   <div className="space-y-1">
                                     <span className="text-[10px] font-bold text-gray-400 uppercase">Next Number</span>
-                                    <input 
-                                      type="text" 
+                                    <input
+                                      type="text"
                                       value={returnSettings.nextNumber}
                                       onChange={(e) => setReturnSettings({ ...returnSettings, nextNumber: e.target.value })}
-                                      className="w-full bg-gray-50 border border-gray-100 rounded-xl px-3 py-2 text-[13px] font-medium focus:bg-white outline-none" 
+                                      className="w-full bg-gray-50 border border-gray-100 rounded-xl px-3 py-2 text-[13px] font-medium focus:bg-white outline-none"
                                     />
                                   </div>
                                 </div>
@@ -768,12 +1022,12 @@ export default function Returns() {
 
                           {/* Manual Option */}
                           <label className="flex items-center gap-3 cursor-pointer">
-                            <input 
-                              type="radio" 
+                            <input
+                              type="radio"
                               name="return_mode"
                               checked={returnSettings.mode === 'manual'}
                               onChange={() => setReturnSettings({ ...returnSettings, mode: 'manual' })}
-                              className="hidden" 
+                              className="hidden"
                             />
                             <div className={`w-5 h-5 rounded-full border-2 flex items-center justify-center transition-all ${returnSettings.mode === 'manual' ? 'border-[#1BAFAF]' : 'border-gray-200'}`}>
                               {returnSettings.mode === 'manual' && <div className="w-2.5 h-2.5 rounded-full bg-[#1BAFAF]" />}
@@ -783,14 +1037,14 @@ export default function Returns() {
                         </div>
 
                         <div className="flex gap-2 pt-2">
-                          <button 
+                          <button
                             type="button"
                             onClick={handleSettingsSave}
                             className="flex-1 bg-[#1BAFAF] text-white py-2.5 rounded-xl text-[12px] font-bold hover:bg-[#158e8e] transition-all"
                           >
                             Save
                           </button>
-                          <button 
+                          <button
                             type="button"
                             onClick={() => setIsSettingsOpen(false)}
                             className="flex-1 bg-gray-50 text-gray-500 py-2.5 rounded-xl text-[12px] font-bold hover:bg-gray-100 transition-all"
@@ -804,9 +1058,9 @@ export default function Returns() {
                 </div>
                 <div className="space-y-2">
                   <label className="text-[11px] font-bold text-gray-400 uppercase tracking-widest ml-1">Return Date</label>
-                  <input 
-                    type="date" 
-                    value={returnFormData.returnDate} 
+                  <input
+                    type="date"
+                    value={returnFormData.returnDate}
                     onChange={(e) => setReturnFormData(prev => ({ ...prev, returnDate: e.target.value }))}
                     className="w-full bg-gray-50 border border-transparent py-3.5 px-4 text-[14px] font-bold text-gray-700 rounded-2xl outline-none focus:bg-white focus:border-[#1BAFAF]/20 transition-all"
                   />
@@ -817,19 +1071,19 @@ export default function Returns() {
               <div className="grid grid-cols-2 gap-6">
                 <div className="space-y-2">
                   <label className="text-[11px] font-bold text-gray-400 uppercase tracking-widest ml-1">Customer Name</label>
-                  <input 
-                    type="text" 
-                    value={returnFormData.customerName} 
-                    readOnly 
+                  <input
+                    type="text"
+                    value={returnFormData.customerName}
+                    readOnly
                     className="w-full bg-gray-50 border border-transparent py-3.5 px-4 text-[14px] font-bold text-gray-900 rounded-2xl outline-none"
                   />
                 </div>
                 <div className="space-y-2">
                   <label className="text-[11px] font-bold text-gray-400 uppercase tracking-widest ml-1">Customer Mobile No</label>
-                  <input 
-                    type="text" 
-                    value={returnFormData.customerMobile} 
-                    readOnly 
+                  <input
+                    type="text"
+                    value={returnFormData.customerMobile}
+                    readOnly
                     className="w-full bg-gray-50 border border-transparent py-3.5 px-4 text-[14px] font-bold text-gray-700 rounded-2xl outline-none"
                   />
                 </div>
@@ -859,7 +1113,7 @@ export default function Returns() {
                           </td>
                           <td className="px-6 py-4 text-center text-gray-400 font-bold">{item.quantity || 0}</td>
                           <td className="px-6 py-4">
-                            <input 
+                            <input
                               type="text"
                               inputMode="numeric"
                               pattern="[0-9]*"
@@ -869,7 +1123,7 @@ export default function Returns() {
                             />
                           </td>
                           <td className="px-6 py-4">
-                            <input 
+                            <input
                               type="text"
                               placeholder="Reason for return"
                               value={item.reason}
@@ -903,14 +1157,14 @@ export default function Returns() {
 
             {/* Footer */}
             <div className="px-8 py-5 border-t border-gray-100 flex justify-end gap-3 bg-gray-50 flex-shrink-0">
-              <button 
+              <button
                 type="button"
                 onClick={() => setIsReturnFormOpen(false)}
                 className="px-6 py-2.5 bg-white border border-gray-200 text-gray-600 rounded-xl text-[13px] font-bold hover:bg-gray-50 hover:text-gray-900 transition-all active:scale-95"
               >
                 Cancel
               </button>
-              <button 
+              <button
                 type="submit"
                 disabled={loading}
                 className="px-8 py-2.5 bg-[#1BAFAF] text-white rounded-xl text-[13px] font-bold hover:bg-[#158e8e] transition-all active:scale-95 flex items-center gap-2 shadow-lg shadow-[#1BAFAF]/20"
@@ -921,6 +1175,15 @@ export default function Returns() {
           </form>
         </div>
       )}
+      <DeleteConfirmationModal
+        isOpen={deleteConfirmOpen}
+        onClose={() => setDeleteConfirmOpen(false)}
+        onConfirm={deleteConfirmData.onConfirm}
+        title={deleteConfirmData.title}
+        message={deleteConfirmData.message}
+        itemName={deleteConfirmData.itemName}
+        loading={deleteLoading}
+      />
     </div>
   );
 }

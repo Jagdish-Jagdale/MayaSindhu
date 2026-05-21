@@ -50,6 +50,9 @@ export default function Banner() {
   const [isDeleting, setIsDeleting] = useState(false);
   const [bannerToDelete, setBannerToDelete] = useState(null);
 
+  // Image preview state
+  const [selectedBannerImage, setSelectedBannerImage] = useState(null);
+
   // Load Banners
   useEffect(() => {
     const q = query(collection(db, 'banners'), orderBy('order', 'asc'));
@@ -330,63 +333,72 @@ export default function Banner() {
                   <tr className="bg-gray-50/50 border-b border-gray-100">
                     <th className="px-6 py-2 text-[13px] font-bold text-[#1BAFAF] uppercase tracking-wider w-20 whitespace-nowrap">Sr No</th>
                     <th className="px-4 py-2 text-[13px] font-bold text-[#1BAFAF] uppercase tracking-wider w-48">Banner Image</th>
-                    <th className="px-4 py-2 text-[13px] font-bold text-[#1BAFAF] uppercase tracking-wider w-32 whitespace-nowrap">Banner Position</th>
+                    <th className="px-4 py-2 text-[13px] font-bold text-[#1BAFAF] uppercase tracking-wider w-32 whitespace-nowrap text-center">Banner Position</th>
                     <th className="px-4 py-2 text-[13px] font-bold text-[#1BAFAF] uppercase tracking-wider w-28 whitespace-nowrap">Status</th>
                     <th className="px-6 py-2 text-[13px] font-bold text-[#1BAFAF] uppercase tracking-wider text-right w-24 whitespace-nowrap">Actions</th>
                   </tr>
                 </thead>
                 <tbody className="divide-y divide-gray-50/50">
                   {banners.slice((currentPage - 1) * rowsPerPage, currentPage * rowsPerPage).map((banner, idx) => (
-                  <tr key={banner.id} className="hover:bg-gray-50/50 transition-colors group">
-                    <td className="px-6 py-2 text-[14px] font-medium text-gray-400">
-                      {(idx + 1).toString().padStart(2, '0')}
-                    </td>
-                    <td className="px-4 py-2">
-                      <div className="relative w-32 aspect-[21/9] rounded-xl overflow-hidden bg-gray-100 border border-gray-100">
-                        <img src={banner.imageUrl} alt="Banner" className="w-full h-full object-cover" />
-                        <div className="absolute inset-0 bg-black/20 opacity-0 group-hover:opacity-100 transition-all flex items-center justify-center">
-                          <ImageIcon size={16} className="text-white opacity-60" />
+                    <tr key={banner.id} className="hover:bg-gray-50/50 transition-colors group">
+                      <td className="px-6 py-2 text-[14px] font-medium text-gray-400">
+                        {(idx + 1).toString().padStart(2, '0')}
+                      </td>
+                      <td className="px-4 py-2">
+                        <div
+                          onClick={() => setSelectedBannerImage(banner.imageUrl)}
+                          className="relative w-32 aspect-[21/9] rounded-xl overflow-hidden bg-gray-100 border border-gray-100 cursor-pointer hover:scale-105 transition-transform duration-300 shadow-sm hover:shadow"
+                        >
+                          <img src={banner.imageUrl} alt="Banner" className="w-full h-full object-cover" />
+                          <div className="absolute inset-0 bg-black/20 opacity-0 group-hover:opacity-100 transition-all flex items-center justify-center">
+                            <ImageIcon size={16} className="text-white opacity-60" />
+                          </div>
                         </div>
-                      </div>
-                    </td>
-                    <td className="px-4 py-2">
-                      <CustomSelect
-                        value={banner.order}
-                        onChange={(val) => updateBannerOrder(banner.id, val)}
-                        options={banners.map((_, i) => ({ value: i + 1, label: (i + 1).toString() }))}
-                        className="w-16"
-                      />
-                    </td>
-                    <td className="px-4 py-2">
-                      <CustomSelect
-                        value={banner.isActive !== false}
-                        onChange={(val) => updateBannerStatus(banner.id, val)}
-                        options={[
-                          { value: true, label: 'ACTIVE' },
-                          { value: false, label: 'DEACTIVE' }
-                        ]}
-                        className="w-28"
-                      />
-                    </td>
-                    <td className="px-6 py-2 text-right">
-                      <div className="flex items-center justify-end gap-2">
-                        <button
-                          onClick={() => { setEditingBannerId(banner.id); fileInputRef.current?.click(); }}
-                          className="w-8 h-8 flex items-center justify-center text-emerald-600 bg-emerald-50 hover:bg-emerald-100 rounded-lg transition-all active:scale-95"
-                          title="Change Image"
-                        >
-                          <Pencil size={14} strokeWidth={2.5} />
-                        </button>
-                        <button
-                          onClick={() => removeBanner(banner)}
-                          className="w-8 h-8 flex items-center justify-center text-red-600 bg-red-50 hover:bg-red-100 rounded-lg transition-all active:scale-95"
-                          title="Delete Banner"
-                        >
-                          <Trash2 size={14} strokeWidth={2.5} />
-                        </button>
-                      </div>
-                    </td>
-                  </tr>
+                      </td>
+                      <td className="px-4 py-2 text-center">
+                        <div className="flex justify-center">
+                          <CustomSelect
+                            value={banner.order}
+                            onChange={(val) => updateBannerOrder(banner.id, val)}
+                            options={banners.map((_, i) => ({ value: i + 1, label: (i + 1).toString() }))}
+                            className="w-16"
+                            minimal={true}
+                            align="center"
+                          />
+                        </div>
+                      </td>
+                      <td className="px-4 py-2">
+                        <CustomSelect
+                          value={banner.isActive !== false}
+                          onChange={(val) => updateBannerStatus(banner.id, val)}
+                          options={[
+                            { value: true, label: 'ACTIVE' },
+                            { value: false, label: 'DEACTIVE' }
+                          ]}
+                          className="w-28"
+                          minimal={true}
+                          align="left"
+                        />
+                      </td>
+                      <td className="px-6 py-2 text-right">
+                        <div className="flex items-center justify-end gap-2">
+                          <button
+                            onClick={() => { setEditingBannerId(banner.id); fileInputRef.current?.click(); }}
+                            className="w-8 h-8 flex items-center justify-center text-emerald-600 bg-emerald-50 hover:bg-emerald-100 rounded-lg transition-all active:scale-95"
+                            title="Change Image"
+                          >
+                            <Pencil size={14} strokeWidth={2.5} />
+                          </button>
+                          <button
+                            onClick={() => removeBanner(banner)}
+                            className="w-8 h-8 flex items-center justify-center text-red-600 bg-red-50 hover:bg-red-100 rounded-lg transition-all active:scale-95"
+                            title="Delete Banner"
+                          >
+                            <Trash2 size={14} strokeWidth={2.5} />
+                          </button>
+                        </div>
+                      </td>
+                    </tr>
                   ))}
                 </tbody>
               </table>
@@ -425,6 +437,31 @@ export default function Banner() {
         itemName="this banner slide"
         loading={isDeleting}
       />
+
+      {/* Full Image Preview Modal */}
+      {selectedBannerImage && (
+        <div
+          className="fixed inset-0 z-[300] flex items-center justify-center p-4 bg-black/70 backdrop-blur-sm animate-in fade-in duration-300"
+          onClick={() => setSelectedBannerImage(null)}
+        >
+          <div
+            className="relative max-w-7xl w-full max-h-[90vh] bg-white p-2 rounded-2xl shadow-2xl animate-in zoom-in-95 duration-300"
+            onClick={(e) => e.stopPropagation()}
+          >
+            <button
+              onClick={() => setSelectedBannerImage(null)}
+              className="absolute -top-3 -right-3 w-8 h-8 bg-white hover:bg-gray-100 text-gray-800 hover:text-gray-900 rounded-full flex items-center justify-center shadow-lg transition-all active:scale-90 z-[310] border border-gray-100"
+            >
+              <X size={16} strokeWidth={2.5} />
+            </button>
+            <img
+              src={selectedBannerImage}
+              alt="Banner Full Size"
+              className="w-full max-h-[85vh] object-contain rounded-xl"
+            />
+          </div>
+        </div>
+      )}
     </div>
   );
 }

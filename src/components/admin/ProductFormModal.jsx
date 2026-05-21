@@ -809,7 +809,7 @@ export default function ProductFormModal({ isOpen, onClose, product = null, init
               </>
             ) : (
               <>
-                {product ? 'Edit Product' : 'Add Product'}
+                {product ? 'Update' : 'Add Product'}
               </>
             )}
           </button>

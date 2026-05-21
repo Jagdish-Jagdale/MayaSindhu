@@ -12,6 +12,7 @@ import {
   Loader2,
   Package,
   AlertCircle,
+  AlertTriangle,
   Image,
   Share2,
   Minus,
@@ -22,7 +23,8 @@ import {
   Info,
   History,
   ChevronLeft,
-  ChevronRight
+  ChevronRight,
+  Check
 } from 'lucide-react';
 import { useAdminUI } from '../../context/AdminUIContext';
 import { formatDate } from '../../utils/dateHelper';
@@ -63,10 +65,57 @@ export default function ProductManagement() {
   const [currentPage, setCurrentPage] = useState(1);
   const [direction, setDirection] = useState(0);
   const [sortConfig, setSortConfig] = useState({ key: 'updatedAt', dir: 'desc' });
+  const [stockAlertThreshold, setStockAlertThreshold] = useState(() => {
+    const saved = localStorage.getItem('stockAlertThreshold');
+    const parsed = saved !== null ? parseInt(saved, 10) : 5;
+    return isNaN(parsed) ? 5 : parsed;
+  });
+  const [stockAlertThresholdInput, setStockAlertThresholdInput] = useState(() => {
+    const saved = localStorage.getItem('stockAlertThreshold');
+    const parsed = saved !== null ? parseInt(saved, 10) : 5;
+    return isNaN(parsed) ? 5 : parsed;
+  });
+  const [stockFilter, setStockFilter] = useState('all');
+
+  // Real-time listener for stockAlertThreshold
+  useEffect(() => {
+    const unsubscribe = onSnapshot(doc(db, 'settings', 'inventory'), (docSnap) => {
+      if (docSnap.exists()) {
+        const val = docSnap.data().stockAlertThreshold;
+        const parsed = parseInt(val, 10);
+        if (!isNaN(parsed)) {
+          setStockAlertThreshold(parsed);
+          setStockAlertThresholdInput(parsed);
+          localStorage.setItem('stockAlertThreshold', parsed);
+        }
+      }
+    }, (error) => {
+      console.error("Error listening to settings:", error);
+    });
+    return () => unsubscribe();
+  }, []);
+
+  const saveStockAlert = async () => {
+    const parsed = parseInt(stockAlertThresholdInput, 10);
+    const val = isNaN(parsed) ? 5 : parsed;
+    try {
+      await setDoc(doc(db, 'settings', 'inventory'), {
+        stockAlertThreshold: val,
+        updatedAt: serverTimestamp()
+      }, { merge: true });
+      localStorage.setItem('stockAlertThreshold', val);
+      setStockAlertThreshold(val);
+      setStockAlertThresholdInput(val);
+      toast.success(`Stock alert threshold saved: ${val}`);
+    } catch (error) {
+      console.error("Error saving stock alert threshold:", error);
+      toast.error("Failed to save stock alert threshold");
+    }
+  };
 
   useEffect(() => {
     setCurrentPage(1);
-  }, [searchTerm, activeFilter, rowsPerPage]);
+  }, [searchTerm, activeFilter, rowsPerPage, stockFilter]);
   
   const [isModalOpen, setIsModalOpen] = useState(false);
   const [editingProduct, setEditingProduct] = useState(null);
@@ -273,7 +322,23 @@ export default function ProductManagement() {
         (p.name || '').toLowerCase().includes(searchTerm.toLowerCase()) ||
         categoryName.toLowerCase().includes(searchTerm.toLowerCase());
       const matchesFilter = activeFilter === 'All' || categoryName === activeFilter;
-      return matchesSearch && matchesFilter;
+      let matchesStockFilter = true;
+      const stockNum = Number(p.stock || 0);
+      const thresholdNum = Number(stockAlertThreshold);
+      
+      if (stockFilter === 'in_stock') {
+        matchesStockFilter = stockNum >= thresholdNum;
+      } else if (stockFilter === 'low_stock') {
+        matchesStockFilter = stockNum > 0 && stockNum < thresholdNum;
+      } else if (stockFilter === 'out_of_stock') {
+        const typeStr = (p.productType || '').trim().toLowerCase();
+        matchesStockFilter = stockNum <= 0 && typeStr !== 'unique';
+      } else if (stockFilter === 'sold_out') {
+        const typeStr = (p.productType || '').trim().toLowerCase();
+        matchesStockFilter = stockNum <= 0 && typeStr === 'unique';
+      }
+      
+      return matchesSearch && matchesFilter && matchesStockFilter;
     });
 
     if (sortConfig.key) {
@@ -317,6 +382,19 @@ export default function ProductManagement() {
 
   return (
     <div className={`mx-auto space-y-6 animate-in fade-in slide-in-from-bottom-2 duration-500 transition-all duration-300 ${isCollapsed ? 'max-w-[1600px]' : 'max-w-[1280px]'}`} style={{ fontFamily: "'Inter', -apple-system, sans-serif" }}>
+      <style>{`
+        /* Chrome, Safari, Edge, Opera */
+        .no-spinner::-webkit-outer-spin-button,
+        .no-spinner::-webkit-inner-spin-button {
+          -webkit-appearance: none;
+          margin: 0;
+        }
+
+        /* Firefox */
+        .no-spinner {
+          -moz-appearance: textfield;
+        }
+      `}</style>
 
       {/* Header Section */}
       <div className="space-y-2 py-2">
@@ -346,15 +424,68 @@ export default function ProductManagement() {
 
       {/* Filter Bar */}
       <div className="flex flex-col sm:flex-row items-center justify-between gap-4 bg-white p-1.5 rounded-2xl border border-gray-100 shadow-sm transition-all hover:shadow-md">
-        <div className="relative group w-full sm:max-w-[480px]">
-          <Search className="absolute left-3.5 top-1/2 -translate-y-1/2 w-4 h-4 text-gray-300 group-focus-within:text-[#1BAFAF] transition-colors" />
-          <input
-            type="text"
-            placeholder="Search by name or category..."
-            value={searchTerm}
-            onChange={(e) => setSearchTerm(e.target.value)}
-            className="w-full bg-gray-50 border-none py-2 pl-10 pr-4 text-[13px] rounded-xl outline-none focus:bg-white transition-all font-medium"
-          />
+        <div className="flex flex-col sm:flex-row items-center gap-3 w-full sm:flex-1">
+          <div className="relative group w-full sm:flex-1">
+            <Search className="absolute left-3.5 top-1/2 -translate-y-1/2 w-4 h-4 text-gray-300 group-focus-within:text-[#1BAFAF] transition-colors" />
+            <input
+              type="text"
+              placeholder="Search by name or category..."
+              value={searchTerm}
+              onChange={(e) => setSearchTerm(e.target.value)}
+              className="w-full bg-gray-50 border-none py-2 pl-10 pr-4 text-[13px] rounded-xl outline-none focus:bg-white transition-all font-medium"
+            />
+          </div>
+
+          {/* Stock Alert Settings */}
+          <div className="flex items-center gap-2 bg-gray-50 border border-gray-100 hover:border-gray-200 rounded-xl px-3 py-1.5 transition-all shrink-0">
+            <span className="text-[12px] font-semibold text-gray-500 whitespace-nowrap">Stock Alert Below:</span>
+            <input
+              type="number"
+              min="0"
+              value={stockAlertThresholdInput}
+              onChange={(e) => {
+                const val = e.target.value === '' ? '' : Math.max(0, parseInt(e.target.value, 10) || 0);
+                setStockAlertThresholdInput(val);
+              }}
+              onBlur={() => {
+                if (stockAlertThresholdInput === '' || isNaN(parseInt(stockAlertThresholdInput, 10))) {
+                  setStockAlertThresholdInput(stockAlertThreshold);
+                }
+              }}
+              onKeyDown={(e) => {
+                if (e.key === 'Enter') {
+                  saveStockAlert();
+                }
+              }}
+              className="w-8 bg-transparent border-none text-[12px] font-bold text-gray-700 outline-none text-center p-0 focus:ring-0 focus:outline-none no-spinner"
+            />
+            {stockAlertThresholdInput !== stockAlertThreshold && (
+              <button
+                onClick={saveStockAlert}
+                title="Save Stock Alert"
+                className="w-5 h-5 flex items-center justify-center bg-[#1BAFAF] hover:bg-[#17a0a0] text-white rounded-md transition-all active:scale-90"
+              >
+                <Check size={12} strokeWidth={3} />
+              </button>
+            )}
+          </div>
+          {/* Stock Filter Dropdown */}
+          <div className="flex items-center bg-gray-50 border border-gray-100 hover:border-gray-200 rounded-xl px-1.5 transition-all shrink-0">
+            <CustomSelect
+              value={stockFilter}
+              onChange={setStockFilter}
+              options={[
+                { value: 'all', label: 'All Stock', prefixLabel: 'All Stock' },
+                { value: 'in_stock', label: 'In Stock', prefixLabel: 'In Stock' },
+                { value: 'low_stock', label: 'Low Stock', prefixLabel: 'Low Stock' },
+                { value: 'out_of_stock', label: 'Out Of Stock', prefixLabel: 'Out Of Stock' },
+                { value: 'sold_out', label: 'Sold Out', prefixLabel: 'Sold Out' }
+              ]}
+              className="w-36"
+              minimal={true}
+              valuePrefix="Stock:"
+            />
+          </div>
         </div>
         <div className="flex items-center gap-3 pr-2">
           <div className="flex items-center px-3 border-r border-gray-100">
@@ -434,8 +565,8 @@ export default function ProductManagement() {
                     Price <SortIcon colKey="price" />
                   </button>
                 </th>
-                <th className="px-6 py-4 text-left text-[14px] font-bold text-[#1BAFAF]">
-                  <button onClick={() => handleSort('stock')} className="flex items-center gap-1 hover:opacity-75 transition-opacity">
+                <th className="px-6 py-4 text-center text-[14px] font-bold text-[#1BAFAF]">
+                  <button onClick={() => handleSort('stock')} className="flex items-center justify-center gap-1 hover:opacity-75 transition-opacity mx-auto">
                     Stock <SortIcon colKey="stock" />
                   </button>
                 </th>
@@ -456,7 +587,7 @@ export default function ProductManagement() {
               </tr>
             </thead>
             <tbody className="divide-y divide-gray-50/50">
-              <AnimatePresence mode="wait" custom={direction}>
+              <AnimatePresence custom={direction}>
                 {filteredProducts.length > 0 ? (
                   filteredProducts.slice((currentPage - 1) * rowsPerPage, currentPage * rowsPerPage).map((product, idx) => (
                     <motion.tr 
@@ -508,17 +639,21 @@ export default function ProductManagement() {
                         </div>
                       )}
                     </td>
-                    <td className="px-6 py-4 whitespace-nowrap">
-                      <div className="flex items-center gap-2">
-                        <span className={`text-[14px] font-medium ${
-                          product.productType === 'Unique' 
-                            ? 'text-gray-500' 
-                            : (Number(product.stock) < 5 ? 'text-red-500 font-bold' : 'text-gray-500')
-                        }`}>
-                          {product.stock}
-                        </span>
-                        {product.productType !== 'Unique' && Number(product.stock) < 5 && (
-                          <AlertCircle size={12} className="text-red-500" />
+                    <td className="px-6 py-4 whitespace-nowrap text-center">
+                      <div className="flex items-center justify-center gap-2">
+                        {Number(product.stock) <= 0 ? (
+                          <span className="text-[12px] font-bold text-red-600 bg-red-50 border border-red-100 px-2.5 py-0.5 rounded-full">
+                            {(product.productType || '').toLowerCase() === 'unique' ? 'Sold Out' : 'Out Of Stock'}
+                          </span>
+                        ) : Number(product.stock) < Number(stockAlertThreshold) ? (
+                          <div className="flex items-center justify-center gap-1 text-[14px] font-bold text-amber-600">
+                            <span>{product.stock}</span>
+                            <AlertTriangle size={14} className="text-amber-600 fill-amber-400 animate-subtle-bounce" />
+                          </div>
+                        ) : (
+                          <span className="text-[14px] font-medium text-gray-500">
+                            {product.stock}
+                          </span>
                         )}
                       </div>
                     </td>
@@ -640,13 +775,14 @@ export default function ProductManagement() {
         product={selectedProduct}
         categoryMap={categoryMap}
         hierarchy={hierarchy}
+        stockAlertThreshold={stockAlertThreshold}
       />
     </div>
   );
 }
 
 // Product View Modal Component
-function ProductViewModal({ isOpen, onClose, product, categoryMap, hierarchy }) {
+function ProductViewModal({ isOpen, onClose, product, categoryMap, hierarchy, stockAlertThreshold }) {
   if (!product) return null;
 
   const [activeImg, setActiveImg] = useState(product.images?.[0] || '');
@@ -681,13 +817,7 @@ function ProductViewModal({ isOpen, onClose, product, categoryMap, hierarchy }) 
     ? Math.round(((actualPrice - discountedPrice) / actualPrice) * 100) 
     : 0;
 
-  const stockStatus = product.stock < 5 ? {
-    label: `Low Stock (${product.stock} Units)`,
-    class: 'text-red-500 bg-red-50 border-red-100'
-  } : {
-    label: `In Stock (${product.stock} Units)`,
-    class: 'text-emerald-500 bg-emerald-50 border-emerald-100'
-  };
+
 
   return (
     <AnimatePresence>
@@ -772,9 +902,20 @@ function ProductViewModal({ isOpen, onClose, product, categoryMap, hierarchy }) 
                     </div>
 
                     <div className="flex items-center">
-                      <div className={`px-3 py-1 rounded-lg border text-[11px] font-black uppercase tracking-widest ${stockStatus.class}`}>
-                        {stockStatus.label}
-                      </div>
+                      {Number(product.stock) <= 0 ? (
+                        <div className="px-3 py-1 rounded-lg border text-[11px] font-black uppercase tracking-widest text-red-600 bg-red-50 border-red-100">
+                          {(product.productType || '').toLowerCase() === 'unique' ? 'Sold Out' : 'Out Of Stock'}
+                        </div>
+                      ) : Number(product.stock) < Number(stockAlertThreshold) ? (
+                        <div className="flex items-center gap-1.5 px-3 py-1 rounded-lg border text-[11px] font-black uppercase tracking-widest text-amber-700 bg-amber-50 border-amber-200">
+                          <span>{product.stock} Units</span>
+                          <AlertTriangle size={12} className="text-amber-600 fill-amber-400 animate-subtle-bounce" />
+                        </div>
+                      ) : (
+                        <div className="px-3 py-1 rounded-lg border text-[11px] font-black uppercase tracking-widest text-emerald-500 bg-emerald-50 border-emerald-100">
+                          In Stock ({product.stock} Units)
+                        </div>
+                      )}
                     </div>
                   </div>
 

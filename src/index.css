@@ -107,3 +107,17 @@
     scrollbar-color: #e2e8f0 transparent;
   }
 }
+
+@keyframes subtle-bounce {
+  0%, 100% {
+    transform: translateY(0);
+  }
+  50% {
+    transform: translateY(-3px);
+  }
+}
+
+.animate-subtle-bounce {
+  display: inline-block;
+  animation: subtle-bounce 2s infinite ease-in-out;
+}

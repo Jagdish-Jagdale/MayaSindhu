@@ -1,7 +1,7 @@
 import React, { useState, useEffect, useRef } from 'react';
 import { ChevronDown } from 'lucide-react';
 
-const CustomSelect = ({ value, onChange, options, label, icon: Icon, className = "", minimal = false, valuePrefix = "" }) => {
+const CustomSelect = ({ value, onChange, options, label, icon: Icon, className = "", minimal = false, valuePrefix = "", align = "between" }) => {
   const [isOpen, setIsOpen] = useState(false);
   const containerRef = useRef(null);
 
@@ -21,12 +21,17 @@ const CustomSelect = ({ value, onChange, options, label, icon: Icon, className =
   const selectedOption = options.find(opt => getOptionValue(opt) == value);
   const displayValue = selectedOption ? getOptionLabel(selectedOption) : (value || 'Select Option');
   
+  const getPrefixLabel = (opt) => {
+    if (!opt || typeof opt !== 'object') return value;
+    return opt.prefixLabel ?? getOptionValue(opt);
+  };
+
   // For the button, if valuePrefix exists, we want to show "Prefix: Value"
   // If it's a "rows" selector, we usually want "Rows: 10" instead of "Rows: 10 rows"
   const buttonDisplay = valuePrefix 
     ? <div className="flex items-center gap-1.5">
         <span className="text-gray-500">{valuePrefix}</span>
-        <span className="text-[#1BAFAF]">{getOptionValue(selectedOption) || value}</span>
+        <span className="text-[#1BAFAF]">{getPrefixLabel(selectedOption)}</span>
       </div>
     : displayValue;
 
@@ -38,7 +43,10 @@ const CustomSelect = ({ value, onChange, options, label, icon: Icon, className =
         <button
           type="button"
           onClick={() => setIsOpen(!isOpen)}
-          className={`w-full transition-all flex items-center justify-between text-left outline-none ${
+          className={`w-full transition-all flex items-center ${
+            align === 'center' ? 'justify-center gap-1.5 text-center' :
+            align === 'left' ? 'justify-start gap-1.5 text-left' : 'justify-between text-left'
+          } outline-none ${
             minimal 
               ? `bg-transparent py-1.5 px-2 text-[12px] font-semibold text-gray-500 hover:text-gray-900` 
               : `bg-gray-50 border-2 border-transparent py-2.5 ${Icon ? 'pl-8' : 'px-4'} pr-5 text-[13px] font-bold text-gray-700 rounded-xl shadow-sm hover:bg-gray-100/50 focus:bg-white focus:border-[#1BAFAF]/20`

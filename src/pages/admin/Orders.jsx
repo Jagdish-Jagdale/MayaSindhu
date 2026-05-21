@@ -543,7 +543,7 @@ export default function Orders() {
               </tr>
             </thead>
             <tbody className="divide-y divide-gray-50/50">
-              <AnimatePresence mode="wait" custom={direction}>
+              <AnimatePresence custom={direction}>
                 {sortedOrders.length > 0 ? (
                   sortedOrders.slice((currentPage - 1) * rowsPerPage, currentPage * rowsPerPage).map((order, index) => {
                     const config = STATUS_CONFIG[order.status] || STATUS_CONFIG['Pending'];

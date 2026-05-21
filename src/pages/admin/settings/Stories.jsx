@@ -92,6 +92,40 @@ export default function Stories() {
     };
   }, []);
 
+  // Handle click outside search dropdown
+  useEffect(() => {
+    if (!activeProductSearchId) return;
+
+    const handleOutsideClick = (e) => {
+      const activeInput = document.querySelector(`[data-search-input="${activeProductSearchId}"]`);
+      const dropdowns = document.querySelectorAll('.search-dropdown');
+      
+      let clickedInside = false;
+      if (activeInput && activeInput.contains(e.target)) {
+        clickedInside = true;
+      }
+      dropdowns.forEach(dropdown => {
+        if (dropdown.contains(e.target)) {
+          clickedInside = true;
+        }
+      });
+
+      if (!clickedInside) {
+        setActiveProductSearchId(null);
+        setProductSearch('');
+      }
+    };
+
+    const timeoutId = setTimeout(() => {
+      document.addEventListener('click', handleOutsideClick);
+    }, 0);
+
+    return () => {
+      clearTimeout(timeoutId);
+      document.removeEventListener('click', handleOutsideClick);
+    };
+  }, [activeProductSearchId]);
+
   const handleFileSelect = (e, type) => {
     const file = e.target.files[0];
     if (!file) return;
@@ -364,15 +398,28 @@ export default function Stories() {
                     WebkitBackfaceVisibility: 'hidden',
                     zIndex: flippedLooks.has(look.id) ? 0 : 1 
                   }}
+                  onMouseEnter={(e) => {
+                    const video = e.currentTarget.querySelector('video');
+                    if (video) {
+                      video.play().catch(err => console.log("Video play failed:", err));
+                    }
+                  }}
+                  onMouseLeave={(e) => {
+                    const video = e.currentTarget.querySelector('video');
+                    if (video) {
+                      video.pause();
+                      video.currentTime = 0;
+                    }
+                  }}
                 >
                   {look.url ? (
                     <video 
                       src={look.url} 
                       className="w-full h-full object-cover" 
                       muted 
-                      autoPlay 
                       loop 
                       playsInline
+                      preload="auto"
                     />
                   ) : (
                     <div className="w-full h-full flex flex-col items-center justify-center bg-gray-50 text-gray-300">
@@ -425,17 +472,16 @@ export default function Stories() {
                   </div>
 
                   {/* Integrated Product Overlay (If Linked) */}
-                  {look.productId ? (
+                  {look.productId && allProducts.find(prod => prod.id === look.productId) ? (
                     <div className="absolute bottom-2 left-2 right-2 bg-white/95 backdrop-blur-md rounded-2xl p-2.5 flex items-center gap-3 shadow-lg z-20 group/prod transition-all hover:bg-white border border-gray-100">
                       {(() => {
                         const p = allProducts.find(prod => prod.id === look.productId);
-                        if (!p) return null;
                         return (
                           <>
                             <img src={p.images?.[0]} alt="" className="w-10 h-12 rounded-lg object-cover flex-shrink-0" />
                             <div className="flex-1 min-w-0 text-left">
                               <p className="text-[10px] font-bold text-gray-900 truncate uppercase tracking-tight">{p.name}</p>
-                              <p className="text-[11px] text-[#1BAFAF] font-black">₹{p.price}</p>
+                              <p className="text-[11px] text-[#1BAFAF] font-black">₹{Number(p.discountedPrice || p.price || p.actualPrice || 0).toLocaleString('en-IN')}</p>
                             </div>
                             
                             <div className="flex flex-col gap-1">
@@ -467,6 +513,7 @@ export default function Stories() {
                           type="text"
                           placeholder="Link Product..."
                           value={activeProductSearchId === look.id ? productSearch : ''}
+                          data-search-input={look.id}
                           onFocus={() => {
                             setActiveProductSearchId(look.id);
                             setProductSearch('');
@@ -529,7 +576,7 @@ export default function Stories() {
 
               {/* Search Results Dropdown (Shared) */}
               {activeProductSearchId === look.id && (
-                <div className="absolute z-[50] top-full mt-3 bg-white border border-gray-100 rounded-2xl shadow-2xl w-64 py-2 animate-in fade-in zoom-in-95">
+                <div className="search-dropdown absolute z-[50] top-full mt-3 bg-white border border-gray-100 rounded-2xl shadow-2xl w-64 py-2 animate-in fade-in zoom-in-95">
                   <div className="max-h-64 overflow-y-auto no-scrollbar">
                     {allProducts
                       .filter(p => !productSearch || p.name.toLowerCase().includes(productSearch.toLowerCase()))
@@ -546,12 +593,11 @@ export default function Stories() {
                           <img src={p.images?.[0]} alt="" className="w-9 h-9 rounded-lg object-cover bg-gray-100" />
                           <div className="flex-1 min-w-0">
                             <p className="text-[10px] font-bold text-gray-900 truncate">{p.name}</p>
-                            <p className="text-[9px] text-[#1BAFAF] font-bold">₹{p.price}</p>
+                            <p className="text-[9px] text-[#1BAFAF] font-bold">₹{Number(p.discountedPrice || p.price || p.actualPrice || 0).toLocaleString('en-IN')}</p>
                           </div>
                         </button>
                       ))}
                   </div>
-                  <div className="fixed inset-0 z-[-1]" onClick={() => setActiveProductSearchId(null)} />
                 </div>
               )}
             </div>
