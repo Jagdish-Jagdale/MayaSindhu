@@ -82,11 +82,6 @@ const Users = () => {
     return () => unsubscribe();
   }, []);
 
-  const handleAdd = () => {
-    setSelectedUser(null);
-    setIsModalOpen(true);
-  };
-
   const handleEdit = (user) => {
     setSelectedUser(user);
     setIsModalOpen(true);
@@ -224,14 +219,6 @@ const Users = () => {
             <span className="text-[11px] font-semibold text-gray-400 uppercase tracking-widest">
                TOTAL RECORDS: {filteredUsers.length}
             </span>
-            <span className="text-gray-200 text-sm">|</span>
-            <button 
-              onClick={handleAdd}
-              className="flex items-center gap-2 bg-[#1BAFAF] hover:bg-[#17a0a0] text-white px-5 py-2.5 rounded-xl text-[13px] font-bold transition-all shadow-sm shadow-[#1BAFAF]/10 active:scale-95 group"
-            >
-              <Plus size={18} className="group-hover:rotate-90 transition-transform duration-300" />
-              Add User
-            </button>
           </div>
         </div>
         <hr className="border-gray-100" />
@@ -333,7 +320,7 @@ const Users = () => {
               </tr>
             </thead>
             <tbody className="divide-y divide-gray-50/50">
-              <AnimatePresence mode="wait" custom={direction}>
+              <AnimatePresence custom={direction}>
                 {filteredUsers.length > 0 ? (
                   filteredUsers.slice((currentPage - 1) * rowsPerPage, currentPage * rowsPerPage).map((user, idx) => (
                     <motion.tr 

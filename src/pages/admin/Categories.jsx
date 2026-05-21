@@ -20,6 +20,7 @@ import {
   ChevronLeft,
   MoreVertical,
   AlertCircle,
+  AlertTriangle,
   ChevronUp
 } from 'lucide-react';
 import { useAdminUI } from '../../context/AdminUIContext';
@@ -38,6 +39,27 @@ export default function Categories() {
   const { pathname } = useLocation();
   const isOnlinePanel = pathname.startsWith('/admin') && !pathname.startsWith('/admin-offline');
   const { categories: fullHierarchy, loading: catsLoading } = useCategories();
+  const [stockAlertThreshold, setStockAlertThreshold] = useState(() => {
+    const saved = localStorage.getItem('stockAlertThreshold');
+    const parsed = saved !== null ? parseInt(saved, 10) : 5;
+    return isNaN(parsed) ? 5 : parsed;
+  });
+
+  useEffect(() => {
+    const unsubscribe = onSnapshot(doc(db, 'settings', 'inventory'), (docSnap) => {
+      if (docSnap.exists()) {
+        const val = docSnap.data().stockAlertThreshold;
+        const parsed = parseInt(val, 10);
+        if (!isNaN(parsed)) {
+          setStockAlertThreshold(parsed);
+          localStorage.setItem('stockAlertThreshold', parsed);
+        }
+      }
+    }, (error) => {
+      console.error("Error listening to settings:", error);
+    });
+    return () => unsubscribe();
+  }, []);
 
   const [products, setProducts] = useState([]);
   const [productsLoading, setProductsLoading] = useState(true);
@@ -337,6 +359,7 @@ export default function Categories() {
   return (
     <div className={`mx-auto space-y-6 animate-in fade-in slide-in-from-bottom-2 duration-500 transition-all duration-300 ${isCollapsed ? 'max-w-[1600px]' : 'max-w-[1280px]'}`} style={{ fontFamily: "'Inter', -apple-system, sans-serif" }}>
 
+
       {/* Header Section */}
       <div className="space-y-2 py-2">
         <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
@@ -480,7 +503,7 @@ export default function Categories() {
                 </tr>
               </thead>
               <tbody className="divide-y divide-gray-50/50">
-                <AnimatePresence mode="wait" custom={direction}>
+                <AnimatePresence custom={direction}>
                 {visibleCategories.length > 0 ? (
                   visibleCategories.slice((currentPage - 1) * rowsPerPage, currentPage * rowsPerPage).map((cat, index) => {
                     const itemsCount = products.filter(p => p.categoryId === cat.id).length;
@@ -624,20 +647,28 @@ export default function Categories() {
                         
                         {/* Status Badge */}
                         <div className="absolute top-4 left-4 z-10">
-                          <span className={`text-[9px] font-bold uppercase tracking-[0.1em] px-2.5 py-1.5 rounded-lg backdrop-blur-md shadow-sm flex items-center gap-1.5 ${
-                            p.isAvailable 
-                              ? (Number(p.stock) < 5 ? 'bg-rose-500/90 text-white' : 'bg-emerald-500/90 text-white')
-                              : 'bg-gray-900/60 text-white'
-                          }`}>
-                            <div className={`w-1.5 h-1.5 rounded-full animate-pulse ${
-                              p.isAvailable 
-                                ? (Number(p.stock) < 5 ? 'bg-white' : 'bg-white')
-                                : 'bg-gray-300'
-                            }`} />
-                            {p.isAvailable 
-                              ? (Number(p.stock) < 5 ? 'Low Stock' : 'Active') 
-                              : 'Archived'}
-                          </span>
+                           <span className={`text-[9px] font-bold uppercase tracking-[0.1em] px-2.5 py-1.5 rounded-lg backdrop-blur-md shadow-sm flex items-center gap-1.5 ${
+                             p.isAvailable 
+                               ? (Number(p.stock) <= 0 
+                                   ? 'bg-rose-600 text-white' 
+                                   : Number(p.stock) < Number(stockAlertThreshold) 
+                                     ? 'bg-amber-500 text-white' 
+                                     : 'bg-emerald-500/90 text-white')
+                               : 'bg-gray-900/60 text-white'
+                           }`}>
+                             <div className={`w-1.5 h-1.5 rounded-full animate-pulse ${
+                               p.isAvailable 
+                                 ? 'bg-white'
+                                 : 'bg-gray-300'
+                             }`} />
+                             {p.isAvailable 
+                               ? (Number(p.stock) <= 0 
+                                   ? ((p.productType || '').toLowerCase() === 'unique' ? 'Sold Out' : 'Out Of Stock') 
+                                   : Number(p.stock) < Number(stockAlertThreshold) 
+                                     ? 'Low Stock' 
+                                     : 'Active') 
+                               : 'Archived'}
+                           </span>
                         </div>
                       </div>
 
@@ -671,9 +702,23 @@ export default function Categories() {
                         <div className="mt-auto pt-4 flex items-center justify-between border-t border-gray-50">
                           <div className="flex flex-col">
                             <span className="text-[9px] font-bold text-gray-300 uppercase tracking-widest">Inventory</span>
-                            <span className={`text-[13px] font-bold flex items-center gap-1.5 ${Number(p.stock) < 5 ? 'text-rose-500' : 'text-gray-700'}`}>
-                              {p.stock} Units
-                              {Number(p.stock) < 5 && <AlertCircle size={12} />}
+                            <span className={`text-[13px] font-bold flex items-center gap-1.5 ${
+                              Number(p.stock) <= 0 
+                                ? 'text-rose-600' 
+                                : Number(p.stock) < Number(stockAlertThreshold) 
+                                  ? 'text-amber-600' 
+                                  : 'text-gray-700'
+                            }`}>
+                              {Number(p.stock) <= 0 ? (
+                                (p.productType || '').toLowerCase() === 'unique' ? 'Sold Out' : 'Out Of Stock'
+                              ) : Number(p.stock) < Number(stockAlertThreshold) ? (
+                                <div className="flex items-center gap-1">
+                                  <span>{p.stock} Units</span>
+                                  <AlertTriangle size={13} className="text-amber-500 fill-amber-400 animate-subtle-bounce" />
+                                </div>
+                              ) : (
+                                `${p.stock} Units`
+                              )}
                             </span>
                           </div>
                           <div className="flex items-center gap-1">
@@ -756,6 +801,11 @@ export default function Categories() {
                       : `Adding a new layer under ${currentPath.length > 0 ? breadcrumbs.map(p => p.name).join(' > ') : 'Main'}`
                     }
                   </p>
+                  {editingCategory && currentPath.length > 0 && (
+                    <p className="text-[11px] text-[#1BAFAF] font-bold mt-1 bg-[#1BAFAF]/5 px-2.5 py-1 rounded-lg border border-[#1BAFAF]/10 w-fit">
+                      Path: {breadcrumbs.map(p => p.name).join(' > ')}
+                    </p>
+                  )}
                 </div>
                 <button onClick={() => setIsModalOpen(false)} className="p-2 hover:bg-gray-50 rounded-xl transition-colors">
                   <X size={20} className="text-gray-400" />
@@ -792,7 +842,7 @@ export default function Categories() {
                     {isSaving ? (
                       <Loader2 size={18} className="animate-spin" />
                     ) : editingCategory ? (
-                      currentPath.length > 0 ? 'Edit Sub Category' : 'Edit Category'
+                      'Update'
                     ) : (
                       currentPath.length > 0 ? 'Add Sub Category' : 'Add Category'
                     )}

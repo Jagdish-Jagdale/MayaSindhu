@@ -170,7 +170,14 @@ export default function VideoModal({ isOpen, onClose, look, onNext, onPrev }) {
                   <div className="space-y-3 mb-auto">
                     <h2 className="text-[#1A1A1A] text-[15px] md:text-[16px] font-bold leading-snug">{productData.name}</h2>
                     <div className="flex items-center gap-3">
-                      <span className="text-black text-2xl font-bold">₹{productData.price}</span>
+                      <span className="text-black text-2xl font-bold">
+                        ₹{Number(productData.discountedPrice || productData.price || productData.actualPrice || 0).toLocaleString('en-IN')}
+                      </span>
+                      {productData.actualPrice && Number(productData.actualPrice) > Number(productData.discountedPrice || productData.price || 0) && (
+                        <span className="text-gray-400 text-lg line-through font-medium">
+                          ₹{Number(productData.actualPrice).toLocaleString('en-IN')}
+                        </span>
+                      )}
                     </div>
                     <hr className="border-gray-100" />
                     <div>
