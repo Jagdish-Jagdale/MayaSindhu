@@ -6,6 +6,7 @@ import { useAuth } from '../../context/AuthContext';
 import { db } from '../../firebase';
 import { doc, getDoc, setDoc, updateDoc, deleteDoc, serverTimestamp, onSnapshot } from 'firebase/firestore';
 import { addToCart } from '../../utils/cartUtils';
+import toast from 'react-hot-toast';
 
 export default function ProductCard({ id, slug, name, price, discountedPrice, image, imageUrl, images, rating = 4.8, showWishlist = true, stock, isUniquePiece, productType }) {
   const displayPrice = discountedPrice || price || 0;
@@ -113,6 +114,17 @@ export default function ProductCard({ id, slug, name, price, discountedPrice, im
     }
   };
 
+  const handleNotifyMe = (e) => {
+    e.preventDefault();
+    e.stopPropagation();
+    if (!user) {
+      toast.error("Please login to request restock notification");
+      navigate('/login', { state: { from: location } });
+      return;
+    }
+    toast.success("Notification request registered! We'll alert you via email when back in stock.");
+  };
+
 
   return (
     <motion.div
@@ -130,6 +142,26 @@ export default function ProductCard({ id, slug, name, price, discountedPrice, im
           />
         </Link>
 
+        {stockVal === 0 && (
+          <>
+            <div className="absolute inset-0 bg-white/70 backdrop-blur-[2px] flex items-center justify-center pointer-events-none z-10">
+              <span className="text-[#DC2626] font-black text-sm md:text-base tracking-widest uppercase text-center px-4">
+                {isUnique ? "SOLD OUT" : "OUT OF STOCK"}
+              </span>
+            </div>
+            <div className="absolute bottom-4 md:bottom-6 left-0 right-0 md:translate-y-10 md:opacity-0 group-hover:translate-y-0 group-hover:opacity-100 transition-all duration-700 ease-out z-20 px-2 md:px-3">
+              <button
+                onClick={handleNotifyMe}
+                className="w-full flex items-center justify-center backdrop-blur-md border text-white py-2.5 md:py-3 rounded-2xl shadow-2xl active:scale-95 transition-all duration-500 bg-black/30 hover:bg-white hover:text-brand-black border-white/30 cursor-pointer"
+              >
+                <span className="text-[10px] md:text-xs font-bold uppercase tracking-[0.15em] whitespace-nowrap">
+                  Notify Me
+                </span>
+              </button>
+            </div>
+          </>
+        )}
+
         {showWishlist && (
           <button
             onClick={handleWishlist}
@@ -143,12 +175,13 @@ export default function ProductCard({ id, slug, name, price, discountedPrice, im
         )}
 
         {/* Actions - Buy Now & Add to Cart */}
-        <div className="absolute bottom-4 md:bottom-6 left-0 right-0 md:translate-y-10 md:opacity-0 group-hover:translate-y-0 group-hover:opacity-100 transition-all duration-700 ease-out z-10 px-4 md:px-6">
-          <div className="flex flex-row gap-1.5 md:gap-2">
+        {stockVal > 0 && (
+          <div className="absolute bottom-4 md:bottom-6 left-0 right-0 md:translate-y-10 md:opacity-0 group-hover:translate-y-0 group-hover:opacity-100 transition-all duration-700 ease-out z-10 px-2 md:px-3">
+          <div className="flex flex-row gap-1 md:gap-1.5">
             <button
               disabled={stockVal === 0 && !isInCart}
               onClick={isInCart ? (e) => { e.preventDefault(); e.stopPropagation(); navigate('/cart'); } : handleAddToCart}
-              className={`flex-1 flex items-center justify-center space-x-1 md:space-x-2 backdrop-blur-md border text-white py-2.5 md:py-3 rounded-full shadow-2xl active:scale-95 transition-all duration-500 ${
+              className={`flex-1 flex items-center justify-center space-x-1 md:space-x-2 backdrop-blur-md border text-white py-2.5 md:py-3 rounded-2xl shadow-2xl active:scale-95 transition-all duration-500 ${
                 isInCart 
                 ? 'bg-brand-orange hover:bg-brand-orange-dark border-brand-orange/30' 
                 : (stockVal === 0 
@@ -186,7 +219,7 @@ export default function ProductCard({ id, slug, name, price, discountedPrice, im
                   } 
                 });
               }}
-              className={`flex-1 flex items-center justify-center space-x-1 md:space-x-2 py-2.5 md:py-3 rounded-full shadow-2xl active:scale-95 transition-all duration-500 ${
+              className={`flex-1 flex items-center justify-center space-x-1 md:space-x-2 py-2.5 md:py-3 rounded-2xl shadow-2xl active:scale-95 transition-all duration-500 ${
                 stockVal === 0 
                 ? 'bg-gray-400/50 text-white/80 cursor-not-allowed opacity-50 border border-gray-400/20' 
                 : 'bg-brand-orange hover:bg-brand-orange-dark text-white border border-brand-orange/30'
@@ -198,6 +231,7 @@ export default function ProductCard({ id, slug, name, price, discountedPrice, im
             </button>
           </div>
         </div>
+        )}
 
         {/* Success Animation Overlay */}
         <AnimatePresence>

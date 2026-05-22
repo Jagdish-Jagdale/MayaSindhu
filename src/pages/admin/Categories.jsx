@@ -21,7 +21,9 @@ import {
   MoreVertical,
   AlertCircle,
   AlertTriangle,
-  ChevronUp
+  ChevronUp,
+  Folder,
+  FolderOpen
 } from 'lucide-react';
 import { useAdminUI } from '../../context/AdminUIContext';
 import { db } from '../../firebase';
@@ -356,6 +358,25 @@ export default function Categories() {
     );
   }
 
+  const getFlatCategoriesCount = (cats) => {
+    let count = 0;
+    const traverse = (list) => {
+      list.forEach(c => {
+        count++;
+        if (c.children && c.children.length > 0) {
+          traverse(c.children);
+        }
+      });
+    };
+    traverse(cats);
+    return count;
+  };
+
+  const totalCategories = getFlatCategoriesCount(fullHierarchy);
+  const mainCategories = fullHierarchy.length;
+  const subCategories = totalCategories - mainCategories;
+  const categorizedProducts = products.filter(p => p.categoryId).length;
+
   return (
     <div className={`mx-auto space-y-6 animate-in fade-in slide-in-from-bottom-2 duration-500 transition-all duration-300 ${isCollapsed ? 'max-w-[1600px]' : 'max-w-[1280px]'}`} style={{ fontFamily: "'Inter', -apple-system, sans-serif" }}>
 
@@ -370,14 +391,6 @@ export default function Categories() {
             <p className="text-[12px] text-gray-400 font-medium tracking-tight">Manage your multi-level heritage collections and products</p>
           </div>
           <div className="flex items-center gap-4">
-            <span className="text-[11px] font-semibold text-gray-400 uppercase tracking-widest">
-               TOTAL RECORDS: {(() => {
-                 return visibleCategories.length > 0 
-                   ? visibleCategories.length 
-                   : (products.filter(p => p.categoryId === currentPath[currentPath.length - 1]).length);
-               })()}
-            </span>
-            <span className="text-gray-200 text-sm">|</span>
             <div className="flex items-center gap-3">
               {currentPath.length > 0 && (
                 <button
@@ -399,6 +412,33 @@ export default function Categories() {
           </div>
         </div>
         <hr className="border-gray-100" />
+      </div>
+
+      {/* Stat Cards Section */}
+      <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-6">
+        {[
+          { name: 'Total Categories', value: totalCategories, icon: Folder, color: 'text-[#1BAFAF]', bg: 'bg-[#E8F7F7]' },
+          { name: 'Main Categories', value: mainCategories, icon: FolderOpen, color: 'text-emerald-500', bg: 'bg-emerald-50' },
+          { name: 'Sub Categories', value: subCategories, icon: Layers, color: 'text-amber-500', bg: 'bg-amber-50' },
+          { name: 'Categorized Products', value: categorizedProducts, icon: Package, color: 'text-purple-500', bg: 'bg-purple-50' },
+        ].map((stat) => (
+          <div 
+            key={stat.name} 
+            className="bg-white rounded-2xl p-5 shadow-sm border border-gray-100/80 hover:shadow-md transition-all duration-300 flex items-center gap-4 group"
+          >
+            <div className={`w-12 h-12 rounded-full ${stat.bg} ${stat.color} flex items-center justify-center shrink-0 transition-transform group-hover:scale-110`}>
+              <stat.icon size={22} strokeWidth={2.5} />
+            </div>
+            <div className="flex flex-col">
+              <p className="text-[11px] text-gray-400 font-bold uppercase tracking-wider mb-0.5">
+                {stat.name}
+              </p>
+              <p className="text-xl font-black text-gray-900 tracking-tight">
+                {stat.value}
+              </p>
+            </div>
+          </div>
+        ))}
       </div>
 
       {/* Breadcrumb / Navigation Bar */}

@@ -263,7 +263,7 @@ export default function UserModal({ isOpen, onClose, user = null }) {
               label="Status"
               value={formData.status}
               onChange={(val) => setFormData({ ...formData, status: val })}
-              options={['Active', 'Inactive', 'Suspended']}
+              options={['Active', 'Inactive']}
               icon={ShieldCheck}
             />
           </div>

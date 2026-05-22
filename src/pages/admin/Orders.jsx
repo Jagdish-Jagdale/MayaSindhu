@@ -21,13 +21,29 @@ import {
   ShoppingBag as BagIcon,
   ChevronLeft,
   ChevronRight,
-  ChevronUp
+  ChevronUp,
+  TrendingUp
 } from 'lucide-react';
 import { db } from '../../firebase';
 import { collection, onSnapshot, query, orderBy, doc, deleteDoc, updateDoc } from 'firebase/firestore';
 import { motion, AnimatePresence } from 'framer-motion';
 import toast from 'react-hot-toast';
 import CustomSelect from '../../components/common/CustomSelect';
+
+const parseCurrency = (val) => {
+  if (typeof val === 'number') return val;
+  if (!val) return 0;
+  const parsed = Number(val.toString().replace(/[^\d.]/g, ''));
+  return isNaN(parsed) ? 0 : parsed;
+};
+
+const formatIndianCurrency = (num) => {
+  return new Intl.NumberFormat('en-IN', {
+    style: 'currency',
+    currency: 'INR',
+    maximumFractionDigits: 0
+  }).format(num);
+};
 
 const STATUS_CONFIG = {
   'Pending': { color: 'text-amber-500 bg-amber-50', icon: Clock },
@@ -447,13 +463,35 @@ export default function Orders() {
             <h1 className="text-[22px] font-bold text-gray-900 tracking-tight">Orders</h1>
             <p className="text-[12px] text-gray-400 font-medium tracking-tight">Manage and monitor all customer orders in real-time</p>
           </div>
-          <div className="flex items-center gap-4">
-            <span className="text-[11px] font-semibold text-gray-400 uppercase tracking-widest">
-              TOTAL RECORDS: {filteredOrders.length}
-            </span>
-          </div>
         </div>
         <hr className="border-gray-100" />
+      </div>
+
+      {/* Stat Cards Section */}
+      <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-6">
+        {[
+          { name: 'Total Revenue', value: formatIndianCurrency(orders.reduce((sum, o) => sum + parseCurrency(o.total), 0)), icon: TrendingUp, color: 'text-[#1BAFAF]', bg: 'bg-[#E8F7F7]' },
+          { name: 'Total Orders', value: orders.length, icon: ShoppingBag, color: 'text-blue-500', bg: 'bg-blue-50' },
+          { name: 'Pending Orders', value: orders.filter(o => o.status === 'Pending').length, icon: Clock, color: 'text-amber-500', bg: 'bg-amber-50' },
+          { name: 'Delivered Orders', value: orders.filter(o => o.status === 'Delivered').length, icon: CheckCircle2, color: 'text-emerald-500', bg: 'bg-emerald-50' },
+        ].map((stat) => (
+          <div 
+            key={stat.name} 
+            className="bg-white rounded-2xl p-5 shadow-sm border border-gray-100/80 hover:shadow-md transition-all duration-300 flex items-center gap-4 group"
+          >
+            <div className={`w-12 h-12 rounded-full ${stat.bg} ${stat.color} flex items-center justify-center shrink-0 transition-transform group-hover:scale-110`}>
+              <stat.icon size={22} strokeWidth={2.5} />
+            </div>
+            <div className="flex flex-col">
+              <p className="text-[11px] text-gray-400 font-bold uppercase tracking-wider mb-0.5">
+                {stat.name}
+              </p>
+              <p className="text-xl font-black text-gray-900 tracking-tight">
+                {stat.value}
+              </p>
+            </div>
+          </div>
+        ))}
       </div>
 
       {/* Action Bar */}
@@ -498,8 +536,8 @@ export default function Orders() {
             <thead>
               <tr className="border-b border-gray-50 bg-white">
                 <th className="px-6 py-5 text-left text-[14px] font-bold text-[#1BAFAF]">Sr No</th>
-                <th className="px-6 py-5 text-left text-[14px] font-bold text-[#1BAFAF] cursor-pointer select-none" onClick={() => handleSort('orderId')}>
-                  <div className="flex items-center gap-1">
+                <th className="px-6 py-5 text-center text-[14px] font-bold text-[#1BAFAF] cursor-pointer select-none" onClick={() => handleSort('orderId')}>
+                  <div className="flex items-center justify-center gap-1">
                     Order ID
                     <SortIndicator field="orderId" />
                   </div>
@@ -516,8 +554,8 @@ export default function Orders() {
                     <SortIndicator field="productName" />
                   </div>
                 </th>
-                <th className="px-6 py-5 text-left text-[14px] font-bold text-[#1BAFAF] cursor-pointer select-none" onClick={() => handleSort('quantity')}>
-                  <div className="flex items-center gap-1">
+                <th className="px-6 py-5 text-center text-[14px] font-bold text-[#1BAFAF] cursor-pointer select-none" onClick={() => handleSort('quantity')}>
+                  <div className="flex items-center justify-center gap-1">
                     Quantity
                     <SortIndicator field="quantity" />
                   </div>
@@ -564,7 +602,7 @@ export default function Orders() {
                         <td className="px-6 py-5">
                           <span className="text-[13px] font-bold text-gray-300">{(index + 1).toString().padStart(2, '0')}</span>
                         </td>
-                        <td className="px-6 py-5 whitespace-nowrap">
+                        <td className="px-6 py-5 whitespace-nowrap text-center">
                           <span className="px-3 py-1 bg-[#1BAFAF]/5 text-[#1BAFAF] text-[11px] font-bold rounded-full border border-[#1BAFAF]/10 uppercase tracking-wider group-hover:bg-[#1BAFAF]/10 transition-colors">
                             {order.orderId?.replace('#', '')}
                           </span>
@@ -582,7 +620,7 @@ export default function Orders() {
                             {order.productName || (order.items?.[0]?.name) || (order.quantity > 1 ? 'Multiple Items' : 'Handmade Creation')}
                           </span>
                         </td>
-                        <td className="px-6 py-5">
+                        <td className="px-6 py-5 text-center">
                           <span className="text-[13px] text-gray-800 font-bold">{order.quantity || 1}</span>
                         </td>
                         <td className="px-6 py-5 whitespace-nowrap">

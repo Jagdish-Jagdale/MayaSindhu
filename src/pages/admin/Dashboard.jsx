@@ -36,7 +36,12 @@ import {
   Bar
 } from 'recharts';
 
-const COLORS = ['#1BAFAF', '#B18968', '#D4AF37', '#178E8E', '#2D3748'];
+
+const getDynamicColor = (index) => {
+  // Use golden angle approximation (137.508 degrees) to generate distinct colors
+  const hue = (index * 137.508) % 360;
+  return `hsl(${hue}, 80%, 55%)`;
+};
 
 const parseCurrency = (val) => {
   if (typeof val === 'number') return val;
@@ -69,6 +74,11 @@ export default function Dashboard() {
   const [salesData, setSalesData] = useState([]);
   const [categoryData, setCategoryData] = useState([]);
   const [loading, setLoading] = useState(true);
+
+  const [rawProducts, setRawProducts] = useState([]);
+  const [rawCategories, setRawCategories] = useState([]);
+  const [productsLoaded, setProductsLoaded] = useState(false);
+  const [categoriesLoaded, setCategoriesLoaded] = useState(false);
 
   useEffect(() => {
     // 1. Fetch Stats & Recent Orders
@@ -120,32 +130,74 @@ export default function Dashboard() {
       setRecentUsers(users.slice(0, 5));
     });
 
-    // 3. Fetch Products for Inventory & Categories
+    // 3. Fetch Categories
+    const categoriesQuery = query(collection(db, 'categories'));
+    const unsubCategories = onSnapshot(categoriesQuery, (snapshot) => {
+      const cats = snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() }));
+      setRawCategories(cats);
+      setCategoriesLoaded(true);
+    }, (error) => {
+      console.error("Error listening to categories:", error);
+      setCategoriesLoaded(true);
+    });
+
+    // 4. Fetch Products
     const productsQuery = query(collection(db, 'products'));
     const unsubProducts = onSnapshot(productsQuery, (snapshot) => {
       const products = snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() }));
-      const totalStock = products.reduce((sum, p) => sum + (Number(p.inventory) || 0), 0);
-      
-      setStats(prev => ({ ...prev, inventory: totalStock }));
-
-      // Group by Heritage/Category
-      const categories = {};
-      products.forEach(p => {
-        const cat = p.category || 'Uncategorized';
-        categories[cat] = (categories[cat] || 0) + 1;
-      });
-      
-      const catArray = Object.entries(categories).map(([name, value]) => ({ name, value }));
-      setCategoryData(catArray.sort((a, b) => b.value - a.value).slice(0, 5));
-      setLoading(false);
+      setRawProducts(products);
+      setProductsLoaded(true);
+    }, (error) => {
+      console.error("Error listening to products:", error);
+      setProductsLoaded(true);
     });
 
     return () => {
       unsubOrders();
       unsubUsers();
+      unsubCategories();
       unsubProducts();
     };
   }, []);
+
+  useEffect(() => {
+    if (!productsLoaded || !categoriesLoaded) return;
+
+    // Sum of stock (using both p.stock and p.inventory)
+    const totalStock = rawProducts.reduce((sum, p) => sum + (Number(p.stock) || Number(p.inventory) || 0), 0);
+    setStats(prev => ({ ...prev, inventory: totalStock }));
+
+    // Helper to find the main category (level = 0) for a given categoryId
+    const getMainCategory = (catId) => {
+      if (!catId) return null;
+      let current = rawCategories.find(c => c.id === catId);
+      if (!current) return null;
+
+      // Keep traversing up until we hit a category with parentId === null or level === 0
+      let maxDepth = 10;
+      while (current && current.parentId && current.level !== 0 && maxDepth > 0) {
+        const parent = rawCategories.find(c => c.id === current.parentId);
+        if (!parent) break;
+        current = parent;
+        maxDepth--;
+      }
+      return current;
+    };
+
+    // Group by Root Category
+    const categoriesMap = {};
+    rawProducts.forEach(p => {
+      const mainCat = getMainCategory(p.categoryId);
+      const catName = mainCat ? mainCat.name : 'Uncategorized';
+      categoriesMap[catName] = (categoriesMap[catName] || 0) + 1;
+    });
+
+    const catArray = Object.entries(categoriesMap)
+      .map(([name, value]) => ({ name, value }))
+      .filter(item => item.value > 0);
+    setCategoryData(catArray.sort((a, b) => b.value - a.value));
+    setLoading(false);
+  }, [rawProducts, rawCategories, productsLoaded, categoriesLoaded]);
 
   if (loading) {
     return (
@@ -237,18 +289,18 @@ export default function Dashboard() {
                     dataKey="value"
                   >
                     {categoryData.map((entry, index) => (
-                      <Cell key={`cell-${index}`} fill={COLORS[index % COLORS.length]} cornerRadius={10} />
+                      <Cell key={`cell-${index}`} fill={getDynamicColor(index)} cornerRadius={10} />
                     ))}
                   </Pie>
                   <Tooltip />
                 </PieChart>
              </ResponsiveContainer>
           </div>
-          <div className="grid grid-cols-2 gap-3 mt-6">
-             {categoryData.slice(0, 4).map((cat, i) => (
+          <div className="grid grid-cols-2 gap-3 mt-6 max-h-[120px] overflow-y-auto pr-1 custom-scrollbar">
+             {categoryData.map((cat, i) => (
                <div key={cat.name} className="flex items-center gap-2">
-                 <div className="w-2 h-2 rounded-full" style={{ backgroundColor: COLORS[i % COLORS.length] }} />
-                 <span className="text-[10px] font-bold text-gray-500 truncate">{cat.name}</span>
+                 <div className="w-2.5 h-2.5 rounded-full shrink-0" style={{ backgroundColor: getDynamicColor(i) }} />
+                 <span className="text-[10px] font-bold text-gray-500 truncate" title={cat.name}>{cat.name}</span>
                </div>
              ))}
           </div>
@@ -276,7 +328,7 @@ export default function Dashboard() {
                 </div>
                 <div className="flex-1 min-w-0">
                   <p className="text-[13px] font-black text-gray-900 truncate">{order.customerName}</p>
-                  <p className="text-[10px] text-gray-400 font-medium truncate uppercase tracking-widest">{order.id.slice(-6)} • {order.status}</p>
+                  <p className="text-[10px] text-gray-400 font-medium truncate uppercase tracking-widest">{order.orderId || order.id.slice(-6)} • {order.status}</p>
                 </div>
                 <p className="text-[13px] font-black text-[#1BAFAF]">{order.total}</p>
               </div>
