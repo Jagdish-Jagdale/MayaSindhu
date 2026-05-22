@@ -119,7 +119,7 @@ export default function CategoryView() {
     if (activeFilters.priceRange) {
       const { min, max } = activeFilters.priceRange;
       result = result.filter(p => {
-        const price = Number(p.price) || 0;
+        const price = Number(p.discountedPrice || p.price || p.actualPrice || 0);
         return price >= min && price <= max;
       });
     }

@@ -222,6 +222,16 @@ export default function ProductDetail() {
     }
   };
 
+  const handleNotifyMe = (e) => {
+    e?.preventDefault();
+    if (!user) {
+      toast.error("Please login to request restock notification");
+      navigate('/login', { state: { from: location } });
+      return;
+    }
+    toast.success("Notification request registered! We'll alert you via email when back in stock.");
+  };
+
   const handleShare = async () => {
     const shareData = {
       title: product.name,
@@ -312,6 +322,14 @@ export default function ProductDetail() {
                     className="w-full h-full object-contain" 
                  />
               </div>
+              
+              {stockVal === 0 && (
+                <div className="absolute inset-0 bg-white/70 backdrop-blur-[2px] flex items-center justify-center pointer-events-none z-10">
+                  <span className="text-[#DC2626] font-black text-xl sm:text-2xl tracking-widest uppercase text-center px-4">
+                    {isUnique ? "SOLD OUT" : "OUT OF STOCK"}
+                  </span>
+                </div>
+              )}
               
               <button 
                 onClick={handleWishlist}
@@ -428,33 +446,36 @@ export default function ProductDetail() {
                 </div>
               </div>
 
-              <div className="grid grid-cols-2 gap-3 sm:gap-4">
+              {stockVal === 0 ? (
                 <button
-                  onClick={alreadyInBag ? () => navigate('/cart') : handleAddToCart}
-                  disabled={adding || (stockVal === 0 && !alreadyInBag)}
-                  className={`flex items-center justify-center gap-2 py-3.5 sm:py-4 rounded-2xl font-black text-[9px] sm:text-[10px] uppercase tracking-[0.2em] transition-all active:scale-95 ${
-                    alreadyInBag 
-                    ? 'bg-[#1A1A1A] text-white hover:bg-black shadow-lg shadow-black/10' 
-                    : (stockVal === 0 
-                       ? 'bg-gray-100 border-2 border-gray-200 text-gray-400 cursor-not-allowed opacity-60' 
-                       : 'bg-white border-2 border-brand-orange text-brand-orange hover:bg-brand-orange-light')
-                  }`}
+                  onClick={handleNotifyMe}
+                  className="w-full py-3.5 sm:py-4 rounded-2xl font-black text-[10px] uppercase tracking-[0.2em] transition-all active:scale-95 bg-[#F1F5F9] hover:bg-[#E2E8F0] text-[#1E293B] flex items-center justify-center cursor-pointer shadow-sm hover:shadow"
                 >
-                  {adding ? <Loader2 className="animate-spin" size={14} /> : alreadyInBag ? <CheckCircle2 size={16} /> : (stockVal === 0 ? null : <ShoppingBag size={16} />)}
-                  {stockVal === 0 ? 'Sold Out' : (alreadyInBag ? 'Go to Bag' : 'Add to Bag')}
+                  Notify Me
                 </button>
-                <button 
-                  onClick={handleBuyNow}
-                  disabled={adding || stockVal === 0}
-                  className={`py-3.5 sm:py-4 rounded-2xl font-black text-[9px] sm:text-[10px] uppercase tracking-[0.2em] transition-all active:scale-95 shadow-md flex items-center justify-center gap-2 ${
-                    stockVal === 0 
-                    ? 'bg-gray-100 text-gray-400 cursor-not-allowed opacity-60 shadow-none' 
-                    : 'bg-brand-orange text-white hover:bg-brand-orange-dark shadow-brand-orange/10'
-                  }`}
-                >
-                  {adding ? <Loader2 className="animate-spin" size={14} /> : 'Buy Now'}
-                </button>
-              </div>
+              ) : (
+                <div className="grid grid-cols-2 gap-3 sm:gap-4">
+                  <button
+                    onClick={alreadyInBag ? () => navigate('/cart') : handleAddToCart}
+                    disabled={adding}
+                    className={`flex items-center justify-center gap-2 py-3.5 sm:py-4 rounded-2xl font-black text-[9px] sm:text-[10px] uppercase tracking-[0.2em] transition-all active:scale-95 ${
+                      alreadyInBag 
+                      ? 'bg-[#1A1A1A] text-white hover:bg-black shadow-lg shadow-black/10' 
+                      : 'bg-white border-2 border-brand-orange text-brand-orange hover:bg-brand-orange-light'
+                    }`}
+                  >
+                    {adding ? <Loader2 className="animate-spin" size={14} /> : alreadyInBag ? <CheckCircle2 size={16} /> : <ShoppingBag size={16} />}
+                    {alreadyInBag ? 'Go to Bag' : 'Add to Bag'}
+                  </button>
+                  <button 
+                    onClick={handleBuyNow}
+                    disabled={adding}
+                    className="py-3.5 sm:py-4 rounded-2xl font-black text-[9px] sm:text-[10px] uppercase tracking-[0.2em] transition-all active:scale-95 shadow-md flex items-center justify-center gap-2 bg-brand-orange text-white hover:bg-brand-orange-dark shadow-brand-orange/10"
+                  >
+                    {adding ? <Loader2 className="animate-spin" size={14} /> : 'Buy Now'}
+                  </button>
+                </div>
+              )}
             </div>
           </div>
         </div>

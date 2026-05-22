@@ -14,7 +14,11 @@ import {
   Loader2,
   Calendar,
   ChevronLeft,
-  ChevronRight
+  ChevronRight,
+  Users as UsersIcon,
+  UserCheck,
+  UserMinus,
+  UserPlus
 } from 'lucide-react';
 import { db } from '../../firebase';
 import { 
@@ -32,6 +36,7 @@ import { motion, AnimatePresence } from 'framer-motion';
 import { useAdminUI } from '../../context/AdminUIContext';
 import DeleteConfirmationModal from '../../components/admin/DeleteConfirmationModal';
 import UserModal from '../../components/admin/UserModal';
+import UserViewModal from '../../components/admin/UserViewModal';
 
 const Users = () => {
   const { isCollapsed } = useAdminUI();
@@ -59,6 +64,10 @@ const Users = () => {
   const [isModalOpen, setIsModalOpen] = useState(false);
   const [selectedUser, setSelectedUser] = useState(null);
 
+  // View Modal States
+  const [isViewModalOpen, setIsViewModalOpen] = useState(false);
+  const [userToView, setUserToView] = useState(null);
+
   const filterRef = useRef(null);
   const rowsRef = useRef(null);
 
@@ -85,6 +94,11 @@ const Users = () => {
   const handleEdit = (user) => {
     setSelectedUser(user);
     setIsModalOpen(true);
+  };
+
+  const handleView = (user) => {
+    setUserToView(user);
+    setIsViewModalOpen(true);
   };
 
   const handleDelete = (user) => {
@@ -215,13 +229,47 @@ const Users = () => {
             </h1>
             <p className="text-[12px] text-gray-400 font-medium font-inter tracking-tight">Monitor and manage all registered accounts in the system</p>
           </div>
-          <div className="flex items-center gap-4">
-            <span className="text-[11px] font-semibold text-gray-400 uppercase tracking-widest">
-               TOTAL RECORDS: {filteredUsers.length}
-            </span>
-          </div>
         </div>
         <hr className="border-gray-100" />
+      </div>
+
+      {/* Stat Cards Section */}
+      <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-6">
+        {[
+          { name: 'Total Users', value: users.length, icon: UsersIcon, color: 'text-[#1BAFAF]', bg: 'bg-[#E8F7F7]' },
+          { name: 'Active Users', value: users.filter(u => (u.status || 'Active') === 'Active').length, icon: UserCheck, color: 'text-emerald-500', bg: 'bg-emerald-50' },
+          { name: 'Inactive Users', value: users.filter(u => u.status === 'Inactive').length, icon: UserMinus, color: 'text-amber-500', bg: 'bg-amber-50' },
+          { 
+            name: 'New Users (30d)', 
+            value: users.filter(u => {
+              if (!u.createdAt) return false;
+              const date = u.createdAt.toDate ? u.createdAt.toDate() : new Date(u.createdAt);
+              const thirtyDaysAgo = new Date();
+              thirtyDaysAgo.setDate(thirtyDaysAgo.getDate() - 30);
+              return date > thirtyDaysAgo;
+            }).length, 
+            icon: UserPlus, 
+            color: 'text-purple-500', 
+            bg: 'bg-purple-50' 
+          },
+        ].map((stat) => (
+          <div 
+            key={stat.name} 
+            className="bg-white rounded-2xl p-5 shadow-sm border border-gray-100/80 hover:shadow-md transition-all duration-300 flex items-center gap-4 group"
+          >
+            <div className={`w-12 h-12 rounded-full ${stat.bg} ${stat.color} flex items-center justify-center shrink-0 transition-transform group-hover:scale-110`}>
+              <stat.icon size={22} strokeWidth={2.5} />
+            </div>
+            <div className="flex flex-col">
+              <p className="text-[11px] text-gray-400 font-bold uppercase tracking-wider mb-0.5">
+                {stat.name}
+              </p>
+              <p className="text-xl font-black text-gray-900 tracking-tight">
+                {stat.value}
+              </p>
+            </div>
+          </div>
+        ))}
       </div>
 
       {/* Filter Bar */}
@@ -267,7 +315,7 @@ const Users = () => {
             {filterOpen && (
               <div className="absolute right-0 top-full mt-2 w-40 bg-white border border-gray-100 rounded-xl shadow-lg z-50 py-1 overflow-hidden">
                 <p className="px-3 py-1.5 text-[10px] font-bold text-gray-400 uppercase tracking-widest">Filter by Status</p>
-                {['All', 'Active', 'Inactive', 'Suspended'].map(opt => (
+                {['All', 'Active', 'Inactive'].map(opt => (
                   <button
                     key={opt}
                     onClick={() => { setActiveFilter(opt); setFilterOpen(false); }}
@@ -323,14 +371,15 @@ const Users = () => {
               <AnimatePresence custom={direction}>
                 {filteredUsers.length > 0 ? (
                   filteredUsers.slice((currentPage - 1) * rowsPerPage, currentPage * rowsPerPage).map((user, idx) => (
-                    <motion.tr 
+                      <motion.tr 
                       key={user.id} 
                       custom={{ direction, index: idx }}
                       variants={rowVariants}
                       initial="initial"
                       animate="animate"
                       exit="exit"
-                      className="hover:bg-gray-50 group transition-colors"
+                      onClick={() => handleView(user)}
+                      className="hover:bg-gray-50 group transition-colors cursor-pointer"
                     >
                       <td className="px-6 py-4 whitespace-nowrap text-[14px] text-gray-400 font-medium">
                         {((currentPage - 1) * rowsPerPage + idx + 1).toString().padStart(2, '0')}
@@ -358,14 +407,16 @@ const Users = () => {
                       <td className="px-6 py-4 text-right">
                         <div className="flex items-center justify-end gap-2">
                           <button 
-                            onClick={() => handleEdit(user)}
+                            onClick={(e) => { e.stopPropagation(); handleEdit(user); }}
                             className="w-8 h-8 flex items-center justify-center text-[#1BAFAF] hover:bg-[#1BAFAF]/5 rounded-lg transition-all active:scale-90"
+                            title="Edit User"
                           >
                             <Pencil size={14} strokeWidth={2.5} />
                           </button>
                           <button 
-                            onClick={() => handleDelete(user)}
+                            onClick={(e) => { e.stopPropagation(); handleDelete(user); }}
                             className="w-8 h-8 flex items-center justify-center text-red-600 hover:bg-red-50 rounded-lg transition-all active:scale-90"
+                            title="Delete User"
                           >
                             <Trash2 size={14} strokeWidth={2.5} />
                           </button>
@@ -421,6 +472,12 @@ const Users = () => {
         isOpen={isModalOpen}
         onClose={() => setIsModalOpen(false)}
         user={selectedUser}
+      />
+
+      <UserViewModal
+        isOpen={isViewModalOpen}
+        onClose={() => setIsViewModalOpen(false)}
+        user={userToView}
       />
     </div>
   );

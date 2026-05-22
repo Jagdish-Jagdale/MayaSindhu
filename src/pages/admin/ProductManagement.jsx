@@ -24,7 +24,8 @@ import {
   History,
   ChevronLeft,
   ChevronRight,
-  Check
+  Check,
+  TrendingUp
 } from 'lucide-react';
 import { useAdminUI } from '../../context/AdminUIContext';
 import { formatDate } from '../../utils/dateHelper';
@@ -406,10 +407,6 @@ export default function ProductManagement() {
             <p className="text-[12px] text-gray-400 font-medium tracking-tight">Manage your collection of handmade sarees and textiles</p>
           </div>
           <div className="flex items-center gap-4">
-            <span className="text-[11px] font-semibold text-gray-400 uppercase tracking-widest">
-               TOTAL RECORDS: {filteredProducts.length}
-            </span>
-            <span className="text-gray-200 text-sm">|</span>
             <button 
               onClick={openAddModal}
               className="flex items-center gap-2 bg-[#1BAFAF] hover:bg-[#17a0a0] text-white px-5 py-2.5 rounded-xl text-[13px] font-bold transition-all shadow-sm shadow-[#1BAFAF]/10 active:scale-95 group"
@@ -420,6 +417,33 @@ export default function ProductManagement() {
           </div>
         </div>
         <hr className="border-gray-100" />
+      </div>
+
+      {/* Stat Cards Section */}
+      <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-6">
+        {[
+          { name: 'Total Products', value: products.length, icon: Package, color: 'text-[#1BAFAF]', bg: 'bg-[#E8F7F7]' },
+          { name: 'Total Stock', value: products.reduce((sum, p) => sum + (Number(p.stock) || Number(p.inventory) || 0), 0), icon: TrendingUp, color: 'text-emerald-500', bg: 'bg-emerald-50' },
+          { name: 'Low Stock', value: products.filter(p => { const s = Number(p.stock) || Number(p.inventory) || 0; return s > 0 && s <= stockAlertThreshold; }).length, icon: AlertTriangle, color: 'text-amber-500', bg: 'bg-amber-50' },
+          { name: 'Out of Stock', value: products.filter(p => (Number(p.stock) || Number(p.inventory) || 0) === 0).length, icon: AlertCircle, color: 'text-red-500', bg: 'bg-red-50' },
+        ].map((stat) => (
+          <div 
+            key={stat.name} 
+            className="bg-white rounded-2xl p-5 shadow-sm border border-gray-100/80 hover:shadow-md transition-all duration-300 flex items-center gap-4 group"
+          >
+            <div className={`w-12 h-12 rounded-full ${stat.bg} ${stat.color} flex items-center justify-center shrink-0 transition-transform group-hover:scale-110`}>
+              <stat.icon size={22} strokeWidth={2.5} />
+            </div>
+            <div className="flex flex-col">
+              <p className="text-[11px] text-gray-400 font-bold uppercase tracking-wider mb-0.5">
+                {stat.name}
+              </p>
+              <p className="text-xl font-black text-gray-900 tracking-tight">
+                {stat.value}
+              </p>
+            </div>
+          </div>
+        ))}
       </div>
 
       {/* Filter Bar */}

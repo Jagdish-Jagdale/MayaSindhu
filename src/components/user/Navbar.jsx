@@ -254,7 +254,7 @@ export default function Navbar() {
                           </div>
                           <div className="flex-1 min-w-0">
                             <h4 className="text-xs font-bold text-[#1A1A1A] truncate group-hover/item:text-brand-orange transition-colors">{p.name}</h4>
-                            <p className="text-[10px] text-gray-400 font-medium">₹{p.price?.toLocaleString()}</p>
+                            <p className="text-[10px] text-gray-400 font-medium">₹{Number(p.discountedPrice || p.price || p.actualPrice || 0).toLocaleString('en-IN')}</p>
                           </div>
                           <ChevronRight size={14} className="text-gray-300 group-hover/item:text-brand-orange group-hover/item:translate-x-1 transition-all" />
                         </Link>
@@ -393,7 +393,7 @@ export default function Navbar() {
                           </div>
                           <div className="flex-1 min-w-0">
                             <h4 className="text-xs font-bold text-[#1A1A1A] truncate group-hover/item:text-brand-orange transition-colors">{p.name}</h4>
-                            <p className="text-[10px] text-gray-400 font-medium">₹{p.price?.toLocaleString()}</p>
+                            <p className="text-[10px] text-gray-400 font-medium">₹{Number(p.discountedPrice || p.price || p.actualPrice || 0).toLocaleString('en-IN')}</p>
                           </div>
                           <ChevronRight size={14} className="text-gray-300 group-hover/item:text-brand-orange group-hover/item:translate-x-1 transition-all" />
                         </Link>
