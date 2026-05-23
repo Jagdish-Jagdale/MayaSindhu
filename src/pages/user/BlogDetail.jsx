@@ -252,7 +252,7 @@ export default function BlogDetail() {
                     <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round"><path d="M4 4l11.733 16h4.267l-11.733 -16z"/><path d="M4 20l6.768 -6.768m2.46 -2.46l6.772 -6.772"/></svg>
                   </button>
                   <button 
-                    onClick={() => window.open('https://instagram.com', '_blank')}
+                    onClick={() => window.open('https://www.instagram.com/mayasindhu_/', '_blank')}
                     className="text-gray-400 hover:text-[#E4405F] transition-colors" 
                     title="Follow on Instagram"
                   >
