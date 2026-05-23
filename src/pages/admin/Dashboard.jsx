@@ -123,11 +123,15 @@ export default function Dashboard() {
     });
 
     // 2. Fetch Users
-    const usersQuery = query(collection(db, 'users'), orderBy('createdAt', 'desc'));
-    const unsubUsers = onSnapshot(usersQuery, (snapshot) => {
+    const unsubUsers = onSnapshot(collection(db, 'users'), (snapshot) => {
       const users = snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() }));
-      setStats(prev => ({ ...prev, clients: users.length }));
-      setRecentUsers(users.slice(0, 5));
+      const sortedUsers = [...users].sort((a, b) => {
+        const aDate = a.createdAt?.toDate ? a.createdAt.toDate() : (a.createdAt ? new Date(a.createdAt) : new Date(0));
+        const bDate = b.createdAt?.toDate ? b.createdAt.toDate() : (b.createdAt ? new Date(b.createdAt) : new Date(0));
+        return bDate - aDate;
+      });
+      setStats(prev => ({ ...prev, clients: sortedUsers.length }));
+      setRecentUsers(sortedUsers.slice(0, 5));
     });
 
     // 3. Fetch Categories

@@ -27,7 +27,8 @@ import {
   query, 
   orderBy,
   doc,
-  deleteDoc
+  deleteDoc,
+  getDocs
 } from 'firebase/firestore';
 import toast from 'react-hot-toast';
 import CustomSelect from '../../components/common/CustomSelect';
@@ -73,9 +74,7 @@ const Users = () => {
 
   // Real-time Firestore Listener
   useEffect(() => {
-    const q = query(collection(db, 'users'), orderBy('createdAt', 'desc'));
-    
-    const unsubscribe = onSnapshot(q, (snapshot) => {
+    const unsubscribe = onSnapshot(collection(db, 'users'), (snapshot) => {
       const usersData = snapshot.docs.map(doc => ({
         id: doc.id,
         ...doc.data()
@@ -110,13 +109,27 @@ const Users = () => {
     if (!userToDelete) return;
     try {
       setIsDeleting(true);
-      await deleteDoc(doc(db, 'users', userToDelete.id));
-      toast.success(`User "${userToDelete.fullName || userToDelete.email}" removed`);
+      const userId = userToDelete.id;
+
+      // Subcollections to clean up
+      const subcollections = ['wishlist', 'cart', 'paymentMethods', 'bankAccounts', 'addresses'];
+
+      for (const sub of subcollections) {
+        const subColRef = collection(db, 'users', userId, sub);
+        const snapshot = await getDocs(subColRef);
+        const deletePromises = snapshot.docs.map(doc => deleteDoc(doc.ref));
+        await Promise.all(deletePromises);
+      }
+
+      // Finally delete the parent user document
+      await deleteDoc(doc(db, 'users', userId));
+
+      toast.success(`User "${userToDelete.fullName || userToDelete.email}" and all associated data removed`);
       setIsDeleteModalOpen(false);
       setUserToDelete(null);
     } catch (error) {
       console.error("Error deleting user:", error);
-      toast.error("Failed to delete user profile");
+      toast.error("Failed to delete user profile and data");
     } finally {
       setIsDeleting(false);
     }
