@@ -50,6 +50,36 @@ import CustomSelect from '../../components/common/CustomSelect';
 import { useLocation } from 'react-router-dom';
 import { AiFillThunderbolt } from 'react-icons/ai';
 
+// Helper to find the main (top-level) category name for a given categoryId
+const getRootCategoryName = (catId, categoriesList, categoryMap) => {
+  if (!catId || !categoriesList || categoriesList.length === 0) return 'Uncategorized';
+  
+  const findRootId = (items, targetId, currentRootId) => {
+    for (const item of items) {
+      if (item.id === targetId) {
+        return currentRootId;
+      }
+      if (item.children && item.children.length > 0) {
+        const found = findRootId(item.children, targetId, currentRootId || item.id);
+        if (found) return found;
+      }
+    }
+    return null;
+  };
+
+  for (const item of categoriesList) {
+    if (item.id === catId) return item.name;
+    if (item.children && item.children.length > 0) {
+      const foundRootId = findRootId(item.children, catId, item.id);
+      if (foundRootId) {
+        return categoryMap[foundRootId] || item.name;
+      }
+    }
+  }
+  
+  return categoryMap[catId] || 'Uncategorized';
+};
+
 export default function ProductManagement() {
   const { isCollapsed } = useAdminUI();
   const { pathname } = useLocation();
@@ -318,11 +348,11 @@ export default function ProductManagement() {
 
   const filteredProducts = (() => {
     let list = products.filter(p => {
-      const categoryName = categoryMap[p.categoryId] || '';
+      const rootCatName = getRootCategoryName(p.categoryId, hierarchy, categoryMap);
       const matchesSearch =
         (p.name || '').toLowerCase().includes(searchTerm.toLowerCase()) ||
-        categoryName.toLowerCase().includes(searchTerm.toLowerCase());
-      const matchesFilter = activeFilter === 'All' || categoryName === activeFilter;
+        rootCatName.toLowerCase().includes(searchTerm.toLowerCase());
+      const matchesFilter = activeFilter === 'All' || rootCatName === activeFilter;
       let matchesStockFilter = true;
       const stockNum = Number(p.stock || 0);
       const thresholdNum = Number(stockAlertThreshold);
@@ -523,6 +553,7 @@ export default function ProductManagement() {
             />
           </div>
 
+          {/* Category Filter Dropdown */}
           <div className="relative" ref={filterRef}>
             <button
               onClick={() => setFilterOpen(prev => !prev)}
@@ -531,7 +562,7 @@ export default function ProductManagement() {
               }`}
             >
               <Filter size={14} strokeWidth={2.5} />
-              {activeFilter !== 'All' ? `Cat: ${activeFilter}` : 'Filters'}
+              {activeFilter !== 'All' ? activeFilter : 'Category'}
               {activeFilter !== 'All' && (
                 <span onClick={(e) => { e.stopPropagation(); setActiveFilter('All'); }} className="ml-1 hover:text-red-400">
                   <X size={12} strokeWidth={2.5} />
@@ -539,27 +570,46 @@ export default function ProductManagement() {
               )}
             </button>
             {filterOpen && (
-              <div className="absolute right-0 top-full mt-2 w-48 bg-white border border-gray-100 rounded-xl shadow-lg z-50 py-1 overflow-hidden max-h-[300px] overflow-y-auto custom-scrollbar">
-                <p className="px-3 py-1.5 text-[10px] font-bold text-gray-400 uppercase tracking-widest">Filter by Category</p>
-                <button
-                  onClick={() => { setActiveFilter('All'); setFilterOpen(false); }}
-                  className={`w-full text-left px-3 py-2 text-[13px] transition-colors ${
-                    activeFilter === 'All' ? 'text-[#1BAFAF] font-semibold bg-[#1BAFAF]/5' : 'text-gray-600 hover:bg-gray-50'
-                  }`}
-                >
-                  All Categories
-                </button>
-                {Object.values(categoryMap).map(name => (
+              <div className="absolute right-0 top-full mt-2 w-56 bg-white border border-gray-100 rounded-xl shadow-lg z-50 py-1 overflow-hidden">
+                <p className="px-3 py-1.5 text-[10px] font-bold text-gray-400 uppercase tracking-widest border-b border-gray-50">Filter by Category</p>
+                <div className="max-h-[280px] overflow-y-auto custom-scrollbar">
                   <button
-                    key={name}
-                    onClick={() => { setActiveFilter(name); setFilterOpen(false); }}
-                    className={`w-full text-left px-3 py-2 text-[13px] transition-colors ${
-                      activeFilter === name ? 'text-[#1BAFAF] font-semibold bg-[#1BAFAF]/5' : 'text-gray-600 hover:bg-gray-50'
+                    onClick={() => { setActiveFilter('All'); setFilterOpen(false); }}
+                    className={`w-full text-left px-3 py-2.5 text-[13px] transition-colors flex items-center justify-between ${
+                      activeFilter === 'All' ? 'text-[#1BAFAF] font-semibold bg-[#1BAFAF]/5' : 'text-gray-600 hover:bg-gray-50'
                     }`}
                   >
-                    {name}
+                    <span>All Categories</span>
+                    <span className={`text-[10px] font-bold px-1.5 py-0.5 rounded-full ${
+                      activeFilter === 'All' ? 'bg-[#1BAFAF]/10 text-[#1BAFAF]' : 'bg-gray-100 text-gray-400'
+                    }`}>
+                      {products.length}
+                    </span>
                   </button>
-                ))}
+                  {hierarchy
+                    .filter(cat => !cat.parentId)
+                    .map(cat => {
+                      const count = products.filter(p => getRootCategoryName(p.categoryId, hierarchy, categoryMap) === cat.name).length;
+                      if (count === 0) return null;
+                      return (
+                        <button
+                          key={cat.id}
+                          onClick={() => { setActiveFilter(cat.name); setFilterOpen(false); }}
+                          className={`w-full text-left px-3 py-2.5 text-[13px] transition-colors flex items-center justify-between ${
+                            activeFilter === cat.name ? 'text-[#1BAFAF] font-semibold bg-[#1BAFAF]/5' : 'text-gray-600 hover:bg-gray-50'
+                          }`}
+                        >
+                          <span className="capitalize">{cat.name.toLowerCase()}</span>
+                          <span className={`text-[10px] font-bold px-1.5 py-0.5 rounded-full ${
+                            activeFilter === cat.name ? 'bg-[#1BAFAF]/10 text-[#1BAFAF]' : 'bg-gray-100 text-gray-400'
+                          }`}>
+                            {count}
+                          </span>
+                        </button>
+                      );
+                    })
+                  }
+                </div>
               </div>
             )}
           </div>
@@ -649,8 +699,8 @@ export default function ProductManagement() {
                       </div>
                     </td>
                     <td className="px-6 py-4 max-w-[150px]">
-                      <span className="block text-[14px] text-gray-500 font-medium truncate" title={categoryMap[product.categoryId] || 'Uncategorized'}>
-                        {categoryMap[product.categoryId] || 'Uncategorized'}
+                      <span className="block text-[14px] text-gray-500 font-medium truncate capitalize" title={getRootCategoryName(product.categoryId, hierarchy, categoryMap)}>
+                        {getRootCategoryName(product.categoryId, hierarchy, categoryMap)}
                       </span>
                     </td>
                     <td className="px-6 py-4 whitespace-nowrap">

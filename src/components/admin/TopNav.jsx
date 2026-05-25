@@ -31,7 +31,7 @@ const PAGE_TITLES = {
   '/admin/settings/featured-treasures': { title: 'Customer Favorite' },
   '/admin/settings/artisan-blooms': { title: 'Shop by Trend' },
   '/admin/settings/stories': { title: 'Shop the Look' },
-  '/admin/settings/purpose': { title: 'Our Purpose' },
+  '/admin/settings/purpose': { title: 'Our Manifesto' },
   '/admin/settings/testimonial': { title: 'Testimonials' },
   '/admin/settings/about-us': { title: 'About Us' },
   '/admin/settings/artician-workshop': { title: 'Artician Workshop' },

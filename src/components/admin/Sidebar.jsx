@@ -85,7 +85,7 @@ function getMenuItems(pathname) {
         { title: 'Customer Favorite', icon: Gem, path: `${base}/settings/featured-treasures` },
         { title: 'Shop by Trend', icon: Flower2, path: `${base}/settings/artisan-blooms` },
         { title: 'Shop the Look', icon: Tv, path: `${base}/settings/stories` },
-        { title: 'Our Purpose', icon: Heart, path: `${base}/settings/purpose` },
+        { title: 'Our Manifesto', icon: Heart, path: `${base}/settings/purpose` },
         { title: 'Testimonial', icon: MessageSquareQuote, path: `${base}/settings/testimonial` },
         { title: 'About Us', icon: Users, path: `${base}/settings/about-us` },
         { title: 'Artician Workshop', icon: Users2, path: `${base}/settings/artician-workshop` },

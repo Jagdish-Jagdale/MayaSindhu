@@ -7,6 +7,7 @@ import VideoModal from '../../components/user/VideoModal';
 import TestimonialCard from '../../components/user/TestimonialCard';
 import { ChevronLeft, ChevronRight, Plus, Loader2, Calendar, CheckCircle2 } from 'lucide-react';
 import WorkshopModal from '../../components/user/WorkshopModal';
+import TrendProductsModal from '../../components/user/TrendProductsModal';
 
 import { db } from '../../firebase';
 import { collection, onSnapshot, query, orderBy, doc } from 'firebase/firestore';
@@ -116,6 +117,8 @@ export default function Home() {
   const [testimonialsLoading, setTestimonialsLoading] = useState(true);
   const [workshopModalOpen, setWorkshopModalOpen] = useState(false);
   const [selectedWorkshop, setSelectedWorkshop] = useState(null);
+  const [selectedTrend, setSelectedTrend] = useState(null);
+  const [isTrendModalOpen, setIsTrendModalOpen] = useState(false);
 
   const { categories: allCategories } = useCategories();
   const featuredRef = useRef(null);
@@ -588,10 +591,16 @@ export default function Home() {
                     <p className="text-text-muted text-[12px] md:text-sm leading-relaxed mb-4 md:mb-6 line-clamp-2 md:line-clamp-none">
                       {trend.description}
                     </p>
-                    <Link to={trend.link || "/"} className="text-[11px] md:text-[12px] font-bold text-text-main border-b-2 border-text-main/20 pb-0.5 hover:text-brand-orange hover:border-brand-orange transition-all duration-300 inline-flex items-center gap-1 group/link">
+                    <button 
+                      onClick={() => {
+                        setSelectedTrend(trend);
+                        setIsTrendModalOpen(true);
+                      }}
+                      className="text-[11px] md:text-[12px] font-bold text-text-main border-b-2 border-text-main/20 pb-0.5 hover:text-brand-orange hover:border-brand-orange transition-all duration-300 inline-flex items-center gap-1 group/link cursor-pointer"
+                    >
                       Discover More
                       <ChevronRight size={14} className="group-hover/link:translate-x-0.5 transition-transform" />
-                    </Link>
+                    </button>
                   </div>
                 </div>
               ))}
@@ -700,7 +709,7 @@ export default function Home() {
                   </p>
 
                   {/* Growth Stats Grid - More compact */}
-                  <div className="grid grid-cols-2 gap-8 mb-8 py-6 border-y border-gray-100">
+                  <div className="grid grid-cols-2 sm:grid-cols-4 gap-8 mb-8 py-6 border-y border-gray-100">
                     {purpose.stats && purpose.stats.map((stat, idx) => (
                       <div key={idx}>
                         <span className="text-3xl md:text-4xl font-sans font-bold text-accent block mb-1">{stat.value}</span>
@@ -709,7 +718,7 @@ export default function Home() {
                     ))}
                   </div>
 
-                  <Link to="/about" className="group inline-flex items-center space-x-3 text-[13px] font-bold text-text-main transition-colors">
+                  <Link to="/manifesto" className="group inline-flex items-center space-x-3 text-[13px] font-bold text-text-main transition-colors">
                     <span className="border-b-2 border-text-main pb-1 group-hover:border-brand-orange group-hover:text-brand-orange transition-all">
                       {purpose.buttonText || "Our Full Manifesto"}
                     </span>
@@ -883,6 +892,14 @@ export default function Home() {
         isOpen={workshopModalOpen}
         onClose={() => setWorkshopModalOpen(false)}
         workshop={selectedWorkshop}
+      />
+
+      {/* Trend Products Modal */}
+      <TrendProductsModal
+        isOpen={isTrendModalOpen}
+        onClose={() => setIsTrendModalOpen(false)}
+        trend={selectedTrend}
+        products={products}
       />
     </div>
   );

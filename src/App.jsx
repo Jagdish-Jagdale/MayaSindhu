@@ -105,7 +105,7 @@ function App() {
             <Route path="c/*" element={<CategoryView />} />
             <Route path="cart" element={<Cart />} />
             <Route path="wishlist" element={<Wishlist />} />
-            <Route path="about" element={<About />} />
+            <Route path="manifesto" element={<About />} />
             <Route path="contact" element={<Contact />} />
             <Route path="profile" element={<Profile />} />
             <Route path="checkout" element={<Checkout />} />

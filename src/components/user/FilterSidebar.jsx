@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { ChevronDown, ArrowRight } from 'lucide-react';
+import { ChevronDown, X } from 'lucide-react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { Link, useLocation } from 'react-router-dom';
 import useCategories from '../../hooks/useCategories';
@@ -100,7 +100,7 @@ const FilterAccordion = ({ title, children, isOpen, onToggle }) => {
 export default function FilterSidebar({ className = "", categories = [], onFilterChange }) {
   const location = useLocation();
   const { categories: allCategories } = useCategories();
-  
+
   const displayCategories = categories.length > 0 ? categories : allCategories;
 
   const [openSections, setOpenSections] = useState({
@@ -117,8 +117,9 @@ export default function FilterSidebar({ className = "", categories = [], onFilte
 
   const [priceRange, setPriceRange] = useState({ min: 0, max: 20000 });
 
+  // Availability options — Pre-order removed
   const filterData = {
-    availability: ['In Stock', 'Out of Stock', 'Pre-order'],
+    availability: ['In Stock', 'Out of Stock'],
     size: []
   };
 
@@ -146,11 +147,94 @@ export default function FilterSidebar({ className = "", categories = [], onFilte
     if (onFilterChange) onFilterChange({ ...selectedFilters, priceRange: newRange });
   };
 
+  // Remove a single active filter chip
+  const removeFilter = (section, value) => {
+    if (section === 'price') {
+      const reset = { min: 0, max: 20000 };
+      setPriceRange(reset);
+      if (onFilterChange) onFilterChange({ ...selectedFilters, priceRange: reset });
+    } else {
+      setSelectedFilters(prev => {
+        const newSection = prev[section].filter(item => item !== value);
+        const newFilters = { ...prev, [section]: newSection };
+        if (onFilterChange) onFilterChange({ ...newFilters, priceRange });
+        return newFilters;
+      });
+    }
+  };
+
+  // Clear all filters (except category navigation)
+  const clearAllFilters = () => {
+    const reset = { availability: [], size: [] };
+    const resetPrice = { min: 0, max: 20000 };
+    setSelectedFilters(reset);
+    setPriceRange(resetPrice);
+    if (onFilterChange) onFilterChange({ ...reset, priceRange: resetPrice });
+  };
+
+  // Build active filter chips
+  const activeChips = [];
+  selectedFilters.availability.forEach(v => activeChips.push({ section: 'availability', label: v, value: v }));
+  selectedFilters.size.forEach(v => activeChips.push({ section: 'size', label: v, value: v }));
+  const isPriceActive = priceRange.min > 0 || priceRange.max < 20000;
+  if (isPriceActive) {
+    activeChips.push({
+      section: 'price',
+      label: `₹${priceRange.min.toLocaleString('en-IN')} – ₹${priceRange.max.toLocaleString('en-IN')}`,
+      value: 'price'
+    });
+  }
+
+  const hasActiveFilters = activeChips.length > 0;
+
   return (
-    <div className={`w-full bg-[#F9F9F9] p-4 md:p-6 min-h-fit ${className}`}>
-      <div className="space-y-2">
+    <div className={`w-full bg-white ${className}`}>
+      {/* Header: Filters title + Clear Filters */}
+      <div className="flex items-center justify-between pb-4 border-b border-gray-200/60">
+        <h3 className="text-[13px] font-sans font-black uppercase tracking-[0.15em] text-[#1A1A1A]">Filters</h3>
+        {hasActiveFilters && (
+          <button
+            onClick={clearAllFilters}
+            className="text-[11px] font-sans font-bold uppercase tracking-[0.1em] text-brand-orange hover:text-brand-orange-dark transition-colors"
+          >
+            Clear All
+          </button>
+        )}
+      </div>
+
+      {/* Active Filter Chips */}
+      <AnimatePresence>
+        {hasActiveFilters && (
+          <motion.div
+            initial={{ height: 0, opacity: 0 }}
+            animate={{ height: 'auto', opacity: 1 }}
+            exit={{ height: 0, opacity: 0 }}
+            transition={{ duration: 0.3 }}
+            className="overflow-hidden"
+          >
+            <div className="flex flex-wrap gap-2 py-3 border-b border-gray-200/60">
+              {activeChips.map((chip) => (
+                <motion.button
+                  key={`${chip.section}-${chip.value}`}
+                  initial={{ scale: 0.8, opacity: 0 }}
+                  animate={{ scale: 1, opacity: 1 }}
+                  exit={{ scale: 0.8, opacity: 0 }}
+                  onClick={() => removeFilter(chip.section, chip.value)}
+                  className="flex items-center gap-1.5 px-3 py-1.5 bg-brand-orange/10 text-brand-orange border border-brand-orange/20 rounded-md text-[11px] font-sans font-bold uppercase tracking-[0.05em] hover:bg-brand-orange hover:text-white transition-all group"
+                >
+                  {chip.label}
+                  <X size={9} className="flex-shrink-0" />
+                </motion.button>
+              ))}
+            </div>
+          </motion.div>
+        )}
+      </AnimatePresence>
+
+      {/* Filter Sections */}
+      <div className="space-y-0 mt-1">
         <FilterAccordion
-          title="EXPLORE SUBRANGES"
+          title="Explore Subranges"
           isOpen={openSections.categories}
           onToggle={() => toggleSection('categories')}
         >
@@ -163,21 +247,21 @@ export default function FilterSidebar({ className = "", categories = [], onFilte
 
         {/* Price Range Filter */}
         <FilterAccordion
-          title="PRICE"
+          title="Price"
           isOpen={openSections.price}
           onToggle={() => toggleSection('price')}
         >
           <div className="space-y-8 pt-6 px-1">
             <div className="relative h-1 w-full bg-gray-200 rounded-full group">
               {/* Highlight bar between handles */}
-              <div 
-                className="absolute h-full bg-brand-orange rounded-full" 
-                style={{ 
-                  left: `${(priceRange.min / 20000) * 100}%`, 
-                  right: `${100 - (priceRange.max / 20000) * 100}%` 
+              <div
+                className="absolute h-full bg-brand-orange rounded-full"
+                style={{
+                  left: `${(priceRange.min / 20000) * 100}%`,
+                  right: `${100 - (priceRange.max / 20000) * 100}%`
                 }}
               ></div>
-              
+
               {/* Dual Range Inputs */}
               <style>{`
                 .range-slider::-webkit-slider-thumb {
