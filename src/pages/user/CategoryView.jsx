@@ -1,9 +1,11 @@
 import React, { useState, useEffect } from 'react';
-import { useParams, Link, useNavigate, useLocation } from 'react-router-dom';
+import { useParams, Link, useLocation } from 'react-router-dom';
 import { motion, AnimatePresence } from 'framer-motion';
-import { ChevronRight, ChevronDown, SlidersHorizontal, X, Loader2, ArrowLeft } from 'lucide-react';
+import { SlidersHorizontal, X, Loader2 } from 'lucide-react';
 import ProductCard from '../../components/user/ProductCard';
 import FilterSidebar from '../../components/user/FilterSidebar';
+import Footer from '../../components/user/Footer';
+
 import useCategories from '../../hooks/useCategories';
 import { useGoBack } from '../../hooks/useGoBack';
 import { db } from '../../firebase';
@@ -81,7 +83,6 @@ export default function CategoryView() {
     if (!currentCategory) return [];
 
     if (currentCategory.id !== 'all') {
-      // Get all valid category IDs (including the current and all children recursively)
       const getAllCategoryIds = (cat) => {
         let ids = [cat.id];
         if (cat.children && cat.children.length > 0) {
@@ -97,13 +98,8 @@ export default function CategoryView() {
       result = products.filter(p => {
         const pCatId = p.categoryId || '';
         const pCol = p.collection?.toLowerCase() || '';
-
-        // Match by category ID
         const matchesCategory = targetCategoryIds.includes(pCatId);
-
-        // Fallback: match by collection name
         const matchesCollection = currentCategory.name && pCol.includes(currentCategory.name.toLowerCase());
-
         return matchesCategory || matchesCollection;
       });
     }
@@ -154,77 +150,108 @@ export default function CategoryView() {
   }
 
   return (
-    <div className="bg-white min-h-screen font-sans">
-      <div className="flex flex-col md:flex-row">
-        {/* Sidebar - Desktop */}
-        <aside className="hidden md:block w-64 lg:w-72 flex-shrink-0 bg-[#F9F9F9] border-r border-gray-100 min-h-screen">
-          <div className="sticky top-28 p-4 lg:p-6 h-[calc(100vh-140px)] overflow-y-auto no-scrollbar overscroll-contain">
-            <FilterSidebar
-              className="bg-transparent p-0"
-              categories={breadcrumbs.length > 0 ? [breadcrumbs[0]] : []}
-              onFilterChange={handleFilterChange}
-            />
-          </div>
-        </aside>
+    <div className="bg-[#F5F5F5] font-sans min-h-screen">
 
+      {/* ── Padding wrapper: holds the filter and product grid side by side ── */}
+      <div className="px-3 sm:px-5 lg:px-7 py-6 sm:py-8 max-w-screen-2xl mx-auto w-full">
 
-        <div className="flex-1 py-6 md:py-12 px-3 md:px-12 lg:px-20">
-          {/* Category Header */}
-          <motion.div
-            initial={{ opacity: 0, y: 20 }}
-            animate={{ opacity: 1, y: 0 }}
-            className="mb-8 md:mb-12"
+        {/* ── Two-column row: aligns filters and products side by side ── */}
+        <div className="flex flex-col md:flex-row gap-4 lg:gap-6 items-start">
+
+          {/* ══ LEFT COLUMN: Sticky Filters ══
+              - Stays fixed at top-[160px] from screen top on scroll
+              - Stable, fits viewport, no nested scrollbar needed
+          */}
+          <motion.aside
+            initial={{ opacity: 0, x: -16 }}
+            animate={{ opacity: 1, x: 0 }}
+            transition={{ duration: 0.35 }}
+            className="hidden md:block w-56 lg:w-60 flex-shrink-0 sticky top-[160px] z-10"
           >
-            <nav className="mb-4 flex items-center gap-2 text-[10px] font-bold uppercase tracking-[0.2em] text-gray-400">
-              <Link to="/" className="hover:text-brand-orange transition-colors">Home</Link>
-              {breadcrumbs.map(bc => (
-                <React.Fragment key={bc.id}>
-                  <span className="w-1 h-1 bg-gray-300 rounded-full"></span>
-                  <Link
-                    to={bc.fullPath}
-                    className={`hover:text-brand-orange transition-colors line-clamp-1 ${bc.id === currentCategory.id ? 'text-brand-orange' : ''}`}
+            <div className="bg-white rounded-xl border border-gray-200/60 shadow-sm p-4 lg:p-5">
+              <FilterSidebar
+                className="bg-transparent p-0"
+                categories={breadcrumbs.length > 0 ? [breadcrumbs[0]] : []}
+                onFilterChange={handleFilterChange}
+              />
+            </div>
+          </motion.aside>
+
+          {/* ══ RIGHT COLUMN: Products Grid ══
+              - Page scrolls to view products and eventually global footer
+          */}
+          <motion.div
+            initial={{ opacity: 0, y: 14 }}
+            animate={{ opacity: 1, y: 0 }}
+            transition={{ duration: 0.35, delay: 0.05 }}
+            className="flex-1 min-w-0"
+          >
+            <div className="bg-white rounded-xl border border-gray-200/60 shadow-sm overflow-hidden">
+
+              {/* ── Pinned header: breadcrumb + title (left) | count (right) ── */}
+              <div className="flex-shrink-0 flex items-start justify-between px-5 sm:px-6 py-4 border-b border-gray-100 bg-white gap-4">
+
+                {/* Left: Breadcrumb + Category Name */}
+                <div className="min-w-0">
+                  <nav className="flex items-center gap-1.5 text-[9px] font-sans font-bold uppercase tracking-[0.2em] text-gray-400 mb-1.5 flex-wrap">
+                    <Link to="/" className="hover:text-brand-orange transition-colors whitespace-nowrap">Home</Link>
+                    {breadcrumbs.map(bc => (
+                      <React.Fragment key={bc.id}>
+                        <span className="text-gray-300">›</span>
+                        <Link
+                          to={bc.fullPath}
+                          className={`hover:text-brand-orange transition-colors whitespace-nowrap ${bc.id === currentCategory.id ? 'text-brand-orange' : ''}`}
+                        >
+                          {bc.name}
+                        </Link>
+                      </React.Fragment>
+                    ))}
+                  </nav>
+                  <h1 className="text-lg sm:text-xl lg:text-2xl font-sans font-semibold text-[#111111] capitalize tracking-tight leading-tight">
+                    {currentCategory.name}
+                  </h1>
+                </div>
+
+                {/* Right: Product count + mobile filter button */}
+                <div className="flex items-center gap-3 flex-shrink-0 self-end pb-0.5">
+                  <p className="text-[10px] font-sans font-black uppercase tracking-[0.2em] text-gray-400 whitespace-nowrap">
+                    {filteredProducts.length} {filteredProducts.length === 1 ? 'Product' : 'Products'}
+                  </p>
+                  <button
+                    onClick={() => setIsMobileFiltersOpen(true)}
+                    className="md:hidden flex items-center gap-1.5 text-[10px] font-sans font-black tracking-[0.2em] uppercase border border-gray-200 px-3 py-1.5 rounded-lg hover:border-brand-orange hover:text-brand-orange transition-all"
                   >
-                    {bc.name}
-                  </Link>
-                </React.Fragment>
-              ))}
-            </nav>
+                    <SlidersHorizontal size={12} />
+                    Filters
+                  </button>
+                </div>
+              </div>
 
-            <h1 className="text-2xl md:text-4xl lg:text-5xl font-sans font-medium text-[#111111] capitalize tracking-tight leading-tight mb-6 md:mb-12">
-              {currentCategory.name}
-            </h1>
+              {/* ── Product Grid ── */}
+              <div className="px-4 sm:px-5 lg:px-7 py-5 sm:py-6">
+                <div className="grid grid-cols-2 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-x-3 gap-y-8 md:gap-x-5 md:gap-y-10">
+                  {filteredProducts.length > 0 ? (
+                    filteredProducts.map((product) => (
+                      <ProductCard key={product.id} {...product} />
+                    ))
+                  ) : (
+                    <div className="col-span-full py-20 text-center bg-gray-50 rounded-xl">
+                      <p className="text-gray-400 font-sans text-lg mb-3">No treasures found in this range yet.</p>
+                      <Link to="/collections" className="text-brand-orange font-bold uppercase tracking-widest text-[10px]">
+                        Explore All Collections
+                      </Link>
+                    </div>
+                  )}
+                </div>
+              </div>
 
+            </div>
           </motion.div>
 
-          {/* Product Grid Area */}
-          <section className="mb-16 md:mb-24">
-            <div className="flex items-center justify-end mb-4 pb-4 border-b border-gray-100">
-              <button
-                onClick={() => setIsMobileFiltersOpen(true)}
-                className="md:hidden flex items-center gap-2 text-[10px] font-black tracking-[0.2em] uppercase text-brand-black"
-              >
-                <SlidersHorizontal size={14} />
-                Filters
-              </button>
-            </div>
-
-            <div className="grid grid-cols-2 lg:grid-cols-3 gap-x-3 gap-y-8 md:gap-x-6 md:gap-y-12">
-              {filteredProducts.length > 0 ? (
-                filteredProducts.map((product) => (
-                  <ProductCard key={product.id} {...product} />
-                ))
-              ) : (
-                <div className="col-span-full py-20 text-center bg-gray-50 rounded-3xl">
-                  <p className="text-gray-400 font-sans text-xl mb-4">No treasures found in this range yet.</p>
-                  <Link to="/collections" className="text-brand-orange font-bold uppercase tracking-widest text-[10px]">Explore All Collections</Link>
-                </div>
-              )}
-            </div>
-          </section>
         </div>
       </div>
 
-      {/* Mobile Filters Drawer */}
+      {/* ── Mobile Filters Drawer ── */}
       <AnimatePresence>
         {isMobileFiltersOpen && (
           <>
@@ -240,21 +267,24 @@ export default function CategoryView() {
               animate={{ x: 0 }}
               exit={{ x: '-100%' }}
               transition={{ type: 'spring', damping: 30, stiffness: 300 }}
-              className="fixed inset-y-0 left-0 w-[85%] max-w-sm bg-[#F9F9F9] z-[1001] shadow-2xl overflow-y-auto"
+              className="fixed inset-y-0 left-0 w-[85%] max-w-sm bg-white z-[1001] shadow-2xl overflow-y-auto"
             >
-              <div className="p-8 border-b border-gray-100 flex items-center justify-between bg-white sticky top-0 z-10">
-                <h3 className="text-xs font-black uppercase tracking-[0.3em] text-brand-black">Refine Selection</h3>
+              <div className="p-6 border-b border-gray-100 flex items-center justify-between bg-white sticky top-0 z-10">
+                <h3 className="text-xs font-sans font-black uppercase tracking-[0.3em] text-brand-black">Refine Selection</h3>
                 <button
                   onClick={() => setIsMobileFiltersOpen(false)}
-                  className="w-10 h-10 flex items-center justify-center bg-gray-50 hover:bg-brand-orange hover:text-white rounded-full transition-all duration-300"
+                  className="w-9 h-9 flex items-center justify-center bg-gray-50 hover:bg-brand-orange hover:text-white rounded-full transition-all duration-300"
                 >
-                  <X size={18} />
+                  <X size={16} />
                 </button>
               </div>
-              <FilterSidebar
-                className="bg-transparent"
-                categories={breadcrumbs.length > 0 ? [breadcrumbs[0]] : []}
-              />
+              <div className="p-5">
+                <FilterSidebar
+                  className="bg-transparent"
+                  categories={breadcrumbs.length > 0 ? [breadcrumbs[0]] : []}
+                  onFilterChange={handleFilterChange}
+                />
+              </div>
             </motion.div>
           </>
         )}

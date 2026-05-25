@@ -60,6 +60,15 @@ export default function Checkout() {
     }
   }, [user, buyNowItem]);
 
+  // Load Razorpay script dynamically only on the checkout page
+  useEffect(() => {
+    if (window.Razorpay) return;
+    const script = document.createElement('script');
+    script.src = "https://checkout.razorpay.com/v1/checkout.js";
+    script.async = true;
+    document.body.appendChild(script);
+  }, []);
+
   // Fetch Saved Addresses
   useEffect(() => {
     if (!user) return;
@@ -184,7 +193,7 @@ export default function Checkout() {
         totalAmount: total,
         paymentMethod: paymentMethod,
         razorpayPaymentId: razorpayPaymentId,
-        items: items.map(i => ({ name: i.name, qty: i.qty, price: i.price, productType: i.productType || 'Standard' })),
+        items: items.map(i => ({ id: i.id, name: i.name, qty: i.qty, price: i.price, productType: i.productType || 'Standard' })),
         subtotal,
         shipping: subtotal > 25000 ? 0 : shipping,
         total,

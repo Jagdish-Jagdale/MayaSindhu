@@ -8,7 +8,7 @@ import { doc, getDoc, setDoc, updateDoc, deleteDoc, serverTimestamp, onSnapshot 
 import { addToCart } from '../../utils/cartUtils';
 import toast from 'react-hot-toast';
 
-export default function ProductCard({ id, slug, name, price, discountedPrice, image, imageUrl, images, rating = 4.8, showWishlist = true, stock, isUniquePiece, productType }) {
+export default function ProductCard({ id, slug, name, price, discountedPrice, image, imageUrl, images, rating, showWishlist = true, stock, isUniquePiece, productType, reviewCount }) {
   const displayPrice = discountedPrice || price || 0;
   const displayImage = image || imageUrl || (images && images.length > 0 ? images[0] : '');
   const [isAdded, setIsAdded] = useState(false);
@@ -278,10 +278,12 @@ export default function ProductCard({ id, slug, name, price, discountedPrice, im
           <p className="text-brand-orange font-bold text-lg md:text-xl">
             ₹{displayPrice.toLocaleString('en-IN')}
           </p>
-          <div className="flex items-center space-x-1 text-text-main">
-            <Star size={12} fill="currentColor" className="text-brand-orange md:w-3.5 md:h-3.5" />
-            <span className="text-[10px] md:text-[12px] font-bold">{rating}</span>
-          </div>
+          {reviewCount > 0 && (
+            <div className="flex items-center space-x-1 text-text-main">
+              <Star size={12} fill="currentColor" className="text-brand-orange md:w-3.5 md:h-3.5" />
+              <span className="text-[10px] md:text-[12px] font-bold">{rating}</span>
+            </div>
+          )}
         </div>
       </div>
     </motion.div>

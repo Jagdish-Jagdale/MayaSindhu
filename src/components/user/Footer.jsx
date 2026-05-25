@@ -1,6 +1,7 @@
 import { motion } from 'framer-motion';
 import { Link } from 'react-router-dom';
 import useCategories from '../../hooks/useCategories';
+import footerLogo from '../../assets/navbar logo.png';
 
 export default function Footer() {
   const { categories } = useCategories();
@@ -30,15 +31,33 @@ export default function Footer() {
     .slice(0, 8);
 
   return (
-    <footer className="bg-[#F0F7FF] pt-24 pb-12 border-t border-[#004D40]/5">
+    <footer className="bg-[#F0F7FF] pt-16 pb-12 border-t border-[#004D40]/5">
       <div className="max-w-[1536px] mx-auto px-6 lg:px-24">
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-12 lg:gap-24 mb-20">
 
           {/* Column 1: Brand Info */}
           <div>
-            <h2 className="text-[#004D40] text-lg font-sans font-bold tracking-[0.3em] uppercase mb-8">
-              MAYASINDHU
-            </h2>
+            <Link to="/" className="flex items-center gap-3 mb-8 hover:opacity-80 transition-opacity group">
+              <div className="relative w-14 h-14 shrink-0">
+                <img src={footerLogo} alt="MayaSindhu" className="w-full h-full object-contain opacity-0" />
+                <div
+                  className="absolute inset-0 bg-[#F99C00]"
+                  style={{
+                    WebkitMaskImage: `url(${footerLogo})`,
+                    WebkitMaskSize: 'contain',
+                    WebkitMaskRepeat: 'no-repeat',
+                    WebkitMaskPosition: 'center',
+                    maskImage: `url(${footerLogo})`,
+                    maskSize: 'contain',
+                    maskRepeat: 'no-repeat',
+                    maskPosition: 'center',
+                  }}
+                />
+              </div>
+              <h2 className="text-[#004D40] text-lg font-sans font-bold tracking-[0.3em] uppercase">
+                MAYASINDHU
+              </h2>
+            </Link>
             <p className="text-[#1A1A1A] text-[15px] leading-relaxed mb-10 max-w-[280px]">
               Curating timeless pieces that honor the hands that made them. Wear the story of heritage.
             </p>
