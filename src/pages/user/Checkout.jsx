@@ -317,7 +317,7 @@ export default function Checkout() {
                   initial={{ opacity: 0, x: -20 }}
                   animate={{ opacity: 1, x: 0 }}
                   exit={{ opacity: 0, x: 20 }}
-                  className="bg-white p-10 md:p-14 rounded-[4rem] shadow-sm"
+                  className="bg-white p-5 sm:p-10 md:p-14 rounded-3xl md:rounded-[4rem] shadow-sm"
                 >
                   <div className="flex items-center gap-4 mb-4">
                     <Truck className="text-brand-orange" size={24} />
@@ -386,7 +386,7 @@ export default function Checkout() {
                   initial={{ opacity: 0, x: -20 }}
                   animate={{ opacity: 1, x: 0 }}
                   exit={{ opacity: 0, x: 20 }}
-                  className="bg-white p-10 md:p-14 rounded-[4rem] shadow-sm"
+                  className="bg-white p-5 sm:p-10 md:p-14 rounded-3xl md:rounded-[4rem] shadow-sm"
                 >
                   <div className="flex items-center gap-4 mb-10">
                     <CreditCard className="text-brand-orange" size={24} />
@@ -464,7 +464,7 @@ export default function Checkout() {
                   key="confirm"
                   initial={{ opacity: 0, scale: 0.95 }}
                   animate={{ opacity: 1, scale: 1 }}
-                  className="bg-white p-12 md:p-20 rounded-[4rem] shadow-sm text-center"
+                  className="bg-white p-6 sm:p-12 md:p-20 rounded-3xl md:rounded-[4rem] shadow-sm text-center"
                 >
                   <div className="w-24 h-24 bg-green-50 text-green-500 rounded-full flex items-center justify-center mx-auto mb-10">
                     <Check size={48} strokeWidth={3} />
@@ -482,7 +482,7 @@ export default function Checkout() {
           {/* Sidebar Summary */}
           {activeStep < 2 && (
             <div className="lg:col-span-1">
-              <div className="bg-white p-10 rounded-[3rem] shadow-sm border border-gray-100 sticky top-24 h-fit">
+              <div className="bg-white p-6 sm:p-10 rounded-3xl md:rounded-[3rem] shadow-sm border border-gray-100 sticky top-24 h-fit">
                 <div className="flex items-center justify-between mb-8">
                   <h3 className="text-xl font-sans font-bold text-[#1A1A1A]">Order Details</h3>
                   {buyNowItem && (

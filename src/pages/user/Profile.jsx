@@ -2,7 +2,7 @@ import React, { useState, useEffect } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import {
   Package, User, Heart, LogOut, ChevronRight,
-  MapPin, CreditCard, Bell, RotateCcw, HelpCircle, Menu, ShoppingBag
+  MapPin, CreditCard, Bell, RotateCcw, HelpCircle, Menu, ShoppingBag, X
 } from 'lucide-react';
 import { useNavigate } from 'react-router-dom';
 import { useAuth } from '../../context/AuthContext';
@@ -95,7 +95,15 @@ export default function Profile() {
         `}>
           <div className="flex flex-col h-full overscroll-contain">
             {/* Sidebar Profile Header */}
-            <div className="flex flex-col items-center py-12 px-6 text-center">
+            <div className="flex flex-col items-center py-12 px-6 text-center relative">
+              {/* Mobile Close Button */}
+              <button
+                onClick={() => setIsSidebarOpen(false)}
+                className="absolute top-4 right-4 p-2 text-gray-400 hover:text-black lg:hidden cursor-pointer"
+                aria-label="Close sidebar"
+              >
+                <X size={24} />
+              </button>
               <div className="relative mb-6">
                 <div className="w-28 h-28 rounded-full bg-brand-orange/5 p-1">
                   <div className="w-full h-full rounded-full bg-brand-orange border-4 border-white shadow-xl flex items-center justify-center text-white text-4xl font-bold overflow-hidden">

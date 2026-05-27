@@ -271,7 +271,7 @@ export default function OrderHistory({ user }) {
                                 }`}>
                                 {React.cloneElement(STATUS_ICONS[step], { size: 14 })}
                               </div>
-                              <span className={`text-[8px] uppercase font-bold tracking-widest ${isActive ? 'text-[#f5aa00]' : 'text-gray-300'}`}>
+                              <span className={`hidden sm:inline-block text-[8px] uppercase font-bold tracking-widest ${isActive ? 'text-[#f5aa00]' : 'text-gray-300'}`}>
                                 {step}
                               </span>
                             </div>

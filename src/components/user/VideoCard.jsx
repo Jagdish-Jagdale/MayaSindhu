@@ -37,16 +37,25 @@ export default function VideoCard({ videoUrl, title, category, thumbnail, produc
 
   const handleMouseEnter = () => {
     if (videoError) return;
+
+    // Disable hover video playback on touch/mobile devices to avoid conflict with the modal player
+    const hasHoverSupport = typeof window !== 'undefined' && window.matchMedia && window.matchMedia('(hover: hover)').matches;
+    if (!hasHoverSupport) return;
+
     setIsHovered(true);
     if (videoRef.current) {
       videoRef.current.play().catch(e => {
-        console.error("Video play failed:", e);
-        setVideoError(true);
+        // Log warning for debugging, but do not set videoError to true
+        console.warn("Video play interrupted or blocked:", e.message);
       });
     }
   };
 
   const handleMouseLeave = () => {
+    // Disable hover video playback on touch/mobile devices
+    const hasHoverSupport = typeof window !== 'undefined' && window.matchMedia && window.matchMedia('(hover: hover)').matches;
+    if (!hasHoverSupport) return;
+
     setIsHovered(false);
     if (videoRef.current) {
       videoRef.current.pause();
