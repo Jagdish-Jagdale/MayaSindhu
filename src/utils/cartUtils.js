@@ -46,6 +46,7 @@ export const addToCart = async (user, product, quantity = 1) => {
     }
     await setDoc(cartItemRef, {
       id: productId,
+      productId: product.productId || '',
       slug: product.slug || productId,
       name: product.name || 'Handcrafted Treasure',
       price: product.price || 0,

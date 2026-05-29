@@ -19,6 +19,7 @@ import useCategories from '../../hooks/useCategories';
 import navLogo from '../../assets/navbar logo.png';
 import { db } from '../../firebase';
 import { collection, onSnapshot, query, doc, getDocs, limit, where, orderBy } from 'firebase/firestore';
+import { getProductPath } from '../../utils/productUtils';
 
 export default function Navbar() {
   const { categories } = useCategories();
@@ -245,7 +246,7 @@ export default function Navbar() {
                       {suggestions.map((p) => (
                         <Link
                           key={p.id}
-                          to={`/product/${p.slug || p.id}`}
+                          to={getProductPath(p.productId || p.id, p.name, p.slug)}
                           onClick={() => setSuggestions([])}
                           className="flex items-center gap-3 p-3 hover:bg-gray-50 rounded-lg transition-colors group/item"
                         >
@@ -384,7 +385,7 @@ export default function Navbar() {
                       {suggestions.map((p) => (
                         <Link
                           key={p.id}
-                          to={`/product/${p.slug || p.id}`}
+                          to={getProductPath(p.productId || p.id, p.name, p.slug)}
                           onClick={() => { setSuggestions([]); setIsMobileSearchOpen(false); }}
                           className="flex items-center gap-3 p-3 hover:bg-gray-50 rounded-lg transition-colors group/item"
                         >

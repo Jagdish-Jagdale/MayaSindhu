@@ -3,6 +3,7 @@ import { db } from '../../../../firebase';
 import { collection, query, onSnapshot, doc, deleteDoc } from 'firebase/firestore';
 import { Heart, ShoppingBag, Trash2, ArrowRight } from 'lucide-react';
 import { Link } from 'react-router-dom';
+import { getProductPath } from '../../../../utils/productUtils';
 import toast from 'react-hot-toast';
 
 export default function WishlistTab({ user }) {
@@ -66,7 +67,7 @@ export default function WishlistTab({ user }) {
                 <p className="text-brand-orange font-bold text-xs mb-4">₹{item.price.toLocaleString('en-IN')}</p>
 
                 <Link
-                  to={`/product/${item.productId || item.id}`}
+                  to={getProductPath(item.productId || item.id, item.name, item.slug)}
                   className="w-full bg-[#1A1A1A] text-white py-3 rounded-lg flex items-center justify-center gap-2 text-[10px] font-bold uppercase tracking-widest hover:bg-black transition-all group"
                 >
                   View Details <ArrowRight size={14} className="group-hover:translate-x-1 transition-transform" />
