@@ -243,7 +243,7 @@ const ProductDetailSkeleton = () => {
 };
 
 export default function ProductDetail() {
-  const { slug } = useParams();
+  const { id, slug } = useParams();
   const navigate = useNavigate();
   const goBack = useGoBack();
   const location = useLocation();
@@ -272,42 +272,64 @@ export default function ProductDetail() {
   const isUnique = product ? (product.isUniquePiece === true || product.productType === 'Unique') : false;
   const stockVal = product ? (typeof product.stock === 'number' ? product.stock : (isUnique ? 1 : 15)) : 15;
 
-  // Fetch Product by Slug (Real-time Firestore listener for stock updates)
+  // Fetch Product by ID or Slug (Real-time Firestore listener for stock updates)
   useEffect(() => {
+    if (!id) return;
     setLoading(true);
-    let unsubDoc = null;
 
-    const q = query(collection(db, 'products'), where('slug', '==', slug));
-    const unsubscribe = onSnapshot(q, (querySnapshot) => {
-      if (!querySnapshot.empty) {
-        const docSnap = querySnapshot.docs[0];
+    let unsubDoc = null;
+    let unsubProductQuery = null;
+    let unsubSlugQuery = null;
+
+    const docRef = doc(db, 'products', id);
+    unsubDoc = onSnapshot(docRef, (docSnap) => {
+      if (docSnap.exists()) {
         setProduct({ id: docSnap.id, ...docSnap.data() });
         setLoading(false);
       } else {
-        // Fallback to fetch by document ID
-        const docRef = doc(db, 'products', slug);
-        if (!unsubDoc) {
-          unsubDoc = onSnapshot(docRef, (docSnap) => {
-            if (docSnap.exists()) {
-              setProduct({ id: docSnap.id, ...docSnap.data() });
+        // Document ID not found, try looking up by generated productId
+        if (!unsubProductQuery) {
+          const qProduct = query(collection(db, 'products'), where('productId', '==', id));
+          unsubProductQuery = onSnapshot(qProduct, (querySnapshot) => {
+            if (!querySnapshot.empty) {
+              const snap = querySnapshot.docs[0];
+              setProduct({ id: snap.id, ...snap.data() });
+              setLoading(false);
+            } else {
+              // Not found by generated productId either, try legacy slug
+              if (!unsubSlugQuery) {
+                const qSlug = query(collection(db, 'products'), where('slug', '==', id));
+                unsubSlugQuery = onSnapshot(qSlug, (slugSnapshot) => {
+                  if (!slugSnapshot.empty) {
+                    const snap = slugSnapshot.docs[0];
+                    setProduct({ id: snap.id, ...snap.data() });
+                  } else {
+                    setProduct(null);
+                  }
+                  setLoading(false);
+                }, (err) => {
+                  console.error("Error querying legacy slug fallback:", err);
+                  setLoading(false);
+                });
+              }
             }
-            setLoading(false);
           }, (err) => {
-            console.error("Error fallback onSnapshot:", err);
+            console.error("Error querying productId fallback:", err);
             setLoading(false);
           });
         }
       }
     }, (error) => {
-      console.error("Error listening to product slug in real-time:", error);
+      console.error("Error listening to product ID in real-time:", error);
       setLoading(false);
     });
 
     return () => {
-      unsubscribe();
       if (unsubDoc) unsubDoc();
+      if (unsubProductQuery) unsubProductQuery();
+      if (unsubSlugQuery) unsubSlugQuery();
     };
-  }, [slug]);
+  }, [id]);
 
   // Lock quantity to 1 for unique items
   useEffect(() => {
@@ -496,6 +518,7 @@ export default function ProductDetail() {
       } else {
         await setDoc(wishItemRef, {
           id: product.id,
+          productId: product.productId || '',
           slug: product.slug || product.id,
           name: product.name,
           price: product.discountedPrice || product.price || 0,

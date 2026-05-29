@@ -15,7 +15,7 @@ const TitleUpdater = () => {
       
       // Special handling for Product Detail pages
       if (segments[0] === 'product' && segments[1]) {
-        const slug = segments[1];
+        const slug = segments[2] || segments[1];
         title = formatSegment(slug);
       } 
       // Special handling for Category pages

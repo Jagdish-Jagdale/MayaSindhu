@@ -6,9 +6,10 @@ import { useAuth } from '../../context/AuthContext';
 import { db } from '../../firebase';
 import { doc, getDoc, setDoc, updateDoc, deleteDoc, serverTimestamp, onSnapshot } from 'firebase/firestore';
 import { addToCart } from '../../utils/cartUtils';
+import { getProductPath } from '../../utils/productUtils';
 import toast from 'react-hot-toast';
 
-export default function ProductCard({ id, slug, name, price, discountedPrice, image, imageUrl, images, rating, showWishlist = true, stock, isUniquePiece, productType, reviewCount }) {
+export default function ProductCard({ id, productId, slug, name, price, discountedPrice, image, imageUrl, images, rating, showWishlist = true, stock, isUniquePiece, productType, reviewCount }) {
   const displayPrice = discountedPrice || price || 0;
   const displayImage = image || imageUrl || (images && images.length > 0 ? images[0] : '');
   const [isAdded, setIsAdded] = useState(false);
@@ -29,15 +30,15 @@ export default function ProductCard({ id, slug, name, price, discountedPrice, im
       return;
     }
 
-    const productId = id?.toString();
-    if (!productId) return;
+    const docId = id?.toString();
+    if (!docId) return;
 
-    const wishItemRef = doc(db, 'users', user.uid, 'wishlist', productId);
+    const wishItemRef = doc(db, 'users', user.uid, 'wishlist', docId);
     const unsubWishlist = onSnapshot(wishItemRef, (doc) => {
       setIsWishlisted(doc.exists());
     });
 
-    const cartItemRef = doc(db, 'users', user.uid, 'cart', productId);
+    const cartItemRef = doc(db, 'users', user.uid, 'cart', docId);
     const unsubCart = onSnapshot(cartItemRef, (doc) => {
       setIsInCart(doc.exists());
     });
@@ -58,14 +59,14 @@ export default function ProductCard({ id, slug, name, price, discountedPrice, im
       return;
     }
 
-    const productId = id?.toString();
-    if (!productId) {
+    const docId = id?.toString();
+    if (!docId) {
       console.error("Cart: Operation failed - Product ID is missing.");
       return;
     }
 
     try {
-      await addToCart(user, { id, slug, name, price: displayPrice, image, images });
+      await addToCart(user, { id, productId: productId || '', slug, name, price: displayPrice, image, images });
       setIsAdded(true);
       setTimeout(() => setIsAdded(false), 2000);
     } catch (error) {
@@ -84,23 +85,24 @@ export default function ProductCard({ id, slug, name, price, discountedPrice, im
       return;
     }
 
-    const productId = id?.toString();
-    if (!productId) {
+    const docId = id?.toString();
+    if (!docId) {
       console.error("Wishlist: Operation failed - Product ID is missing.");
       return;
     }
 
     try {
-      console.log(`Wishlist: Toggling Product [${productId}] for User [${user.uid}]`);
-      const wishItemRef = doc(db, 'users', user.uid, 'wishlist', productId);
+      console.log(`Wishlist: Toggling Product [${docId}] for User [${user.uid}]`);
+      const wishItemRef = doc(db, 'users', user.uid, 'wishlist', docId);
 
       if (isWishlisted) {
         await deleteDoc(wishItemRef);
         console.log("Wishlist: Item removed.");
       } else {
         await setDoc(wishItemRef, {
-          id: productId,
-          slug: slug || productId,
+          id: docId,
+          productId: productId || '',
+          slug: slug || docId,
           name: name || 'Handcrafted Treasure',
           price: displayPrice,
           image: image || imageUrl || (images && images[0]) || '',
@@ -134,7 +136,7 @@ export default function ProductCard({ id, slug, name, price, discountedPrice, im
       className="group relative"
     >
       <div className="relative aspect-[3/4] overflow-hidden bg-[#F9F8F6] rounded-2xl shadow-sm hover:shadow-xl transition-shadow duration-500 flex items-center justify-center p-2">
-        <Link to={`/product/${slug || id}`} className="w-full h-full">
+        <Link to={getProductPath(productId || id, name, slug)} className="w-full h-full">
           <img
             src={displayImage}
             alt={name}
@@ -271,7 +273,7 @@ export default function ProductCard({ id, slug, name, price, discountedPrice, im
       </div>
 
       <div className="mt-5 px-1">
-        <Link to={`/product/${slug || id}`}>
+        <Link to={getProductPath(productId || id, name, slug)}>
           <h3 className="text-sm md:text-[15px] tracking-wide font-sans text-text-main hover:text-brand-orange transition-colors line-clamp-1 mb-1.5">{name}</h3>
         </Link>
         <div className="flex items-center justify-between">

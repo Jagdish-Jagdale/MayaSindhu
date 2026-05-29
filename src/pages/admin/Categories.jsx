@@ -247,19 +247,19 @@ export default function Categories() {
 
     setIsSaving(true);
     try {
-      // Check for duplicates (case-insensitive)
-      const checkDuplicate = (items, name, excludeId) => {
-        for (const cat of items) {
-          if (cat.name.toLowerCase() === name.toLowerCase() && cat.id !== excludeId) return true;
-          if (cat.children && checkDuplicate(cat.children, name, excludeId)) return true;
-        }
-        return false;
-      };
+      // Check for duplicates only at the main category level
+      const isMainCategory = editingCategory ? !editingCategory.parentId : currentPath.length === 0;
 
-      if (checkDuplicate(fullHierarchy, cleanName, editingCategory?.id)) {
-        toast.error(`"${cleanName}" already exists in heritage mapping`);
-        setIsSaving(false);
-        return;
+      if (isMainCategory) {
+        const isDuplicate = fullHierarchy.some(
+          cat => cat.name.toLowerCase() === cleanName.toLowerCase() && cat.id !== editingCategory?.id
+        );
+        
+        if (isDuplicate) {
+          toast.error(`"${cleanName}" already exists as a main category`);
+          setIsSaving(false);
+          return;
+        }
       }
 
       if (editingCategory) {
