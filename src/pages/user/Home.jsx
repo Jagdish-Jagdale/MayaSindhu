@@ -493,7 +493,7 @@ export default function Home() {
                       {/* Text Content */}
                       {(item.title || item.subtitle) && (
                         <div className="absolute inset-x-0 bottom-0 p-3 md:p-8 lg:p-10 z-20">
-                          <div className="transform translate-y-4 group-hover:translate-y-0 transition-transform duration-500">
+                          <div className="transform md:translate-y-4 md:group-hover:translate-y-0 transition-transform duration-500">
                             {item.subtitle && (
                               <p className="text-brand-orange text-[10px] md:text-[11px] uppercase font-bold tracking-[0.3em] mb-3 opacity-0 group-hover:opacity-100 transition-all duration-500 delay-75">
                                 {item.subtitle}

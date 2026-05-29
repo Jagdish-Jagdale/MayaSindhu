@@ -143,9 +143,21 @@ export default function Cart() {
                     {item.productType === 'Unique' && (
                       <p className="text-[9px] md:text-[10px] font-black text-[#1BAFAF] uppercase tracking-widest mb-1 md:mb-2">Unique Piece</p>
                     )}
-                    <p className="text-brand-orange font-bold text-sm md:text-lg mb-3 md:mb-6">₹{item.price.toLocaleString()}</p>
+                    <p className="text-brand-orange font-bold text-sm md:text-lg mb-3 md:mb-6">
+                      ₹{item.price.toLocaleString()}
+                      {item.qty > 1 && (
+                        <span className="text-gray-400 font-medium text-xs ml-2 md:hidden">
+                          (Total: ₹{(item.price * item.qty).toLocaleString()})
+                        </span>
+                      )}
+                      {item.qty === 1 && (
+                        <span className="text-gray-400 font-medium text-xs ml-2 md:hidden">
+                          (Total: ₹{item.price.toLocaleString()})
+                        </span>
+                      )}
+                    </p>
 
-                    <div className="flex items-center justify-start gap-4">
+                    <div className="flex flex-wrap items-center justify-start gap-3">
                       <div className="flex items-center bg-gray-50 rounded-full px-3 md:px-4 py-1.5 md:py-2 gap-4 md:gap-6 border border-gray-100">
                         <button onClick={() => updateQty(item.docId, -1, item.qty)} className="text-gray-400 hover:text-brand-orange transition-colors">
                           <Minus size={14} className="md:w-4 md:h-4" />
@@ -159,6 +171,30 @@ export default function Cart() {
                           <Plus size={14} className="md:w-4 md:h-4" />
                         </button>
                       </div>
+
+                      {/* Mobile Remove Button */}
+                      <button
+                        onClick={() => removeItem(item.docId)}
+                        className="flex md:hidden items-center justify-center p-2 bg-red-50 text-red-500 rounded-xl border border-red-100 active:scale-95 transition-all cursor-pointer"
+                        title="Remove item"
+                      >
+                        <Trash2 size={16} />
+                      </button>
+
+                      {/* Mobile Buy this now Button */}
+                      <button
+                        onClick={() => navigate('/checkout', { 
+                          state: { 
+                            buyNowItem: {
+                              ...item,
+                              isDirectBuy: true
+                            } 
+                          } 
+                        })}
+                        className="flex md:hidden items-center justify-center bg-brand-orange hover:bg-brand-orange-dark text-white px-4 py-2.5 rounded-xl transition-all font-bold text-[10px] uppercase tracking-wider active:scale-95 border border-brand-orange/20 cursor-pointer"
+                      >
+                        Buy Now
+                      </button>
                     </div>
                   </div>
 

@@ -4,7 +4,7 @@ import { useNavigate } from 'react-router-dom';
 import { useAuth } from '../../context/AuthContext';
 import { addToCart } from '../../utils/cartUtils';
 import { db } from '../../firebase';
-import { doc, getDoc } from 'firebase/firestore';
+import { doc, getDoc, onSnapshot } from 'firebase/firestore';
 import { X, ChevronLeft, ChevronRight, ShoppingBag, Volume2, VolumeX, Share2, Loader2 } from 'lucide-react';
 import toast from 'react-hot-toast';
 
@@ -13,8 +13,9 @@ export default function VideoModal({ isOpen, onClose, look, onNext, onPrev }) {
   const navigate = useNavigate();
   const [productData, setProductData] = useState(null);
   const [loadingProduct, setLoadingProduct] = useState(false);
-  const [isMuted, setIsMuted] = useState(false);
+  const [isMuted, setIsMuted] = useState(true);
   const [addedToCart, setAddedToCart] = useState(false);
+  const [alreadyInBag, setAlreadyInBag] = useState(false);
   const [activeImgIdx, setActiveImgIdx] = useState(0);
 
   // Reset states when look changes
@@ -57,6 +58,21 @@ export default function VideoModal({ isOpen, onClose, look, onNext, onPrev }) {
     };
     fetchProd();
   }, [look?.productId, isOpen]);
+
+  // Listen for cart status of the fetched product
+  useEffect(() => {
+    if (!user || !productData) {
+      setAlreadyInBag(false);
+      return;
+    }
+
+    const cartItemRef = doc(db, 'users', user.uid, 'cart', productData.id.toString());
+    const unsubscribe = onSnapshot(cartItemRef, (docSnap) => {
+      setAlreadyInBag(docSnap.exists());
+    });
+
+    return () => unsubscribe();
+  }, [user, productData]);
 
   if (!isOpen || !look) return null;
 
@@ -119,6 +135,15 @@ export default function VideoModal({ isOpen, onClose, look, onNext, onPrev }) {
 
             {/* Video Overlays */}
             <div className="absolute inset-0 bg-gradient-to-b from-black/50 via-transparent to-black/20 pointer-events-none" />
+
+            {/* Mute/Unmute Overlay Toggle */}
+            <button
+              onClick={() => setIsMuted(prev => !prev)}
+              className="absolute bottom-4 right-4 z-20 w-10 h-10 bg-black/50 hover:bg-black/70 text-white rounded-full flex items-center justify-center transition-all border border-white/10 shadow-lg cursor-pointer"
+              title={isMuted ? "Unmute" : "Mute"}
+            >
+              {isMuted ? <VolumeX size={18} /> : <Volume2 size={18} />}
+            </button>
           </div>
 
           {/* Right Side: Product Narrative Section (White Theme) */}
@@ -195,13 +220,13 @@ export default function VideoModal({ isOpen, onClose, look, onNext, onPrev }) {
                       const stockVal = typeof productData?.stock === 'number' ? productData.stock : (isUnique ? 1 : 15);
                       const isOutOfStock = stockVal === 0;
 
-                      if (addedToCart) {
+                      if (addedToCart || alreadyInBag) {
                         return (
                           <button
-                            className="flex-1 bg-brand-orange hover:bg-brand-orange-dark text-white font-bold py-4 rounded-md transition-all active:scale-[0.98] text-[14px]"
+                            className="flex-1 bg-brand-orange hover:bg-brand-orange-dark text-white font-bold py-4 rounded-md transition-all active:scale-[0.98] text-[14px] cursor-pointer"
                             onClick={() => navigate('/cart')}
                           >
-                            Go to cart
+                            Go to bag
                           </button>
                         );
                       }
@@ -209,7 +234,7 @@ export default function VideoModal({ isOpen, onClose, look, onNext, onPrev }) {
                       return (
                         <button
                           disabled={isOutOfStock}
-                          className={`flex-1 font-bold py-4 rounded-md transition-all text-[14px] ${
+                          className={`flex-1 font-bold py-4 rounded-md transition-all text-[14px] cursor-pointer ${
                             isOutOfStock
                               ? 'bg-gray-300 text-gray-500 cursor-not-allowed opacity-50'
                               : 'bg-brand-orange hover:bg-brand-orange-dark text-white active:scale-[0.98]'
@@ -234,10 +259,14 @@ export default function VideoModal({ isOpen, onClose, look, onNext, onPrev }) {
                     })()}
 
                     <div className="relative">
-                      <button className="w-12 h-11 bg-white border border-gray-200 rounded-md flex items-center justify-center text-gray-800 transition-all">
+                      <button 
+                        onClick={() => navigate('/cart')}
+                        className="w-12 h-11 bg-white border border-gray-200 rounded-md flex items-center justify-center text-gray-800 hover:text-brand-orange hover:border-brand-orange/50 transition-all cursor-pointer"
+                        title="Go to cart"
+                      >
                         <ShoppingBag size={20} />
                       </button>
-                      {addedToCart && (
+                      {(addedToCart || alreadyInBag) && (
                         <span className="absolute -top-2 -right-2 w-5 h-5 bg-[#1A1A1A] text-white text-[10px] font-bold rounded-full flex items-center justify-center shadow-lg border-2 border-white animate-in zoom-in duration-300">
                           1
                         </span>
