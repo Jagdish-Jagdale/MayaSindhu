@@ -1,7 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { auth } from '../../firebase';
-import { signInWithEmailAndPassword, signOut } from 'firebase/auth';
+import { signInWithEmailAndPassword, signOut, setPersistence, browserSessionPersistence } from 'firebase/auth';
 import { Mail, Lock, AlertCircle, Loader2, ArrowRight, ShoppingCart, Store, ChevronRight } from 'lucide-react';
 import toast from 'react-hot-toast';
 import { motion, AnimatePresence } from 'framer-motion';
@@ -57,6 +57,7 @@ const AdminLogin = () => {
 
     setLoginLoading(true);
     try {
+      await setPersistence(auth, browserSessionPersistence);
       await signInWithEmailAndPassword(auth, email, password);
       // Logic for redirection is handled by AdminProtectedRoute or the useEffect above
       toast.success("Identity verified.");

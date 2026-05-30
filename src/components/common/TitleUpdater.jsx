@@ -22,6 +22,10 @@ const TitleUpdater = () => {
       else if (segments[0] === 'category' && segments[1]) {
         title = `Category: ${formatSegment(segments[1])}`;
       }
+      // Special handling for Blog Detail pages
+      else if (segments[0] === 'blog' && segments[1]) {
+        title = 'Blog'; // Overridden by BlogDetail once data loads
+      }
       // General handling for other segments
       else {
         // If it's an admin path, we might want to take the last segment or the rest

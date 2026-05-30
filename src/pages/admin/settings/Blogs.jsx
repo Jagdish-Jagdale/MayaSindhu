@@ -87,7 +87,7 @@ export default function Blogs() {
 
   // Load Config & Blogs
   useEffect(() => {
-    const configUnsub = onSnapshot(doc(db, 'settings', 'blogs_config'), (docSnap) => {
+    const configUnsub = onSnapshot(doc(db, 'blogs', 'blogs_config'), (docSnap) => {
       if (docSnap.exists()) {
         setConfig(docSnap.data());
       }
@@ -116,7 +116,7 @@ export default function Blogs() {
   const handleSaveConfig = async () => {
     try {
       setIsSavingConfig(true);
-      await setDoc(doc(db, 'settings', 'blogs_config'), {
+      await setDoc(doc(db, 'blogs', 'blogs_config'), {
         ...config,
         updatedAt: serverTimestamp()
       });

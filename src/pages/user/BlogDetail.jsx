@@ -1,12 +1,12 @@
 import React, { useState, useEffect, useRef } from 'react';
 import { useParams, Link, useNavigate } from 'react-router-dom';
 import { motion } from 'framer-motion';
-import { 
-  ArrowLeft, 
-  Share2, 
-  Calendar, 
-  User, 
-  Clock, 
+import {
+  ArrowLeft,
+  Share2,
+  Calendar,
+  User,
+  Clock,
   Link as LinkIcon,
   Eye,
   Loader2,
@@ -42,7 +42,7 @@ export default function BlogDetail() {
         const cleanId = id.trim();
         const docRef = doc(db, 'blogs', cleanId);
         const docSnap = await getDoc(docRef);
-        
+
         if (!isMounted) return;
 
         if (docSnap.exists()) {
@@ -55,7 +55,7 @@ export default function BlogDetail() {
           }
         }
 
-        const settingsSnap = await getDoc(doc(db, 'settings', 'blogs_config'));
+        const settingsSnap = await getDoc(doc(db, 'blogs', 'blogs_config'));
         if (settingsSnap.exists() && isMounted) {
           setBlogSettings(settingsSnap.data());
         }
@@ -82,6 +82,16 @@ export default function BlogDetail() {
     };
   }, [id]);
 
+  useEffect(() => {
+    if (blog && blog.title) {
+      let displayTitle = blog.title;
+      if (displayTitle.length > 50) {
+        displayTitle = displayTitle.substring(0, 50) + '...';
+      }
+      document.title = `${displayTitle} | MayaSindhu`;
+    }
+  }, [blog]);
+
   const handleShare = () => {
     navigator.clipboard.writeText(window.location.href);
     toast.success("Link copied to clipboard!");
@@ -105,8 +115,8 @@ export default function BlogDetail() {
       {/* Hero Section */}
       <section className="relative h-[45vh] flex flex-col items-center justify-center overflow-hidden">
         <div className="absolute inset-0 z-0">
-          <img 
-            src="https://images.unsplash.com/photo-1583337130417-3346a1be7dee?auto=format&fit=crop&q=80&w=2000" 
+          <img
+            src="https://images.unsplash.com/photo-1583337130417-3346a1be7dee?auto=format&fit=crop&q=80&w=2000"
             className="w-full h-full object-cover"
             alt="Hero Background"
           />
@@ -114,7 +124,7 @@ export default function BlogDetail() {
         </div>
 
         <div className="relative z-10 text-center max-w-4xl px-6">
-          <motion.h1 
+          <motion.h1
             initial={{ opacity: 0, y: 20 }}
             animate={{ opacity: 1, y: 0 }}
             className="text-4xl md:text-6xl font-fashion font-bold text-white mb-6 tracking-tight drop-shadow-2xl"
@@ -122,7 +132,7 @@ export default function BlogDetail() {
             {blogSettings.heading}
           </motion.h1>
           <div className="w-24 h-1 bg-[#C5A059] mx-auto mb-8 rounded-full shadow-lg"></div>
-          <motion.p 
+          <motion.p
             initial={{ opacity: 0, y: 20 }}
             animate={{ opacity: 1, y: 0 }}
             transition={{ delay: 0.1 }}
@@ -137,10 +147,10 @@ export default function BlogDetail() {
       <div className="h-1.5 w-full bg-[#C5A059]"></div>
 
       <div className="max-w-[1300px] mx-auto px-4 md:px-6 py-12 relative z-20">
-        
+
         {/* Top Navigation */}
         <div className="mb-10 pl-2">
-          <Link 
+          <Link
             to="/blog"
             className="inline-flex items-center gap-2 bg-white px-6 py-3 rounded-full border border-gray-100 shadow-sm text-[13px] font-semibold text-gray-500 hover:text-[#C5A059] transition-all group"
             style={{ fontFamily: "'Outfit', sans-serif" }}
@@ -151,7 +161,7 @@ export default function BlogDetail() {
         </div>
 
         {/* Main Outer Card */}
-        <motion.div 
+        <motion.div
           initial={{ opacity: 0, y: 20 }}
           animate={{ opacity: 1, y: 0 }}
           className="bg-white rounded-[2rem] border border-gray-100 shadow-[0_20px_60px_rgba(0,0,0,0.04)] overflow-hidden"
@@ -160,9 +170,9 @@ export default function BlogDetail() {
           <div className="px-10 py-8 flex items-center justify-between">
             <div className="flex items-center gap-5">
               <div className="w-12 h-12 rounded-full overflow-hidden border-2 border-gray-50 shadow-sm">
-                <img 
-                  src={blog.authorImage || `https://api.dicebear.com/7.x/avataaars/svg?seed=${blog.author || 'Expert'}`} 
-                  alt="Author" 
+                <img
+                  src={blog.authorImage || `https://api.dicebear.com/7.x/avataaars/svg?seed=${blog.author || 'Expert'}`}
+                  alt="Author"
                   className="w-full h-full object-cover"
                 />
               </div>
@@ -176,7 +186,7 @@ export default function BlogDetail() {
               </div>
             </div>
 
-            <button 
+            <button
               onClick={handleShare}
               className="flex items-center gap-2 px-5 py-2 rounded-full border border-gray-100 text-[11px] font-bold text-gray-400 hover:text-[#C5A059] hover:border-[#C5A059]/30 transition-all group"
             >
@@ -191,12 +201,12 @@ export default function BlogDetail() {
           {/* Inner Card Section */}
           <div className="p-6 md:p-10 lg:p-12">
             <div className="bg-white rounded-[2rem] border border-gray-100 shadow-[0_10px_30px_rgba(0,0,0,0.02)] p-8 md:p-14">
-              
+
               <h1 className="text-4xl md:text-[52px] font-bold text-gray-900 mb-10 leading-[1.1] tracking-tight">
                 {blog.title}
               </h1>
 
-              <div 
+              <div
                 className="blog-content text-gray-700 text-[18px] md:text-[20px] leading-[1.8] space-y-10"
                 dangerouslySetInnerHTML={{ __html: blog.content }}
               />
@@ -230,37 +240,37 @@ export default function BlogDetail() {
               <div className="mt-16 pt-8 border-t border-gray-50">
                 {/* Social Icons Row */}
                 <div className="flex items-center gap-6 mb-6">
-                  <button 
+                  <button
                     onClick={() => {
                       const url = encodeURIComponent(window.location.href);
                       window.open(`https://www.facebook.com/sharer/sharer.php?u=${url}`, '_blank');
                     }}
-                    className="text-gray-400 hover:text-[#1877F2] transition-colors" 
+                    className="text-[#1877F2] hover:opacity-80 transition-opacity"
                     title="Share on Facebook"
                   >
-                    <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round"><path d="M18 2h-3a5 5 0 0 0-5 5v3H7v4h3v8h4v-8h3l1-4h-4V7a1 1 0 0 1 1-1h3z"/></svg>
+                    <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round"><path d="M18 2h-3a5 5 0 0 0-5 5v3H7v4h3v8h4v-8h3l1-4h-4V7a1 1 0 0 1 1-1h3z" /></svg>
                   </button>
-                  <button 
+                  <button
                     onClick={() => {
                       const url = encodeURIComponent(window.location.href);
                       const text = encodeURIComponent(blog?.title || '');
                       window.open(`https://twitter.com/intent/tweet?url=${url}&text=${text}`, '_blank');
                     }}
-                    className="text-gray-400 hover:text-black transition-colors" 
+                    className="text-black hover:opacity-80 transition-opacity"
                     title="Share on X (Twitter)"
                   >
-                    <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round"><path d="M4 4l11.733 16h4.267l-11.733 -16z"/><path d="M4 20l6.768 -6.768m2.46 -2.46l6.772 -6.772"/></svg>
+                    <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round"><path d="M4 4l11.733 16h4.267l-11.733 -16z" /><path d="M4 20l6.768 -6.768m2.46 -2.46l6.772 -6.772" /></svg>
                   </button>
-                  <button 
+                  <button
                     onClick={() => window.open('https://www.instagram.com/mayasindhu_/', '_blank')}
-                    className="text-gray-400 hover:text-[#E4405F] transition-colors" 
-                    title="Follow on Instagram"
+                    className="text-[#E4405F] hover:opacity-80 transition-opacity"
+                    title="Share on Instagram"
                   >
                     <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round"><rect x="2" y="2" width="20" height="20" rx="5" ry="5"></rect><path d="M16 11.37A4 4 0 1 1 12.63 8 4 4 0 0 1 16 11.37z"></path><line x1="17.5" y1="6.5" x2="17.51" y2="6.5"></line></svg>
                   </button>
-                  <button onClick={handleShare} className="text-gray-400 hover:text-[#C5A059] transition-colors" title="Copy Link"><LinkIcon size={18} strokeWidth={2.5} /></button>
+                  <button onClick={handleShare} className="text-[#C5A059] hover:opacity-80 transition-opacity" title="Copy Link"><LinkIcon size={18} strokeWidth={2.5} /></button>
                 </div>
-                
+
                 {/* Stats Row - Removed views and comments */}
 
               </div>
@@ -277,7 +287,7 @@ export default function BlogDetail() {
             </div>
             <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-6">
               {recentBlogs.map((item, idx) => (
-                <motion.div 
+                <motion.div
                   key={item.id}
                   initial={{ opacity: 0, y: 20 }}
                   whileInView={{ opacity: 1, y: 0 }}
@@ -287,9 +297,9 @@ export default function BlogDetail() {
                 >
                   {/* Card Image Wrapper */}
                   <div className="aspect-[16/10] relative overflow-hidden">
-                    <img 
-                      src={item.image} 
-                      alt={item.title} 
+                    <img
+                      src={item.image}
+                      alt={item.title}
                       className="w-full h-full object-cover transition-transform duration-700 group-hover:scale-110"
                     />
                     {/* Category Badge */}

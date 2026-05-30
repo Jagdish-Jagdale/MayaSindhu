@@ -31,8 +31,8 @@ export default function SalesOrders() {
   const [orders, setOrders] = useState([]);
   const [loading, setLoading] = useState(true);
   const [searchTerm, setSearchTerm] = useState('');
-  const [dateFilter, setDateFilter] = useState('');
-  const [statusFilter, setStatusFilter] = useState('All');
+  const [startDate, setStartDate] = useState('');
+  const [endDate, setEndDate] = useState('');
   const [isModalOpen, setIsModalOpen] = useState(false);
   const [sortConfig, setSortConfig] = useState({ key: 'saleOrderNumber', dir: 'asc' });
   const [selectedOrder, setSelectedOrder] = useState(null);
@@ -43,15 +43,11 @@ export default function SalesOrders() {
   const [rowsOpen, setRowsOpen] = useState(false);
   const rowsRef = useRef(null);
 
-  const [statusOpen, setStatusOpen] = useState(false);
-  const statusRef = useRef(null);
-
   const rowOptions = [5, 10, 20, 50];
 
   useEffect(() => {
     const handler = (e) => {
       if (rowsRef.current && !rowsRef.current.contains(e.target)) setRowsOpen(false);
-      if (statusRef.current && !statusRef.current.contains(e.target)) setStatusOpen(false);
     };
     document.addEventListener('mousedown', handler);
     return () => document.removeEventListener('mousedown', handler);
@@ -70,17 +66,6 @@ export default function SalesOrders() {
 
     return () => unsubscribe();
   }, []);
-
-  const handleDelete = async (id) => {
-    if (!window.confirm("Are you sure you want to delete this order?")) return;
-    try {
-      await deleteDoc(doc(db, 'storeOrders', id));
-      toast.success("Order deleted successfully");
-    } catch (error) {
-      console.error("Error deleting order:", error);
-      toast.error("Failed to delete order");
-    }
-  };
 
   const formatDate = (timestamp) => {
     if (!timestamp) return '---';
@@ -118,30 +103,39 @@ export default function SalesOrders() {
     );
   };
 
-  const formatFilterDate = (dateStr) => {
-    if (!dateStr) return '';
-    const [year, month, day] = dateStr.split('-');
-    return `${day}/${month}/${year}`;
+  const parseDateToMs = (dateStr) => {
+    if (!dateStr) return 0;
+    const parts = dateStr.split('/');
+    if (parts.length === 3) {
+      return new Date(`${parts[2]}-${parts[1]}-${parts[0]}T00:00:00`).getTime();
+    }
+    return 0;
+  };
+
+  const parseInputDateToMs = (dateStr, isEndOfDay) => {
+    if (!dateStr) return 0;
+    const timeStr = isEndOfDay ? 'T23:59:59' : 'T00:00:00';
+    return new Date(`${dateStr}${timeStr}`).getTime();
   };
 
   const filteredOrders = (() => {
     let list = orders.filter(o => {
       const matchesSearch = (o.customerName || '').toLowerCase().includes(searchTerm.toLowerCase()) ||
-        (o.saleOrderNumber || '').toLowerCase().includes(searchTerm.toLowerCase());
+        (o.orderNumber || o.saleOrderNumber || '').toLowerCase().includes(searchTerm.toLowerCase());
 
       let matchesDate = true;
-      if (dateFilter) {
-        const orderDateStr = o.saleOrderDate || formatDate(o.createdAt);
-        const filterDateStr = formatFilterDate(dateFilter);
-        matchesDate = orderDateStr === filterDateStr;
+      if (startDate || endDate) {
+        const orderMs = o.saleOrderDate 
+          ? parseDateToMs(o.saleOrderDate) 
+          : (o.createdAt?.toDate ? o.createdAt.toDate().getTime() : new Date(o.createdAt).getTime());
+
+        const startMs = startDate ? parseInputDateToMs(startDate, false) : 0;
+        const endMs = endDate ? parseInputDateToMs(endDate, true) : Infinity;
+
+        matchesDate = orderMs >= startMs && orderMs <= endMs;
       }
 
-      let matchesStatus = true;
-      if (statusFilter && statusFilter !== 'All') {
-        matchesStatus = (o.status || 'Confirmed').toLowerCase() === statusFilter.toLowerCase();
-      }
-
-      return matchesSearch && matchesDate && matchesStatus;
+      return matchesSearch && matchesDate;
     });
 
     if (sortConfig.key) {
@@ -153,8 +147,11 @@ export default function SalesOrders() {
           if (aVal?.toDate) aVal = aVal.toDate();
           if (bVal?.toDate) bVal = bVal.toDate();
         } else if (sortConfig.key === 'total') {
-          aVal = Number(aVal) || 0;
-          bVal = Number(bVal) || 0;
+          aVal = Number(a.pricing?.grandTotal || a.total || 0);
+          bVal = Number(b.pricing?.grandTotal || b.total || 0);
+        } else if (sortConfig.key === 'saleOrderNumber') {
+          aVal = a.orderNumber || a.saleOrderNumber || '';
+          bVal = b.orderNumber || b.saleOrderNumber || '';
         }
 
         if (aVal < bVal) return sortConfig.dir === 'asc' ? -1 : 1;
@@ -224,59 +221,41 @@ export default function SalesOrders() {
          <div className="flex flex-wrap items-center gap-3">
             {/* Date Filter */}
             <div className="flex items-center gap-2 px-3 py-1.5 bg-gray-50 hover:bg-gray-100 rounded-xl border border-gray-100 transition-all text-gray-400 hover:text-gray-900 relative">
-               <Calendar size={16} className={dateFilter ? 'text-[#1BAFAF]' : 'text-gray-400'} />
-               <input 
-                  type="date"
-                  value={dateFilter}
-                  onChange={(e) => {
-                    setDateFilter(e.target.value);
-                    setCurrentPage(1);
-                  }}
-                  className="bg-transparent border-none outline-none text-[12px] font-bold text-gray-500 focus:text-[#1BAFAF] cursor-pointer w-28"
-               />
-               {dateFilter && (
+               <Calendar size={16} className={(startDate || endDate) ? 'text-[#1BAFAF]' : 'text-gray-400'} />
+               <div className="flex items-center gap-1">
+                 <input 
+                    type="date"
+                    value={startDate}
+                    max={endDate || undefined}
+                    onChange={(e) => {
+                      setStartDate(e.target.value);
+                      setCurrentPage(1);
+                    }}
+                    className="bg-transparent border-none outline-none text-[12px] font-bold text-gray-500 focus:text-[#1BAFAF] cursor-pointer w-28"
+                 />
+                 <span className="text-gray-300">-</span>
+                 <input 
+                    type="date"
+                    value={endDate}
+                    min={startDate || undefined}
+                    onChange={(e) => {
+                      setEndDate(e.target.value);
+                      setCurrentPage(1);
+                    }}
+                    className="bg-transparent border-none outline-none text-[12px] font-bold text-gray-500 focus:text-[#1BAFAF] cursor-pointer w-28"
+                 />
+               </div>
+               {(startDate || endDate) && (
                   <button 
                     onClick={() => {
-                      setDateFilter('');
+                      setStartDate('');
+                      setEndDate('');
                       setCurrentPage(1);
                     }}
                     className="p-0.5 hover:bg-gray-200 rounded-full text-gray-400 hover:text-gray-900"
                   >
                     <X size={12} />
                   </button>
-               )}
-            </div>
-
-            {/* Status Filter */}
-            <div className="relative" ref={statusRef}>
-               <button
-                  onClick={() => setStatusOpen(prev => !prev)}
-                  className="flex items-center gap-2 px-3 py-1.5 bg-gray-50 hover:bg-gray-100 rounded-xl border border-gray-100 transition-all text-gray-500 hover:text-gray-900"
-               >
-                  <Filter size={16} className={statusFilter !== 'All' ? 'text-[#1BAFAF]' : 'text-gray-400'} />
-                  <span className="text-[12px] font-bold text-gray-500">
-                     {statusFilter === 'All' ? 'All Status' : statusFilter}
-                  </span>
-                  <ChevronDown size={12} className={`transition-transform duration-200 ${statusOpen ? 'rotate-180' : ''}`} />
-               </button>
-               {statusOpen && (
-                 <div className="absolute right-0 top-full mt-2 w-36 bg-white border border-gray-100 rounded-xl shadow-lg z-50 py-1 overflow-hidden">
-                   {['All', 'Confirmed', 'Pending', 'Shipped', 'Delivered', 'Cancelled'].map(opt => (
-                     <button
-                       key={opt}
-                       onClick={() => { 
-                         setStatusFilter(opt); 
-                         setCurrentPage(1); 
-                         setStatusOpen(false); 
-                       }}
-                       className={`w-full text-left px-3 py-2 text-[13px] transition-colors ${
-                         statusFilter === opt ? 'text-[#1BAFAF] font-semibold bg-[#1BAFAF]/5' : 'text-gray-600 hover:bg-gray-50'
-                       }`}
-                     >
-                       {opt === 'All' ? 'All Status' : opt}
-                     </button>
-                   ))}
-                 </div>
                )}
             </div>
 
@@ -339,7 +318,6 @@ export default function SalesOrders() {
                          Amount <SortIcon colKey="total" />
                        </button>
                      </th>
-                     <th className="px-6 py-4 text-center text-[14px] font-bold text-[#1BAFAF]">Actions</th>
                   </tr>
                </thead>
                <tbody className="divide-y divide-gray-50/50">
@@ -357,35 +335,22 @@ export default function SalesOrders() {
                        </td>
                        <td className="px-6 py-4 min-w-[150px]">
                           <span className="text-[14px] font-bold text-gray-900 uppercase">
-                            {order.saleOrderNumber || `#${order.id.slice(-6)}`}
+                            {order.orderNumber || order.saleOrderNumber || `#${order.id.slice(-6)}`}
                           </span>
                        </td>
                        <td className="px-6 py-4">
                           <span className="text-[14px] text-gray-500 font-medium">{order.customerName || 'Customer'}</span>
                        </td>
                        <td className="px-6 py-4 whitespace-nowrap text-[14px] text-gray-500 font-medium">
-                          {order.saleOrderDate || formatDate(order.createdAt)}
+                          {order.createdAt ? formatDate(order.createdAt) : (order.saleOrderDate || '---')}
                        </td>
                        <td className="px-6 py-4 whitespace-nowrap">
-                          <span className="text-[14px] text-gray-500 font-medium">₹{(order.total || 0).toFixed(2)}</span>
-                       </td>
-                       <td className="px-6 py-4 text-center">
-                         <div className="flex items-center justify-center gap-2">
-                           <button 
-                             onClick={(e) => {
-                               e.stopPropagation();
-                               handleDelete(order.id);
-                             }}
-                             className="w-8 h-8 flex items-center justify-center text-red-600 hover:bg-red-50 rounded-lg transition-all active:scale-90"
-                           >
-                             <Trash2 size={14} strokeWidth={2.5} />
-                           </button>
-                         </div>
+                          <span className="text-[14px] text-gray-500 font-medium">₹{(order.pricing?.grandTotal || order.total || 0).toFixed(2)}</span>
                        </td>
                     </tr>
                   )) : (
                     <tr>
-                       <td colSpan="7" className="py-20 text-center">
+                       <td colSpan="6" className="py-20 text-center">
                           <div className="w-16 h-16 bg-gray-50 rounded-full flex items-center justify-center mx-auto mb-4 text-gray-200">
                              <ShoppingBag size={32} />
                           </div>
@@ -454,11 +419,11 @@ export default function SalesOrders() {
               <div className="grid grid-cols-2 gap-6 bg-gray-50/50 p-6 rounded-2xl border border-gray-100">
                 <div className="space-y-1">
                   <p className="text-[11px] font-bold text-gray-400 uppercase tracking-wider">Order ID</p>
-                  <p className="font-bold text-gray-900 uppercase">{selectedOrder.invoiceNumber || selectedOrder.saleOrderNumber || '---'}</p>
+                  <p className="font-bold text-gray-900 uppercase">{selectedOrder.orderNumber || selectedOrder.invoiceNumber || selectedOrder.saleOrderNumber || '---'}</p>
                 </div>
                 <div className="space-y-1">
                   <p className="text-[11px] font-bold text-gray-400 uppercase tracking-wider">Date</p>
-                  <p className="font-bold text-gray-700">{selectedOrder.invoiceDate || selectedOrder.saleOrderDate || formatDate(selectedOrder.createdAt)}</p>
+                  <p className="font-bold text-gray-700">{selectedOrder.createdAt ? formatDate(selectedOrder.createdAt) : (selectedOrder.invoiceDate || selectedOrder.saleOrderDate || '---')}</p>
                 </div>
                 <div className="space-y-1 col-span-2">
                   <p className="text-[11px] font-bold text-gray-400 uppercase tracking-wider">Customer Name</p>
@@ -483,10 +448,10 @@ export default function SalesOrders() {
                       {selectedOrder.items && selectedOrder.items.length > 0 ? (
                         selectedOrder.items.map((item, index) => (
                           <tr key={index} className="text-gray-700 font-medium">
-                            <td className="px-4 py-3">{item.name || '---'}</td>
+                            <td className="px-4 py-3">{item.productName || item.name || '---'}</td>
                             <td className="px-4 py-3 text-center font-bold text-gray-900">{item.quantity || 0}</td>
-                            <td className="px-4 py-3 text-right">₹{(item.rate || 0).toFixed(2)}</td>
-                            <td className="px-4 py-3 text-right font-bold text-gray-900">₹{(item.amount || 0).toFixed(2)}</td>
+                            <td className="px-4 py-3 text-right">₹{(item.price || item.rate || 0).toFixed(2)}</td>
+                            <td className="px-4 py-3 text-right font-bold text-gray-900">₹{(item.subtotal || item.amount || 0).toFixed(2)}</td>
                           </tr>
                         ))
                       ) : (
@@ -503,19 +468,15 @@ export default function SalesOrders() {
               <div className="border-t border-gray-100 pt-6 space-y-3 max-w-sm ml-auto">
                 <div className="flex justify-between text-gray-500 font-medium">
                   <span>Sub Total</span>
-                  <span className="text-gray-900">₹{(selectedOrder.subTotal || 0).toFixed(2)}</span>
+                  <span className="text-gray-900">₹{(selectedOrder.pricing?.subtotal || selectedOrder.subTotal || 0).toFixed(2)}</span>
                 </div>
                 <div className="flex justify-between text-gray-500 font-medium">
                   <span>Tax (GST)</span>
-                  <span className="text-gray-900">{selectedOrder.tax || 0}%</span>
-                </div>
-                <div className="flex justify-between text-gray-500 font-medium">
-                  <span>Adjustment</span>
-                  <span className="text-gray-900">₹{(selectedOrder.adjustment || 0).toFixed(2)}</span>
+                  <span className="text-gray-900">{selectedOrder.pricing?.tax || selectedOrder.tax || 0}%</span>
                 </div>
                 <div className="flex justify-between items-center text-base font-black border-t border-dashed border-gray-200 pt-3">
                   <span className="text-gray-900">Total ( ₹ )</span>
-                  <span className="text-[#1BAFAF]">₹{(selectedOrder.total || 0).toFixed(2)}</span>
+                  <span className="text-[#1BAFAF]">₹{(selectedOrder.pricing?.grandTotal || selectedOrder.total || 0).toFixed(2)}</span>
                 </div>
               </div>
             </div>

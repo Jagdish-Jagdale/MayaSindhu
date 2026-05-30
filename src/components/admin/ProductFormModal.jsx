@@ -1,7 +1,7 @@
 import React, { useState, useEffect, useRef } from 'react';
 import { X, Upload, Plus, Trash2, Loader2, Image as ImageIcon, Settings, Info } from 'lucide-react';
 import { db } from '../../firebase';
-import { collection, addDoc, updateDoc, doc, serverTimestamp, getDocs, query, orderBy, limit } from 'firebase/firestore';
+import { collection, addDoc, updateDoc, doc, serverTimestamp, getDocs, query, orderBy, limit, where } from 'firebase/firestore';
 import useCategories from '../../hooks/useCategories';
 import toast from 'react-hot-toast';
 import { uploadToCloudinary, deleteMultipleFromCloudinary } from '../../utils/cloudinary';
@@ -34,7 +34,8 @@ export default function ProductFormModal({ isOpen, onClose, product = null, init
     description: '',
     tagline: '',
     sku: '',
-    images: [] // Will store Cloudinary URLs
+    images: [], // Will store Cloudinary URLs
+    productId: ''
   });
 
   const [selectedPathIds, setSelectedPathIds] = useState([]);
@@ -44,64 +45,12 @@ export default function ProductFormModal({ isOpen, onClose, product = null, init
   const [removedImageUrls, setRemovedImageUrls] = useState([]);
   const fileInputRef = useRef(null);
 
-  // SKU generation settings
-  const [skuSettings, setSkuSettings] = useState(() => {
-    const saved = localStorage.getItem('sku_generation_settings');
-    return saved ? JSON.parse(saved) : {
-      mode: 'auto',
-      prefix: 'MS-',
-      nextNumber: '00001'
-    };
-  });
-  const [isSkuSettingsOpen, setIsSkuSettingsOpen] = useState(false);
-
-  const generateSKUNumber = async (settings = skuSettings) => {
-    try {
-      const q = query(collection(db, 'products'), orderBy('createdAt', 'desc'), limit(10));
-      const snapshot = await getDocs(q);
-      let nextNum = 1;
-      
-      if (!snapshot.empty) {
-        const lastProductWithSku = snapshot.docs
-          .map(doc => doc.data())
-          .find(p => p.sku && p.sku.startsWith(settings.prefix));
-          
-        if (lastProductWithSku) {
-          const numPart = lastProductWithSku.sku.split(settings.prefix)[1];
-          const parsed = parseInt(numPart);
-          if (!isNaN(parsed)) {
-            nextNum = parsed + 1;
-          } else {
-            nextNum = (parseInt(settings.nextNumber) || 1);
-          }
-        } else {
-          nextNum = (parseInt(settings.nextNumber) || 1);
-        }
-      } else {
-        nextNum = (parseInt(settings.nextNumber) || 1);
-      }
-      
-      const formattedNum = `${settings.prefix}${nextNum.toString().padStart(settings.nextNumber.length, '0')}`;
-      setFormData(prev => ({ ...prev, sku: formattedNum }));
-    } catch (error) {
-      console.error("Error generating SKU number:", error);
-      const fallback = `${settings.prefix}${settings.nextNumber}`;
-      setFormData(prev => ({ ...prev, sku: fallback }));
-    }
+  const generateProductId = () => {
+    const random10Digits = Math.floor(1000000000 + Math.random() * 9000000000);
+    return `PRD${random10Digits}`;
   };
-
-  const handleSkuSettingsSave = (e) => {
-    e.preventDefault();
-    localStorage.setItem('sku_generation_settings', JSON.stringify(skuSettings));
-    setIsSkuSettingsOpen(false);
-    if (skuSettings.mode === 'auto' && !product) {
-      generateSKUNumber(skuSettings);
-    }
-  };
-
 
   useEffect(() => {
-    setIsSkuSettingsOpen(false);
     if (product) {
       setFormData({
         name: product.name || '',
@@ -114,7 +63,8 @@ export default function ProductFormModal({ isOpen, onClose, product = null, init
         description: product.description || '',
         tagline: product.tagline || '',
         sku: product.sku || '',
-        images: product.images || []
+        images: product.images || [],
+        productId: product.productId || ''
       });
 
       if (product.categoryId) {
@@ -126,10 +76,6 @@ export default function ProductFormModal({ isOpen, onClose, product = null, init
 
       setPreviews(product.images || []);
       setImageFiles([]);
-      
-      if (!product.sku && isOpen && skuSettings.mode === 'auto') {
-        generateSKUNumber(skuSettings);
-      }
     } else {
       setFormData({
         name: '',
@@ -142,7 +88,8 @@ export default function ProductFormModal({ isOpen, onClose, product = null, init
         description: '',
         tagline: '',
         sku: '',
-        images: []
+        images: [],
+        productId: generateProductId()
       });
 
       if (initialCategoryId) {
@@ -155,13 +102,9 @@ export default function ProductFormModal({ isOpen, onClose, product = null, init
       setPreviews([]);
       setImageFiles([]);
       setRemovedImageUrls([]);
-
-      if (isOpen && skuSettings.mode === 'auto') {
-        generateSKUNumber(skuSettings);
-      }
     }
-  // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [product, isOpen, heirarchy, initialCategoryId, skuSettings.mode, skuSettings.prefix, skuSettings.nextNumber]);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [product, isOpen, heirarchy, initialCategoryId]);
 
   const handleInputChange = (e) => {
     const { name, value, type, checked } = e.target;
@@ -293,27 +236,37 @@ export default function ProductFormModal({ isOpen, onClose, product = null, init
       .replace(/^-+|-+$/g, ''); // Remove leading and trailing hyphens
   };
 
-  const generateProductId = () => {
-    const chars = 'ABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789';
-    let result = '';
-    for (let i = 0; i < 12; i++) {
-      result += chars.charAt(Math.floor(Math.random() * chars.length));
-    }
-    return result;
-  };
-
   const handleSubmit = async (e) => {
     e.preventDefault();
-    if (!formData.name || !formData.categoryId || !formData.discountedPrice) {
-      toast.error('Please fill required fields (Name, Category, Discounted Price)');
+    if (!formData.name || !formData.categoryId || !formData.discountedPrice || !formData.sku) {
+      toast.error('Please fill required fields (Name, Category, Discounted Price, SKU)', { id: 'form-validation-error' });
       return;
+    }
+
+    if (formData.sku) {
+      try {
+        const skuQuery = query(collection(db, 'products'), where('sku', '==', formData.sku));
+        const skuSnapshot = await getDocs(skuQuery);
+        const existingProducts = skuSnapshot.docs.map(doc => ({ id: doc.id, ...doc.data() }));
+
+        // If product already exists and its id isn't the current product's id
+        if (existingProducts.length > 0) {
+          const isDuplicate = existingProducts.some(p => !product || p.id !== product.id);
+          if (isDuplicate) {
+            toast.error('This SKU is already in use by another product.', { id: 'sku-duplicate-error' });
+            return;
+          }
+        }
+      } catch (err) {
+        console.error("Error checking SKU:", err);
+      }
     }
 
     const dPrice = Number(formData.discountedPrice);
     const aPrice = Number(formData.actualPrice || 0);
 
     if (aPrice > 0 && dPrice > aPrice) {
-      toast.error('Discounted Price cannot be higher than Original Price');
+      toast.error('Discounted Price cannot be higher than Original Price', { id: 'price-validation-error' });
       return;
     }
 
@@ -344,13 +297,11 @@ export default function ProductFormModal({ isOpen, onClose, product = null, init
         await updateDoc(doc(db, 'products', product.id), productData);
         toast.success("Product updated successfully");
       } else {
-        const customId = generateProductId();
         await addDoc(collection(db, 'products'), {
           ...productData,
-          productId: customId,
           createdAt: serverTimestamp()
         });
-        toast.success(`Product added with ID: ${customId}`);
+        toast.success(`Product added with ID: ${productData.productId}`);
       }
       onClose();
     } catch (error) {
@@ -409,9 +360,21 @@ export default function ProductFormModal({ isOpen, onClose, product = null, init
 
               {/* Left Column: Basic Details */}
               <div className="space-y-6">
-                <div className="bg-white p-6 rounded-2xl border border-gray-100 shadow-sm space-y-5">
-                  <h3 className="text-[14px] font-bold text-[#1BAFAF] uppercase tracking-wider">Basic Information</h3>
+                <div className="bg-white p-6 rounded-2xl border border-gray-100 shadow-sm space-y-5 flex flex-col">
+                  <div className="flex items-center justify-between">
+                    <h3 className="text-[14px] font-bold text-[#1BAFAF] uppercase tracking-wider">Basic Information</h3>
+                  </div>
                   <hr className="border-gray-200 -mt-2 mb-3" />
+
+                  <div className="space-y-1.5">
+                    <label className="text-[13px] font-bold text-gray-700 ml-1">Product ID</label>
+                    <input
+                      type="text"
+                      readOnly
+                      value={formData.productId}
+                      className="w-full bg-gray-100 border-none px-4 py-3 rounded-xl text-[14px] outline-none text-gray-500 font-bold cursor-not-allowed"
+                    />
+                  </div>
 
                   <div className="space-y-1.5">
                     <label className="text-[13px] font-bold text-gray-700 ml-1">Product Name *</label>
@@ -426,130 +389,16 @@ export default function ProductFormModal({ isOpen, onClose, product = null, init
                     />
                   </div>
 
-                  <div className="grid grid-cols-2 gap-4">
-                    <div className="space-y-1.5">
-                      <label className="text-[13px] font-bold text-gray-700 ml-1">Tagline</label>
-                      <input
-                        type="text"
-                        name="tagline"
-                        value={formData.tagline}
-                        onChange={handleInputChange}
-                        placeholder="Short catchy phrase"
-                        className="w-full bg-gray-50 border-none px-4 py-3 rounded-xl text-[14px] outline-none focus:ring-2 focus:ring-[#1BAFAF]/20 focus:bg-white transition-all font-medium"
-                      />
-                    </div>
-                    <div className={`space-y-1.5 relative ${isSkuSettingsOpen ? 'z-[130]' : ''}`}>
-                      <label className="text-[13px] font-bold text-gray-700 ml-1 flex items-center gap-2">
-                        SKU
-                        <Info size={12} className="text-gray-300" />
-                      </label>
-                      <div className="relative group">
-                        <Settings
-                          onClick={() => setIsSkuSettingsOpen(!isSkuSettingsOpen)}
-                          className="absolute right-4 top-1/2 -translate-y-1/2 w-4 h-4 text-[#1BAFAF] cursor-pointer hover:rotate-90 transition-transform z-10"
-                        />
-                        <input
-                          type="text"
-                          name="sku"
-                          value={formData.sku}
-                          onChange={handleInputChange}
-                          readOnly={skuSettings.mode === 'auto'}
-                          placeholder="e.g. MS-2024-001"
-                          className={`w-full bg-gray-50 border-2 border-transparent py-3 px-4 text-[14px] font-medium rounded-xl outline-none transition-all uppercase ${
-                            skuSettings.mode === 'auto' ? 'cursor-not-allowed text-gray-400 font-bold bg-gray-100' : 'focus:bg-white focus:border-[#1BAFAF]/20'
-                          }`}
-                        />
-                      </div>
-
-                      {/* SKU Generation Settings Popup */}
-                      {isSkuSettingsOpen && (
-                        <div className="absolute bottom-full right-0 mb-2 w-[300px] sm:w-[360px] bg-white border border-gray-100 rounded-3xl shadow-2xl z-[120] overflow-hidden animate-in slide-in-from-bottom-2 duration-200">
-                          <div className="p-6 space-y-6">
-                            <p className="text-[12px] text-gray-500 font-medium leading-relaxed normal-case">
-                              Your product SKUs are set on auto-generate mode to save your time. Are you sure about changing this setting?
-                            </p>
-
-                            <div className="space-y-4">
-                              {/* Auto Generate Option */}
-                              <label className="flex items-start gap-3 cursor-pointer group">
-                                <div className="pt-0.5">
-                                  <input
-                                    type="radio"
-                                    name="sku_mode"
-                                    checked={skuSettings.mode === 'auto'}
-                                    onChange={() => setSkuSettings({ ...skuSettings, mode: 'auto' })}
-                                    className="hidden"
-                                  />
-                                  <div className={`w-5 h-5 rounded-full border-2 flex items-center justify-center transition-all ${skuSettings.mode === 'auto' ? 'border-[#1BAFAF]' : 'border-gray-200'}`}>
-                                    {skuSettings.mode === 'auto' && <div className="w-2.5 h-2.5 rounded-full bg-[#1BAFAF]" />}
-                                  </div>
-                                </div>
-                                <div className="flex-1">
-                                  <div className="flex items-center gap-2 mb-3">
-                                    <span className="text-[13px] font-bold text-gray-700 normal-case">Continue auto-generating SKUs</span>
-                                  </div>
-
-                                  {skuSettings.mode === 'auto' && (
-                                    <div className="space-y-3 animate-in fade-in duration-200">
-                                      <div className="space-y-1">
-                                        <span className="text-[10px] font-bold text-gray-400 uppercase">Prefix</span>
-                                        <input
-                                          type="text"
-                                          value={skuSettings.prefix}
-                                          onChange={(e) => setSkuSettings({ ...skuSettings, prefix: e.target.value.toUpperCase() })}
-                                          className="w-full bg-gray-50 border border-gray-100 rounded-xl px-3 py-2 text-[13px] font-medium focus:bg-white outline-none"
-                                        />
-                                      </div>
-                                      <div className="space-y-1">
-                                        <span className="text-[10px] font-bold text-gray-400 uppercase">Next Number</span>
-                                        <input
-                                          type="text"
-                                          value={skuSettings.nextNumber}
-                                          onChange={(e) => setSkuSettings({ ...skuSettings, nextNumber: e.target.value })}
-                                          className="w-full bg-gray-50 border border-gray-100 rounded-xl px-3 py-2 text-[13px] font-medium focus:bg-white outline-none"
-                                        />
-                                      </div>
-                                    </div>
-                                  )}
-                                </div>
-                              </label>
-
-                              {/* Manual Option */}
-                              <label className="flex items-center gap-3 cursor-pointer">
-                                <input
-                                  type="radio"
-                                  name="sku_mode"
-                                  checked={skuSettings.mode === 'manual'}
-                                  onChange={() => setSkuSettings({ ...skuSettings, mode: 'manual' })}
-                                  className="hidden"
-                                />
-                                <div className={`w-5 h-5 rounded-full border-2 flex items-center justify-center transition-all ${skuSettings.mode === 'manual' ? 'border-[#1BAFAF]' : 'border-gray-200'}`}>
-                                  {skuSettings.mode === 'manual' && <div className="w-2.5 h-2.5 rounded-full bg-[#1BAFAF]" />}
-                                </div>
-                                <span className="text-[13px] font-bold text-gray-700 normal-case">Enter SKUs manually</span>
-                              </label>
-                            </div>
-
-                            <div className="flex gap-2 pt-2">
-                              <button
-                                type="button"
-                                onClick={handleSkuSettingsSave}
-                                className="flex-1 bg-[#1BAFAF] text-white py-2.5 rounded-xl text-[12px] font-bold hover:bg-[#158e8e] transition-all normal-case"
-                              >
-                                Save
-                              </button>
-                              <button
-                                type="button"
-                                onClick={() => setIsSkuSettingsOpen(false)}
-                                className="flex-1 bg-gray-50 text-gray-500 py-2.5 rounded-xl text-[12px] font-bold hover:bg-gray-100 transition-all normal-case"
-                              >
-                                Cancel
-                              </button>
-                            </div>
-                          </div>
-                        </div>
-                      )}
-                    </div>
+                  <div className="space-y-1.5">
+                    <label className="text-[13px] font-bold text-gray-700 ml-1">Tagline</label>
+                    <input
+                      type="text"
+                      name="tagline"
+                      value={formData.tagline}
+                      onChange={handleInputChange}
+                      placeholder="Short catchy phrase"
+                      className="w-full bg-gray-50 border-none px-4 py-3 rounded-xl text-[14px] outline-none focus:ring-2 focus:ring-[#1BAFAF]/20 focus:bg-white transition-all font-medium"
+                    />
                   </div>
 
                   <div className="space-y-4">
@@ -581,12 +430,12 @@ export default function ProductFormModal({ isOpen, onClose, product = null, init
                         const isDisabled = level > 0 && !selectedPathIds[level - 1];
 
                         return (
-                          <div 
-                            key={level} 
+                          <div
+                            key={level}
                             className="space-y-1.5 animate-in fade-in slide-in-from-top-2 duration-300 relative"
                             onClick={() => {
                               if (isDisabled) {
-                                toast.error('Please select Main Category first');
+                                toast.error('Please select Main Category first', { id: 'category-select-error' });
                               }
                             }}
                           >
@@ -624,19 +473,23 @@ export default function ProductFormModal({ isOpen, onClose, product = null, init
                     })()}
                   </div>
 
-                  <div className="space-y-1.5">
+                  <div className="space-y-1.5 flex flex-col">
                     <label className="text-[13px] font-bold text-gray-700 ml-1">Description</label>
                     <textarea
                       name="description"
                       value={formData.description}
                       onChange={handleInputChange}
-                      rows={4}
                       placeholder="Tell the story of this product..."
+                      rows={4}
                       className="w-full bg-gray-50 border-none px-4 py-3 rounded-xl text-[14px] outline-none focus:ring-2 focus:ring-[#1BAFAF]/20 focus:bg-white transition-all font-medium resize-none"
                     ></textarea>
                   </div>
                 </div>
+              </div>
 
+              {/* Right Column: Pricing, Media, Inventory */}
+              <div className="space-y-6">
+                {/* Inventory & Status Card */}
                 <div className="bg-white p-6 rounded-2xl border border-gray-100 shadow-sm space-y-5 animate-in fade-in slide-in-from-top-4 duration-300">
                   <div className="flex items-center justify-between">
                     <h3 className="text-[14px] font-bold text-[#1BAFAF] uppercase tracking-wider">Inventory & Status</h3>
@@ -658,7 +511,20 @@ export default function ProductFormModal({ isOpen, onClose, product = null, init
                     </label>
                   </div>
                   <hr className="border-gray-200 -mt-2 mb-3" />
-
+                  <div className="space-y-1.5 relative mt-4">
+                    <label className="text-[13px] font-bold text-gray-700 ml-1">
+                      SKU *
+                    </label>
+                    <input
+                      required
+                      type="text"
+                      name="sku"
+                      value={formData.sku}
+                      onChange={handleInputChange}
+                      placeholder="e.g. MS-2024-001"
+                      className="w-full bg-gray-50 border-none px-4 py-3 rounded-xl text-[14px] outline-none focus:ring-2 focus:ring-[#1BAFAF]/20 focus:bg-white transition-all font-medium uppercase"
+                    />
+                  </div>
                   <div className="grid grid-cols-2 gap-4">
                     <div className="space-y-1.5">
                       <label className="text-[13px] font-bold text-gray-700 ml-1">Product Type</label>
@@ -681,19 +547,15 @@ export default function ProductFormModal({ isOpen, onClose, product = null, init
                         onKeyDown={handleKeyPress}
                         disabled={formData.productType === 'Unique'}
                         placeholder={formData.productType === 'Unique' ? '1' : '0'}
-                        className={`w-full border-none px-4 py-3 rounded-xl text-[14px] outline-none transition-all font-bold ${
-                          formData.productType === 'Unique' 
-                            ? 'bg-gray-100 text-gray-400 cursor-not-allowed' 
+                        className={`w-full border-none px-4 py-3 rounded-xl text-[14px] outline-none transition-all font-bold ${formData.productType === 'Unique'
+                            ? 'bg-gray-100 text-gray-400 cursor-not-allowed'
                             : 'bg-gray-50 text-gray-700 focus:ring-2 focus:ring-[#1BAFAF]/20 focus:bg-white'
-                        }`}
+                          }`}
                       />
                     </div>
                   </div>
                 </div>
-              </div>
 
-              {/* Right Column: Pricing & Images */}
-              <div className="space-y-6">
                 <div className="bg-white p-6 rounded-2xl border border-gray-100 shadow-sm space-y-5">
                   <h3 className="text-[14px] font-bold text-[#1BAFAF] uppercase tracking-wider">Pricing</h3>
                   <hr className="border-gray-200 -mt-2 mb-3" />
@@ -729,25 +591,14 @@ export default function ProductFormModal({ isOpen, onClose, product = null, init
                   </div>
                 </div>
 
-                <div className="bg-white p-6 rounded-2xl border border-gray-100 shadow-sm space-y-5">
-                  <div className="flex items-center justify-between">
+                <div className="bg-white p-6 rounded-2xl border border-gray-100 shadow-sm flex flex-col">
+                  <div className="flex items-center justify-between mb-5">
                     <h3 className="text-[14px] font-bold text-[#1BAFAF] uppercase tracking-wider">Product Media</h3>
                     <span className="text-[11px] font-bold text-gray-300 uppercase">{previews.length} Files</span>
                   </div>
-                  <hr className="border-gray-200 -mt-2 mb-3" />
+                  <hr className="border-gray-200 -mt-2 mb-5" />
 
-                  {/* Dropzone */}
-                  <div
-                    onClick={() => fileInputRef.current.click()}
-                    className="border-2 border-dashed border-gray-100 rounded-2xl p-8 flex flex-col items-center justify-center gap-3 cursor-pointer hover:border-[#1BAFAF]/30 hover:bg-[#1BAFAF]/5 transition-all group"
-                  >
-                    <div className="w-12 h-12 bg-[#eaf6f6] rounded-xl flex items-center justify-center text-[#1BAFAF] group-hover:scale-110 transition-transform">
-                      <Upload size={24} />
-                    </div>
-                    <div className="text-center">
-                      <p className="text-[14px] font-bold text-gray-700">Click to upload images</p>
-                      <p className="text-[11px] text-gray-400 font-medium">PNG, JPG or WebP (Max 5MB each)</p>
-                    </div>
+                  <div className="flex flex-col gap-4">
                     <input
                       type="file"
                       multiple
@@ -756,32 +607,47 @@ export default function ProductFormModal({ isOpen, onClose, product = null, init
                       onChange={handleImageChange}
                       className="hidden"
                     />
-                  </div>
 
-                  {/* Previews */}
-                  {previews.length > 0 && (
-                    <div className="grid grid-cols-3 gap-3">
-                      {previews.map((src, index) => (
-                        <div key={index} className="relative group aspect-square rounded-xl overflow-hidden border border-gray-100 shadow-sm">
-                          <img src={src} alt="Preview" className="w-full h-full object-cover" />
-                          <button
-                            type="button"
-                            onClick={() => removePreview(index)}
-                            className="absolute top-1.5 right-1.5 w-6 h-6 bg-red-500 text-white rounded-lg flex items-center justify-center opacity-0 group-hover:opacity-100 transition-opacity shadow-lg"
-                          >
-                            <X size={14} strokeWidth={3} />
-                          </button>
-                        </div>
-                      ))}
-                      <button
-                        type="button"
-                        onClick={() => fileInputRef.current.click()}
-                        className="aspect-square rounded-xl border-2 border-dashed border-gray-100 flex items-center justify-center text-gray-300 hover:text-[#1BAFAF] hover:border-[#1BAFAF]/30 transition-all bg-gray-50/50"
-                      >
-                        <Plus size={24} />
-                      </button>
+                    {/* Dropzone */}
+                    <div
+                      onClick={() => fileInputRef.current.click()}
+                      className={`border-2 border-dashed border-gray-100 rounded-2xl p-8 flex flex-col items-center justify-center gap-3 cursor-pointer hover:border-[#1BAFAF]/30 hover:bg-[#1BAFAF]/5 transition-all group ${previews.length === 0 ? '' : 'hidden'}`}
+                    >
+                      <div className="w-12 h-12 bg-[#eaf6f6] rounded-xl flex items-center justify-center text-[#1BAFAF] group-hover:scale-110 transition-transform">
+                        <Upload size={24} />
+                      </div>
+                      <div className="text-center">
+                        <p className="text-[14px] font-bold text-gray-700">Click to upload images</p>
+                        <p className="text-[11px] text-gray-400 font-medium">PNG, JPG or WebP (Max 5MB each)</p>
+                      </div>
                     </div>
-                  )}
+
+                    {/* Previews */}
+                    {previews.length > 0 && (
+                      <div className="flex overflow-x-auto custom-scrollbar gap-3 pb-2 items-start">
+                        {previews.map((src, index) => (
+                          <div key={index} className="relative group w-[110px] h-[110px] flex-shrink-0 rounded-xl overflow-hidden border border-gray-100 shadow-sm bg-gray-50 flex items-center justify-center">
+                            <img src={src} alt="Preview" className="w-full h-full object-contain" />
+                            <button
+                              type="button"
+                              onClick={() => removePreview(index)}
+                              className="absolute top-1.5 right-1.5 w-6 h-6 bg-red-500 text-white rounded-lg flex items-center justify-center opacity-0 group-hover:opacity-100 transition-opacity shadow-lg"
+                            >
+                              <X size={14} strokeWidth={3} />
+                            </button>
+                          </div>
+                        ))}
+                        <button
+                          type="button"
+                          onClick={() => fileInputRef.current.click()}
+                          className="w-[110px] h-[110px] flex-shrink-0 rounded-xl border-2 border-dashed border-gray-100 flex flex-col items-center justify-center gap-2 text-gray-400 hover:text-[#1BAFAF] hover:border-[#1BAFAF]/30 hover:bg-[#1BAFAF]/5 transition-all bg-gray-50/50"
+                        >
+                          <Plus size={24} />
+                          <span className="text-[10px] font-bold uppercase tracking-wider">Add Photo</span>
+                        </button>
+                      </div>
+                    )}
+                  </div>
                 </div>
               </div>
             </div>

@@ -64,6 +64,9 @@ export default function Orders() {
   const [isViewModalOpen, setIsViewModalOpen] = useState(false);
   const [sortField, setSortField] = useState('createdAt');
   const [sortOrder, setSortOrder] = useState('desc');
+  const [isFilterOpen, setIsFilterOpen] = useState(false);
+  const [dateRange, setDateRange] = useState({ start: '', end: '' });
+  const [statusFilter, setStatusFilter] = useState('All');
 
   const handleSort = (field) => {
     if (sortField === field) {
@@ -104,10 +107,25 @@ export default function Orders() {
     return () => unsubscribe();
   }, []);
 
-  const filteredOrders = orders.filter(order => 
-    order.orderId?.toLowerCase().includes(searchTerm.toLowerCase()) ||
-    order.customerName?.toLowerCase().includes(searchTerm.toLowerCase())
-  );
+  const filteredOrders = orders.filter(order => {
+    const matchesSearch = order.orderId?.toLowerCase().includes(searchTerm.toLowerCase()) ||
+                          order.customerName?.toLowerCase().includes(searchTerm.toLowerCase());
+    const matchesStatus = statusFilter === 'All' || order.status === statusFilter;
+    
+    let matchesDate = true;
+    if (dateRange.start && dateRange.end) {
+      if (order.createdAt) {
+        const orderDate = order.createdAt.toDate();
+        const startDate = new Date(dateRange.start);
+        startDate.setHours(0, 0, 0, 0);
+        const endDate = new Date(dateRange.end);
+        endDate.setHours(23, 59, 59, 999);
+        matchesDate = orderDate >= startDate && orderDate <= endDate;
+      }
+    }
+    
+    return matchesSearch && matchesStatus && matchesDate;
+  });
 
   const sortedOrders = (() => {
     let list = [...filteredOrders];
@@ -135,10 +153,6 @@ export default function Orders() {
         } else if (sortField === 'createdAt') {
           valA = a.createdAt?.seconds || 0;
           valB = b.createdAt?.seconds || 0;
-        } else if (sortField === 'status') {
-          valA = a.status || '';
-          valB = b.status || '';
-          return sortOrder === 'asc' ? valA.localeCompare(valB) : valB.localeCompare(valA);
         }
 
         if (valA < valB) return sortOrder === 'asc' ? -1 : 1;
@@ -495,37 +509,80 @@ export default function Orders() {
       </div>
 
       {/* Action Bar */}
-      <div className="flex flex-col sm:flex-row items-center justify-between gap-4 bg-white p-1.5 rounded-2xl border border-gray-100 shadow-sm transition-all hover:shadow-md">
-        <div className="relative group w-full sm:max-w-[480px]">
+      <div className="bg-white rounded-2xl border border-gray-100 shadow-sm transition-all hover:shadow-md p-2 flex flex-col xl:flex-row items-center justify-between gap-4">
+        {/* Search */}
+        <div className="relative group w-full xl:max-w-[320px]">
           <Search className="absolute left-3.5 top-1/2 -translate-y-1/2 w-4 h-4 text-gray-300 group-focus-within:text-[#1BAFAF] transition-colors" />
           <input
             type="text"
             placeholder="Search by Order ID or Customer..."
             value={searchTerm}
             onChange={(e) => setSearchTerm(e.target.value)}
-            className="w-full bg-gray-50 border-none py-2.5 pl-10 pr-4 text-[13px] rounded-xl outline-none focus:bg-white transition-all font-medium"
+            className="w-full bg-gray-50 border-none py-2.5 pl-10 pr-4 text-[13px] rounded-xl outline-none focus:bg-white focus:ring-1 focus:ring-[#1BAFAF]/30 transition-all font-medium"
           />
         </div>
-        <div className="flex items-center gap-3 pr-2">
-           <div className="flex items-center px-3 border-r border-gray-100">
-             <CustomSelect
-               value={rowsPerPage}
-               onChange={(val) => setRowsPerPage(Number(val))}
-               options={[
-                 { value: 5, label: '5 rows' },
-                 { value: 10, label: '10 rows' },
-                 { value: 20, label: '20 rows' },
-                 { value: 50, label: '50 rows' }
-               ]}
-               className="w-28"
-               minimal={true}
-               valuePrefix="Rows:"
-             />
-           </div>
-           <button className="flex items-center gap-2 px-3 py-1.5 text-[12px] font-bold text-gray-400 hover:text-gray-900 transition-colors">
-              <Filter size={14} strokeWidth={2.5} />
-              Filters
-           </button>
+
+        {/* Filters inline */}
+        <div className="flex flex-wrap items-center gap-3 w-full xl:w-auto">
+          {/* Date Range */}
+          <div className="flex items-center gap-2 bg-gray-50 p-1 rounded-xl border border-transparent focus-within:bg-white focus-within:border-gray-200 transition-all">
+            <input 
+              type="date" 
+              value={dateRange.start}
+              onChange={(e) => setDateRange(prev => ({ ...prev, start: e.target.value }))}
+              className="bg-transparent text-[12px] font-medium px-2 py-1.5 rounded-lg border-none outline-none transition-all cursor-pointer text-gray-600 focus:text-gray-900"
+            />
+            <span className="text-gray-300">-</span>
+            <input 
+              type="date" 
+              value={dateRange.end}
+              onChange={(e) => setDateRange(prev => ({ ...prev, end: e.target.value }))}
+              className="bg-transparent text-[12px] font-medium px-2 py-1.5 rounded-lg border-none outline-none transition-all cursor-pointer text-gray-600 focus:text-gray-900"
+            />
+          </div>
+
+          {/* Status Dropdown */}
+          <CustomSelect
+            value={statusFilter}
+            onChange={(val) => setStatusFilter(val)}
+            options={[
+              { value: 'All', label: 'All Statuses' },
+              ...Object.keys(STATUS_CONFIG).map(s => ({ value: s, label: s }))
+            ]}
+            className="w-[140px]"
+            minimal={true}
+          />
+
+          {/* Clear Filters (only show if active) */}
+          {(dateRange.start || dateRange.end || statusFilter !== 'All') && (
+            <button 
+              onClick={() => {
+                setDateRange({ start: '', end: '' });
+                setStatusFilter('All');
+              }}
+              className="p-2 text-gray-400 hover:text-red-500 hover:bg-red-50 rounded-xl transition-all"
+              title="Clear Filters"
+            >
+              <X size={16} strokeWidth={2.5} />
+            </button>
+          )}
+
+          <div className="w-px h-6 bg-gray-200 mx-1 hidden sm:block"></div>
+
+          {/* Rows */}
+          <CustomSelect
+            value={rowsPerPage}
+            onChange={(val) => setRowsPerPage(Number(val))}
+            options={[
+              { value: 5, label: '5 rows' },
+              { value: 10, label: '10 rows' },
+              { value: 20, label: '20 rows' },
+              { value: 50, label: '50 rows' }
+            ]}
+            className="w-28"
+            minimal={true}
+            valuePrefix="Rows:"
+          />
         </div>
       </div>
 
@@ -572,10 +629,9 @@ export default function Orders() {
                     <SortIndicator field="createdAt" />
                   </div>
                 </th>
-                <th className="px-6 py-5 text-left text-[14px] font-bold text-[#1BAFAF] cursor-pointer select-none" onClick={() => handleSort('status')}>
+                <th className="px-6 py-5 text-left text-[14px] font-bold text-[#1BAFAF]">
                   <div className="flex items-center gap-1">
                     Status
-                    <SortIndicator field="status" />
                   </div>
                 </th>
               </tr>
