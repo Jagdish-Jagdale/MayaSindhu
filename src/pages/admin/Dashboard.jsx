@@ -57,6 +57,20 @@ const formatIndianCurrency = (num) => {
   }).format(num);
 };
 
+const formatDate = (dateInput) => {
+  if (!dateInput) return '';
+  try {
+    const date = dateInput?.toDate ? dateInput.toDate() : new Date(dateInput);
+    if (isNaN(date.getTime())) return '';
+    const day = String(date.getDate()).padStart(2, '0');
+    const month = String(date.getMonth() + 1).padStart(2, '0');
+    const year = date.getFullYear();
+    return `${day}/${month}/${year}`;
+  } catch (e) {
+    return '';
+  }
+};
+
 export default function Dashboard() {
   const [stats, setStats] = useState({
     revenue: 0,
@@ -322,19 +336,23 @@ export default function Dashboard() {
                <ShoppingBag className="text-[#1BAFAF]" size={18} />
                <h2 className="text-[15px] font-bold text-gray-900 uppercase tracking-wider">Recent Orders</h2>
             </div>
-            <ArrowUpRight size={16} className="text-gray-300" />
           </div>
           <div className="divide-y divide-gray-50">
             {recentOrders.map((order) => (
               <div key={order.id} className="flex items-center gap-4 px-8 py-4 hover:bg-gray-50/50 transition-all group">
-                <div className="w-10 h-10 rounded-xl bg-[#1BAFAF]/10 text-[#1BAFAF] flex items-center justify-center text-[11px] font-black shrink-0 shadow-sm border border-[#1BAFAF]/5">
+                <div className="w-10 h-10 rounded-full bg-[#1BAFAF]/10 text-[#1BAFAF] flex items-center justify-center text-[11px] font-black shrink-0 shadow-sm border border-[#1BAFAF]/5">
                   {order.customerName?.split(' ').map(n=>n[0]).join('')}
                 </div>
                 <div className="flex-1 min-w-0">
                   <p className="text-[13px] font-black text-gray-900 truncate">{order.customerName}</p>
-                  <p className="text-[10px] text-gray-400 font-medium truncate uppercase tracking-widest">{order.orderId || order.id.slice(-6)} • {order.status}</p>
+                  <p className="text-[10px] text-gray-400 font-medium truncate uppercase tracking-widest">
+                    {order.orderId || order.id.slice(-6)} • {order.status}
+                  </p>
                 </div>
-                <p className="text-[13px] font-black text-[#1BAFAF]">{order.total}</p>
+                {formatDate(order.createdAt) && (
+                  <p className="text-[12px] font-medium text-gray-400 mr-2">{formatDate(order.createdAt)}</p>
+                )}
+                <p className="text-[13px] font-black text-[#1BAFAF]">₹{order.total}</p>
               </div>
             ))}
           </div>
@@ -347,12 +365,11 @@ export default function Dashboard() {
                <UserPlus className="text-amber-500" size={18} />
                <h2 className="text-[15px] font-bold text-gray-900 uppercase tracking-wider">Recent Members</h2>
             </div>
-            <ArrowUpRight size={16} className="text-gray-300" />
           </div>
           <div className="divide-y divide-gray-50">
             {recentUsers.map((user) => (
               <div key={user.id} className="flex items-center gap-3 px-8 py-4 hover:bg-gray-50/50 transition-all">
-                <div className="w-10 h-10 rounded-xl overflow-hidden bg-gray-100 flex-shrink-0 border border-white shadow-sm">
+                <div className="w-10 h-10 rounded-full overflow-hidden bg-gray-100 flex-shrink-0 border border-white shadow-sm">
                    {user.profileImage ? (
                       <img src={user.profileImage} className="w-full h-full object-cover" />
                    ) : (
@@ -361,8 +378,13 @@ export default function Dashboard() {
                 </div>
                 <div className="flex-1 min-w-0">
                   <p className="text-[13px] font-black text-gray-900 truncate">{user.fullName}</p>
-                  <p className="text-[10px] text-gray-400 font-medium truncate font-inter lowercase tracking-widest">{user.email}</p>
+                  <p className="text-[10px] text-gray-400 font-medium truncate font-inter lowercase tracking-widest">
+                    {user.email}
+                  </p>
                 </div>
+                {formatDate(user.createdAt) && (
+                  <p className="text-[12px] font-medium text-gray-400 mr-2">{formatDate(user.createdAt)}</p>
+                )}
                 <div className="text-[10px] font-black px-2.5 py-1 bg-[#1BAFAF]/10 text-[#1BAFAF] rounded-lg uppercase tracking-wider">Active</div>
               </div>
             ))}

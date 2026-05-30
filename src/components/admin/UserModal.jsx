@@ -142,8 +142,8 @@ export default function UserModal({ isOpen, onClose, user = null }) {
         onClick={onClose}
       />
       
-      <div className="relative w-full max-w-lg bg-white rounded-[32px] shadow-2xl overflow-hidden animate-in zoom-in-95 duration-300">
-        <div className="px-8 py-6 border-b border-gray-100 flex items-center justify-between bg-gradient-to-r from-gray-50 to-white">
+      <div className="relative w-full max-w-lg bg-white rounded-[32px] shadow-2xl animate-in zoom-in-95 duration-300">
+        <div className="px-8 py-6 rounded-t-[32px] border-b border-gray-100 flex items-center justify-between bg-gradient-to-r from-gray-50 to-white">
           <div>
             <h2 className="text-[20px] font-bold text-gray-900 tracking-tight">
               {user ? 'Edit User' : 'Add User'}

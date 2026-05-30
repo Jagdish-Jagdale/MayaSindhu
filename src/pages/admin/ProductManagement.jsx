@@ -107,6 +107,7 @@ export default function ProductManagement() {
     return isNaN(parsed) ? 5 : parsed;
   });
   const [stockFilter, setStockFilter] = useState('all');
+  const [productTypeFilter, setProductTypeFilter] = useState('all');
 
   // Real-time listener for stockAlertThreshold
   useEffect(() => {
@@ -146,7 +147,7 @@ export default function ProductManagement() {
 
   useEffect(() => {
     setCurrentPage(1);
-  }, [searchTerm, activeFilter, rowsPerPage, stockFilter]);
+  }, [searchTerm, activeFilter, rowsPerPage, stockFilter, productTypeFilter]);
   
   const [isModalOpen, setIsModalOpen] = useState(false);
   const [editingProduct, setEditingProduct] = useState(null);
@@ -369,7 +370,14 @@ export default function ProductManagement() {
         matchesStockFilter = stockNum <= 0 && typeStr === 'unique';
       }
       
-      return matchesSearch && matchesFilter && matchesStockFilter;
+      let matchesProductType = true;
+      if (productTypeFilter === 'unique') {
+        matchesProductType = (p.productType || '').toLowerCase() === 'unique';
+      } else if (productTypeFilter === 'repeat') {
+        matchesProductType = (p.productType || '').toLowerCase() === 'repeat';
+      }
+
+      return matchesSearch && matchesFilter && matchesStockFilter && matchesProductType;
     });
 
     if (sortConfig.key) {
@@ -540,6 +548,22 @@ export default function ProductManagement() {
               valuePrefix="Stock:"
             />
           </div>
+
+          {/* Product Type Filter */}
+          <div className="flex items-center bg-gray-50 border border-gray-100 hover:border-gray-200 rounded-xl px-1.5 transition-all shrink-0">
+            <CustomSelect
+              value={productTypeFilter}
+              onChange={setProductTypeFilter}
+              options={[
+                { value: 'all', label: 'All Types', prefixLabel: 'All Types' },
+                { value: 'unique', label: 'Unique', prefixLabel: 'Unique' },
+                { value: 'repeat', label: 'Repeat', prefixLabel: 'Repeat' }
+              ]}
+              className="w-32"
+              minimal={true}
+              valuePrefix="Type:"
+            />
+          </div>
         </div>
         <div className="flex items-center gap-3 pr-2">
           <div className="flex items-center px-3 border-r border-gray-100">
@@ -687,7 +711,7 @@ export default function ProductManagement() {
                       <div className="flex items-center gap-3 min-w-0">
                         <div className="w-12 h-12 rounded-xl overflow-hidden bg-gray-50 border border-gray-100 flex-shrink-0 flex items-center justify-center">
                           {product.images && product.images.length > 0 ? (
-                            <img src={product.images[0]} alt={product.name} className="w-full h-full object-cover" />
+                            <img src={product.images[0]} alt={product.name} className="w-full h-full object-contain p-0.5" />
                           ) : (
                             <Image size={20} className="text-gray-200" />
                           )}

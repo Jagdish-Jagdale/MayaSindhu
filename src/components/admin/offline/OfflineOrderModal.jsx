@@ -23,7 +23,9 @@ import {
   where,
   doc,
   updateDoc,
-  increment
+  increment,
+  getDoc,
+  setDoc
 } from 'firebase/firestore';
 import toast from 'react-hot-toast';
 import BulkItemModal from './BulkItemModal';
@@ -40,12 +42,14 @@ const OfflineOrderModal = ({ isOpen, onClose }) => {
   const [isBulkModalOpen, setIsBulkModalOpen] = useState(false);
   const [isProductModalOpen, setIsProductModalOpen] = useState(false);
   const [isSettingsOpen, setIsSettingsOpen] = useState(false);
+  const [isGstSettingsOpen, setIsGstSettingsOpen] = useState(false);
+  const [tempGst, setTempGst] = useState('');
   
   // Order Number Settings
   const [orderSettings, setOrderSettings] = useState({
     mode: 'auto',
-    prefix: 'SO-',
-    nextNumber: '00001'
+    prefix: 'OD',
+    nextNumber: '000001'
   });
 
   // Form Data
@@ -86,7 +90,6 @@ const OfflineOrderModal = ({ isOpen, onClose }) => {
         items: [],
         subTotal: 0,
         tax: 18,
-        adjustment: 0,
         total: 0,
         customerNotes: ''
       });
@@ -94,11 +97,41 @@ const OfflineOrderModal = ({ isOpen, onClose }) => {
       setLoading(false);
       fetchCustomers();
       fetchProducts();
+      fetchGstConfiguration();
       if (orderSettings.mode === 'auto') {
         generateSONumber();
       }
     }
   }, [isOpen]);
+
+  const fetchGstConfiguration = async () => {
+    try {
+      const docRef = doc(db, 'settings', 'gst_configuration');
+      const docSnap = await getDoc(docRef);
+      if (docSnap.exists()) {
+        const data = docSnap.data();
+        if (data && data.value !== undefined) {
+           setFormData(prev => ({ ...prev, tax: Number(data.value) }));
+           setTempGst(data.value);
+        }
+      }
+    } catch (error) {
+      console.error("Error fetching GST config:", error);
+    }
+  };
+
+  const handleSaveGst = async () => {
+    try {
+      const val = Math.max(0, parseFloat(tempGst) || 0);
+      await setDoc(doc(db, 'settings', 'gst_configuration'), { value: val });
+      setFormData(prev => ({ ...prev, tax: val }));
+      setIsGstSettingsOpen(false);
+      toast.success("GST configuration saved");
+    } catch (error) {
+      console.error("Error saving GST config:", error);
+      toast.error("Failed to save GST");
+    }
+  };
 
   const fetchCustomers = async () => {
     try {
@@ -119,29 +152,10 @@ const OfflineOrderModal = ({ isOpen, onClose }) => {
     }
   };
 
-  const generateSONumber = async () => {
-    try {
-      const q = query(collection(db, 'storeOrders'), orderBy('createdAt', 'desc'), limit(1));
-      const snapshot = await getDocs(q);
-      let nextNum = 1;
-      
-      if (!snapshot.empty) {
-        const lastOrder = snapshot.docs[0].data();
-        if (lastOrder.saleOrderNumber && lastOrder.saleOrderNumber.includes(orderSettings.prefix)) {
-           const numPart = lastOrder.saleOrderNumber.split(orderSettings.prefix)[1];
-           nextNum = (parseInt(numPart) || 0) + 1;
-        }
-      } else {
-        nextNum = parseInt(orderSettings.nextNumber) || 1;
-      }
-      
-      const formattedNum = `${orderSettings.prefix}${nextNum.toString().padStart(orderSettings.nextNumber.length, '0')}`;
-      setFormData(prev => ({ ...prev, saleOrderNumber: formattedNum }));
-    } catch (error) {
-      console.error("Error generating PO number:", error);
-      const fallback = `${orderSettings.prefix}${orderSettings.nextNumber}`;
-      setFormData(prev => ({ ...prev, saleOrderNumber: fallback }));
-    }
+  const generateSONumber = () => {
+    const random10Digits = Math.floor(1000000000 + Math.random() * 9000000000);
+    const formattedNum = `OD${random10Digits}`;
+    setFormData(prev => ({ ...prev, saleOrderNumber: formattedNum }));
   };
 
   const handleAddItem = () => {
@@ -212,9 +226,9 @@ const OfflineOrderModal = ({ isOpen, onClose }) => {
 
   useEffect(() => {
     const subTotal = formData.items.reduce((acc, item) => acc + item.amount, 0);
-    const total = subTotal + (subTotal * (formData.tax / 100)) + parseFloat(formData.adjustment || 0);
+    const total = subTotal + (subTotal * (formData.tax / 100));
     setFormData(prev => ({ ...prev, subTotal, total }));
-  }, [formData.items, formData.tax, formData.adjustment]);
+  }, [formData.items, formData.tax]);
 
   const handleSubmit = async (e) => {
     e.preventDefault();
@@ -231,13 +245,45 @@ const OfflineOrderModal = ({ isOpen, onClose }) => {
     try {
       const orderItems = formData.items.filter(item => item.productId);
 
+      const selectedCustomer = customers.find(c => c.id === formData.customerId) || {};
+      const now = new Date().toISOString();
+      const newOrderRef = doc(collection(db, 'storeOrders'));
+
+      const orderPayload = {
+        id: newOrderRef.id,
+        orderNumber: formData.saleOrderNumber,
+        customerId: formData.customerId,
+        customerName: formData.customerName,
+        customerPhone: selectedCustomer.phone || selectedCustomer.phoneNumber || '',
+        customerEmail: selectedCustomer.email || '',
+        shippingAddress: selectedCustomer.address || selectedCustomer.shippingAddress || '',
+        items: orderItems.map(item => ({
+          productId: item.productId,
+          productName: item.name,
+          price: item.rate,
+          quantity: item.quantity,
+          subtotal: item.amount
+        })),
+        pricing: {
+          subtotal: formData.subTotal,
+          shippingCharge: 0,
+          discount: 0,
+          tax: formData.tax,
+          grandTotal: formData.total
+        },
+        orderStatus: 'Placed',
+        statusHistory: [
+          {
+            status: 'Placed',
+            timestamp: now
+          }
+        ],
+        createdAt: now,
+        updatedAt: now
+      };
+
       // Save order to storeOrders collection
-      await addDoc(collection(db, 'storeOrders'), {
-        ...formData,
-        items: orderItems,
-        createdAt: serverTimestamp(),
-        status: 'Confirmed'
-      });
+      await setDoc(newOrderRef, orderPayload);
 
       // Reduce product stock in products collection
       const updatePromises = orderItems.map(async (item) => {
@@ -328,7 +374,7 @@ const OfflineOrderModal = ({ isOpen, onClose }) => {
 
                 {/* Order Number Settings Popup */}
                 {isSettingsOpen && (
-                  <div className="absolute top-full right-0 mt-2 w-[400px] bg-white border border-gray-100 rounded-3xl shadow-2xl z-[120] overflow-hidden animate-in slide-in-from-top-2 duration-200">
+                  <div className="absolute top-full left-0 mt-2 w-[400px] bg-white border border-gray-100 rounded-3xl shadow-2xl z-[120] overflow-hidden animate-in slide-in-from-top-2 duration-200">
                     <div className="p-6 space-y-6">
                       <p className="text-[12px] text-gray-500 font-medium leading-relaxed">
                         Your sales order numbers are set on auto-generate mode to save your time. Are you sure about changing this setting?
@@ -355,28 +401,7 @@ const OfflineOrderModal = ({ isOpen, onClose }) => {
                               <Info size={12} className="text-gray-300" />
                             </div>
                             
-                            {orderSettings.mode === 'auto' && (
-                              <div className="space-y-3 animate-in fade-in duration-200">
-                                <div className="space-y-1">
-                                  <span className="text-[10px] font-bold text-gray-400 uppercase">Prefix</span>
-                                  <input 
-                                    type="text" 
-                                    value={orderSettings.prefix}
-                                    onChange={(e) => setOrderSettings({ ...orderSettings, prefix: e.target.value })}
-                                    className="w-full bg-gray-50 border border-gray-100 rounded-xl px-3 py-2 text-[13px] font-medium focus:bg-white outline-none" 
-                                  />
-                                </div>
-                                <div className="space-y-1">
-                                  <span className="text-[10px] font-bold text-gray-400 uppercase">Next Number</span>
-                                  <input 
-                                    type="text" 
-                                    value={orderSettings.nextNumber}
-                                    onChange={(e) => setOrderSettings({ ...orderSettings, nextNumber: e.target.value })}
-                                    className="w-full bg-gray-50 border border-gray-100 rounded-xl px-3 py-2 text-[13px] font-medium focus:bg-white outline-none" 
-                                  />
-                                </div>
-                              </div>
-                            )}
+                            {/* Removed dynamic prefix and next number inputs */}
                           </div>
                         </label>
 
@@ -567,41 +592,47 @@ const OfflineOrderModal = ({ isOpen, onClose }) => {
                 <span className="text-[14px] font-black text-gray-900">₹{formData.subTotal.toFixed(2)}</span>
               </div>
               
-              <div className="flex items-center justify-between gap-4">
-                <div className="flex items-center gap-4">
-                   <div className="flex items-center gap-2">
-                     <Circle className="w-4 h-4 fill-[#1BAFAF] text-[#1BAFAF]" />
-                     <span className="text-[12px] font-bold text-gray-500 uppercase tracking-widest">TDS</span>
-                   </div>
-                   <div className="flex items-center gap-2">
-                     <Circle className="w-4 h-4 text-gray-300" />
-                     <span className="text-[12px] font-bold text-gray-500 uppercase tracking-widest">TCS</span>
-                   </div>
+              <div className="flex items-center justify-between gap-4 relative">
+                <div className="flex items-center gap-2">
+                   <span className="text-[12px] font-bold text-gray-500 uppercase tracking-widest">GST ({formData.tax}%)</span>
+                   <Settings 
+                     onClick={() => {
+                       setTempGst(formData.tax);
+                       setIsGstSettingsOpen(!isGstSettingsOpen);
+                     }}
+                     className="w-4 h-4 text-[#1BAFAF] cursor-pointer hover:rotate-90 transition-transform" 
+                   />
                 </div>
-                <CustomSelect
-                  value={`GST ${formData.tax}%`}
-                  onChange={(val) => {
-                    const num = parseFloat(val.replace('GST ', '').replace('%', '')) || 0;
-                    setFormData({ ...formData, tax: num });
-                  }}
-                  options={['GST 18%', 'GST 5%', 'No Tax']}
-                  className="w-32"
-                />
-              </div>
-
-              <div className="flex items-center justify-between gap-8">
-                <div className="flex-1 max-w-[120px]">
-                  <div className="border border-dashed border-gray-200 rounded-xl px-3 py-2 text-[12px] font-bold text-gray-400 bg-white">
-                    Adjustment
+                <span className="text-[14px] font-black text-gray-900">
+                  ₹{((formData.subTotal * formData.tax) / 100).toFixed(2)}
+                </span>
+                
+                {/* GST Settings Popup */}
+                {isGstSettingsOpen && (
+                  <div className="absolute top-10 left-0 mt-2 w-[260px] bg-white border border-gray-100 rounded-2xl shadow-xl z-[120] p-4 animate-in fade-in zoom-in duration-200">
+                    <div className="flex items-center justify-between mb-3">
+                      <h4 className="text-[13px] font-bold text-gray-900">Configure GST</h4>
+                      <X size={16} className="text-gray-400 cursor-pointer hover:text-gray-900" onClick={() => setIsGstSettingsOpen(false)} />
+                    </div>
+                    <div className="flex items-center gap-2">
+                      <input
+                        type="number"
+                        min="0"
+                        value={tempGst}
+                        onChange={(e) => setTempGst(e.target.value)}
+                        className="w-full bg-gray-50 border border-gray-100 rounded-xl px-3 py-2 text-[13px] outline-none focus:bg-white font-bold"
+                        placeholder="GST %"
+                      />
+                      <button
+                        type="button"
+                        onClick={handleSaveGst}
+                        className="px-4 py-2 bg-[#1BAFAF] text-white text-[12px] font-bold rounded-xl hover:bg-[#158e8e] transition-colors"
+                      >
+                        Save
+                      </button>
+                    </div>
                   </div>
-                </div>
-                <input
-                  type="number"
-                  value={formData.adjustment}
-                  onChange={(e) => setFormData({ ...formData, adjustment: parseFloat(e.target.value) || 0 })}
-                  className="w-24 bg-white border border-gray-100 rounded-xl px-3 py-2 text-[14px] font-bold text-gray-900 outline-none text-right"
-                  placeholder="0.00"
-                />
+                )}
               </div>
 
               <div className="pt-6 border-t border-gray-100 flex items-center justify-between">

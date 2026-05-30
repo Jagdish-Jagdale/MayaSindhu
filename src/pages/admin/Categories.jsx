@@ -115,6 +115,10 @@ export default function Categories() {
   const [isDeleting, setIsDeleting] = useState(false);
   const [deleteMessage, setDeleteMessage] = useState("");
   const [isProductModalOpen, setIsProductModalOpen] = useState(false);
+  const [editingProduct, setEditingProduct] = useState(null);
+  const [productToDelete, setProductToDelete] = useState(null);
+  const [isDeleteProductModalOpen, setIsDeleteProductModalOpen] = useState(false);
+  const [isDeletingProduct, setIsDeletingProduct] = useState(false);
 
   const rowsRef = useRef(null);
 
@@ -333,6 +337,28 @@ export default function Categories() {
     }
   };
 
+  const handleDeleteProduct = (e, product) => {
+    e.stopPropagation();
+    setProductToDelete(product);
+    setIsDeleteProductModalOpen(true);
+  };
+
+  const confirmDeleteProduct = async () => {
+    if (!productToDelete) return;
+    try {
+      setIsDeletingProduct(true);
+      await deleteDoc(doc(db, 'products', productToDelete.id));
+      toast.success("Product deleted successfully");
+      setIsDeleteProductModalOpen(false);
+      setProductToDelete(null);
+    } catch (err) {
+      console.error("Error deleting product:", err);
+      toast.error("Failed to delete product");
+    } finally {
+      setIsDeletingProduct(false);
+    }
+  };
+
   const toggleTrendy = async (e, category) => {
     e.stopPropagation();
     try {
@@ -394,7 +420,10 @@ export default function Categories() {
             <div className="flex items-center gap-3">
               {currentPath.length > 0 && (
                 <button
-                  onClick={() => setIsProductModalOpen(true)}
+                  onClick={() => {
+                    setEditingProduct(null);
+                    setIsProductModalOpen(true);
+                  }}
                   className="flex items-center gap-2 bg-white border border-[#1BAFAF] text-[#1BAFAF] hover:bg-[#1BAFAF]/5 px-4 py-2.5 rounded-xl text-[13px] font-bold transition-all active:scale-95 group"
                 >
                   <Package size={18} className="group-hover:rotate-90 transition-transform duration-300" strokeWidth={2.5} />
@@ -677,7 +706,7 @@ export default function Categories() {
                         {(() => {
                           const displayImage = p.image || p.imageUrl || (p.images && p.images.length > 0 ? p.images[0] : null);
                           return displayImage ? (
-                            <img src={displayImage} alt={p.name} className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-700" />
+                            <img src={displayImage} alt={p.name} className="w-full h-full object-contain p-2 group-hover:scale-105 transition-transform duration-700" />
                           ) : (
                             <div className="w-full h-full flex items-center justify-center text-gray-200">
                               <Diamond size={48} strokeWidth={1} />
@@ -685,57 +714,33 @@ export default function Categories() {
                           );
                         })()}
                         
-                        {/* Status Badge */}
-                        <div className="absolute top-4 left-4 z-10">
-                           <span className={`text-[9px] font-bold uppercase tracking-[0.1em] px-2.5 py-1.5 rounded-lg backdrop-blur-md shadow-sm flex items-center gap-1.5 ${
-                             p.isAvailable 
-                               ? (Number(p.stock) <= 0 
-                                   ? 'bg-rose-600 text-white' 
-                                   : Number(p.stock) < Number(stockAlertThreshold) 
-                                     ? 'bg-amber-500 text-white' 
-                                     : 'bg-emerald-500/90 text-white')
-                               : 'bg-gray-900/60 text-white'
-                           }`}>
-                             <div className={`w-1.5 h-1.5 rounded-full animate-pulse ${
-                               p.isAvailable 
-                                 ? 'bg-white'
-                                 : 'bg-gray-300'
-                             }`} />
-                             {p.isAvailable 
-                               ? (Number(p.stock) <= 0 
-                                   ? ((p.productType || '').toLowerCase() === 'unique' ? 'Sold Out' : 'Out Of Stock') 
-                                   : Number(p.stock) < Number(stockAlertThreshold) 
-                                     ? 'Low Stock' 
-                                     : 'Active') 
-                               : 'Archived'}
-                           </span>
-                        </div>
+
                       </div>
 
                       {/* Content Section */}
                       <div className="p-5 flex-1 flex flex-col gap-3">
                         <div className="flex items-center justify-between gap-2">
-                          <span className="text-[9px] font-bold text-gray-400 uppercase tracking-widest truncate max-w-[120px]" title={p.productId || '---'}>
+                          <span className="text-[10px] font-bold text-gray-400 uppercase tracking-widest truncate" title={p.productId || '---'}>
                             UID: {p.productId || '---'}
                           </span>
                           <div className="flex flex-col items-end">
-                            <span className="text-[16px] font-bold text-[#1BAFAF]">
+                            <span className="text-[16px] font-black text-[#1BAFAF] leading-tight">
                               ₹{Number(p.discountedPrice || p.price || 0).toLocaleString()}
                             </span>
                             {(p.actualPrice || p.costPrice) && (
-                              <span className="text-[11px] text-gray-400 line-through">
+                              <span className="text-[11px] text-gray-400 line-through font-medium leading-tight mt-0.5">
                                 ₹{Number(p.actualPrice || p.costPrice || 0).toLocaleString()}
                               </span>
                             )}
                           </div>
                         </div>
 
-                        <div className="space-y-1">
-                          <h3 className="text-[17px] font-bold text-gray-900 leading-tight line-clamp-2 group-hover:text-[#1BAFAF] transition-colors">
+                        <div className="space-y-0.5">
+                          <h3 className="text-[16px] font-bold text-gray-900 leading-tight truncate group-hover:text-[#1BAFAF] transition-colors" title={p.name}>
                             {p.name}
                           </h3>
-                          <p className="text-[12px] font-medium text-gray-400 line-clamp-1 italic">
-                            {p.productType} • {p.description || 'Heritage Collection'}
+                          <p className="text-[11px] font-bold text-gray-400 uppercase tracking-wider">
+                            {p.productType || 'Repeat'}
                           </p>
                         </div>
 
@@ -762,11 +767,19 @@ export default function Categories() {
                             </span>
                           </div>
                           <div className="flex items-center gap-1">
-                            <button className="p-2 text-gray-400 hover:text-emerald-600 hover:bg-emerald-50 rounded-xl transition-all active:scale-90" title="Edit Product">
+                            <button 
+                              onClick={(e) => {
+                                e.stopPropagation();
+                                setEditingProduct(p);
+                                setIsProductModalOpen(true);
+                              }}
+                              className="p-2 text-gray-400 hover:text-emerald-600 hover:bg-emerald-50 rounded-xl transition-all active:scale-90" title="Edit Product">
                               <Pencil size={16} strokeWidth={2.5} />
                             </button>
-                            <button className="p-2 text-gray-400 hover:text-gray-900 hover:bg-gray-100 rounded-xl transition-all active:scale-90">
-                              <MoreVertical size={16} strokeWidth={2.5} />
+                            <button 
+                              onClick={(e) => handleDeleteProduct(e, p)}
+                              className="p-2 text-gray-400 hover:text-red-600 hover:bg-red-50 rounded-xl transition-all active:scale-90" title="Delete Product">
+                              <Trash2 size={16} strokeWidth={2.5} />
                             </button>
                           </div>
                         </div>
@@ -901,9 +914,21 @@ export default function Categories() {
         message={deleteMessage}
         loading={isDeleting}
       />
+      <DeleteConfirmationModal
+        isOpen={isDeleteProductModalOpen}
+        onClose={() => setIsDeleteProductModalOpen(false)}
+        onConfirm={confirmDeleteProduct}
+        itemName={productToDelete?.name}
+        message="Are you sure you want to delete this product? This action cannot be undone."
+        loading={isDeletingProduct}
+      />
       <ProductFormModal 
         isOpen={isProductModalOpen}
-        onClose={() => setIsProductModalOpen(false)}
+        onClose={() => {
+          setIsProductModalOpen(false);
+          setEditingProduct(null);
+        }}
+        product={editingProduct}
         initialCategoryId={currentPath.length > 0 ? currentPath[currentPath.length - 1] : null}
       />
     </div>

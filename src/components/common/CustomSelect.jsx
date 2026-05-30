@@ -58,7 +58,7 @@ const CustomSelect = ({ value, onChange, options, label, icon: Icon, className =
       </div>
 
       {isOpen && (
-        <div className={`absolute top-full right-0 mt-2 bg-white border border-gray-100 rounded-xl shadow-2xl z-[150] py-1 max-h-60 overflow-y-auto custom-scrollbar animate-in fade-in zoom-in-95 duration-200 min-w-[120px]`}>
+        <div className={`absolute top-full ${minimal ? 'right-0 min-w-[120px]' : 'left-0 w-full'} mt-2 bg-white border border-gray-100 rounded-xl shadow-2xl z-[150] py-1 max-h-60 overflow-y-auto custom-scrollbar animate-in fade-in zoom-in-95 duration-200`}>
           {options.map((opt) => {
             const optValue = getOptionValue(opt);
             const optLabel = getOptionLabel(opt);

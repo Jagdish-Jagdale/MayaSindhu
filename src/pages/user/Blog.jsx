@@ -26,7 +26,7 @@ export default function Blog() {
     });
 
     // 2. Fetch Blog Settings
-    const unsubSettings = onSnapshot(doc(db, 'settings', 'blogs_config'), (snapshot) => {
+    const unsubSettings = onSnapshot(doc(db, 'blogs', 'blogs_config'), (snapshot) => {
       if (snapshot.exists()) {
         setSettings(snapshot.data());
       }
