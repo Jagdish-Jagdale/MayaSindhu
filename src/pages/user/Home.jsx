@@ -750,7 +750,7 @@ export default function Home() {
               <div className="mx-auto w-16 md:w-24 h-1 bg-brand-orange mt-4 md:mt-6 rounded-none opacity-30" />
             </motion.div>
 
-            <div className="relative group/testimonials">
+            <div className="relative group/testimonials px-4 md:px-14 lg:px-16">
               <div className="relative overflow-hidden">
                 <div
                   ref={testimonialRef}
@@ -770,13 +770,13 @@ export default function Home() {
               {/* Navigation Arrows */}
               <button
                 onClick={() => scroll(testimonialRef, 'left')}
-                className="absolute left-0 top-1/2 -translate-y-1/2 -translate-x-4 md:-translate-x-12 p-3 bg-white border border-gray-100 rounded-none shadow-lg hover:bg-brand-orange hover:text-white transition-all opacity-0 group-hover/testimonials:opacity-100 z-10 hidden md:block"
+                className="absolute left-2 lg:left-4 top-1/2 -translate-y-1/2 p-3 bg-white border border-gray-100 rounded-none shadow-lg opacity-60 hover:opacity-100 hover:bg-brand-orange hover:text-white transition-all z-10 hidden md:block"
               >
                 <ChevronLeft size={24} />
               </button>
               <button
                 onClick={() => scroll(testimonialRef, 'right')}
-                className="absolute right-0 top-1/2 -translate-y-1/2 translate-x-4 md:translate-x-12 p-3 bg-white border border-gray-100 rounded-none shadow-lg hover:bg-brand-orange hover:text-white transition-all opacity-0 group-hover/testimonials:opacity-100 z-10 hidden md:block"
+                className="absolute right-2 lg:right-4 top-1/2 -translate-y-1/2 p-3 bg-white border border-gray-100 rounded-none shadow-lg opacity-60 hover:opacity-100 hover:bg-brand-orange hover:text-white transition-all z-10 hidden md:block"
               >
                 <ChevronRight size={24} />
               </button>
@@ -808,7 +808,7 @@ export default function Home() {
                 transition={{ delay: idx * 0.1, duration: 0.8 }}
                 className="group"
               >
-                <div className="relative aspect-square rounded-2xl overflow-hidden mb-6 shadow-lg bg-[#FAF9F6] flex items-center justify-center">
+                <div className="relative aspect-video md:aspect-square rounded-2xl overflow-hidden mb-4 md:mb-6 shadow-md md:shadow-lg bg-[#FAF9F6] flex items-center justify-center">
                   {ws.image ? (
                     <img src={ws.image} alt={ws.name} className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-700" />
                   ) : (
@@ -820,8 +820,8 @@ export default function Home() {
                     <p className="text-[9px] font-bold uppercase tracking-widest text-brand-orange">{formatWorkshopDate(ws.date)}</p>
                   </div>
                 </div>
-                <h3 className="text-xl font-sans font-medium text-text-main mb-3 group-hover:text-brand-orange transition-colors">{ws.name}</h3>
-                <p className="text-gray-500 text-sm leading-relaxed mb-6 line-clamp-2">{ws.summary}</p>
+                <h3 className="text-lg md:text-xl font-sans font-medium text-text-main mb-2 md:mb-3 group-hover:text-brand-orange transition-colors">{ws.name}</h3>
+                <p className="text-gray-500 text-sm leading-relaxed mb-4 md:mb-6 line-clamp-2">{ws.summary}</p>
                 <button
                   onClick={() => {
                     setSelectedWorkshop(ws);
