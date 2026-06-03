@@ -159,11 +159,25 @@ export default function Reports() {
     };
   }, [isOffline]);
 
-  // Helper to determine category of a product
+  // Helper to determine main category of a product
   const getProductCategory = (prodName) => {
     const prod = products.find(p => p.name === prodName);
     if (!prod) return 'Uncategorized';
-    const cat = categories.find(c => c.id === prod.categoryId);
+    
+    let cat = categories.find(c => c.id === prod.categoryId);
+    
+    // Traverse up to find the root/main category
+    let maxDepth = 10;
+    while (cat && cat.parentId && maxDepth > 0) {
+      const parent = categories.find(c => c.id === cat.parentId);
+      if (parent) {
+        cat = parent;
+      } else {
+        break;
+      }
+      maxDepth--;
+    }
+    
     return cat ? (cat.name || 'Uncategorized') : 'Uncategorized';
   };
 
@@ -282,7 +296,7 @@ export default function Reports() {
     filteredOrders.forEach(o => {
       const name = o.customerName || 'Walk-in Customer';
       const amt = parseCurrency(o.total);
-      let qty = o.items && Array.isArray(o.items) ? o.items.reduce((sum, item) => sum + (Number(item.quantity) || 1), 0) : (Number(o.quantity) || 1);
+      let qty = o.items && Array.isArray(o.items) ? o.items.reduce((sum, item) => sum + (Number(item.quantity) || Number(item.qty) || 1), 0) : (Number(o.quantity) || Number(o.qty) || 1);
       
       if (!totals[name]) {
         totals[name] = { name, ordersCount: 0, itemsCount: 0, totalSpent: 0 };
@@ -301,8 +315,8 @@ export default function Reports() {
       if (o.items && Array.isArray(o.items)) {
         o.items.forEach(item => {
           const name = item.name || 'Unknown Product';
-          const qty = Number(item.quantity) || 1;
-          const amt = parseCurrency(item.amount || (parseCurrency(item.rate) * qty));
+          const qty = Number(item.quantity) || Number(item.qty) || 1;
+          const amt = parseCurrency(item.amount) || (parseCurrency(item.rate || item.price) * qty);
           const cat = getProductCategory(name);
           if (!totals[name]) totals[name] = { name, category: cat, qtySold: 0, totalSales: 0 };
           totals[name].qtySold += qty;
@@ -310,7 +324,7 @@ export default function Reports() {
         });
       } else if (o.productName) {
         const name = o.productName;
-        const qty = Number(o.quantity) || 1;
+        const qty = Number(o.quantity) || Number(o.qty) || 1;
         const amt = parseCurrency(o.total);
         const cat = getProductCategory(name);
         if (!totals[name]) totals[name] = { name, category: cat, qtySold: 0, totalSales: 0 };
@@ -328,23 +342,23 @@ export default function Reports() {
       if (o.items && Array.isArray(o.items)) {
         o.items.forEach(item => {
           const cat = getProductCategory(item.name);
-          const qty = Number(item.quantity) || 1;
-          const amt = parseCurrency(item.amount || (parseCurrency(item.rate) * qty));
+          const qty = Number(item.quantity) || Number(item.qty) || 1;
+          const amt = parseCurrency(item.amount) || (parseCurrency(item.rate || item.price) * qty);
           if (!totals[cat]) totals[cat] = { name: cat, qtySold: 0, totalSales: 0 };
           totals[cat].qtySold += qty;
           totals[cat].totalSales += amt;
         });
       } else if (o.productName) {
         const cat = getProductCategory(o.productName);
-        const qty = Number(o.quantity) || 1;
+        const qty = Number(o.quantity) || Number(o.qty) || 1;
         const amt = parseCurrency(o.total);
         if (!totals[cat]) totals[cat] = { name: cat, qtySold: 0, totalSales: 0 };
         totals[cat].qtySold += qty;
         totals[cat].totalSales += amt;
       }
     });
-    return Object.values(totals).sort((a, b) => b.totalSales - a.totalSales);
-  }, [filteredOrders, products]);
+    return Object.values(totals).sort((a, b) => b.qtySold - a.qtySold);
+  }, [filteredOrders, products, categories]);
 
   const resetFilters = () => {
     setStartDate('');
@@ -927,7 +941,7 @@ export default function Reports() {
                </div>
                
                <div className="flex-1 space-y-5 w-full">
-                 {categorySalesData.slice(0, 5).map((cat, i) => (
+                 {categorySalesData.slice(0, 7).map((cat, i) => (
                    <div key={cat.name} className="flex flex-col gap-2">
                      <div className="flex items-center justify-between text-[12px]">
                        <span className="font-bold text-gray-800 uppercase tracking-tight">{cat.name}</span>
@@ -1022,46 +1036,46 @@ export default function Reports() {
               </div>
             </div>
 
-            {/* Top Product Categories Breakdown */}
+            {/* Top Products Breakdown */}
             <div className="bg-white rounded-[2rem] shadow-sm border border-gray-100 overflow-hidden">
               <div className="px-8 py-6 border-b border-gray-50 flex items-center justify-between bg-gray-50/30">
                 <div className="flex items-center gap-3">
-                   <Layers className="text-amber-500" size={18} />
+                   <Package className="text-amber-500" size={18} />
                    <h2 className="text-[15px] font-bold text-gray-900 uppercase tracking-wider">
-                     {isOffline ? 'Top Categories' : 'Top Collections'}
+                     Top Products
                    </h2>
                 </div>
                 <Activity size={16} className="text-gray-300" />
               </div>
               <div className="divide-y divide-gray-50">
-                {categorySalesData.slice(0, 5).map((cat, i) => (
-                  <div key={cat.name} className="flex flex-col gap-2 px-8 py-5 hover:bg-gray-50/50 transition-all">
+                {productSalesData.slice(0, 7).map((prod, i) => (
+                  <div key={prod.name} className="flex flex-col gap-2 px-8 py-5 hover:bg-gray-50/50 transition-all">
                      <div className="flex items-center justify-between">
-                        <span className="text-[13px] font-black text-gray-900 uppercase tracking-tight">{cat.name}</span>
-                        <span className="text-[11px] font-black text-[#1BAFAF]">{cat.qtySold} Sold ({formatIndianCurrency(cat.totalSales)})</span>
+                        <span className="text-[13px] font-black text-gray-900 uppercase tracking-tight truncate max-w-[180px]" title={prod.name}>{prod.name}</span>
+                        <span className="text-[11px] font-black text-[#1BAFAF]">{prod.qtySold} Sold ({formatIndianCurrency(prod.totalSales)})</span>
                      </div>
                      <div className="w-full h-2 bg-gray-100 rounded-full overflow-hidden">
                         <div 
                            className="h-full rounded-full transition-all duration-1000" 
                            style={{ 
-                              width: `${(cat.totalSales / (categorySalesData[0]?.totalSales || 1)) * 100}%`,
+                              width: `${(prod.totalSales / (productSalesData[0]?.totalSales || 1)) * 100}%`,
                               backgroundColor: COLORS[i % COLORS.length]
                            }} 
                         />
                      </div>
                   </div>
                 ))}
-                {categorySalesData.length === 0 && (
+                {productSalesData.length === 0 && (
                    <p className="px-8 py-10 text-center text-[12px] font-bold text-gray-400 uppercase tracking-wider">
-                     No collections recorded
+                     No products recorded
                    </p>
                 )}
                 <div className="p-8 text-center">
                    <button 
-                     onClick={() => setActiveTab('categories')} 
+                     onClick={() => setActiveTab('products')} 
                      className="text-[11px] font-black text-gray-400 uppercase tracking-[0.2em] hover:text-gray-900 transition-colors"
                    >
-                      Generate Category Report
+                      Generate Product Report
                    </button>
                 </div>
               </div>

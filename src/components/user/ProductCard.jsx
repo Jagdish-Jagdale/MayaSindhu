@@ -3,6 +3,7 @@ import { ShoppingBag, Heart, Star, CheckCircle2 } from 'lucide-react';
 import { Link, useNavigate, useLocation } from 'react-router-dom';
 import { useState, useEffect } from 'react';
 import { useAuth } from '../../context/AuthContext';
+import { useCartUI } from '../../context/CartUIContext';
 import { db } from '../../firebase';
 import { doc, getDoc, setDoc, updateDoc, deleteDoc, serverTimestamp, onSnapshot } from 'firebase/firestore';
 import { addToCart } from '../../utils/cartUtils';
@@ -13,7 +14,8 @@ export default function ProductCard({ id, productId, slug, name, price, discount
   const displayPrice = discountedPrice || price || 0;
   const displayImage = image || imageUrl || (images && images.length > 0 ? images[0] : '');
   const [isAdded, setIsAdded] = useState(false);
-  const { user } = useAuth();
+  const { user, setLoginModalOpen } = useAuth();
+  const { setCartOpen } = useCartUI();
   const [isWishlisted, setIsWishlisted] = useState(false);
   const [isInCart, setIsInCart] = useState(false);
   const navigate = useNavigate();
@@ -55,7 +57,7 @@ export default function ProductCard({ id, productId, slug, name, price, discount
 
     if (!user) {
       console.log("Cart: Redirecting guest to login...");
-      navigate('/login', { state: { from: location } });
+      setLoginModalOpen(true);
       return;
     }
 
@@ -81,7 +83,7 @@ export default function ProductCard({ id, productId, slug, name, price, discount
 
     if (!user) {
       console.log("Wishlist: Redirecting guest to login...");
-      navigate('/login', { state: { from: location } });
+      setLoginModalOpen(true);
       return;
     }
 
@@ -121,7 +123,7 @@ export default function ProductCard({ id, productId, slug, name, price, discount
     e.stopPropagation();
     if (!user) {
       toast.error("Please login to request restock notification");
-      navigate('/login', { state: { from: location } });
+      setLoginModalOpen(true);
       return;
     }
     toast.success("Notification request registered! We'll alert you via email when back in stock.");
@@ -146,7 +148,7 @@ export default function ProductCard({ id, productId, slug, name, price, discount
 
         {stockVal === 0 && (
           <>
-            <div className="absolute inset-0 bg-white/70 backdrop-blur-[2px] flex items-center justify-center pointer-events-none z-10">
+            <div className="absolute inset-0 bg-white/20 backdrop-blur-[1px] flex items-center justify-center pointer-events-none z-10">
               <span className="text-[#DC2626] font-black text-sm md:text-base tracking-widest uppercase text-center px-4">
                 {isUnique ? "SOLD OUT" : "OUT OF STOCK"}
               </span>
@@ -179,60 +181,58 @@ export default function ProductCard({ id, productId, slug, name, price, discount
         {/* Actions - Buy Now & Add to Cart */}
         {stockVal > 0 && (
           <div className="absolute bottom-4 md:bottom-6 left-0 right-0 md:translate-y-10 md:opacity-0 group-hover:translate-y-0 group-hover:opacity-100 transition-all duration-700 ease-out z-10 px-2 md:px-3">
-          <div className="flex flex-row gap-1 md:gap-1.5">
-            <button
-              disabled={stockVal === 0 && !isInCart}
-              onClick={isInCart ? (e) => { e.preventDefault(); e.stopPropagation(); navigate('/cart'); } : handleAddToCart}
-              className={`flex-1 flex items-center justify-center space-x-1 md:space-x-2 backdrop-blur-md border text-white py-2.5 md:py-3 rounded-2xl shadow-2xl active:scale-95 transition-all duration-500 ${
-                isInCart 
-                ? 'bg-brand-orange hover:bg-brand-orange-dark border-brand-orange/30' 
-                : (stockVal === 0 
-                   ? 'bg-gray-400/50 hover:bg-gray-400/50 border-gray-400/20 cursor-not-allowed opacity-50' 
-                   : 'bg-black/30 hover:bg-white hover:text-brand-black border-white/30')
-              }`}
-            >
-              <ShoppingBag size={12} className="md:w-3.5 md:h-3.5" strokeWidth={2} />
-              <span className="text-[8px] md:text-[10px] font-bold uppercase tracking-[0.1em] whitespace-nowrap">
-                {stockVal === 0 && !isInCart ? "Sold Out" : (isInCart ? "In Bag" : "Add")}
-              </span>
-            </button>
-            <button
-              disabled={stockVal === 0}
-              onClick={(e) => {
-                e.preventDefault();
-                e.stopPropagation();
-                if (!user) {
-                  navigate('/login', { state: { from: location } });
-                  return;
-                }
-                navigate('/checkout', { 
-                  state: { 
-                    buyNowItem: {
-                      id: id,
-                      slug: slug || id,
-                      name: name,
-                      price: displayPrice,
-                      image: displayImage,
-                      qty: 1,
-                      isDirectBuy: true,
-                      isUniquePiece: isUniquePiece,
-                      productType: productType
-                    } 
-                  } 
-                });
-              }}
-              className={`flex-1 flex items-center justify-center space-x-1 md:space-x-2 py-2.5 md:py-3 rounded-2xl shadow-2xl active:scale-95 transition-all duration-500 ${
-                stockVal === 0 
-                ? 'bg-gray-400/50 text-white/80 cursor-not-allowed opacity-50 border border-gray-400/20' 
-                : 'bg-brand-orange hover:bg-brand-orange-dark text-white border border-brand-orange/30'
-              }`}
-            >
-              <span className="text-[8px] md:text-[10px] font-bold uppercase tracking-[0.1em] whitespace-nowrap">
-                {stockVal === 0 ? "Sold Out" : "Buy Now"}
-              </span>
-            </button>
+            <div className="flex flex-row gap-1 md:gap-1.5">
+              <button
+                disabled={stockVal === 0 && !isInCart}
+                onClick={isInCart ? (e) => { e.preventDefault(); e.stopPropagation(); setCartOpen(true); } : handleAddToCart}
+                className={`flex-1 flex items-center justify-center space-x-1 md:space-x-2 backdrop-blur-md border text-white py-2.5 md:py-3 rounded-2xl shadow-2xl active:scale-95 transition-all duration-500 ${isInCart
+                    ? 'bg-brand-orange hover:bg-brand-orange-dark border-brand-orange/30'
+                    : (stockVal === 0
+                      ? 'bg-gray-400/50 hover:bg-gray-400/50 border-gray-400/20 cursor-not-allowed opacity-50'
+                      : 'bg-black/30 hover:bg-white hover:text-brand-black border-white/30')
+                  }`}
+              >
+                <ShoppingBag size={12} className="md:w-3.5 md:h-3.5" strokeWidth={2} />
+                <span className="text-[8px] md:text-[10px] font-bold uppercase tracking-[0.1em] whitespace-nowrap">
+                  {stockVal === 0 && !isInCart ? "Sold Out" : (isInCart ? "In Bag" : "Add")}
+                </span>
+              </button>
+              <button
+                disabled={stockVal === 0}
+                onClick={(e) => {
+                  e.preventDefault();
+                  e.stopPropagation();
+                  if (!user) {
+                    setLoginModalOpen(true);
+                    return;
+                  }
+                  navigate('/checkout', {
+                    state: {
+                      buyNowItem: {
+                        id: id,
+                        slug: slug || id,
+                        name: name,
+                        price: displayPrice,
+                        image: displayImage,
+                        qty: 1,
+                        isDirectBuy: true,
+                        isUniquePiece: isUniquePiece,
+                        productType: productType
+                      }
+                    }
+                  });
+                }}
+                className={`flex-1 flex items-center justify-center space-x-1 md:space-x-2 py-2.5 md:py-3 rounded-2xl shadow-2xl active:scale-95 transition-all duration-500 ${stockVal === 0
+                    ? 'bg-gray-400/50 text-white/80 cursor-not-allowed opacity-50 border border-gray-400/20'
+                    : 'bg-brand-orange hover:bg-brand-orange-dark text-white border border-brand-orange/30'
+                  }`}
+              >
+                <span className="text-[8px] md:text-[10px] font-bold uppercase tracking-[0.1em] whitespace-nowrap">
+                  {stockVal === 0 ? "Sold Out" : "Buy Now"}
+                </span>
+              </button>
+            </div>
           </div>
-        </div>
         )}
 
         {/* Success Animation Overlay */}
