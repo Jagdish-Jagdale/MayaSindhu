@@ -33,7 +33,7 @@ const TABS = [
 ];
 
 export default function Profile() {
-  const { user, logout } = useAuth();
+  const { user, logout, setLoginModalOpen } = useAuth();
   const navigate = useNavigate();
   const [activeTab, setActiveTab] = useState('profile');
   const [isSidebarOpen, setIsSidebarOpen] = useState(false);
@@ -41,7 +41,8 @@ export default function Profile() {
 
   useEffect(() => {
     if (!user) {
-      navigate('/login');
+      setLoginModalOpen(true);
+      navigate('/');
       return;
     }
 
@@ -66,7 +67,7 @@ export default function Profile() {
   const handleLogout = async () => {
     try {
       await logout();
-      navigate('/login');
+      navigate('/');
     } catch (error) {
       console.error("Logout failed:", error);
     }

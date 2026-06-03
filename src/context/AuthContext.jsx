@@ -25,6 +25,7 @@ export const AuthProvider = ({ children }) => {
   const [adminRole, setAdminRole] = useState(null);
   const [isEcommerceAdmin, setIsEcommerceAdmin] = useState(false);
   const [isOfflineStoreAdmin, setIsOfflineStoreAdmin] = useState(false);
+  const [isLoginModalOpen, setLoginModalOpen] = useState(false);
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
@@ -129,7 +130,9 @@ export const AuthProvider = ({ children }) => {
     loading,
     login,
     signup,
-    logout
+    logout,
+    isLoginModalOpen,
+    setLoginModalOpen
   };
 
   return (

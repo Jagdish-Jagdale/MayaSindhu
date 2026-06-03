@@ -191,22 +191,8 @@ export default function CategoryView() {
               {/* ── Pinned header: breadcrumb + title (left) | count (right) ── */}
               <div className="flex-shrink-0 flex items-start justify-between px-5 sm:px-6 py-4 border-b border-gray-100 bg-white gap-4">
 
-                {/* Left: Breadcrumb + Category Name */}
+                {/* Left: Category Name */}
                 <div className="min-w-0">
-                  <nav className="flex items-center gap-1.5 text-[9px] font-sans font-bold uppercase tracking-[0.2em] text-gray-400 mb-1.5 flex-wrap">
-                    <Link to="/" className="hover:text-brand-orange transition-colors whitespace-nowrap">Home</Link>
-                    {breadcrumbs.map(bc => (
-                      <React.Fragment key={bc.id}>
-                        <span className="text-gray-300">›</span>
-                        <Link
-                          to={bc.fullPath}
-                          className={`hover:text-brand-orange transition-colors whitespace-nowrap ${bc.id === currentCategory.id ? 'text-brand-orange' : ''}`}
-                        >
-                          {bc.name}
-                        </Link>
-                      </React.Fragment>
-                    ))}
-                  </nav>
                   <h1 className="text-lg sm:text-xl lg:text-2xl font-sans font-semibold text-[#111111] capitalize tracking-tight leading-tight">
                     {currentCategory.name}
                   </h1>

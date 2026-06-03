@@ -15,6 +15,7 @@ import {
   Star
 } from 'lucide-react';
 import { useAuth } from '../../context/AuthContext';
+import { useCartUI } from '../../context/CartUIContext';
 import useCategories from '../../hooks/useCategories';
 import navLogo from '../../assets/navbar logo.png';
 import { db } from '../../firebase';
@@ -23,7 +24,8 @@ import { getProductPath } from '../../utils/productUtils';
 
 export default function Navbar() {
   const { categories } = useCategories();
-  const { user } = useAuth();
+  const { user, setLoginModalOpen } = useAuth();
+  const { setCartOpen } = useCartUI();
   const [isScrolled, setIsScrolled] = useState(false);
   const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false);
   const [isMobileSearchOpen, setIsMobileSearchOpen] = useState(false);
@@ -283,26 +285,35 @@ export default function Navbar() {
                 )}
               </Link>
 
-              <Link to="/cart" className="p-2 text-brand-black hover:text-brand-orange transition-colors relative flex">
+              <button onClick={() => setCartOpen(true)} className="p-2 text-brand-black hover:text-brand-orange transition-colors relative flex">
                 <ShoppingBag size={22} strokeWidth={2} />
                 {cartCount > 0 && (
                   <span className="absolute top-1.5 right-1.5 bg-brand-orange text-white text-[9px] font-bold w-4 h-4 flex items-center justify-center rounded-full shadow-md">
                     {cartCount}
                   </span>
                 )}
-              </Link>
+              </button>
 
               <div 
                 className="relative group hidden sm:block"
                 onMouseEnter={() => setIsUserDropdownOpen(true)}
                 onMouseLeave={() => setIsUserDropdownOpen(false)}
               >
-                <Link
-                  to={user ? "/profile" : "/login"}
-                  className="p-2 text-brand-black hover:text-brand-orange transition-colors relative flex"
-                >
-                  <User size={22} strokeWidth={2} />
-                </Link>
+                {user ? (
+                  <Link
+                    to="/profile"
+                    className="p-2 text-brand-black hover:text-brand-orange transition-colors relative flex"
+                  >
+                    <User size={22} strokeWidth={2} />
+                  </Link>
+                ) : (
+                  <button
+                    onClick={() => setLoginModalOpen(true)}
+                    className="p-2 text-brand-black hover:text-brand-orange transition-colors relative flex"
+                  >
+                    <User size={22} strokeWidth={2} />
+                  </button>
+                )}
 
                 <AnimatePresence>
                   {isUserDropdownOpen && user && (
@@ -606,7 +617,7 @@ function RecursiveMenuItem({ item, location, parentDirection, isHovered, onHover
 }
 
 function MobileMenu({ categories, onClose }) {
-  const { user } = useAuth();
+  const { user, setLoginModalOpen } = useAuth();
   const navigate = useNavigate();
 
   const handleUserAction = () => {
@@ -614,7 +625,7 @@ function MobileMenu({ categories, onClose }) {
     if (user) {
       navigate('/profile');
     } else {
-      navigate('/login');
+      setLoginModalOpen(true);
     }
   };
 

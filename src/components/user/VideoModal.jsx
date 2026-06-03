@@ -2,6 +2,7 @@ import { motion, AnimatePresence } from 'framer-motion';
 import { useEffect, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { useAuth } from '../../context/AuthContext';
+import { useCartUI } from '../../context/CartUIContext';
 import { addToCart } from '../../utils/cartUtils';
 import { db } from '../../firebase';
 import { doc, getDoc, onSnapshot } from 'firebase/firestore';
@@ -9,7 +10,8 @@ import { X, ChevronLeft, ChevronRight, ShoppingBag, Volume2, VolumeX, Share2, Lo
 import toast from 'react-hot-toast';
 
 export default function VideoModal({ isOpen, onClose, look, onNext, onPrev }) {
-  const { user } = useAuth();
+  const { user, setLoginModalOpen } = useAuth();
+  const { setCartOpen } = useCartUI();
   const navigate = useNavigate();
   const [productData, setProductData] = useState(null);
   const [loadingProduct, setLoadingProduct] = useState(false);
@@ -224,7 +226,10 @@ export default function VideoModal({ isOpen, onClose, look, onNext, onPrev }) {
                         return (
                           <button
                             className="flex-1 bg-brand-orange hover:bg-brand-orange-dark text-white font-bold py-4 rounded-md transition-all active:scale-[0.98] text-[14px] cursor-pointer"
-                            onClick={() => navigate('/cart')}
+                            onClick={() => {
+                              onClose();
+                              setCartOpen(true);
+                            }}
                           >
                             Go to bag
                           </button>
@@ -241,7 +246,7 @@ export default function VideoModal({ isOpen, onClose, look, onNext, onPrev }) {
                           }`}
                           onClick={async () => {
                             if (!user) {
-                              navigate('/login');
+                              setLoginModalOpen(true);
                               return;
                             }
                             try {
@@ -260,9 +265,12 @@ export default function VideoModal({ isOpen, onClose, look, onNext, onPrev }) {
 
                     <div className="relative">
                       <button 
-                        onClick={() => navigate('/cart')}
+                        onClick={() => {
+                          onClose();
+                          setCartOpen(true);
+                        }}
                         className="w-12 h-11 bg-white border border-gray-200 rounded-md flex items-center justify-center text-gray-800 hover:text-brand-orange hover:border-brand-orange/50 transition-all cursor-pointer"
-                        title="Go to cart"
+                        title="Go to bag"
                       >
                         <ShoppingBag size={20} />
                       </button>

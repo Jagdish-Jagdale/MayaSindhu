@@ -16,6 +16,7 @@ import {
   Plus
 } from 'lucide-react';
 import { useAuth } from '../../context/AuthContext';
+import { useCartUI } from '../../context/CartUIContext';
 import { db } from '../../firebase';
 import { doc, getDoc, setDoc, updateDoc, deleteDoc, serverTimestamp, onSnapshot, collection, query, where, getDocs, orderBy, limit } from 'firebase/firestore';
 import { addToCart } from '../../utils/cartUtils';
@@ -247,7 +248,8 @@ export default function ProductDetail() {
   const navigate = useNavigate();
   const goBack = useGoBack();
   const location = useLocation();
-  const { user } = useAuth();
+  const { user, setLoginModalOpen } = useAuth();
+  const { setCartOpen } = useCartUI();
 
   const [product, setProduct] = useState(null);
   const [loading, setLoading] = useState(true);
@@ -439,11 +441,11 @@ export default function ProductDetail() {
 
       // Sort reviews client-side by createdAt descending to avoid requiring composite indexes
       reviewData.sort((a, b) => {
-        const timeA = a.createdAt?.seconds 
-          ? a.createdAt.seconds * 1000 
+        const timeA = a.createdAt?.seconds
+          ? a.createdAt.seconds * 1000
           : (a.createdAt?.toDate ? a.createdAt.toDate().getTime() : new Date(a.createdAt || 0).getTime());
-        const timeB = b.createdAt?.seconds 
-          ? b.createdAt.seconds * 1000 
+        const timeB = b.createdAt?.seconds
+          ? b.createdAt.seconds * 1000
           : (b.createdAt?.toDate ? b.createdAt.toDate().getTime() : new Date(b.createdAt || 0).getTime());
         return timeB - timeA;
       });
@@ -460,7 +462,7 @@ export default function ProductDetail() {
 
   const handleAddToCart = async () => {
     if (!user || !product) {
-      navigate('/login', { state: { from: location } });
+      setLoginModalOpen(true);
       return;
     }
 
@@ -479,7 +481,7 @@ export default function ProductDetail() {
 
   const handleBuyNow = async () => {
     if (!user || !product) {
-      navigate('/login', { state: { from: location } });
+      setLoginModalOpen(true);
       return;
     }
 
@@ -507,7 +509,7 @@ export default function ProductDetail() {
 
   const handleWishlist = async () => {
     if (!user || !product) {
-      navigate('/login', { state: { from: location } });
+      setLoginModalOpen(true);
       return;
     }
 
@@ -536,7 +538,7 @@ export default function ProductDetail() {
     e?.preventDefault();
     if (!user) {
       toast.error("Please login to request restock notification");
-      navigate('/login', { state: { from: location } });
+      setLoginModalOpen(true);
       return;
     }
     toast.success("Notification request registered! We'll alert you via email when back in stock.");
@@ -629,7 +631,7 @@ export default function ProductDetail() {
               </div>
 
               {stockVal === 0 && (
-                <div className="absolute inset-0 bg-white/70 backdrop-blur-[2px] flex items-center justify-center pointer-events-none z-10">
+                <div className="absolute inset-0 bg-white/20 backdrop-blur-[1px] flex items-center justify-center pointer-events-none z-10">
                   <span className="text-[#DC2626] font-black text-xl sm:text-2xl tracking-widest uppercase text-center px-4">
                     {isUnique ? "SOLD OUT" : "OUT OF STOCK"}
                   </span>
@@ -780,7 +782,7 @@ export default function ProductDetail() {
                 <div className="space-y-3">
                   <div className="grid grid-cols-2 gap-3 sm:gap-4">
                     <button
-                      onClick={alreadyInBag ? () => navigate('/cart') : handleAddToCart}
+                      onClick={alreadyInBag ? () => setCartOpen(true) : handleAddToCart}
                       disabled={adding}
                       className={`flex items-center justify-center gap-2 py-3.5 sm:py-4 rounded-2xl font-sans font-black text-[9px] sm:text-[10px] uppercase tracking-[0.2em] transition-all active:scale-95 ${alreadyInBag
                         ? 'bg-[#1A1A1A] text-white hover:bg-black shadow-lg shadow-black/10'

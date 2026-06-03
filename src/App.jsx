@@ -65,6 +65,7 @@ import Workshops from './pages/admin/settings/Workshops';
 import './App.css';
 
 import { AuthProvider } from './context/AuthContext';
+import { CartUIProvider } from './context/CartUIContext';
 import Login from './pages/user/Login';
 
 function App() {
@@ -74,8 +75,9 @@ function App() {
     <Router>
       <ScrollToTop />
       <AuthProvider>
-        <TitleUpdater />
-        <Toaster
+        <CartUIProvider>
+          <TitleUpdater />
+          <Toaster
           position="top-right"
           reverseOrder={false}
           toastOptions={{
@@ -97,6 +99,8 @@ function App() {
             },
           }}
         />
+        <Login />
+        <Cart />
         <Routes>
           <Route path="/" element={<UserLayout />}>
             <Route index element={<Home />} />
@@ -104,7 +108,7 @@ function App() {
             <Route path="product/:id" element={<ProductDetail />} />
             <Route path="product/:id/:slug" element={<ProductDetail />} />
             <Route path="c/*" element={<CategoryView />} />
-            <Route path="cart" element={<Cart />} />
+            <Route path="cart" element={<Navigate to="/" replace />} />
             <Route path="wishlist" element={<Wishlist />} />
             <Route path="manifesto" element={<About />} />
             <Route path="contact" element={<Contact />} />
@@ -193,6 +197,7 @@ function App() {
           {/* Catch-all Route for 404 - Page Not Found */}
           <Route path="*" element={<NotFound />} />
         </Routes>
+        </CartUIProvider>
       </AuthProvider>
     </Router>
   );
