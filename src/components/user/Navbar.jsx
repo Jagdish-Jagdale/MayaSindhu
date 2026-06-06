@@ -506,7 +506,7 @@ function NavItem({ category, location, activeId, onEnter, onLeave }) {
               zIndex: 1100
             }}
           >
-            <div className="bg-white shadow-2xl border border-gray-100 rounded-2xl min-w-[220px] py-4 max-h-[350px] overflow-y-auto overscroll-contain custom-scrollbar">
+            <div className="bg-white shadow-2xl border border-gray-100 rounded-xl min-w-[190px] py-2 max-h-[280px] overflow-y-auto overscroll-contain custom-scrollbar">
               <RecursiveMenuList items={category.children} location={location} direction={preferredDirection} />
             </div>
           </motion.div>
@@ -572,12 +572,12 @@ function RecursiveMenuItem({ item, location, parentDirection, isHovered, onHover
   return (
     <li
       ref={liRef}
-      className="relative px-3"
+      className="relative px-2"
       onMouseEnter={handleMouseEnter}
     >
       <Link
         to={item.fullPath}
-        className={`flex items-center justify-between w-full px-6 py-3 rounded-lg text-[15px] font-medium tracking-normal font-sans whitespace-nowrap gap-8 transition-all ${isHovered || isActive ? 'bg-brand-orange/5 text-brand-orange' : 'text-gray-600 hover:bg-gray-50 hover:text-brand-black'
+        className={`flex items-center justify-between w-full px-4 py-2 rounded-md text-[13px] font-semibold tracking-normal font-sans whitespace-nowrap gap-4 transition-all ${isHovered || isActive ? 'bg-brand-orange/5 text-brand-orange' : 'text-gray-600 hover:bg-gray-50 hover:text-brand-black'
           }`}
       >
         <div className="flex items-center gap-1.5">
@@ -596,17 +596,27 @@ function RecursiveMenuItem({ item, location, parentDirection, isHovered, onHover
             exit={{ opacity: 0, x: direction === 'right' ? 10 : -10 }}
             transition={{ duration: 0.2 }}
             onMouseEnter={handleMouseEnter}
-            style={{
-              position: 'fixed',
-              top: rect.top - 12,
-              left: direction === 'right' ? rect.right - 2 : 'auto',
-              right: direction === 'left' ? (window.innerWidth - rect.left) - 2 : 'auto',
-              zIndex: 1250,
-              paddingLeft: direction === 'right' ? '6px' : '0',
-              paddingRight: direction === 'left' ? '6px' : '0'
-            }}
+            style={(() => {
+              const menuHeight = 280;
+              const headerHeight = 95;
+              const margin = 16;
+              let top = rect.top - 8;
+              if (top + menuHeight > window.innerHeight) {
+                top = window.innerHeight - menuHeight - margin;
+              }
+              top = Math.max(headerHeight + 8, top);
+              return {
+                position: 'fixed',
+                top: top,
+                left: direction === 'right' ? rect.right - 2 : 'auto',
+                right: direction === 'left' ? (window.innerWidth - rect.left) - 2 : 'auto',
+                zIndex: 1250,
+                paddingLeft: direction === 'right' ? '6px' : '0',
+                paddingRight: direction === 'left' ? '6px' : '0'
+              };
+            })()}
           >
-            <div className="bg-white shadow-2xl border border-gray-100 rounded-2xl min-w-[220px] py-4 max-h-[350px] overflow-y-auto overscroll-contain custom-scrollbar">
+            <div className="bg-white shadow-2xl border border-gray-100 rounded-xl min-w-[190px] py-2 max-h-[280px] overflow-y-auto overscroll-contain custom-scrollbar">
               <RecursiveMenuList items={item.children} location={location} direction={direction} />
             </div>
           </motion.div>
