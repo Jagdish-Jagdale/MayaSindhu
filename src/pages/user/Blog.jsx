@@ -6,6 +6,21 @@ import { db } from '../../firebase';
 import { collection, onSnapshot, query, orderBy, doc } from 'firebase/firestore';
 import { formatDate } from '../../utils/dateHelper';
 
+const getYouTubeID = (url) => {
+  if (!url) return null;
+  const regExp = /^.*(youtu.be\/|v\/|u\/\w\/|embed\/|watch\?v=|&v=)([^#&?]*).*/;
+  const match = url.match(regExp);
+  return (match && match[2].length === 11) ? match[2] : null;
+};
+
+const getThumbnail = (blog) => {
+  if (blog.type === 'podcast' && blog.podcastLink) {
+    const id = getYouTubeID(blog.podcastLink);
+    if (id) return `https://img.youtube.com/vi/${id}/hqdefault.jpg`;
+  }
+  return blog.image || 'https://images.unsplash.com/photo-1490481651871-ab68de25d43d?auto=format&fit=crop&q=80&w=600';
+};
+
 export default function Blog() {
   const [searchQuery, setSearchQuery] = useState('');
   const [blogs, setBlogs] = useState([]);
@@ -135,16 +150,16 @@ export default function Blog() {
                     className="group bg-white rounded-2xl overflow-hidden shadow-sm border border-gray-100 flex flex-col h-full hover:shadow-xl transition-all duration-500"
                   >
                     {/* Card Image Wrapper */}
-                    <div className="aspect-[16/10] relative overflow-hidden">
+                    <div className="aspect-[16/10] relative overflow-hidden bg-gray-100">
                       <img 
-                        src={blog.image} 
+                        src={getThumbnail(blog)} 
                         alt={blog.title} 
                         className="w-full h-full object-cover transition-transform duration-700 group-hover:scale-110"
                       />
                       {/* Category Badge */}
                       <div className="absolute top-4 left-4">
                         <span className="px-4 py-1.5 bg-[#C5A059]/90 backdrop-blur-sm text-white text-[10px] font-bold uppercase tracking-wider rounded shadow-lg">
-                          {blog.category || 'Stories'}
+                          {blog.type === 'podcast' ? 'Podcast' : (blog.category || 'Stories')}
                         </span>
                       </div>
                     </div>
@@ -174,11 +189,18 @@ export default function Blog() {
                       </p>
 
                       {/* Call to Action */}
-                      <div className="border-t border-gray-100 pt-4">
-                        <Link to={`/blog/${blog.id}`} className="flex items-center gap-2 text-[12px] font-bold uppercase tracking-widest text-[#1A1A1A] hover:text-brand-orange transition-all group/btn">
-                          Read Full Article
-                          <ArrowRight size={14} className="group-hover/btn:translate-x-1 transition-transform" />
-                        </Link>
+                      <div className="border-t border-gray-100 pt-4 mt-auto">
+                        {blog.type === 'podcast' && blog.podcastLink ? (
+                          <a href={blog.podcastLink} target="_blank" rel="noopener noreferrer" className="flex items-center gap-2 text-[12px] font-bold uppercase tracking-widest text-[#1A1A1A] hover:text-brand-orange transition-all group/btn">
+                            Watch Podcast
+                            <ArrowRight size={14} className="group-hover/btn:translate-x-1 transition-transform" />
+                          </a>
+                        ) : (
+                          <Link to={`/blog/${blog.id}`} className="flex items-center gap-2 text-[12px] font-bold uppercase tracking-widest text-[#1A1A1A] hover:text-brand-orange transition-all group/btn">
+                            Read Full Article
+                            <ArrowRight size={14} className="group-hover/btn:translate-x-1 transition-transform" />
+                          </Link>
+                        )}
                       </div>
                     </div>
                   </motion.div>

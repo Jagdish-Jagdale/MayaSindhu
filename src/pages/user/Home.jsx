@@ -842,50 +842,7 @@ export default function Home() {
         </div>
       </section>
 
-      {/* Stay Connected / Newsletter Section */}
-      <section className="py-10 md:py-16 bg-white px-6 lg:px-24">
-        <div className="max-w-[1440px] mx-auto relative overflow-hidden bg-brand-orange rounded-3xl md:rounded-[2.5rem] px-6 md:px-16 py-12 md:py-24 text-center">
 
-          {/* Decorative Background Circles (Matching Theme) */}
-          <div className="absolute -top-24 -left-24 w-64 h-64 bg-brand-orange-dark rounded-full opacity-40 blur-3xl" />
-          <div className="absolute top-1/2 -right-32 w-80 h-80 bg-brand-orange-light/20 rounded-full opacity-30 blur-[100px] -translate-y-1/2" />
-          <div className="absolute -bottom-16 left-1/4 w-48 h-48 bg-brand-orange-dark/30 rounded-full opacity-20 blur-2xl" />
-
-          {/* Content */}
-          <motion.div
-            initial={{ opacity: 0, scale: 0.95 }}
-            whileInView={{ opacity: 1, scale: 1 }}
-            viewport={{ once: true }}
-            transition={{ duration: 1 }}
-            className="relative z-10 max-w-3xl mx-auto"
-          >
-            <h2 className="text-3xl md:text-5xl lg:text-6xl font-sans font-bold text-white mb-6 leading-tight text-center">
-              Stay Connected with <br className="hidden md:block" /> Handmade Fashion
-            </h2>
-
-            <p className="text-white/90 text-lg md:text-xl font-light mb-12 max-w-2xl mx-auto leading-relaxed">
-              Join our inner circle for exclusive early access to limited artisanal drops and stories from our workshop.
-            </p>
-
-            {/* Newsletter Form */}
-            <form className="flex flex-col md:flex-row items-center justify-center gap-4 max-w-xl mx-auto">
-              <div className="relative w-full">
-                <input
-                  type="email"
-                  placeholder="Your email address"
-                  className="w-full bg-white/10 border border-white/20 text-white placeholder:text-white/40 px-8 py-4 rounded-full focus:outline-none focus:border-white/40 focus:bg-white/15 transition-all backdrop-blur-sm"
-                />
-              </div>
-              <button
-                type="submit"
-                className="w-full md:w-auto bg-white text-brand-orange hover:bg-brand-orange-light px-10 py-4 rounded-full font-bold uppercase text-[12px] tracking-widest transition-all shadow-xl shadow-black/10 active:scale-95"
-              >
-                Subscribe
-              </button>
-            </form>
-          </motion.div>
-        </div>
-      </section>
 
       {/* Workshop Modal */}
       <WorkshopModal

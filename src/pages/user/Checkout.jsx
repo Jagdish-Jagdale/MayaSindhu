@@ -1,13 +1,13 @@
 import React, { useState, useEffect } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
-import { Check, Shield, Plus } from 'lucide-react';
+import { Check, Shield, Plus, Minus, Trash2 } from 'lucide-react';
 import { Link, useNavigate, useLocation } from 'react-router-dom';
 import { db } from '../../firebase';
 import { collection, addDoc, serverTimestamp, query, onSnapshot, getDocs, deleteDoc, doc, updateDoc, getDoc } from 'firebase/firestore';
 import { useAuth } from '../../context/AuthContext';
 
 export default function Checkout() {
-  const { user } = useAuth();
+  const { user, login, logout } = useAuth();
   const navigate = useNavigate();
   const location = useLocation();
   const { buyNowItem } = location.state || {};
@@ -106,8 +106,39 @@ export default function Checkout() {
 
   const subtotal = items.reduce((acc, item) => acc + (item.price * item.qty), 0);
   const deliveryCharges = shipping;
-  const codHandling = paymentMethod === 'cod' ? 15 : 0;
-  const total = subtotal + deliveryCharges + codHandling;
+  const total = subtotal + deliveryCharges;
+
+  const handleUpdateQuantity = async (item, newQty) => {
+    if (newQty < 1) return;
+    
+    // Check if unique piece is being incremented
+    const isUnique = item.isUniquePiece === true || item.productType === 'Unique';
+    if (isUnique && newQty > 1) {
+      alert("This is a unique piece, only 1 is available.");
+      return;
+    }
+
+    if (buyNowItem) {
+      const updatedItems = items.map(i => i.id === item.id ? { ...i, qty: newQty } : i);
+      setItems(updatedItems);
+    } else {
+      if (!user) return;
+      const cartItemRef = doc(db, 'users', user.uid, 'cart', item.docId);
+      await updateDoc(cartItemRef, { qty: newQty });
+    }
+  };
+
+  const handleRemoveItem = async (item) => {
+    if (buyNowItem) {
+      const updatedItems = items.filter(i => i.id !== item.id);
+      setItems(updatedItems);
+      if (updatedItems.length === 0) navigate(-1);
+    } else {
+      if (!user) return;
+      const cartItemRef = doc(db, 'users', user.uid, 'cart', item.docId);
+      await deleteDoc(cartItemRef);
+    }
+  };
 
   const validateStock = async () => {
     try {
@@ -278,7 +309,7 @@ export default function Checkout() {
   const StepHeader = ({ stepNum, title, isCompleted, onEdit, summary, isActive }) => {
     if (isCompleted && !isActive) {
       return (
-        <div className="bg-brand-orange px-4 py-3 flex justify-between items-center text-white">
+        <div onClick={onEdit} className={`bg-brand-orange px-4 py-3 flex justify-between items-center text-white ${onEdit ? 'cursor-pointer hover:bg-brand-orange-dark transition' : ''}`}>
           <div className="flex items-start">
             <div className="bg-white/20 text-white font-bold text-xs w-6 h-6 flex items-center justify-center mr-4 rounded-[2px] mt-0.5">
               ✓
@@ -289,7 +320,7 @@ export default function Checkout() {
             </div>
           </div>
           {onEdit && (
-            <button onClick={onEdit} className="bg-white text-brand-orange font-semibold text-sm px-6 py-2 rounded shadow-sm hover:shadow transition">
+            <button className="bg-white text-brand-orange font-semibold text-sm px-6 py-2 rounded shadow-sm hover:shadow transition">
               CHANGE
             </button>
           )}
@@ -297,7 +328,7 @@ export default function Checkout() {
       );
     }
     return (
-      <div className="bg-brand-orange px-4 py-3 flex items-center text-white">
+      <div onClick={onEdit} className={`bg-brand-orange px-4 py-3 flex items-center text-white ${onEdit ? 'cursor-pointer hover:bg-brand-orange-dark transition' : ''}`}>
         <div className="bg-white text-brand-orange text-sm font-bold w-6 h-6 flex items-center justify-center mr-4 rounded-[2px]">
           {stepNum}
         </div>
@@ -337,11 +368,59 @@ export default function Checkout() {
             <StepHeader 
               stepNum="1" 
               title="LOGIN OR SIGNUP" 
-              isCompleted={true} 
-              isActive={false} 
-              summary={`Logged in as ${user?.email || 'User'}`} 
-              onEdit={() => navigate('/profile')} 
+              isCompleted={!!user && activeStep !== 'login'} 
+              isActive={activeStep === 'login'} 
+              summary={user && activeStep !== 'login' ? `Logged in as ${user.email}` : null} 
+              onEdit={() => setActiveStep('login')} 
             />
+            {activeStep === 'login' && (
+              <div className="p-4 md:p-6 bg-[#f1f3f6]/30 border-t border-gray-100">
+                {!user ? (
+                  <div className="max-w-sm bg-white p-6 border border-gray-200 rounded-[2px]">
+                    <p className="text-sm text-gray-600 mb-4">Please log in to continue your checkout.</p>
+                    <input type="email" placeholder="Email" className="w-full border border-gray-300 px-4 py-3 rounded-[2px] mb-3 text-sm focus:outline-none focus:border-brand-orange" id="checkout-email" />
+                    <input type="password" placeholder="Password" className="w-full border border-gray-300 px-4 py-3 rounded-[2px] mb-4 text-sm focus:outline-none focus:border-brand-orange" id="checkout-password" />
+                    <button 
+                      onClick={async () => {
+                        const email = document.getElementById('checkout-email').value;
+                        const password = document.getElementById('checkout-password').value;
+                        if (email && password) {
+                          try {
+                            await login(email, password);
+                            setActiveStep('address');
+                          } catch (e) {
+                            alert("Login failed. Please check your credentials.");
+                          }
+                        }
+                      }}
+                      className="bg-brand-orange text-white px-8 py-3 font-semibold text-[15px] rounded-[2px] shadow-sm hover:shadow transition uppercase w-full"
+                    >
+                      Login
+                    </button>
+                  </div>
+                ) : (
+                  <div className="max-w-sm bg-white p-6 border border-gray-200 rounded-[2px]">
+                    <p className="text-sm text-gray-800 font-semibold mb-2">You are logged in securely.</p>
+                    <p className="text-sm text-gray-600 mb-6">{user.email}</p>
+                    <button 
+                      onClick={() => setActiveStep('address')}
+                      className="bg-brand-orange text-white px-8 py-3 font-semibold text-[15px] rounded-[2px] shadow-sm hover:shadow transition uppercase w-full mb-3"
+                    >
+                      Continue Checkout
+                    </button>
+                    <button 
+                      onClick={() => {
+                        logout();
+                        setActiveStep('login');
+                      }}
+                      className="text-brand-orange font-semibold text-sm w-full uppercase hover:underline"
+                    >
+                      Logout and use another account
+                    </button>
+                  </div>
+                )}
+              </div>
+            )}
           </div>
 
           {/* STEP 2: ADDRESS */}
@@ -390,14 +469,75 @@ export default function Checkout() {
 
                 <div 
                   onClick={() => setIsAddingAddress(!isAddingAddress)}
-                  className="bg-white border border-gray-200 p-4 text-brand-orange font-medium flex items-center gap-2 cursor-pointer rounded-[2px] hover:bg-green-50 transition"
+                  className="bg-white border border-dashed border-brand-orange p-4 text-brand-orange font-bold flex items-center justify-center gap-2 cursor-pointer rounded-[2px] hover:bg-orange-50 transition uppercase"
                 >
-                  <Plus size={18} /> ADD A NEW ADDRESS
+                  <Plus size={18} strokeWidth={2.5} /> ADD A NEW ADDRESS
                 </div>
 
                 {isAddingAddress && (
-                  <div className="mt-4 bg-[#f1f3f6]/50 p-6 border border-gray-200 rounded-[2px]">
-                    <p className="text-sm text-gray-500 mb-4">Currently, adding new addresses directly during checkout is being set up. Please select an existing address or add one from your Profile.</p>
+                  <div className="mt-4 bg-[#f1f3f6]/30 p-6 border border-gray-200 rounded-[2px]">
+                    <div className="mb-6 flex items-center text-[15px] font-semibold text-gray-800">
+                      <Check size={18} strokeWidth={2.5} className="text-[#1BAFAF] mr-2" /> Delivery available in Kolhapur
+                    </div>
+                    
+                    <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                      <input 
+                        type="text" 
+                        placeholder="Name" 
+                        className="w-full border border-gray-300 px-4 py-3 rounded-[2px] text-sm focus:outline-none focus:border-brand-orange" 
+                      />
+                      <input 
+                        type="text" 
+                        placeholder="10-digit mobile number" 
+                        className="w-full border border-gray-300 px-4 py-3 rounded-[2px] text-sm focus:outline-none focus:border-brand-orange" 
+                      />
+                      <input 
+                        type="text" 
+                        placeholder="Pincode" 
+                        className="w-full border border-gray-300 px-4 py-3 rounded-[2px] text-sm focus:outline-none focus:border-brand-orange" 
+                      />
+                      <input 
+                        type="text" 
+                        placeholder="Locality" 
+                        className="w-full border border-gray-300 px-4 py-3 rounded-[2px] text-sm focus:outline-none focus:border-brand-orange" 
+                      />
+                      <div className="md:col-span-2">
+                        <textarea 
+                          placeholder="Address (Area and Street)" 
+                          rows="3" 
+                          className="w-full border border-gray-300 px-4 py-3 rounded-[2px] text-sm focus:outline-none focus:border-brand-orange resize-none" 
+                        ></textarea>
+                      </div>
+                      <input 
+                        type="text" 
+                        placeholder="City/District/Town" 
+                        className="w-full border border-gray-300 px-4 py-3 rounded-[2px] text-sm focus:outline-none focus:border-brand-orange" 
+                      />
+                      <input 
+                        type="text" 
+                        placeholder="State" 
+                        className="w-full border border-gray-300 px-4 py-3 rounded-[2px] text-sm focus:outline-none focus:border-brand-orange" 
+                      />
+                      <input 
+                        type="text" 
+                        placeholder="Alternate Phone (Optional)" 
+                        className="w-full border border-gray-300 px-4 py-3 rounded-[2px] text-sm focus:outline-none focus:border-brand-orange" 
+                      />
+                    </div>
+                    
+                    <div className="mt-6 flex gap-4">
+                      <button 
+                        className="bg-brand-orange text-white px-8 py-3 font-semibold text-[15px] rounded-[2px] shadow-sm hover:shadow transition uppercase"
+                      >
+                        Save and Deliver Here
+                      </button>
+                      <button 
+                        onClick={() => setIsAddingAddress(false)}
+                        className="text-gray-500 font-semibold text-[15px] hover:text-brand-orange transition uppercase px-4"
+                      >
+                        Cancel
+                      </button>
+                    </div>
                   </div>
                 )}
               </div>
@@ -417,18 +557,48 @@ export default function Checkout() {
             
             {activeStep === 'summary' && (
               <div className="p-4 md:p-6 bg-white">
-                {items.map((item, idx) => (
-                  <div key={idx} className="flex gap-4 md:gap-6 py-4 border-b border-gray-100 last:border-0">
-                    <div className="w-20 h-24 flex-shrink-0 bg-gray-50 border border-gray-200 p-1">
-                      <img src={item.image} alt={item.name} className="w-full h-full object-contain" />
-                    </div>
-                    <div className="flex-1">
-                      <h4 className="text-[15px] text-[#1A1A1A] font-medium">{item.name}</h4>
-                      <p className="text-sm text-gray-500 mt-1">Quantity: <span className="font-semibold text-gray-800">{item.qty}</span></p>
-                      <p className="text-lg font-bold text-[#1A1A1A] mt-3">₹{item.price.toLocaleString()}</p>
-                    </div>
-                  </div>
-                ))}
+                <div className="max-h-[390px] overflow-y-auto custom-scrollbar pr-2">
+                  {items.length === 0 ? (
+                    <div className="text-center py-8 text-gray-500">Your bag is empty.</div>
+                  ) : (
+                    items.map((item, idx) => (
+                      <div key={idx} className="flex gap-4 md:gap-6 py-4 border-b border-gray-100 last:border-0 relative">
+                        <div className="w-20 h-24 flex-shrink-0 bg-gray-50 border border-gray-200 p-1">
+                          <img src={item.image} alt={item.name} className="w-full h-full object-contain" />
+                        </div>
+                        <div className="flex-1 flex flex-col justify-between">
+                          <div>
+                            <h4 className="text-[15px] text-[#1A1A1A] font-medium pr-8">{item.name}</h4>
+                            <p className="text-lg font-bold text-[#1A1A1A] mt-1">₹{item.price.toLocaleString()}</p>
+                          </div>
+                          <div className="flex items-center gap-4 mt-2">
+                            <div className="flex items-center bg-gray-50 rounded border border-gray-200 px-1 py-0.5">
+                              <button 
+                                onClick={() => handleUpdateQuantity(item, item.qty - 1)}
+                                className="p-1 text-gray-500 hover:text-black transition"
+                              >
+                                <Minus size={14} />
+                              </button>
+                              <span className="w-8 text-center text-sm font-semibold">{item.qty}</span>
+                              <button 
+                                onClick={() => handleUpdateQuantity(item, item.qty + 1)}
+                                className="p-1 text-gray-500 hover:text-black transition"
+                              >
+                                <Plus size={14} />
+                              </button>
+                            </div>
+                            <button 
+                              onClick={() => handleRemoveItem(item)}
+                              className="text-xs font-bold text-gray-400 hover:text-red-500 uppercase tracking-wider transition flex items-center gap-1"
+                            >
+                              <Trash2 size={12} /> Remove
+                            </button>
+                          </div>
+                        </div>
+                      </div>
+                    ))
+                  )}
+                </div>
                 
                 <div className="mt-6 flex justify-end">
                   <button 
@@ -449,6 +619,7 @@ export default function Checkout() {
               title="PAYMENT OPTIONS" 
               isCompleted={false} 
               isActive={activeStep === 'payment'} 
+              onEdit={() => setActiveStep('payment')}
             />
             
             {activeStep === 'payment' && (
@@ -475,16 +646,6 @@ export default function Checkout() {
                   <span className="text-[15px] text-[#1A1A1A] font-medium">Credit / Debit / ATM Card</span>
                 </label>
 
-                <label className={`flex items-center p-4 cursor-pointer transition ${paymentMethod === 'cod' ? 'bg-[#f1f3f6]/30' : ''}`}>
-                  <input 
-                    type="radio" 
-                    name="payment" 
-                    className="w-4 h-4 text-brand-orange focus:ring-brand-orange accent-brand-orange mr-4" 
-                    checked={paymentMethod === 'cod'}
-                    onChange={() => setPaymentMethod('cod')}
-                  />
-                  <span className="text-[15px] text-[#1A1A1A] font-medium">Cash on Delivery</span>
-                </label>
 
                 <div className="p-6 border-t border-gray-100 bg-[#f1f3f6]/30 flex justify-end">
                   <button 
@@ -523,10 +684,7 @@ export default function Checkout() {
                 <span>Delivery Charges</span>
                 <span className="text-green-600">₹{deliveryCharges.toLocaleString()}</span>
               </div>
-              <div className="flex justify-between">
-                <span>COD Handling Charges</span>
-                <span>₹{codHandling}</span>
-              </div>
+
             </div>
             <div className="border-t border-dashed border-gray-200 p-4">
               <div className="flex justify-between font-bold text-lg text-[#1A1A1A]">

@@ -173,6 +173,7 @@ export default function CategoryView() {
                 className="bg-transparent p-0"
                 categories={breadcrumbs.length > 0 ? [breadcrumbs[0]] : []}
                 onFilterChange={handleFilterChange}
+                currentCategory={currentCategory}
               />
             </div>
           </motion.aside>
@@ -269,6 +270,7 @@ export default function CategoryView() {
                   className="bg-transparent"
                   categories={breadcrumbs.length > 0 ? [breadcrumbs[0]] : []}
                   onFilterChange={handleFilterChange}
+                  currentCategory={currentCategory}
                 />
               </div>
             </motion.div>

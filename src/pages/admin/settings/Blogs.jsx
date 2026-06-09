@@ -67,7 +67,10 @@ export default function Blogs() {
     content: '',
     image: '',
     status: 'published',
-    category: 'Stories'
+    category: 'Stories',
+    type: 'blog',
+    podcastLink: '',
+    podcastTime: ''
   });
   const [selectedFile, setSelectedFile] = useState(null);
   const fileInputRef = useRef(null);
@@ -139,9 +142,16 @@ export default function Blogs() {
   };
 
   const handleCreateBlog = async () => {
-    if (!newBlog.title || !newBlog.summary) {
-      toast.error("Title and Summary are required");
-      return;
+    if (newBlog.type === 'podcast') {
+      if (!newBlog.title || !newBlog.podcastLink) {
+        toast.error("Podcast Name and Link are required");
+        return;
+      }
+    } else {
+      if (!newBlog.title || !newBlog.summary) {
+        toast.error("Title and Summary are required");
+        return;
+      }
     }
 
     try {
@@ -190,7 +200,10 @@ export default function Blogs() {
         content: '',
         image: '',
         status: 'published',
-        category: 'Stories'
+        category: 'Stories',
+        type: 'blog',
+        podcastLink: '',
+        podcastTime: ''
       });
       setSelectedFile(null);
     } catch (err) {
@@ -231,7 +244,15 @@ export default function Blogs() {
 
   const filteredBlogs = blogs.filter(blog => {
     const matchesSearch = (blog.title?.toLowerCase().includes(searchTerm.toLowerCase())) || (blog.category?.toLowerCase().includes(searchTerm.toLowerCase()));
-    const matchesStatus = filterStatus === 'all' || blog.status === filterStatus;
+    
+    let matchesStatus = false;
+    if (filterStatus === 'all') {
+      matchesStatus = true;
+    } else if (filterStatus === 'blog' || filterStatus === 'podcast') {
+      const type = blog.type || 'blog';
+      matchesStatus = type === filterStatus;
+    }
+
     return matchesSearch && matchesStatus;
   });
 
@@ -344,8 +365,8 @@ export default function Blogs() {
               onChange={(val) => setFilterStatus(val)}
               options={[
                 { value: 'all', label: 'All Stories' },
-                { value: 'published', label: 'Published' },
-                { value: 'draft', label: 'Drafts' }
+                { value: 'blog', label: 'Blogs' },
+                { value: 'podcast', label: 'Podcasts' }
               ]}
               className="flex-1"
             />
@@ -458,7 +479,7 @@ export default function Blogs() {
       {/* Add Blog Modal */}
       {isModalOpen && (
         <div className="fixed inset-0 z-[100] flex items-center justify-center p-4 bg-black/40 backdrop-blur-sm animate-in fade-in duration-300">
-          <div className="bg-white w-full max-w-4xl rounded-[2.5rem] shadow-2xl overflow-hidden flex flex-col max-h-[90vh] animate-in slide-in-from-bottom-8 duration-500">
+          <div className={`bg-white w-full ${newBlog.type === 'podcast' ? 'max-w-2xl' : 'max-w-4xl'} rounded-[2.5rem] shadow-2xl overflow-hidden flex flex-col max-h-[90vh] animate-in slide-in-from-bottom-8 duration-500`}>
             {/* Modal Header */}
             <div className="p-8 border-b border-gray-50 flex items-center justify-between">
               <div>
@@ -477,76 +498,140 @@ export default function Blogs() {
             <div className="flex-1 overflow-y-auto p-8 space-y-10 custom-scrollbar">
               <div className="grid grid-cols-1 lg:grid-cols-12 gap-10">
                 {/* Left Side: Info */}
-                <div className="lg:col-span-7 flex flex-col">
+                <div className={`flex flex-col ${newBlog.type === 'podcast' ? 'lg:col-span-12' : 'lg:col-span-7'}`}>
                   <div className="bg-gray-50/50 rounded-[2rem] p-6 border border-gray-100 space-y-6 h-full flex flex-col">
-                    <div className="flex items-center gap-2 px-1">
-                      <Type size={14} className="text-[#1BAFAF]" />
-                      <span className="text-[10px] font-black text-gray-400 uppercase tracking-widest">Story Essentials</span>
+                    <div className="flex items-center justify-between px-1">
+                      <div className="flex items-center gap-2">
+                        <Type size={14} className="text-[#1BAFAF]" />
+                        <span className="text-[10px] font-black text-gray-400 uppercase tracking-widest">{newBlog.type === 'podcast' ? 'Podcast Details' : 'Story Essentials'}</span>
+                      </div>
+                      <select 
+                        value={newBlog.type || 'blog'}
+                        onChange={(e) => setNewBlog({...newBlog, type: e.target.value})}
+                        className="bg-white border-none px-3 py-1.5 text-[12px] font-bold text-[#1BAFAF] rounded-lg focus:ring-2 focus:ring-[#1BAFAF]/10 outline-none shadow-sm cursor-pointer"
+                      >
+                        <option value="blog">Blog Post</option>
+                        <option value="podcast">Podcast</option>
+                      </select>
                     </div>
                     <div className="space-y-4 flex-1">
-                      <div className="space-y-1.5">
-                        <label className="text-[11px] font-bold text-gray-500 ml-1">Blog Title</label>
-                        <input 
-                          type="text" 
-                          placeholder="Enter a captivating title..."
-                          value={newBlog.title}
-                          onChange={(e) => setNewBlog({...newBlog, title: e.target.value})}
-                          className="w-full bg-white border-none px-5 py-3.5 text-[14px] font-semibold text-gray-800 rounded-xl focus:ring-2 focus:ring-[#1BAFAF]/10 outline-none transition-all shadow-sm"
-                        />
-                      </div>
-                      <div className="space-y-4">
-                        <div className="space-y-1.5">
-                          <label className="text-[11px] font-bold text-gray-500 ml-1">Story Summary</label>
-                          <input 
-                            type="text" 
-                            placeholder="Brief overview of the story..."
-                            value={newBlog.summary}
-                            onChange={(e) => setNewBlog({...newBlog, summary: e.target.value})}
-                            className="w-full bg-white border-none px-5 py-3.5 text-[14px] font-medium text-gray-600 rounded-xl focus:ring-2 focus:ring-[#1BAFAF]/10 outline-none transition-all shadow-sm"
-                          />
-                        </div>
-                        <div className="space-y-1.5">
-                          <label className="text-[11px] font-bold text-gray-500 ml-1">Blog Category</label>
-                          <input 
-                            type="text" 
-                            placeholder="e.g. Stories, Culture, Craftsmanship..."
-                            value={newBlog.category}
-                            onChange={(e) => setNewBlog({...newBlog, category: e.target.value})}
-                            className="w-full bg-white border-none px-5 py-3.5 text-[14px] font-bold text-[#1BAFAF] rounded-xl focus:ring-2 focus:ring-[#1BAFAF]/10 outline-none transition-all shadow-sm"
-                          />
-                        </div>
-                      </div>
-                      <div className="grid grid-cols-2 gap-4">
-                        <div className="space-y-1.5">
-                          <label className="text-[11px] font-bold text-gray-500 ml-1">Author Name</label>
-                          <div className="relative">
-                            <User className="absolute left-4 top-1/2 -translate-y-1/2 w-3.5 h-3.5 text-gray-300" />
+                      {newBlog.type === 'podcast' ? (
+                        <>
+                          <div className="space-y-1.5">
+                            <label className="text-[11px] font-bold text-gray-500 ml-1">Name of Podcast</label>
                             <input 
                               type="text" 
-                              value={newBlog.author}
-                              onChange={(e) => setNewBlog({...newBlog, author: e.target.value})}
-                              className="w-full bg-white border-none pl-10 pr-4 py-3.5 text-[13px] font-bold text-gray-700 rounded-xl focus:ring-2 focus:ring-[#1BAFAF]/10 outline-none transition-all shadow-sm"
+                              placeholder="Enter podcast name..."
+                              value={newBlog.title}
+                              onChange={(e) => setNewBlog({...newBlog, title: e.target.value})}
+                              className="w-full bg-white border-none px-5 py-3.5 text-[14px] font-semibold text-gray-800 rounded-xl focus:ring-2 focus:ring-[#1BAFAF]/10 outline-none transition-all shadow-sm"
                             />
                           </div>
-                        </div>
-                        <div className="space-y-1.5">
-                          <label className="text-[11px] font-bold text-gray-500 ml-1">Publish Date</label>
-                          <div className="relative">
-                            <Calendar className="absolute left-4 top-1/2 -translate-y-1/2 w-3.5 h-3.5 text-gray-300" />
+                          <div className="space-y-1.5">
+                            <label className="text-[11px] font-bold text-gray-500 ml-1">Podcast Video Link</label>
                             <input 
-                              type="date" 
-                              value={newBlog.date}
-                              onChange={(e) => setNewBlog({...newBlog, date: e.target.value})}
-                              className="w-full bg-white border-none pl-10 pr-4 py-3.5 text-[13px] font-bold text-gray-700 rounded-xl focus:ring-2 focus:ring-[#1BAFAF]/10 outline-none transition-all shadow-sm"
+                              type="url" 
+                              placeholder="https://youtube.com/..."
+                              value={newBlog.podcastLink || ''}
+                              onChange={(e) => setNewBlog({...newBlog, podcastLink: e.target.value})}
+                              className="w-full bg-white border-none px-5 py-3.5 text-[14px] font-medium text-gray-600 rounded-xl focus:ring-2 focus:ring-[#1BAFAF]/10 outline-none transition-all shadow-sm"
                             />
                           </div>
-                        </div>
-                      </div>
+                          <div className="grid grid-cols-2 gap-4">
+                            <div className="space-y-1.5">
+                              <label className="text-[11px] font-bold text-gray-500 ml-1">Uploaded Date</label>
+                              <div className="relative">
+                                <Calendar className="absolute left-4 top-1/2 -translate-y-1/2 w-3.5 h-3.5 text-gray-300" />
+                                <input 
+                                  type="date" 
+                                  value={newBlog.date}
+                                  onChange={(e) => setNewBlog({...newBlog, date: e.target.value})}
+                                  className="w-full bg-white border-none pl-10 pr-4 py-3.5 text-[13px] font-bold text-gray-700 rounded-xl focus:ring-2 focus:ring-[#1BAFAF]/10 outline-none transition-all shadow-sm"
+                                />
+                              </div>
+                            </div>
+                            <div className="space-y-1.5">
+                              <label className="text-[11px] font-bold text-gray-500 ml-1">Podcast Time</label>
+                              <div className="relative">
+                                <input 
+                                  type="text" 
+                                  placeholder="e.g. 45 mins"
+                                  value={newBlog.podcastTime || ''}
+                                  onChange={(e) => setNewBlog({...newBlog, podcastTime: e.target.value})}
+                                  className="w-full bg-white border-none px-5 py-3.5 text-[13px] font-bold text-gray-700 rounded-xl focus:ring-2 focus:ring-[#1BAFAF]/10 outline-none transition-all shadow-sm"
+                                />
+                              </div>
+                            </div>
+                          </div>
+                        </>
+                      ) : (
+                        <>
+                          <div className="space-y-1.5">
+                            <label className="text-[11px] font-bold text-gray-500 ml-1">Blog Title</label>
+                            <input 
+                              type="text" 
+                              placeholder="Enter a captivating title..."
+                              value={newBlog.title}
+                              onChange={(e) => setNewBlog({...newBlog, title: e.target.value})}
+                              className="w-full bg-white border-none px-5 py-3.5 text-[14px] font-semibold text-gray-800 rounded-xl focus:ring-2 focus:ring-[#1BAFAF]/10 outline-none transition-all shadow-sm"
+                            />
+                          </div>
+                          <div className="space-y-4">
+                            <div className="space-y-1.5">
+                              <label className="text-[11px] font-bold text-gray-500 ml-1">Story Summary</label>
+                              <input 
+                                type="text" 
+                                placeholder="Brief overview of the story..."
+                                value={newBlog.summary}
+                                onChange={(e) => setNewBlog({...newBlog, summary: e.target.value})}
+                                className="w-full bg-white border-none px-5 py-3.5 text-[14px] font-medium text-gray-600 rounded-xl focus:ring-2 focus:ring-[#1BAFAF]/10 outline-none transition-all shadow-sm"
+                              />
+                            </div>
+                            <div className="space-y-1.5">
+                              <label className="text-[11px] font-bold text-gray-500 ml-1">Blog Category</label>
+                              <input 
+                                type="text" 
+                                placeholder="e.g. Stories, Culture, Craftsmanship..."
+                                value={newBlog.category}
+                                onChange={(e) => setNewBlog({...newBlog, category: e.target.value})}
+                                className="w-full bg-white border-none px-5 py-3.5 text-[14px] font-bold text-[#1BAFAF] rounded-xl focus:ring-2 focus:ring-[#1BAFAF]/10 outline-none transition-all shadow-sm"
+                              />
+                            </div>
+                          </div>
+                          <div className="grid grid-cols-2 gap-4">
+                            <div className="space-y-1.5">
+                              <label className="text-[11px] font-bold text-gray-500 ml-1">Author Name</label>
+                              <div className="relative">
+                                <User className="absolute left-4 top-1/2 -translate-y-1/2 w-3.5 h-3.5 text-gray-300" />
+                                <input 
+                                  type="text" 
+                                  value={newBlog.author}
+                                  onChange={(e) => setNewBlog({...newBlog, author: e.target.value})}
+                                  className="w-full bg-white border-none pl-10 pr-4 py-3.5 text-[13px] font-bold text-gray-700 rounded-xl focus:ring-2 focus:ring-[#1BAFAF]/10 outline-none transition-all shadow-sm"
+                                />
+                              </div>
+                            </div>
+                            <div className="space-y-1.5">
+                              <label className="text-[11px] font-bold text-gray-500 ml-1">Publish Date</label>
+                              <div className="relative">
+                                <Calendar className="absolute left-4 top-1/2 -translate-y-1/2 w-3.5 h-3.5 text-gray-300" />
+                                <input 
+                                  type="date" 
+                                  value={newBlog.date}
+                                  onChange={(e) => setNewBlog({...newBlog, date: e.target.value})}
+                                  className="w-full bg-white border-none pl-10 pr-4 py-3.5 text-[13px] font-bold text-gray-700 rounded-xl focus:ring-2 focus:ring-[#1BAFAF]/10 outline-none transition-all shadow-sm"
+                                />
+                              </div>
+                            </div>
+                          </div>
+                        </>
+                      )}
                     </div>
                   </div>
                 </div>
 
                 {/* Right Side: Media */}
+                {(!newBlog.type || newBlog.type === 'blog') && (
                 <div className="lg:col-span-5 flex flex-col">
                   <div className="bg-gray-50/50 rounded-[2rem] p-6 border border-gray-100 space-y-6 flex-1 flex flex-col">
                     <div className="flex items-center justify-between px-1">
@@ -627,9 +712,11 @@ export default function Blogs() {
                     <input type="file" ref={fileInputRef} className="hidden" accept="image/*" onChange={handleFileChange} />
                   </div>
                 </div>
+                )}
               </div>
 
               {/* Multiline Content */}
+              {(!newBlog.type || newBlog.type === 'blog') && (
               <div className="bg-gray-50/50 rounded-[2rem] p-6 border border-gray-100 space-y-4">
                  <div className="flex items-center gap-2 px-1">
                     <FileText size={14} className="text-[#1BAFAF]" />
@@ -643,26 +730,12 @@ export default function Blogs() {
                    className="w-full bg-white border-none px-6 py-6 text-[14px] font-medium text-gray-700 rounded-2xl focus:ring-2 focus:ring-[#1BAFAF]/10 outline-none transition-all shadow-sm leading-relaxed resize-none"
                  />
               </div>
+              )}
             </div>
 
             {/* Modal Footer */}
-            <div className="p-6 border-t border-gray-50 bg-gray-50/30 flex items-center justify-between gap-4">
-              <button 
-                onClick={() => setIsModalOpen(false)}
-                className="px-6 py-2.5 text-[13px] font-bold text-gray-400 hover:text-gray-600 transition-colors"
-              >
-                Discard
-              </button>
+            <div className="p-6 border-t border-gray-50 bg-gray-50/30 flex items-center justify-end gap-4">
               <div className="flex items-center gap-3">
-                <button 
-                   onClick={() => {
-                     setNewBlog(prev => ({ ...prev, status: 'draft' }));
-                     handleCreateBlog();
-                   }}
-                   className="px-6 py-2.5 text-[13px] font-bold text-gray-500 hover:bg-white rounded-xl transition-all border border-transparent hover:border-gray-100"
-                >
-                  Save as Draft
-                </button>
                 <button 
                   onClick={handleCreateBlog}
                   disabled={isSavingBlog}

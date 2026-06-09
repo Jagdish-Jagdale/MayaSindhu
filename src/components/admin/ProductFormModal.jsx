@@ -33,7 +33,9 @@ export default function ProductFormModal({ isOpen, onClose, product = null, init
     isAvailable: true,
     description: '',
     tagline: '',
+    care: '',
     sku: '',
+    size: '',
     images: [], // Will store Cloudinary URLs
     productId: ''
   });
@@ -62,7 +64,9 @@ export default function ProductFormModal({ isOpen, onClose, product = null, init
         isAvailable: product.isAvailable !== undefined ? product.isAvailable : true,
         description: product.description || '',
         tagline: product.tagline || '',
+        care: product.care || '',
         sku: product.sku || '',
+        size: product.size || '',
         images: product.images || [],
         productId: product.productId || ''
       });
@@ -87,7 +91,9 @@ export default function ProductFormModal({ isOpen, onClose, product = null, init
         isAvailable: true,
         description: '',
         tagline: '',
+        care: '',
         sku: '',
+        size: '',
         images: [],
         productId: generateProductId()
       });
@@ -236,10 +242,34 @@ export default function ProductFormModal({ isOpen, onClose, product = null, init
       .replace(/^-+|-+$/g, ''); // Remove leading and trailing hyphens
   };
 
+  const getCategoryName = (id) => {
+    const findCat = (items) => {
+      if (!items) return null;
+      for (const item of items) {
+        if (item.id === id) return item.name;
+        if (item.children) {
+          const found = findCat(item.children);
+          if (found) return found;
+        }
+      }
+      return null;
+    };
+    return findCat(heirarchy);
+  };
+
+  const mainCatName = selectedPathIds[0] ? getCategoryName(selectedPathIds[0]) : '';
+  const subCat1Name = selectedPathIds[1] ? getCategoryName(selectedPathIds[1]) : '';
+  const isApparelReadymade = mainCatName?.toLowerCase() === 'apparel' && subCat1Name?.toLowerCase() === 'readymades';
+
   const handleSubmit = async (e) => {
     e.preventDefault();
     if (!formData.name || !formData.categoryId || !formData.discountedPrice || !formData.sku) {
       toast.error('Please fill required fields (Name, Category, Discounted Price, SKU)', { id: 'form-validation-error' });
+      return;
+    }
+
+    if (isApparelReadymade && !formData.size) {
+      toast.error('Please select a size for Readymades', { id: 'size-validation-error' });
       return;
     }
 
@@ -287,6 +317,10 @@ export default function ProductFormModal({ isOpen, onClose, product = null, init
         actualPrice: Number(formData.actualPrice || 0),
         updatedAt: serverTimestamp()
       };
+
+      if (!isApparelReadymade) {
+        delete productData.size;
+      }
 
       // Set isShow for Unique products based on stock (1 = true, 0 = false)
       if (formData.productType === 'Unique') {
@@ -401,6 +435,18 @@ export default function ProductFormModal({ isOpen, onClose, product = null, init
                     />
                   </div>
 
+                  <div className="space-y-1.5">
+                    <label className="text-[13px] font-bold text-gray-700 ml-1">Care Instructions</label>
+                    <input
+                      type="text"
+                      name="care"
+                      value={formData.care}
+                      onChange={handleInputChange}
+                      placeholder="e.g. Dry clean only"
+                      className="w-full bg-gray-50 border-none px-4 py-3 rounded-xl text-[14px] outline-none focus:ring-2 focus:ring-[#1BAFAF]/20 focus:bg-white transition-all font-medium"
+                    />
+                  </div>
+
                   <div className="space-y-4">
                     {(() => {
                       const levels = [0, ...selectedPathIds];
@@ -472,6 +518,17 @@ export default function ProductFormModal({ isOpen, onClose, product = null, init
                       );
                     })()}
                   </div>
+
+                  {isApparelReadymade && (
+                    <div className="space-y-1.5 animate-in fade-in slide-in-from-top-2 duration-300">
+                      <label className="text-[13px] font-bold text-gray-700 ml-1 mb-1.5 block">Size *</label>
+                      <CustomSelect
+                        value={formData.size}
+                        onChange={(val) => setFormData(prev => ({ ...prev, size: val }))}
+                        options={['xs', 'sm', 'm', 'l', 'xl', 'xxl', 'others']}
+                      />
+                    </div>
+                  )}
 
                   <div className="space-y-1.5 flex flex-col">
                     <label className="text-[13px] font-bold text-gray-700 ml-1">Description</label>
