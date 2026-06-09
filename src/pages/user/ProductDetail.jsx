@@ -147,15 +147,7 @@ const ProductDetailSkeleton = () => {
               <div className="h-4 w-4/5 bg-gray-100/80 animate-pulse rounded-md" />
             </div>
 
-            {/* Specs Grid */}
-            <div className="grid grid-cols-3 gap-4 py-4 border-y border-gray-100">
-              {[1, 2, 3].map((i) => (
-                <div key={i} className="space-y-1.5">
-                  <div className="h-3 w-10 bg-gray-100/60 animate-pulse rounded" />
-                  <div className="h-4 w-20 bg-gray-200/60 animate-pulse rounded-md" />
-                </div>
-              ))}
-            </div>
+
 
             {/* Actions */}
             <div className="space-y-4 pt-4">
@@ -711,21 +703,14 @@ export default function ProductDetail() {
                 {product.description || "A masterpiece of artisanal craftsmanship, each thread tells a story of heritage and handcrafted excellence."}
               </p>
 
-              {/* Specs Grid */}
-              <div className="grid grid-cols-3 gap-2 sm:gap-4 py-4 border-y border-gray-100 mb-6 lg:mb-8">
-                <div>
-                  <p className="text-[7px] sm:text-[8px] font-black uppercase text-gray-400 mb-0.5">Fabric</p>
-                  <p className="text-[10px] sm:text-xs font-bold text-[#1A1A1A] truncate">{product.fabric || 'Pure Silk'}</p>
+              {product.care && (
+                <div className="mb-6 lg:mb-8 py-4 border-t border-gray-100">
+                  <p className="text-[10px] sm:text-xs font-black uppercase tracking-wider text-gray-400 mb-1.5">Care Instructions</p>
+                  <p className="text-[#1A1A1A] text-xs sm:text-sm font-bold leading-relaxed">
+                    {product.care}
+                  </p>
                 </div>
-                <div>
-                  <p className="text-[7px] sm:text-[8px] font-black uppercase text-gray-400 mb-0.5">Craft</p>
-                  <p className="text-[10px] sm:text-xs font-bold text-[#1A1A1A] truncate">{product.craft || 'Woven'}</p>
-                </div>
-                <div>
-                  <p className="text-[7px] sm:text-[8px] font-black uppercase text-gray-400 mb-0.5">Occasion</p>
-                  <p className="text-[10px] sm:text-xs font-bold text-[#1A1A1A] truncate">{product.occasion || 'Festive'}</p>
-                </div>
-              </div>
+              )}
             </div>
 
             {/* Actions */}

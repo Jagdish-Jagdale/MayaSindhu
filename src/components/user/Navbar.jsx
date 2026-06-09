@@ -97,6 +97,7 @@ export default function Navbar() {
 
   // Define the preferred order for main categories
   const categoryOrder = [
+    'APPAREL',
     'CURATED SAREES',
     'DESIGNER DRESS MATERIALS',
     'FESTIVE SPECIAL COLLECTION',

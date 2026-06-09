@@ -97,7 +97,7 @@ const FilterAccordion = ({ title, children, isOpen, onToggle }) => {
   );
 };
 
-export default function FilterSidebar({ className = "", categories = [], onFilterChange }) {
+export default function FilterSidebar({ className = "", categories = [], onFilterChange, currentCategory }) {
   const location = useLocation();
   const { categories: allCategories } = useCategories();
 
@@ -117,10 +117,15 @@ export default function FilterSidebar({ className = "", categories = [], onFilte
 
   const [priceRange, setPriceRange] = useState({ min: 0, max: 20000 });
 
+  const isReadyMade = currentCategory?.name?.toLowerCase().includes('ready') || 
+                      (categories.length > 0 && categories[0]?.name?.toLowerCase().includes('ready'));
+
+  const showSizeFilter = isReadyMade;
+
   // Availability options — Pre-order removed
   const filterData = {
     availability: ['In Stock', 'Out of Stock'],
-    size: []
+    ...(showSizeFilter && { size: ['XS', 'S', 'M', 'L', 'XL', 'XXL'] })
   };
 
   const toggleSection = (section) => {
