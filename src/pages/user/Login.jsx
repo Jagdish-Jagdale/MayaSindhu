@@ -10,6 +10,7 @@ export default function Login() {
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
   const [name, setName] = useState('');
+  const [mobile, setMobile] = useState('');
   const [error, setError] = useState('');
   const [isLoading, setIsLoading] = useState(false);
 
@@ -19,16 +20,41 @@ export default function Login() {
     e.preventDefault();
     setError('');
 
-    const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
-    if (!emailRegex.test(email)) {
-      setError('Please enter a valid email address.');
-      return;
-    }
-
-    if (!isLogin) {
-      const passwordRegex = /^(?=.*[A-Z])(?=.*\d)(?=.*[^a-zA-Z\d\s]).{8,}$/;
+    if (isLogin) {
+      const isMobileLogin = /^[6-9]\d{9}$/.test(email);
+      const isEmailLogin = /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email);
+      if (!isMobileLogin && !isEmailLogin) {
+        setError('Please enter a valid email or 10-digit mobile number.');
+        return;
+      }
+    } else {
+      if (!name || !name.trim()) {
+        setError('Name is a required field.');
+        return;
+      }
+      if (!/^[a-zA-Z\s]+$/.test(name)) {
+        setError('Name can only contain letters and spaces.');
+        return;
+      }
+      if (name.trim().length < 2) {
+        setError('Name must be at least 2 characters.');
+        return;
+      }
+      if (name.length > 50) {
+        setError('Name cannot exceed 50 characters.');
+        return;
+      }
+      if (email && !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email)) {
+        setError('Please enter a valid email address.');
+        return;
+      }
+      if (!/^[6-9]\d{9}$/.test(mobile)) {
+        setError('Please enter a valid mobile number.');
+        return;
+      }
+      const passwordRegex = /^(?=.*[A-Z])(?=.*[a-z])(?=.*\d)(?=.*[^a-zA-Z\d\s]).{8,}$/;
       if (!passwordRegex.test(password)) {
-        setError('Password must be at least 8 characters, include one uppercase letter, one number, and one special character.');
+        setError('Password must be at least 8 characters, include one uppercase, one lowercase, one number, and one special character.');
         return;
       }
     }
@@ -37,11 +63,13 @@ export default function Login() {
 
     try {
       if (isLogin) {
-        await login(email, password);
+        const loginEmail = /^[6-9]\d{9}$/.test(email) ? `${email}@mayasindhu.user` : email;
+        await login(loginEmail, password);
       } else {
-        await signup(email, password, name);
+        const authEmail = email || `${mobile}@mayasindhu.user`;
+        await signup(authEmail, password, name, mobile);
       }
-      setLoginModalOpen(false);
+      handleCloseModal();
     } catch (err) {
       console.error("Login Submission Error:", err);
       const errorCode = err.code;
@@ -68,6 +96,18 @@ export default function Login() {
     }
   };
 
+  const handleCloseModal = () => {
+    setLoginModalOpen(false);
+    setTimeout(() => {
+      setEmail('');
+      setPassword('');
+      setName('');
+      setMobile('');
+      setError('');
+      setIsLogin(true);
+    }, 200);
+  };
+
   return (
     <AnimatePresence>
       {isLoginModalOpen && (
@@ -76,7 +116,7 @@ export default function Login() {
             initial={{ opacity: 0 }}
             animate={{ opacity: 1 }}
             exit={{ opacity: 0 }}
-            onClick={() => setLoginModalOpen(false)}
+            onClick={handleCloseModal}
             className="fixed inset-0 bg-black/60 backdrop-blur-sm z-[2000]"
           />
           <motion.div
@@ -87,14 +127,14 @@ export default function Login() {
             className="fixed top-0 right-0 h-full w-full max-w-[420px] bg-white z-[2001] shadow-2xl flex flex-col overflow-y-auto"
           >
             <div className="flex-shrink-0 p-6 flex justify-end">
-              <button 
-                onClick={() => setLoginModalOpen(false)}
+              <button
+                onClick={handleCloseModal}
                 className="w-10 h-10 flex items-center justify-center bg-gray-50 hover:bg-black hover:text-white rounded-full transition-all"
               >
                 <X size={18} />
               </button>
             </div>
-            
+
             <div className="flex-1 flex flex-col justify-center px-8 md:px-10 pb-12">
               <div className="text-center mb-8">
                 <div className="inline-block mb-6 flex flex-col items-center">
@@ -121,7 +161,14 @@ export default function Login() {
                 </h2>
                 <p className="text-[13px] text-gray-500">
                   {isLogin ? "Don't have an account? " : "Already have an account? "}
-                  <button type="button" onClick={() => setIsLogin(!isLogin)} className="text-brand-orange font-medium hover:underline transition-all">
+                  <button type="button" onClick={() => {
+                    setIsLogin(!isLogin);
+                    setEmail('');
+                    setPassword('');
+                    setName('');
+                    setMobile('');
+                    setError('');
+                  }} className="text-brand-orange font-medium hover:underline transition-all">
                     {isLogin ? "Sign up" : "Login"}
                   </button>
                 </p>
@@ -134,6 +181,7 @@ export default function Login() {
                       initial={{ opacity: 0, height: 0 }}
                       animate={{ opacity: 1, height: 'auto' }}
                       exit={{ opacity: 0, height: 0 }}
+                      className="flex flex-col gap-4 overflow-hidden"
                     >
                       <input
                         type="text"
@@ -143,16 +191,27 @@ export default function Login() {
                         placeholder="Full Name"
                         className="w-full bg-transparent border border-gray-300 rounded-md py-3.5 px-4 focus:outline-none focus:border-black focus:ring-1 focus:ring-black transition-all text-sm placeholder:text-gray-400"
                       />
+                      <input
+                        type="tel"
+                        required={!isLogin}
+                        value={mobile}
+                        onChange={(e) => {
+                          const val = e.target.value.replace(/\D/g, '');
+                          if (val.length <= 10) setMobile(val);
+                        }}
+                        placeholder="Mobile Number "
+                        className="w-full bg-transparent border border-gray-300 rounded-md py-3.5 px-4 focus:outline-none focus:border-black focus:ring-1 focus:ring-black transition-all text-sm placeholder:text-gray-400"
+                      />
                     </motion.div>
                   )}
                 </AnimatePresence>
 
                 <input
-                  type="email"
-                  required
+                  type={isLogin ? "text" : "email"}
+                  required={isLogin}
                   value={email}
                   onChange={(e) => setEmail(e.target.value)}
-                  placeholder="Email"
+                  placeholder={isLogin ? "Email or Mobile Number" : "Email"}
                   className="w-full bg-transparent border border-gray-300 rounded-md py-3.5 px-4 focus:outline-none focus:border-black focus:ring-1 focus:ring-black transition-all text-sm placeholder:text-gray-400"
                 />
 
@@ -165,8 +224,8 @@ export default function Login() {
                     placeholder="Password"
                     className="w-full bg-transparent border border-gray-300 rounded-md py-3.5 px-4 focus:outline-none focus:border-black focus:ring-1 focus:ring-black transition-all text-sm placeholder:text-gray-400"
                   />
-                  <button 
-                    type="button" 
+                  <button
+                    type="button"
                     onClick={() => setShowPassword(!showPassword)}
                     className="absolute right-4 top-1/2 -translate-y-1/2 text-gray-400 hover:text-black transition-all p-1"
                     aria-label={showPassword ? "Hide password" : "Show password"}

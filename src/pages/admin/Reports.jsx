@@ -554,7 +554,6 @@ export default function Reports() {
 
   const STAT_CARDS = [
     { name: isOffline ? 'Gross In-Store Sales' : 'Gross Revenue', value: formatIndianCurrency(stats.revenue), icon: IndianRupee, color: 'text-[#1BAFAF]', bg: 'bg-[#E8F7F7]' },
-    { name: 'Estimated Profit', value: formatIndianCurrency(stats.profit), icon: Zap, color: 'text-amber-500', bg: 'bg-amber-50' },
     { name: 'Total Orders', value: stats.orders, icon: ShoppingBag, color: 'text-blue-500', bg: 'bg-blue-50' },
     { name: 'Avg. Order Value', value: formatIndianCurrency(stats.avgValue), icon: Activity, color: 'text-purple-500', bg: 'bg-purple-50' },
   ];
@@ -836,7 +835,7 @@ export default function Reports() {
       </div>
 
       {/* Dynamic Stat Cards */}
-      <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-4 gap-6">
+      <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
         {STAT_CARDS.map((stat) => (
           <div 
             key={stat.name} 

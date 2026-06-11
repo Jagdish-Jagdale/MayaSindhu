@@ -24,7 +24,7 @@ export default function Cart() {
 
     const q = query(collection(db, 'users', user.uid, 'cart'));
 
-    const unsubscribe = onSnapshot(q, (snapshot) => {
+    const unsubscribe = onSnapshot(q, async (snapshot) => {
       const cartItems = snapshot.docs.map(doc => ({
         docId: doc.id,
         ...doc.data()
@@ -33,7 +33,27 @@ export default function Cart() {
         const timeB = b.addedAt?.seconds || b.addedAt?.getTime?.() || 0;
         return timeB - timeA;
       });
-      setItems(cartItems);
+
+      const resolvedItems = await Promise.all(cartItems.map(async (item) => {
+        if (!item.price || item.price === 0) {
+          try {
+            const prodRef = doc(db, 'products', item.id);
+            const prodSnap = await getDoc(prodRef);
+            if (prodSnap.exists()) {
+              const prodData = prodSnap.data();
+              return {
+                ...item,
+                price: prodData.discountedPrice || prodData.price || 0
+              };
+            }
+          } catch (err) {
+            console.error("Error resolving live price for cart item:", err);
+          }
+        }
+        return item;
+      }));
+
+      setItems(resolvedItems);
       setLoading(false);
     }, (error) => {
       console.error("Cart real-time error:", error);

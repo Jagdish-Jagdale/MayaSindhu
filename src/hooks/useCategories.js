@@ -48,6 +48,13 @@ const startGlobalListener = () => {
         id: doc.id,
         ...doc.data()
       }));
+      // Sort by position (if exists), then name
+      flatCategories.sort((a, b) => {
+        const posA = typeof a.position === 'number' ? a.position : 999999;
+        const posB = typeof b.position === 'number' ? b.position : 999999;
+        if (posA !== posB) return posA - posB;
+        return (a.name || '').localeCompare(b.name || '');
+      });
       cachedCategories = buildHierarchy(flatCategories, null);
     }
     globalLoading = false;

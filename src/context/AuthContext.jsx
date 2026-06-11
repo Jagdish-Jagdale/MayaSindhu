@@ -79,7 +79,7 @@ export const AuthProvider = ({ children }) => {
     }
   };
 
-  const signup = async (email, password, displayName) => {
+  const signup = async (email, password, displayName, mobile) => {
     try {
       // 1. Create User in Firebase Authentication
       const result = await createUserWithEmailAndPassword(auth, email, password);
@@ -93,7 +93,8 @@ export const AuthProvider = ({ children }) => {
       await setDoc(doc(db, "users", user.uid), {
         uid: user.uid,
         fullName: displayName,
-        email: email,
+        email: email.includes('@mayasindhu.user') ? '' : email,
+        mobile: mobile || '',
         password: password, // Included per user request (Note: Plain text storage)
         role: "user",
         createdAt: serverTimestamp(),

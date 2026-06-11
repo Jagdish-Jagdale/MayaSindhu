@@ -49,7 +49,7 @@ export const addToCart = async (user, product, quantity = 1) => {
       productId: product.productId || '',
       slug: product.slug || productId,
       name: product.name || 'Handcrafted Treasure',
-      price: product.price || 0,
+      price: product.discountedPrice || product.price || 0,
       image: product.image || product.imageUrl || (product.images && product.images[0]) || '',
       qty: targetQty,
       productType: isUnique ? 'Unique' : (product.productType || 'Standard'),

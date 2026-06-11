@@ -48,7 +48,7 @@ const OfflineOrderModal = ({ isOpen, onClose }) => {
   // Order Number Settings
   const [orderSettings, setOrderSettings] = useState({
     mode: 'auto',
-    prefix: 'OD',
+    prefix: 'POS',
     nextNumber: '000001'
   });
 
@@ -154,7 +154,7 @@ const OfflineOrderModal = ({ isOpen, onClose }) => {
 
   const generateSONumber = () => {
     const random10Digits = Math.floor(1000000000 + Math.random() * 9000000000);
-    const formattedNum = `OD${random10Digits}`;
+    const formattedNum = `POS${random10Digits}`;
     setFormData(prev => ({ ...prev, saleOrderNumber: formattedNum }));
   };
 

@@ -35,36 +35,9 @@ function getMenuItems(pathname) {
   if (isOffline) {
     return [
       { title: 'Dashboard', icon: LayoutDashboard, path: `${base}/dashboard` },
-      {
-        title: 'Sales',
-        icon: ShoppingBag,
-        path: `${base}/sales`,
-        subItems: [
-          { title: 'Customers', icon: Users, path: `${base}/customers` },
-          { title: 'Orders', icon: ShoppingBag, path: `${base}/orders` },
-          { title: 'Invoice', icon: FileText, path: `${base}/invoice` },
-          { title: 'Return', icon: RotateCcw, path: `${base}/return` },
-        ]
-      },
-      {
-        title: 'Purchases',
-        icon: ShoppingCart,
-        path: `${base}/purchases`,
-        subItems: [
-          { title: 'Vendors', icon: Truck, path: `${base}/vendors` },
-          { title: 'Purchase Orders', icon: FileText, path: `${base}/purchase-orders` },
-        ]
-      },
-      {
-        title: 'Inventory',
-        icon: Package,
-        path: `${base}/inventory`,
-        subItems: [
-          { title: 'Products', icon: Package, path: `${base}/products` },
-          { title: 'Categories', icon: Grid2X2, path: `${base}/categories` },
-        ]
-      },
-      { title: 'Reports', icon: BarChart3, path: `${base}/reports` },
+      { title: 'Customers', icon: Users, path: `${base}/customers` },
+      { title: 'Orders', icon: ShoppingBag, path: `${base}/orders` },
+      { title: 'Return', icon: RotateCcw, path: `${base}/return` },
     ];
   }
 
@@ -75,6 +48,7 @@ function getMenuItems(pathname) {
     { title: 'Categories', icon: Grid2X2, path: `${base}/categories` },
     { title: 'Orders', icon: ShoppingBag, path: `${base}/orders` },
     { title: 'Reports', icon: BarChart3, path: `${base}/reports` },
+    { title: 'Delivery Charges', icon: Truck, path: `${base}/delivery-charges` },
     {
       title: 'Settings',
       icon: Settings,

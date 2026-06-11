@@ -37,7 +37,8 @@ export default function ProductFormModal({ isOpen, onClose, product = null, init
     sku: '',
     size: '',
     images: [], // Will store Cloudinary URLs
-    productId: ''
+    productId: '',
+    stockAlertThreshold: 5
   });
 
   const [selectedPathIds, setSelectedPathIds] = useState([]);
@@ -50,6 +51,12 @@ export default function ProductFormModal({ isOpen, onClose, product = null, init
   const generateProductId = () => {
     const random10Digits = Math.floor(1000000000 + Math.random() * 9000000000);
     return `PRD${random10Digits}`;
+  };
+
+  const generateSKU = () => {
+    const year = new Date().getFullYear();
+    const randomNum = Math.floor(1000 + Math.random() * 9000);
+    return `MS-${year}-${randomNum}`;
   };
 
   useEffect(() => {
@@ -65,10 +72,11 @@ export default function ProductFormModal({ isOpen, onClose, product = null, init
         description: product.description || '',
         tagline: product.tagline || '',
         care: product.care || '',
-        sku: product.sku || '',
+        sku: product.sku || generateSKU(),
         size: product.size || '',
         images: product.images || [],
-        productId: product.productId || ''
+        productId: product.productId || '',
+        stockAlertThreshold: product.stockAlertThreshold !== undefined ? product.stockAlertThreshold : 5
       });
 
       if (product.categoryId) {
@@ -92,10 +100,11 @@ export default function ProductFormModal({ isOpen, onClose, product = null, init
         description: '',
         tagline: '',
         care: '',
-        sku: '',
+        sku: generateSKU(),
         size: '',
         images: [],
-        productId: generateProductId()
+        productId: generateProductId(),
+        stockAlertThreshold: 5
       });
 
       if (initialCategoryId) {
@@ -117,6 +126,9 @@ export default function ProductFormModal({ isOpen, onClose, product = null, init
 
     // Ensure numeric fields are not negative
     if ((name === 'stock' || name === 'discountedPrice' || name === 'actualPrice') && value < 0) {
+      return;
+    }
+    if (name === 'stockAlertThreshold' && value !== '' && Number(value) < 1) {
       return;
     }
 
@@ -143,8 +155,8 @@ export default function ProductFormModal({ isOpen, onClose, product = null, init
 
     if (controlKeys.includes(e.key)) return;
 
-    if (name === 'stock') {
-      // ONLY digits for stock
+    if (name === 'stock' || name === 'stockAlertThreshold') {
+      // ONLY digits for stock and threshold
       if (!/[0-9]/.test(e.key)) {
         e.preventDefault();
       }
@@ -257,9 +269,22 @@ export default function ProductFormModal({ isOpen, onClose, product = null, init
     return findCat(heirarchy);
   };
 
-  const mainCatName = selectedPathIds[0] ? getCategoryName(selectedPathIds[0]) : '';
-  const subCat1Name = selectedPathIds[1] ? getCategoryName(selectedPathIds[1]) : '';
-  const isApparelReadymade = mainCatName?.toLowerCase() === 'apparel' && subCat1Name?.toLowerCase() === 'readymades';
+  const getCategoryShowSizes = (id) => {
+    const findCat = (items) => {
+      if (!items) return null;
+      for (const item of items) {
+        if (item.id === id) return item.showSizes || false;
+        if (item.children) {
+          const found = findCat(item.children);
+          if (found !== null) return found;
+        }
+      }
+      return null;
+    };
+    return findCat(heirarchy) || false;
+  };
+
+  const isApparelReadymade = formData.categoryId ? getCategoryShowSizes(formData.categoryId) : false;
 
   const handleSubmit = async (e) => {
     e.preventDefault();
@@ -269,7 +294,7 @@ export default function ProductFormModal({ isOpen, onClose, product = null, init
     }
 
     if (isApparelReadymade && !formData.size) {
-      toast.error('Please select a size for Readymades', { id: 'size-validation-error' });
+      toast.error('Please select a size for this product', { id: 'size-validation-error' });
       return;
     }
 
@@ -300,6 +325,11 @@ export default function ProductFormModal({ isOpen, onClose, product = null, init
       return;
     }
 
+    if (formData.stockAlertThreshold !== undefined && formData.stockAlertThreshold !== '' && Number(formData.stockAlertThreshold) < 1) {
+      toast.error('Stock Alert threshold must be at least 1', { id: 'stock-alert-validation-error' });
+      return;
+    }
+
     setLoading(true);
     try {
       // Upload new image files to Cloudinary
@@ -313,6 +343,7 @@ export default function ProductFormModal({ isOpen, onClose, product = null, init
         slug: createSlug(formData.name),
         images: finalImages,
         stock: formData.productType === 'Unique' ? 1 : Number(formData.stock),
+        stockAlertThreshold: Number(formData.stockAlertThreshold !== undefined ? formData.stockAlertThreshold : 5),
         discountedPrice: Number(formData.discountedPrice),
         actualPrice: Number(formData.actualPrice || 0),
         updatedAt: serverTimestamp()
@@ -568,19 +599,38 @@ export default function ProductFormModal({ isOpen, onClose, product = null, init
                     </label>
                   </div>
                   <hr className="border-gray-200 -mt-2 mb-3" />
-                  <div className="space-y-1.5 relative mt-4">
-                    <label className="text-[13px] font-bold text-gray-700 ml-1">
-                      SKU *
-                    </label>
-                    <input
-                      required
-                      type="text"
-                      name="sku"
-                      value={formData.sku}
-                      onChange={handleInputChange}
-                      placeholder="e.g. MS-2024-001"
-                      className="w-full bg-gray-50 border-none px-4 py-3 rounded-xl text-[14px] outline-none focus:ring-2 focus:ring-[#1BAFAF]/20 focus:bg-white transition-all font-medium uppercase"
-                    />
+                  <div className="grid grid-cols-2 gap-4 mt-4 animate-in fade-in slide-in-from-top-2 duration-300">
+                    <div className="space-y-1.5 relative">
+                      <label className="text-[13px] font-bold text-gray-700 ml-1">
+                        SKU *
+                      </label>
+                      <input
+                        type="text"
+                        readOnly
+                        value={formData.sku}
+                        className="w-full bg-gray-100 border-none px-4 py-3 rounded-xl text-[14px] outline-none text-gray-500 font-bold cursor-not-allowed uppercase"
+                      />
+                    </div>
+                    <div className="space-y-1.5 relative">
+                      <label className="text-[13px] font-bold text-gray-700 ml-1">
+                        Stock Alert Below *
+                      </label>
+                      <input
+                        required={formData.productType !== 'Unique'}
+                        type="number"
+                        min="1"
+                        name="stockAlertThreshold"
+                        value={formData.productType === 'Unique' ? '' : formData.stockAlertThreshold}
+                        onChange={handleInputChange}
+                        onKeyDown={handleKeyPress}
+                        disabled={formData.productType === 'Unique'}
+                        placeholder={formData.productType === 'Unique' ? 'N/A' : 'e.g. 5'}
+                        className={`w-full border-none px-4 py-3 rounded-xl text-[14px] outline-none transition-all font-bold ${formData.productType === 'Unique'
+                            ? 'bg-gray-100 text-gray-400 cursor-not-allowed'
+                            : 'bg-gray-50 text-gray-700 focus:ring-2 focus:ring-[#1BAFAF]/20 focus:bg-white'
+                          }`}
+                      />
+                    </div>
                   </div>
                   <div className="grid grid-cols-2 gap-4">
                     <div className="space-y-1.5">

@@ -117,10 +117,46 @@ export default function FilterSidebar({ className = "", categories = [], onFilte
 
   const [priceRange, setPriceRange] = useState({ min: 0, max: 20000 });
 
-  const isReadyMade = currentCategory?.name?.toLowerCase().includes('ready') || 
-                      (categories.length > 0 && categories[0]?.name?.toLowerCase().includes('ready'));
+  const getCategoryShowSizes = (category) => {
+    if (!category) return false;
+    if (category.showSizes === true) return true;
 
-  const showSizeFilter = isReadyMade;
+    const findParent = (items, targetParentId) => {
+      for (const item of items) {
+        if (item.id === targetParentId) return item;
+        if (item.children) {
+          const found = findParent(item.children, targetParentId);
+          if (found) return found;
+        }
+      }
+      return null;
+    };
+
+    const findCategory = (items, targetId) => {
+      for (const item of items) {
+        if (item.id === targetId) return item;
+        if (item.children) {
+          const found = findCategory(item.children, targetId);
+          if (found) return found;
+        }
+      }
+      return null;
+    };
+
+    const catInTree = findCategory(allCategories, category.id);
+    if (catInTree) {
+      if (catInTree.showSizes === true) return true;
+      let parent = catInTree.parentId ? findParent(allCategories, catInTree.parentId) : null;
+      while (parent) {
+        if (parent.showSizes === true) return true;
+        parent = parent.parentId ? findParent(allCategories, parent.parentId) : null;
+      }
+    }
+
+    return false;
+  };
+
+  const showSizeFilter = currentCategory ? getCategoryShowSizes(currentCategory) : false;
 
   // Availability options — Pre-order removed
   const filterData = {
