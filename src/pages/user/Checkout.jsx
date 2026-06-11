@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
-import { Check, Shield, Plus, Minus, Trash2 } from 'lucide-react';
+import { Check, Shield, Plus, Minus, Trash2, Edit2, Loader2, AlertTriangle } from 'lucide-react';
 import { Link, useNavigate, useLocation } from 'react-router-dom';
 import { db } from '../../firebase';
 import { collection, addDoc, serverTimestamp, query, onSnapshot, getDocs, deleteDoc, doc, updateDoc, getDoc } from 'firebase/firestore';
@@ -15,11 +15,17 @@ export default function Checkout() {
   const [activeStep, setActiveStep] = useState('address'); // 'address', 'summary', 'payment', 'confirm'
   const [items, setItems] = useState([]);
   const [loading, setLoading] = useState(true);
-  const [shipping] = useState(80);
+  const [deliveryRates, setDeliveryRates] = useState([]);
   const [savedAddresses, setSavedAddresses] = useState([]);
   const [selectedAddressId, setSelectedAddressId] = useState(null);
   const [paymentMethod, setPaymentMethod] = useState('card');
   const [isAddingAddress, setIsAddingAddress] = useState(false);
+  const [isStateDropdownOpen, setIsStateDropdownOpen] = useState(false);
+  const [addressErrors, setAddressErrors] = useState({});
+  const [editingAddressId, setEditingAddressId] = useState(null);
+  const [addressToDelete, setAddressToDelete] = useState(null);
+  const [isDeletingAddress, setIsDeletingAddress] = useState(false);
+  const [showLogoutConfirm, setShowLogoutConfirm] = useState(false);
 
   // Form states
   const [formData, setFormData] = useState({
@@ -31,6 +37,89 @@ export default function Checkout() {
     zip: '',
     phone: ''
   });
+
+  const [newAddress, setNewAddress] = useState({
+    fullName: '',
+    phone: '',
+    zip: '',
+    locality: '',
+    address: '',
+    city: '',
+    state: '',
+    alternatePhone: '',
+    type: 'HOME'
+  });
+
+  const [isFetchingLocation, setIsFetchingLocation] = useState(false);
+  const [errorModal, setErrorModal] = useState({ isOpen: false, title: 'Alert', message: '' });
+
+  const showError = (message, title = "Alert") => {
+    setErrorModal({ isOpen: true, title, message });
+  };
+
+  useEffect(() => {
+    if (!newAddress.zip || newAddress.zip.length !== 6) {
+      setNewAddress(prev => ({
+        ...prev,
+        city: '',
+        state: ''
+      }));
+      return;
+    }
+
+    const fetchLocation = async () => {
+      setIsFetchingLocation(true);
+      try {
+        const res = await fetch(`https://api.postalpincode.in/pincode/${newAddress.zip}`);
+        const data = await res.json();
+        if (data && data[0]) {
+          if (data[0].Status === 'Success' && data[0].PostOffice && data[0].PostOffice[0]) {
+            const office = data[0].PostOffice[0];
+            const stateName = office.State;
+            const districtName = office.District;
+            
+            setNewAddress(prev => ({
+              ...prev,
+              city: districtName || prev.city,
+              state: stateName || prev.state
+            }));
+
+            setAddressErrors(prev => ({
+              ...prev,
+              zip: '',
+              city: '',
+              state: ''
+            }));
+          } else {
+            setAddressErrors(prev => ({
+              ...prev,
+              zip: 'Invalid pincode.'
+            }));
+            setNewAddress(prev => ({
+              ...prev,
+              city: '',
+              state: ''
+            }));
+          }
+        }
+      } catch (error) {
+        console.error("Error fetching location by pincode:", error);
+      } finally {
+        setIsFetchingLocation(false);
+      }
+    };
+    fetchLocation();
+  }, [newAddress.zip]);
+
+  const INDIAN_STATES = [
+    "Andhra Pradesh", "Arunachal Pradesh", "Assam", "Bihar", "Chhattisgarh", "Goa", "Gujarat", 
+    "Haryana", "Himachal Pradesh", "Jharkhand", "Karnataka", "Kerala", "Madhya Pradesh", 
+    "Maharashtra", "Manipur", "Meghalaya", "Mizoram", "Nagaland", "Odisha", "Punjab", 
+    "Rajasthan", "Sikkim", "Tamil Nadu", "Telangana", "Tripura", "Uttar Pradesh", 
+    "Uttarakhand", "West Bengal", "Andaman and Nicobar Islands", "Chandigarh", 
+    "Dadra and Nagar Haveli and Daman and Diu", "Delhi", "Jammu and Kashmir", "Ladakh", 
+    "Lakshadweep", "Puducherry"
+  ];
 
   useEffect(() => {
     if (!user) {
@@ -44,14 +133,33 @@ export default function Checkout() {
       setItems([buyNowItem]);
       setLoading(false);
     } else {
-      // Standard Cart Fetching
       const cartItemsQuery = query(collection(db, 'users', user.uid, 'cart'));
-      const unsubscribeCart = onSnapshot(cartItemsQuery, (snapshot) => {
+      const unsubscribeCart = onSnapshot(cartItemsQuery, async (snapshot) => {
         const cartItems = snapshot.docs.map(doc => ({
           docId: doc.id,
           ...doc.data()
         }));
-        setItems(cartItems);
+
+        const resolvedItems = await Promise.all(cartItems.map(async (item) => {
+          if (!item.price || item.price === 0) {
+            try {
+              const prodRef = doc(db, 'products', item.id);
+              const prodSnap = await getDoc(prodRef);
+              if (prodSnap.exists()) {
+                const prodData = prodSnap.data();
+                return {
+                  ...item,
+                  price: prodData.discountedPrice || prodData.price || 0
+                };
+              }
+            } catch (err) {
+              console.error("Error resolving live price for checkout item:", err);
+            }
+          }
+          return item;
+        }));
+
+        setItems(resolvedItems);
         setLoading(false);
       });
       return () => unsubscribeCart();
@@ -90,6 +198,20 @@ export default function Checkout() {
     return () => unsubscribeAddresses();
   }, [user]);
 
+  useEffect(() => {
+    const q = query(collection(db, 'deliverychargers'));
+    const unsubscribe = onSnapshot(q, (snapshot) => {
+      const data = snapshot.docs.map(doc => ({
+        id: doc.id,
+        ...doc.data()
+      }));
+      setDeliveryRates(data);
+    }, (error) => {
+      console.error("Error fetching delivery charges in checkout:", error);
+    });
+    return () => unsubscribe();
+  }, []);
+
   const handleSelectAddress = (address) => {
     setSelectedAddressId(address.id);
     const names = address.fullName ? address.fullName.split(' ') : [''];
@@ -105,7 +227,27 @@ export default function Checkout() {
   };
 
   const subtotal = items.reduce((acc, item) => acc + (item.price * item.qty), 0);
-  const deliveryCharges = shipping;
+  const deliveryCharges = (() => {
+    let zipToEvaluate = null;
+    
+    if (selectedAddressId) {
+      const selectedAddress = savedAddresses.find(a => a.id === selectedAddressId);
+      if (selectedAddress && selectedAddress.zip) {
+        zipToEvaluate = selectedAddress.zip;
+      }
+    } else if (newAddress.zip && newAddress.zip.length === 6) {
+      zipToEvaluate = newAddress.zip;
+    }
+
+    if (!zipToEvaluate) return 0;
+
+    const rate = deliveryRates.find(r => {
+      const pins = r.pincodes || [r.pincode] || [];
+      return pins.includes(zipToEvaluate);
+    });
+
+    return rate ? rate.charge : 0;
+  })();
   const total = subtotal + deliveryCharges;
 
   const handleUpdateQuantity = async (item, newQty) => {
@@ -114,7 +256,7 @@ export default function Checkout() {
     // Check if unique piece is being incremented
     const isUnique = item.isUniquePiece === true || item.productType === 'Unique';
     if (isUnique && newQty > 1) {
-      alert("This is a unique piece, only 1 is available.");
+      showError("This is a unique piece, only 1 is available.");
       return;
     }
 
@@ -140,18 +282,145 @@ export default function Checkout() {
     }
   };
 
+  const handleSaveAddress = async () => {
+    const { fullName, phone, zip, locality, address, city, state, alternatePhone, type } = newAddress;
+    const errors = {};
+
+    if (!fullName || !fullName.trim()) {
+      errors.fullName = "Name is a required field.";
+    } else if (!/^[a-zA-Z\s]+$/.test(fullName)) {
+      errors.fullName = "Name can only contain letters and spaces.";
+    } else if (fullName.trim().length < 2) {
+      errors.fullName = "Name must be at least 2 characters.";
+    } else if (fullName.length > 50) {
+      errors.fullName = "Name cannot exceed 50 characters.";
+    }
+
+    if (!phone) {
+      errors.phone = "Mobile number is required.";
+    } else if (!/^[6-9]\d{9}$/.test(phone)) {
+      errors.phone = "Please enter a valid mobile number.";
+    }
+
+    if (!zip) {
+      errors.zip = "Pincode is required.";
+    } else if (!/^\d{6}$/.test(zip)) {
+      errors.zip = "Pincode must be exactly 6 digits.";
+    }
+
+    if (!locality || !locality.trim()) {
+      errors.locality = "Locality is required.";
+    }
+
+    if (!address || !address.trim()) {
+      errors.address = "Address is required.";
+    } else if (address.length > 200) {
+      errors.address = "Address cannot exceed 200 characters.";
+    }
+
+    if (!city || !city.trim()) {
+      errors.city = "City is required.";
+    }
+
+    if (!state) {
+      errors.state = "Please select a State.";
+    }
+
+    if (alternatePhone && !/^[6-9]\d{9}$/.test(alternatePhone)) {
+      errors.alternatePhone = "Please enter a valid alternate mobile number.";
+    }
+
+    if (Object.keys(errors).length > 0) {
+      setAddressErrors(errors);
+      return;
+    }
+    setAddressErrors({});
+
+    try {
+      let savedId = editingAddressId;
+      const isDefault = savedAddresses.length === 0;
+
+      if (editingAddressId) {
+        await updateDoc(doc(db, 'users', user.uid, 'addresses', editingAddressId), {
+          fullName,
+          phone,
+          zip,
+          locality,
+          address,
+          city,
+          state,
+          alternatePhone: alternatePhone || '',
+          type
+        });
+        setEditingAddressId(null);
+      } else {
+        if (savedAddresses.length >= 3) {
+          showError("You can save a maximum of 3 addresses. Please delete an address to add a new one.");
+          return;
+        }
+        const addrRef = await addDoc(collection(db, 'users', user.uid, 'addresses'), {
+          fullName,
+          phone,
+          zip,
+          locality,
+          address,
+          city,
+          state,
+          alternatePhone: alternatePhone || '',
+          type,
+          isDefault
+        });
+        savedId = addrRef.id;
+      }
+
+      // Clear the form and close it
+      setNewAddress({
+        fullName: '',
+        phone: '',
+        zip: '',
+        locality: '',
+        address: '',
+        city: '',
+        state: '',
+        alternatePhone: '',
+        type: 'HOME'
+      });
+      setAddressErrors({});
+      setIsAddingAddress(false);
+
+      // Auto-select the newly added/edited address
+      handleSelectAddress({
+        id: savedId,
+        fullName,
+        phone,
+        zip,
+        locality,
+        address,
+        city,
+        state,
+        alternatePhone,
+        type,
+        isDefault
+      });
+
+    } catch (error) {
+      console.error("Error saving address:", error);
+      showError("Failed to save address. Please try again.");
+    }
+  };
+
   const validateStock = async () => {
     try {
       for (const item of items) {
         const productId = item.id?.toString();
         if (!productId) {
-          alert(`Unable to validate stock for "${item.name}". Invalid Product ID.`);
+          showError(`Unable to validate stock for "${item.name}". Invalid Product ID.`);
           return false;
         }
         const productRef = doc(db, 'products', productId);
         const productSnap = await getDoc(productRef);
         if (!productSnap.exists()) {
-          alert(`Product "${item.name}" was not found in our collection.`);
+          showError(`Product "${item.name}" was not found in our collection.`);
           return false;
         }
         const productData = productSnap.data();
@@ -160,16 +429,16 @@ export default function Checkout() {
 
         if (isUnique) {
           if (currentStock === 0 || productData.isAvailable === false) {
-            alert(`Apologies! The unique piece "${item.name}" is already sold out.`);
+            showError(`Apologies! The unique piece "${item.name}" is already sold out.`);
             return false;
           }
         } else {
           if (currentStock === 0) {
-            alert(`Apologies! The product "${item.name}" is out of stock.`);
+            showError(`Apologies! The product "${item.name}" is out of stock.`);
             return false;
           }
           if (item.qty > currentStock) {
-            alert(`Apologies! The product "${item.name}" has insufficient stock. Only ${currentStock} left in stock.`);
+            showError(`Apologies! The product "${item.name}" has insufficient stock. Only ${currentStock} left in stock.`);
             return false;
           }
         }
@@ -177,14 +446,14 @@ export default function Checkout() {
       return true;
     } catch (error) {
       console.error("Stock validation error:", error);
-      alert("An error occurred while validating stock. Please try again.");
+      showError("An error occurred while validating stock. Please try again.");
       return false;
     }
   };
 
   const processOrder = async (razorpayPaymentId = null) => {
     try {
-      const orderId = `#ORD-${Math.floor(10000 + Math.random() * 90000)}`;
+      const orderId = `ORD-${Math.floor(100000 + Math.random() * 900000)}`;
 
       const isStockAvailable = await validateStock();
       if (!isStockAvailable) return;
@@ -249,13 +518,13 @@ export default function Checkout() {
       setActiveStep('confirm');
     } catch (error) {
       console.error("Order Error:", error);
-      alert("Failed to place order. Please try again.");
+      showError("Failed to place order. Please try again.");
     }
   };
 
   const handleRazorpayPayment = () => {
     if (!window.Razorpay) {
-      alert("Razorpay SDK failed to load. Please check your internet connection.");
+      showError("Razorpay SDK failed to load. Please check your internet connection.");
       return;
     }
 
@@ -292,7 +561,7 @@ export default function Checkout() {
     if (items.length === 0) return;
     
     if (!formData.firstName || !formData.address || !formData.phone) {
-      alert("Please select or add a delivery address.");
+      showError("Please select or add a delivery address.");
       return;
     }
 
@@ -380,23 +649,32 @@ export default function Checkout() {
                     <p className="text-sm text-gray-600 mb-4">Please log in to continue your checkout.</p>
                     <input type="email" placeholder="Email" className="w-full border border-gray-300 px-4 py-3 rounded-[2px] mb-3 text-sm focus:outline-none focus:border-brand-orange" id="checkout-email" />
                     <input type="password" placeholder="Password" className="w-full border border-gray-300 px-4 py-3 rounded-[2px] mb-4 text-sm focus:outline-none focus:border-brand-orange" id="checkout-password" />
-                    <button 
-                      onClick={async () => {
-                        const email = document.getElementById('checkout-email').value;
-                        const password = document.getElementById('checkout-password').value;
-                        if (email && password) {
-                          try {
-                            await login(email, password);
-                            setActiveStep('address');
-                          } catch (e) {
-                            alert("Login failed. Please check your credentials.");
+                    <div className="flex gap-4 items-center">
+                      <button 
+                        onClick={async () => {
+                          const email = document.getElementById('checkout-email').value;
+                          const password = document.getElementById('checkout-password').value;
+                          if (email && password) {
+                            try {
+                              await login(email, password);
+                              setActiveStep('address');
+                            } catch (e) {
+                              alert("Login failed. Please check your credentials.");
+                            }
                           }
-                        }
-                      }}
-                      className="bg-brand-orange text-white px-8 py-3 font-semibold text-[15px] rounded-[2px] shadow-sm hover:shadow transition uppercase w-full"
-                    >
-                      Login
-                    </button>
+                        }}
+                        className="bg-brand-orange text-white px-8 py-3 font-semibold text-[15px] rounded-[2px] shadow-sm hover:shadow transition uppercase flex-1"
+                      >
+                        Login
+                      </button>
+                      <button 
+                        type="button"
+                        onClick={() => navigate(-1)}
+                        className="text-gray-500 font-semibold text-[15px] hover:text-brand-orange transition uppercase px-4"
+                      >
+                        Cancel
+                      </button>
+                    </div>
                   </div>
                 ) : (
                   <div className="max-w-sm bg-white p-6 border border-gray-200 rounded-[2px]">
@@ -409,10 +687,7 @@ export default function Checkout() {
                       Continue Checkout
                     </button>
                     <button 
-                      onClick={() => {
-                        logout();
-                        setActiveStep('login');
-                      }}
+                      onClick={() => setShowLogoutConfirm(true)}
                       className="text-brand-orange font-semibold text-sm w-full uppercase hover:underline"
                     >
                       Logout and use another account
@@ -446,9 +721,49 @@ export default function Checkout() {
                       onChange={() => handleSelectAddress(addr)}
                     />
                     <div className="ml-4 flex-1">
-                      <div className="flex items-center gap-4 mb-2">
-                        <span className="font-semibold text-[15px]">{addr.fullName}</span>
-                        <span className="bg-gray-100 px-2 py-0.5 text-[11px] text-gray-500 font-bold uppercase tracking-wider rounded-sm">{addr.type || 'HOME'}</span>
+                      <div className="flex items-center justify-between mb-2">
+                        <div className="flex items-center gap-4">
+                          <span className="font-semibold text-[15px]">{addr.fullName}</span>
+                          <span className="bg-gray-100 px-2 py-0.5 text-[11px] text-gray-500 font-bold uppercase tracking-wider rounded-sm">{addr.type || 'HOME'}</span>
+                        </div>
+                        <div className="flex items-center gap-3">
+                          <button 
+                            type="button" 
+                            onClick={(e) => {
+                              e.preventDefault();
+                              e.stopPropagation();
+                              setEditingAddressId(addr.id);
+                              setNewAddress({
+                                fullName: addr.fullName || '',
+                                phone: addr.phone || '',
+                                zip: addr.zip || '',
+                                locality: addr.locality || '',
+                                address: addr.address || '',
+                                city: addr.city || '',
+                                state: addr.state || '',
+                                alternatePhone: addr.alternatePhone || '',
+                                type: addr.type || 'HOME'
+                              });
+                              setIsAddingAddress(true);
+                            }}
+                            className="p-1.5 text-gray-400 hover:text-brand-orange hover:bg-gray-50 rounded transition"
+                            title="Edit Address"
+                          >
+                            <Edit2 size={15} />
+                          </button>
+                          <button 
+                            type="button" 
+                            onClick={(e) => {
+                              e.preventDefault();
+                              e.stopPropagation();
+                              setAddressToDelete(addr.id);
+                            }}
+                            className="p-1.5 text-gray-400 hover:text-red-500 hover:bg-gray-50 rounded transition"
+                            title="Delete Address"
+                          >
+                            <Trash2 size={15} />
+                          </button>
+                        </div>
                       </div>
                       <p className="text-sm text-gray-700 leading-relaxed mb-2">
                         {addr.address}, {addr.city}, {addr.state} - <span className="font-medium">{addr.zip}</span>
@@ -468,7 +783,26 @@ export default function Checkout() {
                 ))}
 
                 <div 
-                  onClick={() => setIsAddingAddress(!isAddingAddress)}
+                  onClick={() => {
+                    if (savedAddresses.length >= 3) {
+                      showError("You can save a maximum of 3 addresses. Please delete an address to add a new one.");
+                      return;
+                    }
+                    setEditingAddressId(null);
+                    setNewAddress({
+                      fullName: '',
+                      phone: '',
+                      zip: '',
+                      locality: '',
+                      address: '',
+                      city: '',
+                      state: '',
+                      alternatePhone: '',
+                      type: 'HOME'
+                    });
+                    setAddressErrors({});
+                    setIsAddingAddress(!isAddingAddress);
+                  }}
                   className="bg-white border border-dashed border-brand-orange p-4 text-brand-orange font-bold flex items-center justify-center gap-2 cursor-pointer rounded-[2px] hover:bg-orange-50 transition uppercase"
                 >
                   <Plus size={18} strokeWidth={2.5} /> ADD A NEW ADDRESS
@@ -477,62 +811,148 @@ export default function Checkout() {
                 {isAddingAddress && (
                   <div className="mt-4 bg-[#f1f3f6]/30 p-6 border border-gray-200 rounded-[2px]">
                     <div className="mb-6 flex items-center text-[15px] font-semibold text-gray-800">
-                      <Check size={18} strokeWidth={2.5} className="text-[#1BAFAF] mr-2" /> Delivery available in Kolhapur
+                      <Check size={18} strokeWidth={2.5} className="text-[#1BAFAF] mr-2" /> {editingAddressId ? "Edit Address" : "Delivery available in Kolhapur"}
                     </div>
                     
                     <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                      <input 
-                        type="text" 
-                        placeholder="Name" 
-                        className="w-full border border-gray-300 px-4 py-3 rounded-[2px] text-sm focus:outline-none focus:border-brand-orange" 
-                      />
-                      <input 
-                        type="text" 
-                        placeholder="10-digit mobile number" 
-                        className="w-full border border-gray-300 px-4 py-3 rounded-[2px] text-sm focus:outline-none focus:border-brand-orange" 
-                      />
-                      <input 
-                        type="text" 
-                        placeholder="Pincode" 
-                        className="w-full border border-gray-300 px-4 py-3 rounded-[2px] text-sm focus:outline-none focus:border-brand-orange" 
-                      />
-                      <input 
-                        type="text" 
-                        placeholder="Locality" 
-                        className="w-full border border-gray-300 px-4 py-3 rounded-[2px] text-sm focus:outline-none focus:border-brand-orange" 
-                      />
-                      <div className="md:col-span-2">
+                      <div className="flex flex-col">
+                        <input 
+                          type="text" 
+                          placeholder="Name" 
+                          maxLength={50}
+                          value={newAddress.fullName}
+                          onChange={(e) => {
+                            const val = e.target.value.replace(/[^a-zA-Z\s]/g, '');
+                            setNewAddress({ ...newAddress, fullName: val });
+                            if (addressErrors.fullName) {
+                              setAddressErrors({ ...addressErrors, fullName: '' });
+                            }
+                          }}
+                          className="w-full border border-gray-300 px-4 py-3 rounded-[2px] text-sm focus:outline-none focus:border-brand-orange" 
+                        />
+                        {addressErrors.fullName && <span className="text-red-500 text-xs mt-1">{addressErrors.fullName}</span>}
+                      </div>
+                      <div className="flex flex-col">
+                        <input 
+                          type="text" 
+                          placeholder="10-digit mobile number" 
+                          value={newAddress.phone}
+                          onChange={(e) => {
+                            const val = e.target.value.replace(/\D/g, '').slice(0, 10);
+                            setNewAddress({ ...newAddress, phone: val });
+                            if (addressErrors.phone) {
+                              setAddressErrors({ ...addressErrors, phone: '' });
+                            }
+                          }}
+                          className="w-full border border-gray-300 px-4 py-3 rounded-[2px] text-sm focus:outline-none focus:border-brand-orange" 
+                        />
+                        {addressErrors.phone && <span className="text-red-500 text-xs mt-1">{addressErrors.phone}</span>}
+                      </div>
+                      <div className="relative flex flex-col">
+                        <input 
+                          type="text" 
+                          placeholder="Pincode" 
+                          value={newAddress.zip}
+                          onChange={(e) => {
+                            const val = e.target.value.replace(/\D/g, '').slice(0, 6);
+                            setNewAddress({ ...newAddress, zip: val });
+                            if (addressErrors.zip) {
+                              setAddressErrors({ ...addressErrors, zip: '' });
+                            }
+                          }}
+                          className="w-full border border-gray-300 px-4 py-3 rounded-[2px] text-sm focus:outline-none focus:border-brand-orange pr-10" 
+                        />
+                        {isFetchingLocation && (
+                          <div className="absolute right-3 top-3.5 flex items-center justify-center">
+                            <Loader2 className="w-4 h-4 text-brand-orange animate-spin" />
+                          </div>
+                        )}
+                        {addressErrors.zip && <span className="text-red-500 text-xs mt-1">{addressErrors.zip}</span>}
+                      </div>
+                      <div className="flex flex-col">
+                        <input 
+                          type="text" 
+                          placeholder="City" 
+                          maxLength={50}
+                          value={newAddress.locality}
+                          onChange={(e) => {
+                            const val = e.target.value.replace(/[^a-zA-Z\s]/g, '');
+                            setNewAddress({ ...newAddress, locality: val });
+                            if (addressErrors.locality) {
+                              setAddressErrors({ ...addressErrors, locality: '' });
+                            }
+                          }}
+                          className="w-full border border-gray-300 px-4 py-3 rounded-[2px] text-sm focus:outline-none focus:border-brand-orange" 
+                        />
+                        {addressErrors.locality && <span className="text-red-500 text-xs mt-1">{addressErrors.locality}</span>}
+                      </div>
+                      <div className="md:col-span-2 flex flex-col">
                         <textarea 
                           placeholder="Address (Area and Street)" 
                           rows="3" 
+                          maxLength={200}
+                          value={newAddress.address}
+                          onChange={(e) => {
+                            setNewAddress({ ...newAddress, address: e.target.value });
+                            if (addressErrors.address) {
+                              setAddressErrors({ ...addressErrors, address: '' });
+                            }
+                          }}
                           className="w-full border border-gray-300 px-4 py-3 rounded-[2px] text-sm focus:outline-none focus:border-brand-orange resize-none" 
                         ></textarea>
+                        {addressErrors.address && <span className="text-red-500 text-xs mt-1">{addressErrors.address}</span>}
                       </div>
-                      <input 
-                        type="text" 
-                        placeholder="City/District/Town" 
-                        className="w-full border border-gray-300 px-4 py-3 rounded-[2px] text-sm focus:outline-none focus:border-brand-orange" 
-                      />
-                      <input 
-                        type="text" 
-                        placeholder="State" 
-                        className="w-full border border-gray-300 px-4 py-3 rounded-[2px] text-sm focus:outline-none focus:border-brand-orange" 
-                      />
-                      <input 
-                        type="text" 
-                        placeholder="Alternate Phone (Optional)" 
-                        className="w-full border border-gray-300 px-4 py-3 rounded-[2px] text-sm focus:outline-none focus:border-brand-orange" 
-                      />
+                      <div className="flex flex-col">
+                        <input 
+                          type="text" 
+                          placeholder="District" 
+                          value={newAddress.city}
+                          readOnly
+                          className="w-full border border-gray-300 px-4 py-3 rounded-[2px] text-sm focus:outline-none bg-gray-50 text-[#1A1A1A] cursor-not-allowed" 
+                        />
+                        {addressErrors.city && <span className="text-red-500 text-xs mt-1">{addressErrors.city}</span>}
+                      </div>
+                      <div className="flex flex-col">
+                        <input 
+                          type="text" 
+                          placeholder="State" 
+                          value={newAddress.state}
+                          readOnly
+                          className="w-full border border-gray-300 px-4 py-3 rounded-[2px] text-sm focus:outline-none bg-gray-50 text-[#1A1A1A] cursor-not-allowed" 
+                        />
+                        {addressErrors.state && <span className="text-red-500 text-xs mt-1">{addressErrors.state}</span>}
+                      </div>
+                      <div className="flex flex-col">
+                        <input 
+                          type="text" 
+                          placeholder="Alternate Phone (Optional)" 
+                          value={newAddress.alternatePhone}
+                          onChange={(e) => {
+                            const val = e.target.value.replace(/\D/g, '').slice(0, 10);
+                            setNewAddress({ ...newAddress, alternatePhone: val });
+                            if (addressErrors.alternatePhone) {
+                              setAddressErrors({ ...addressErrors, alternatePhone: '' });
+                            }
+                          }}
+                          className="w-full border border-gray-300 px-4 py-3 rounded-[2px] text-sm focus:outline-none focus:border-brand-orange" 
+                        />
+                        {addressErrors.alternatePhone && <span className="text-red-500 text-xs mt-1">{addressErrors.alternatePhone}</span>}
+                      </div>
                     </div>
                     
                     <div className="mt-6 flex gap-4">
                       <button 
+                        onClick={handleSaveAddress}
                         className="bg-brand-orange text-white px-8 py-3 font-semibold text-[15px] rounded-[2px] shadow-sm hover:shadow transition uppercase"
                       >
                         Save and Deliver Here
                       </button>
                       <button 
-                        onClick={() => setIsAddingAddress(false)}
+                        onClick={() => {
+                          setIsAddingAddress(false);
+                          setEditingAddressId(null);
+                          setAddressErrors({});
+                        }}
                         className="text-gray-500 font-semibold text-[15px] hover:text-brand-orange transition uppercase px-4"
                       >
                         Cancel
@@ -704,6 +1124,105 @@ export default function Checkout() {
         </div>
 
       </div>
+      
+      {/* Delete Address Confirmation Modal */}
+      {addressToDelete && (
+        <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50 p-4">
+          <div className="bg-white p-6 rounded-[2px] shadow-lg max-w-sm w-full text-center">
+            <h3 className="text-lg font-bold text-[#1A1A1A] mb-2 font-sans">Delete Address</h3>
+            <p className="text-sm text-gray-600 mb-6 leading-relaxed">Are you sure you want to delete this address? This action cannot be undone.</p>
+            <div className="flex gap-4 justify-center">
+              <button 
+                type="button"
+                disabled={isDeletingAddress}
+                onClick={() => setAddressToDelete(null)}
+                className="px-6 py-2 border border-gray-300 rounded-[2px] text-gray-700 font-semibold text-sm hover:bg-gray-50 transition uppercase tracking-wide text-xs disabled:opacity-50"
+              >
+                Cancel
+              </button>
+              <button 
+                type="button"
+                disabled={isDeletingAddress}
+                onClick={async () => {
+                  try {
+                    setIsDeletingAddress(true);
+                    await deleteDoc(doc(db, 'users', user.uid, 'addresses', addressToDelete));
+                    if (selectedAddressId === addressToDelete) {
+                      setSelectedAddressId(null);
+                    }
+                  } catch (error) {
+                    console.error("Error deleting address:", error);
+                  } finally {
+                    setIsDeletingAddress(false);
+                    setAddressToDelete(null);
+                  }
+                }}
+                className={`px-6 py-2 bg-red-600 text-white rounded-[2px] font-semibold text-sm transition uppercase tracking-wide text-xs ${
+                  isDeletingAddress ? 'opacity-50 cursor-not-allowed' : 'hover:bg-red-700'
+                }`}
+              >
+                {isDeletingAddress ? "Deleting..." : "Delete"}
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* Logout Confirmation Modal */}
+      {showLogoutConfirm && (
+        <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50 p-4">
+          <div className="bg-white p-6 rounded-[2px] shadow-lg max-w-sm w-full text-center">
+            <h3 className="text-lg font-bold text-[#1A1A1A] mb-2 font-sans">Confirm Logout</h3>
+            <p className="text-sm text-gray-600 mb-6 leading-relaxed">Are you sure you want to logout and login as another account?</p>
+            <div className="flex gap-4 justify-center">
+              <button 
+                type="button"
+                onClick={() => setShowLogoutConfirm(false)}
+                className="px-6 py-2 border border-gray-300 rounded-[2px] text-gray-700 font-semibold text-sm hover:bg-gray-50 transition uppercase tracking-wide text-xs"
+              >
+                Cancel
+              </button>
+              <button 
+                type="button"
+                onClick={() => {
+                  logout();
+                  setActiveStep('login');
+                  setShowLogoutConfirm(false);
+                }}
+                className="px-6 py-2 bg-brand-orange hover:bg-brand-orange-dark text-white rounded-[2px] font-semibold text-sm transition uppercase tracking-wide text-xs"
+              >
+                Logout
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
+      {/* Error / Alert Modal */}
+      <AnimatePresence>
+        {errorModal.isOpen && (
+          <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-[100] p-4 animate-in fade-in duration-200">
+            <motion.div 
+              initial={{ scale: 0.95, opacity: 0 }}
+              animate={{ scale: 1, opacity: 1 }}
+              exit={{ scale: 0.95, opacity: 0 }}
+              className="bg-white p-6 rounded-[4px] shadow-xl max-w-sm w-full text-center border border-gray-100"
+            >
+              <div className="w-12 h-12 bg-red-50 text-red-600 rounded-full flex items-center justify-center mx-auto mb-4">
+                <AlertTriangle size={24} />
+              </div>
+              <h3 className="text-lg font-bold text-[#1A1A1A] mb-2">{errorModal.title || "Alert"}</h3>
+              <p className="text-sm text-gray-600 mb-6 leading-relaxed">{errorModal.message}</p>
+              <button 
+                type="button"
+                onClick={() => setErrorModal({ isOpen: false, title: 'Alert', message: '' })}
+                className="w-full py-2.5 bg-brand-orange hover:bg-brand-orange-dark text-white rounded-[2px] font-semibold text-sm transition uppercase tracking-wide"
+              >
+                Okay
+              </button>
+            </motion.div>
+          </div>
+        )}
+      </AnimatePresence>
     </div>
   );
 }

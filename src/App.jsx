@@ -29,6 +29,7 @@ import Users from './pages/admin/Users';
 import Categories from './pages/admin/Categories';
 import Orders from './pages/admin/Orders';
 import Reports from './pages/admin/Reports';
+import DeliveryCharges from './pages/admin/DeliveryCharges';
 import useOnlineStatus from './hooks/useOnlineStatus';
 import AdminProtectedRoute from './components/admin/AdminProtectedRoute';
 import Settings from './pages/admin/Settings';
@@ -38,7 +39,6 @@ import OfflineOrders from './pages/admin/offline/Orders';
 import PurchaseOrdersOffline from './pages/admin/offline/PurchaseOrders';
 import StoreCustomers from './pages/admin/offline/StoreCustomers';
 import Vendors from './pages/admin/offline/Vendors';
-import Invoices from './pages/admin/offline/Invoices';
 import Returns from './pages/admin/offline/Returns';
 
 // Super Admin Pages
@@ -146,6 +146,7 @@ function App() {
             <Route path="categories" element={<Categories />} />
             <Route path="orders" element={<Orders />} />
             <Route path="reports" element={<Reports />} />
+            <Route path="delivery-charges" element={<DeliveryCharges />} />
             <Route path="settings" element={<Settings />} />
             <Route path="settings/banner" element={<Banner />} />
             <Route path="settings/curated-realms" element={<CuratedRealms />} />
@@ -174,7 +175,6 @@ function App() {
             <Route path="reports" element={<Reports />} />
             <Route path="customers" element={<StoreCustomers />} />
             <Route path="users" element={<Navigate to="/admin-offline/customers" replace />} />
-            <Route path="invoice" element={<Invoices />} />
             <Route path="return" element={<Returns />} />
             <Route path="vendors" element={<Vendors />} />
             <Route path="purchase-orders" element={<PurchaseOrdersOffline />} />

@@ -122,8 +122,12 @@ export default function CategoryView() {
 
     if (activeFilters.size?.length > 0) {
       result = result.filter(p => {
-        const pSizes = p.sizes || [];
-        return activeFilters.size.some(s => pSizes.includes(s));
+        const pSize = p.size ? p.size.toLowerCase() : '';
+        const pSizes = (p.sizes || []).map(s => s.toLowerCase());
+        return activeFilters.size.some(s => {
+          const fs = s.toLowerCase();
+          return pSize === fs || pSizes.includes(fs);
+        });
       });
     }
 

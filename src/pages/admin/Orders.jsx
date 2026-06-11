@@ -22,11 +22,13 @@ import {
   ChevronLeft,
   ChevronRight,
   ChevronUp,
-  TrendingUp
+  TrendingUp,
+  Download
 } from 'lucide-react';
 import { db } from '../../firebase';
 import { collection, onSnapshot, query, orderBy, doc, deleteDoc, updateDoc } from 'firebase/firestore';
 import { motion, AnimatePresence } from 'framer-motion';
+import { createPortal } from 'react-dom';
 import toast from 'react-hot-toast';
 import CustomSelect from '../../components/common/CustomSelect';
 
@@ -67,6 +69,311 @@ export default function Orders() {
   const [isFilterOpen, setIsFilterOpen] = useState(false);
   const [dateRange, setDateRange] = useState({ start: '', end: '' });
   const [statusFilter, setStatusFilter] = useState('All');
+
+  const handleDownloadInvoice = (order) => {
+    if (!order) return;
+
+    const customerName = order.customerName || '---';
+    const customerAddress = order.address || 'Maharashtra<br/>India';
+    const customerPhone = order.phone || '---';
+    const customerEmail = order.email || '---';
+
+    const now = new Date();
+    const formattedTimestamp = now.toLocaleDateString('en-GB') + ' ' + now.toLocaleTimeString('en-US', { hour: '2-digit', minute: '2-digit', second: '2-digit', hour12: true });
+
+    const printWindow = window.open('', '_blank');
+    if (!printWindow) {
+      toast.error("Popup blocked! Please allow popups to download/print invoice.");
+      return;
+    }
+
+    const items = order.items || [
+      {
+        name: order.productName || 'Handmade Creation',
+        quantity: order.quantity || 1,
+        rate: Number(order.total || 0) / (order.quantity || 1),
+        amount: Number(order.total || 0)
+      }
+    ];
+
+    const itemsHtml = items.map((item, index) => `
+      <tr style="border-bottom: 1px solid #000;">
+        <td style="border-right: 1px solid #000; padding: 10px 8px; font-size: 13px; text-align: center; vertical-align: top;">${index + 1}</td>
+        <td style="border-right: 1px solid #000; padding: 10px 12px; font-size: 13px; text-align: left; vertical-align: top;">
+          <div style="font-weight: bold; color: #000;">${item.name || '---'}</div>
+        </td>
+        <td style="border-right: 1px solid #000; padding: 10px 8px; font-size: 13px; text-align: center; vertical-align: top;">${(item.quantity || 0).toFixed(2)}</td>
+        <td style="border-right: 1px solid #000; padding: 10px 8px; font-size: 13px; text-align: right; vertical-align: top;">${(item.rate || item.price || 0).toFixed(2)}</td>
+        <td style="padding: 10px 8px; font-size: 13px; text-align: right; vertical-align: top; font-weight: bold;">${(item.amount || item.subtotal || item.total || 0).toFixed(2)}</td>
+      </tr>
+    `).join('');
+
+    const a = ['', 'One ', 'Two ', 'Three ', 'Four ', 'Five ', 'Six ', 'Seven ', 'Eight ', 'Nine ', 'Ten ', 'Eleven ', 'Twelve ', 'Thirteen ', 'Fourteen ', 'Fifteen ', 'Sixteen ', 'Seventeen ', 'Eighteen ', 'Nineteen '];
+    const b = ['', '', 'Twenty', 'Thirty', 'Forty', 'Fifty', 'Sixty', 'Seventy', 'Eighty', 'Ninety'];
+    const numToWords = (n) => {
+      if (n < 20) return a[n];
+      if (n < 100) return b[Math.floor(n / 10)] + (n % 10 !== 0 ? ' ' + a[n % 10] : '');
+      if (n < 1000) return a[Math.floor(n / 100)] + 'Hundred ' + (n % 100 !== 0 ? 'and ' + numToWords(n % 100) : '');
+      if (n < 100000) return numToWords(Math.floor(n / 1000)) + 'Thousand ' + (n % 1000 !== 0 ? numToWords(n % 1000) : '');
+      if (n < 10000000) return numToWords(Math.floor(n / 100000)) + 'Lakh ' + (n % 100000 !== 0 ? numToWords(n % 100000) : '');
+      return numToWords(Math.floor(n / 10000000)) + 'Crore ' + (n % 10000000 !== 0 ? numToWords(n % 10000000) : '');
+    };
+    const totalWords = (val) => {
+      const parsedNum = parseInt(Math.round(val).toString(), 10);
+      if (parsedNum === 0) return 'Zero';
+      return 'Indian Rupee ' + numToWords(parsedNum).trim() + ' Only';
+    };
+
+    const formatDateVal = (val) => {
+      if (!val) return '---';
+      const date = val.toDate ? val.toDate() : new Date(val);
+      if (isNaN(date.getTime())) return '---';
+      const day = date.getDate();
+      const months = ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec'];
+      return `${day} ${months[date.getMonth()]} ${date.getFullYear()}`;
+    };
+
+    printWindow.document.write(`
+      <html>
+        <head>
+          <title>Invoice - ${order.orderId || order.id}</title>
+          <style>
+            @page {
+              size: A4;
+              margin: 0;
+            }
+            body {
+              font-family: 'Times New Roman', Times, serif;
+              color: #000;
+              padding: 15mm 20mm;
+              margin: 0;
+              box-sizing: border-box;
+              -webkit-print-color-adjust: exact;
+              print-color-adjust: exact;
+            }
+            .header-table {
+              width: 100%;
+              border-collapse: collapse;
+              margin-bottom: 25px;
+            }
+            .company-name {
+              font-size: 26px;
+              font-weight: bold;
+              text-transform: uppercase;
+              margin: 0 0 5px 0;
+            }
+            .company-details {
+              font-size: 14px;
+              line-height: 1.4;
+              color: #000;
+            }
+            .invoice-title {
+              font-size: 38px;
+              font-family: Georgia, serif;
+              font-weight: normal;
+              text-transform: uppercase;
+              text-align: right;
+              letter-spacing: 2px;
+              margin: 0;
+            }
+            .info-table {
+              width: 100%;
+              border-collapse: collapse;
+              border: 1.5px solid #000;
+              margin-bottom: 25px;
+            }
+            .info-cell {
+              width: 50%;
+              padding: 12px;
+              vertical-align: top;
+              font-size: 13px;
+              line-height: 1.6;
+            }
+            .info-sub-table {
+              width: 100%;
+              border-collapse: collapse;
+            }
+            .info-sub-table td {
+              padding: 3px 0;
+            }
+            .items-table {
+              width: 100%;
+              border-collapse: collapse;
+              border: 1.5px solid #000;
+              margin-bottom: 25px;
+            }
+            .items-table th {
+              background-color: #f9fafb;
+              font-size: 12px;
+              font-weight: bold;
+              text-transform: capitalize;
+              padding: 10px 8px;
+            }
+            .bottom-table {
+              width: 100%;
+              border-collapse: collapse;
+              border: 1.5px solid #000;
+            }
+            .bottom-left-cell {
+              width: 55%;
+              border-right: 1.5px solid #000;
+              padding: 15px;
+              vertical-align: top;
+              line-height: 1.5;
+            }
+            .bottom-right-cell {
+              width: 45%;
+              vertical-align: top;
+              padding: 0;
+            }
+            .totals-table {
+              width: 100%;
+              border-collapse: collapse;
+            }
+            .totals-table td {
+              padding: 10px 15px;
+              font-size: 13px;
+            }
+            .totals-table tr.total-row {
+              font-weight: bold;
+              font-size: 14px;
+              background-color: #f9fafb;
+              border-top: 1.5px solid #000;
+              border-bottom: 1.5px solid #000;
+            }
+            .signature-cell {
+              padding: 40px 15px 15px 15px;
+              text-align: center;
+            }
+            .signature-line {
+              font-family: monospace;
+              font-size: 12px;
+              margin-bottom: 5px;
+              letter-spacing: -1px;
+              color: #000;
+            }
+            .signature-text {
+              font-size: 11px;
+              font-weight: bold;
+              text-transform: uppercase;
+              letter-spacing: 1px;
+              color: #000;
+              margin-top: 50px;
+              display: block;
+            }
+          </style>
+        </head>
+        <body>
+          <table class="header-table">
+            <tr>
+              <td style="vertical-align: top; width: 60%;">
+                <h1 class="company-name">${customerName}</h1>
+                <div class="company-details">
+                  ${customerAddress}<br/>
+                  ${customerPhone}<br/>
+                  ${customerEmail}
+                </div>
+              </td>
+              <td style="vertical-align: middle; text-align: right; width: 40%;">
+                <h2 class="invoice-title">Tax Invoice</h2>
+              </td>
+            </tr>
+          </table>
+
+          <table class="info-table">
+            <tr>
+              <td class="info-cell" style="border-right: 1.5px solid #000; width: 50%;">
+                <table class="info-sub-table">
+                  <tr>
+                    <td style="width: 35%;">#</td>
+                    <td style="width: 65%; font-weight: bold;">: ${order.orderId || '---'}</td>
+                  </tr>
+                  <tr>
+                    <td>Invoice Date</td>
+                    <td style="font-weight: bold;">: ${formatDateVal(order.createdAt)}</td>
+                  </tr>
+                  <tr>
+                    <td>Terms</td>
+                    <td style="font-weight: bold;">: Due on Receipt</td>
+                  </tr>
+                  <tr>
+                    <td>Due Date</td>
+                    <td style="font-weight: bold;">: ${formatDateVal(order.createdAt)}</td>
+                  </tr>
+                  <tr>
+                    <td>P.O.#</td>
+                    <td style="font-weight: bold;">: ${order.orderId || '---'}</td>
+                  </tr>
+                </table>
+              </td>
+              <td class="info-cell" style="width: 50%;">
+                <!-- Blank -->
+              </td>
+            </tr>
+          </table>
+
+          <table class="items-table">
+            <thead>
+              <tr style="border-bottom: 1.5px solid #000;">
+                <th style="width: 6%; border-right: 1px solid #000; text-align: center;">Sr No</th>
+                <th style="border-right: 1px solid #000; text-align: left; padding-left: 12px;">Item & Description</th>
+                <th style="width: 12%; border-right: 1px solid #000; text-align: center;">Qty</th>
+                <th style="width: 15%; border-right: 1px solid #000; text-align: right; padding-right: 12px;">Rate</th>
+                <th style="width: 15%; text-align: right; padding-right: 12px;">Amount</th>
+              </tr>
+            </thead>
+            <tbody>
+              ${itemsHtml}
+            </tbody>
+          </table>
+
+          <table class="bottom-table">
+            <tr>
+              <td class="bottom-left-cell">
+                <div style="font-size: 11px; font-weight: bold; color: #555; text-transform: uppercase; margin-bottom: 4px;">Total In Words</div>
+                <div style="font-size: 13px; font-weight: bold; font-style: italic; color: #000;">
+                  ${totalWords(order.total || 0)}
+                </div>
+              </td>
+              <td class="bottom-right-cell">
+                <table class="totals-table">
+                  <tr style="border-bottom: 1px solid #ddd;">
+                    <td style="text-align: right; color: #333; width: 50%;">Sub Total</td>
+                    <td style="text-align: right; font-weight: bold; color: #000; width: 50%;">${Number(order.total || 0).toFixed(2)}</td>
+                  </tr>
+                  <tr class="total-row">
+                    <td style="text-align: right;">Total</td>
+                    <td style="text-align: right; color: #000;">₹${Number(order.total || 0).toFixed(2)}</td>
+                  </tr>
+                  <tr>
+                    <td colspan="2" class="signature-cell">
+                      <div class="signature-text">Authorized Signature</div>
+                    </td>
+                  </tr>
+                </table>
+              </td>
+            </tr>
+          </table>
+
+          <div style="text-align: center; margin-top: 60px; font-size: 13px; font-weight: bold; color: #000; font-family: 'Times New Roman', Times, serif; letter-spacing: 0.5px;">
+            Thanks for your business...!
+          </div>
+
+          <div style="position: fixed; bottom: 15mm; right: 20mm; font-size: 10px; color: #777; font-family: Arial, sans-serif; white-space: nowrap;">
+            Downloaded: ${formattedTimestamp}
+          </div>
+
+          <script>
+            window.onload = function() {
+              window.print();
+              setTimeout(function() { window.close(); }, 500);
+            }
+          </script>
+        </body>
+      </html>
+    `);
+    printWindow.document.close();
+  };
 
   const handleSort = (field) => {
     if (sortField === field) {
@@ -210,21 +517,59 @@ export default function Orders() {
   const OrderStatusDropdown = ({ order, currentStatus, onUpdate }) => {
     const [isOpen, setIsOpen] = useState(false);
     const containerRef = useRef(null);
+    const buttonRef = useRef(null);
+    const [coords, setCoords] = useState({ top: 0, left: 0, width: 0, openAbove: false });
     const config = STATUS_CONFIG[currentStatus] || STATUS_CONFIG['Pending'];
 
     useEffect(() => {
       const handleClickOutside = (event) => {
         if (containerRef.current && !containerRef.current.contains(event.target)) {
+          const portalEl = document.getElementById(`portal-${order.id}`);
+          if (portalEl && portalEl.contains(event.target)) return;
           setIsOpen(false);
         }
       };
       document.addEventListener('mousedown', handleClickOutside);
       return () => document.removeEventListener('mousedown', handleClickOutside);
-    }, []);
+    }, [order.id]);
+
+    const updateCoords = () => {
+      if (buttonRef.current) {
+        const rect = buttonRef.current.getBoundingClientRect();
+        const spaceBelow = window.innerHeight - rect.bottom;
+        const openAbove = spaceBelow < 200;
+        setCoords({
+          top: openAbove ? rect.top : rect.bottom,
+          left: rect.left,
+          width: rect.width,
+          openAbove
+        });
+      }
+    };
+
+    useEffect(() => {
+      if (isOpen) {
+        updateCoords();
+        window.addEventListener('resize', updateCoords);
+        const scrollableParents = [];
+        let parent = buttonRef.current;
+        while (parent) {
+          scrollableParents.push(parent);
+          parent = parent.parentElement;
+        }
+        scrollableParents.forEach(p => p.addEventListener('scroll', updateCoords));
+        
+        return () => {
+          window.removeEventListener('resize', updateCoords);
+          scrollableParents.forEach(p => p.removeEventListener('scroll', updateCoords));
+        };
+      }
+    }, [isOpen]);
 
     return (
       <div className="relative w-fit" ref={containerRef}>
         <button
+          ref={buttonRef}
           onClick={(e) => {
             e.stopPropagation();
             setIsOpen(!isOpen);
@@ -240,37 +585,49 @@ export default function Orders() {
           </div>
         </button>
 
-        <AnimatePresence>
-          {isOpen && (
-            <motion.div
-              initial={{ opacity: 0, y: -10, scale: 0.95 }}
-              animate={{ opacity: 1, y: 5, scale: 1 }}
-              exit={{ opacity: 0, y: -10, scale: 0.95 }}
-              className="absolute left-0 top-full z-50 w-full min-w-[120px] bg-white border border-gray-100 rounded-xl shadow-xl py-1 overflow-hidden"
-            >
-              {Object.keys(STATUS_CONFIG).map((status) => {
-                const sCfg = STATUS_CONFIG[status];
-                const Icon = sCfg.icon;
-                return (
-                  <button
-                    key={status}
-                    onClick={(e) => {
-                      e.stopPropagation();
-                      onUpdate(order.id, order.orderId, status);
-                      setIsOpen(false);
-                    }}
-                    className={`w-full flex items-center gap-2 px-3 py-2 text-[10px] font-bold uppercase tracking-widest transition-colors text-left
-                      ${currentStatus === status ? 'bg-[#1BAFAF] text-white shadow-sm' : 'text-gray-600 hover:bg-[#1BAFAF]/10 hover:text-[#1BAFAF]'}
-                    `}
-                  >
-                    <Icon size={10} strokeWidth={2.5} />
-                    {status}
-                  </button>
-                );
-              })}
-            </motion.div>
-          )}
-        </AnimatePresence>
+        {createPortal(
+          <AnimatePresence>
+            {isOpen && (
+              <motion.div
+                id={`portal-${order.id}`}
+                initial={{ opacity: 0, y: -10, scale: 0.95 }}
+                animate={{ opacity: 1, y: 5, scale: 1 }}
+                exit={{ opacity: 0, y: -10, scale: 0.95 }}
+                style={{
+                  position: 'fixed',
+                  top: `${coords.top}px`,
+                  left: `${coords.left}px`,
+                  width: `${coords.width}px`,
+                  transform: coords.openAbove ? 'translateY(-100%) translateY(-5px)' : 'translateY(5px)',
+                  fontFamily: "'Inter', -apple-system, sans-serif"
+                }}
+                className="z-[200] min-w-[120px] bg-white border border-gray-100 rounded-xl shadow-xl py-1 overflow-hidden"
+              >
+                {Object.keys(STATUS_CONFIG).map((status) => {
+                  const sCfg = STATUS_CONFIG[status];
+                  const Icon = sCfg.icon;
+                  return (
+                    <button
+                      key={status}
+                      onClick={(e) => {
+                        e.stopPropagation();
+                        onUpdate(order.id, order.orderId, status);
+                        setIsOpen(false);
+                      }}
+                      className={`w-full flex items-center gap-2 px-3 py-2 text-[10px] font-bold uppercase tracking-widest transition-colors text-left
+                        ${currentStatus === status ? 'bg-[#1BAFAF] text-white shadow-sm' : 'text-gray-600 hover:bg-[#1BAFAF]/10 hover:text-[#1BAFAF]'}
+                      `}
+                    >
+                      <Icon size={10} strokeWidth={2.5} />
+                      {status}
+                    </button>
+                  );
+                })}
+              </motion.div>
+            )}
+          </AnimatePresence>,
+          document.body
+        )}
       </div>
     );
   };
@@ -686,11 +1043,25 @@ export default function Orders() {
                            <span className="text-[13px] text-gray-500 font-medium">{formatDate(order.createdAt)}</span>
                         </td>
                         <td className="px-6 py-5 whitespace-nowrap">
-                          <OrderStatusDropdown 
-                            order={order} 
-                            currentStatus={order.status} 
-                            onUpdate={updateStatus} 
-                          />
+                          <div className="flex items-center gap-2">
+                            <OrderStatusDropdown 
+                              order={order} 
+                              currentStatus={order.status} 
+                              onUpdate={updateStatus} 
+                            />
+                            {order.status === 'Confirmed' && (
+                              <button
+                                onClick={(e) => {
+                                  e.stopPropagation();
+                                  handleDownloadInvoice(order);
+                                }}
+                                className="w-8 h-8 inline-flex items-center justify-center text-gray-400 hover:text-[#1BAFAF] hover:bg-[#1BAFAF]/5 rounded-lg transition-all active:scale-90"
+                                title="Download Invoice"
+                              >
+                                <Download size={16} strokeWidth={2.5} />
+                              </button>
+                            )}
+                          </div>
                         </td>
                       </motion.tr>
                     );

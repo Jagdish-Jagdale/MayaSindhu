@@ -23,7 +23,8 @@ import {
   AlertTriangle,
   ChevronUp,
   Folder,
-  FolderOpen
+  FolderOpen,
+  GripVertical
 } from 'lucide-react';
 import { useAdminUI } from '../../context/AdminUIContext';
 import { db } from '../../firebase';
@@ -105,7 +106,7 @@ export default function Categories() {
   // Modal State
   const [isModalOpen, setIsModalOpen] = useState(false);
   const [editingCategory, setEditingCategory] = useState(null);
-  const [categoryDraft, setCategoryDraft] = useState({ name: '' });
+  const [categoryDraft, setCategoryDraft] = useState({ name: '', position: '', showSizes: false });
   const [isSaving, setIsSaving] = useState(false);
   const [loading, setLoading] = useState(false);
 
@@ -141,6 +142,63 @@ export default function Categories() {
     document.addEventListener('mousedown', clickOut);
     return () => document.removeEventListener('mousedown', clickOut);
   }, []);
+
+  const [draggedItem, setDraggedItem] = useState(null);
+  const [draggedOverItem, setDraggedOverItem] = useState(null);
+  const canReorder = !searchTerm && !sortField;
+
+  const handleDragStart = (e, cat) => {
+    if (canReorder) setDraggedItem(cat);
+  };
+
+  const handleDragOver = (e, cat) => {
+    if (canReorder) {
+      e.preventDefault();
+      if (draggedItem && draggedItem.id !== cat.id) {
+        setDraggedOverItem(cat);
+      }
+    }
+  };
+
+  const handleDragLeave = (e, cat) => {
+    if (canReorder) e.preventDefault();
+  };
+
+  const handleDragEnd = () => {
+    setDraggedItem(null);
+    setDraggedOverItem(null);
+  };
+
+  const handleDrop = async (e, targetCat) => {
+    e.preventDefault();
+    setDraggedOverItem(null);
+    if (!canReorder || !draggedItem || draggedItem.id === targetCat.id) return;
+
+    const currentList = [...visibleCategories];
+    const draggedIndex = currentList.findIndex(c => c.id === draggedItem.id);
+    const targetIndex = currentList.findIndex(c => c.id === targetCat.id);
+
+    if (draggedIndex === -1 || targetIndex === -1) return;
+
+    currentList.splice(draggedIndex, 1);
+    currentList.splice(targetIndex, 0, draggedItem);
+
+    const updates = currentList.map((c, index) => {
+      return updateDoc(doc(db, 'categories', c.id), {
+        position: index,
+        updatedAt: serverTimestamp()
+      });
+    });
+
+    try {
+      await Promise.all(updates);
+      toast.success("Categories reordered successfully");
+    } catch (error) {
+      console.error("Error reordering:", error);
+      toast.error("Failed to reorder categories");
+    }
+    setDraggedItem(null);
+  };
 
   // Derive breadcrumbs and visible items from IDs to ensure real-time reactivity
   const breadcrumbs = (() => {
@@ -240,7 +298,11 @@ export default function Categories() {
 
   const handleEdit = (category) => {
     setEditingCategory(category);
-    setCategoryDraft({ name: category.name });
+    setCategoryDraft({ 
+      name: category.name, 
+      position: category.position !== undefined ? category.position : '',
+      showSizes: category.showSizes || false
+    });
     setIsModalOpen(true);
   };
 
@@ -251,25 +313,43 @@ export default function Categories() {
 
     setIsSaving(true);
     try {
-      // Check for duplicates only at the main category level
+      let currentLayer = fullHierarchy;
+      for (const id of currentPath) {
+        const match = currentLayer.find(c => c.id === id);
+        if (match && match.children) {
+          currentLayer = match.children;
+        } else {
+          currentLayer = [];
+          break;
+        }
+      }
+
       const isMainCategory = editingCategory ? !editingCategory.parentId : currentPath.length === 0;
 
       if (isMainCategory) {
-        const isDuplicate = fullHierarchy.some(
+        const isDuplicateName = currentLayer.some(
           cat => cat.name.toLowerCase() === cleanName.toLowerCase() && cat.id !== editingCategory?.id
         );
         
-        if (isDuplicate) {
+        if (isDuplicateName) {
           toast.error(`"${cleanName}" already exists as a main category`);
           setIsSaving(false);
           return;
         }
       }
 
+      // Automatically calculate the next position in the current layer
+      const maxPosition = currentLayer.reduce((max, cat) => {
+        return (cat.position !== undefined && cat.position > max) ? cat.position : max;
+      }, 0);
+      const nextPosition = maxPosition + 1;
+
       if (editingCategory) {
         // Update existing
         await updateDoc(doc(db, 'categories', editingCategory.id), {
           name: categoryDraft.name,
+          position: editingCategory.position !== undefined ? editingCategory.position : nextPosition,
+          showSizes: categoryDraft.showSizes || false,
           updatedAt: serverTimestamp()
         });
         toast.success("Category updated successfully");
@@ -281,7 +361,8 @@ export default function Categories() {
           parentId: parentId,
           level: currentPath.length,
           isTrendy: false,
-
+          position: nextPosition,
+          showSizes: categoryDraft.showSizes || false,
           createdAt: serverTimestamp(),
           updatedAt: serverTimestamp()
         };
@@ -289,7 +370,7 @@ export default function Categories() {
         toast.success(`"${categoryDraft.name}" added successfully`);
       }
       setIsModalOpen(false);
-      setCategoryDraft({ name: '' });
+      setCategoryDraft({ name: '', position: '', showSizes: false });
     } catch (err) {
       console.error("Error saving category:", err);
       toast.error("Failed to save category");
@@ -431,7 +512,7 @@ export default function Categories() {
                 </button>
               )}
               <button
-                onClick={() => { setEditingCategory(null); setCategoryDraft({ name: '' }); setIsModalOpen(true); }}
+                onClick={() => { setEditingCategory(null); setCategoryDraft({ name: '', position: '', showSizes: false }); setIsModalOpen(true); }}
                 className="flex items-center gap-2 bg-[#1BAFAF] hover:bg-[#17a0a0] text-white px-5 py-2.5 rounded-xl text-[13px] font-bold transition-all shadow-sm shadow-[#1BAFAF]/10 active:scale-95 group"
               >
                 <Plus size={18} className="group-hover:rotate-90 transition-transform duration-300" strokeWidth={2.5} />
@@ -532,7 +613,8 @@ export default function Categories() {
             <table className="w-full border-collapse">
               <thead>
                 <tr className="border-b border-gray-50 bg-white text-[#1BAFAF]">
-                  <th className="px-6 py-4 text-left text-[14px] font-bold w-20 whitespace-nowrap">Sr No</th>
+                  <th className="px-6 py-4 text-left text-[14px] font-bold w-12 whitespace-nowrap"></th>
+                  <th className="px-6 py-4 text-left text-[14px] font-bold w-20 whitespace-nowrap">Pos.</th>
                   <th className="px-6 py-4 text-left text-[14px] font-bold cursor-pointer select-none" onClick={() => handleSort('name')}>
                     <div className="flex items-center gap-1">
                       Category
@@ -586,14 +668,23 @@ export default function Categories() {
                         initial="initial"
                         animate="animate"
                         exit="exit"
-                        className="hover:bg-gray-50 group transition-all duration-200 cursor-pointer"
+                        className={`group transition-all duration-200 ${canReorder ? 'cursor-grab active:cursor-grabbing' : 'cursor-pointer'} ${draggedOverItem?.id === cat.id ? 'bg-[#1BAFAF]/10 outline outline-2 outline-dashed outline-[#1BAFAF] -outline-offset-2 relative z-10' : 'hover:bg-gray-50'}`}
+                        draggable={canReorder}
+                        onDragStart={(e) => handleDragStart(e, cat)}
+                        onDragOver={(e) => handleDragOver(e, cat)}
+                        onDragLeave={(e) => handleDragLeave(e, cat)}
+                        onDragEnd={handleDragEnd}
+                        onDrop={(e) => handleDrop(e, cat)}
                         onClick={() => {
                           setDirection(1);
                           handleDrillDown(cat);
                         }}
                       >
+                        <td className="px-6 py-4 whitespace-nowrap outline-none focus:outline-none" onClick={e => e.stopPropagation()}>
+                           <GripVertical size={18} className={`transition-colors outline-none focus:outline-none ${canReorder ? 'text-gray-400 cursor-grab hover:text-gray-600 active:cursor-grabbing active:text-gray-800' : 'text-gray-300 opacity-50 cursor-not-allowed'}`} />
+                        </td>
                         <td className="px-6 py-4 whitespace-nowrap text-[14px] text-gray-400 font-medium">
-                          {((currentPage - 1) * rowsPerPage + index + 1).toString().padStart(2, '0')}
+                          {cat.position !== undefined ? cat.position : '---'}
                         </td>
                       <td className="px-6 py-4">
                         <div className="flex items-center gap-3">
@@ -872,12 +963,30 @@ export default function Categories() {
                     autoFocus
                     type="text"
                     value={categoryDraft.name}
-                    onChange={(e) => setCategoryDraft({ name: e.target.value })}
+                    onChange={(e) => setCategoryDraft({ ...categoryDraft, name: e.target.value })}
                     placeholder="e.g. Handmade Silk Sarees"
                     className="w-full bg-gray-50 border-2 border-transparent focus:border-[#1BAFAF] focus:bg-white p-4 rounded-2xl outline-none transition-all font-bold text-gray-800"
                     required
                   />
                 </div>
+
+                {(currentPath.length > 0 || (editingCategory && editingCategory.parentId)) && (
+                  <div className="flex items-center gap-3 px-1.5 py-1">
+                    <label className="flex items-center gap-3 cursor-pointer group">
+                      <div className="relative">
+                        <input
+                          type="checkbox"
+                          checked={categoryDraft.showSizes || false}
+                          onChange={(e) => setCategoryDraft({ ...categoryDraft, showSizes: e.target.checked })}
+                          className="sr-only"
+                        />
+                        <div className={`w-11 h-6 rounded-full transition-colors ${categoryDraft.showSizes ? 'bg-[#1BAFAF]' : 'bg-gray-200'}`} />
+                        <div className={`absolute top-1 left-1 bg-white w-4 h-4 rounded-full transition-transform duration-200 ${categoryDraft.showSizes ? 'translate-x-5' : ''}`} />
+                      </div>
+                      <span className="text-[13px] font-bold text-[#1A1A1A] select-none">Enable Size Dropdown in Products</span>
+                    </label>
+                  </div>
+                )}
 
                 <div className="pt-2 flex items-center gap-3">
                   <button

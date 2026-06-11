@@ -53,6 +53,15 @@ export default function SalesOrders() {
     return () => document.removeEventListener('mousedown', handler);
   }, []);
 
+  const [storeCustomers, setStoreCustomers] = useState([]);
+
+  useEffect(() => {
+    const unsubscribe = onSnapshot(collection(db, 'storeCustomers'), (snapshot) => {
+      setStoreCustomers(snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() })));
+    });
+    return () => unsubscribe();
+  }, []);
+
   useEffect(() => {
     const q = query(collection(db, 'storeOrders'), orderBy('createdAt', 'desc'));
     const unsubscribe = onSnapshot(q, (snapshot) => {
@@ -74,6 +83,324 @@ export default function SalesOrders() {
     const month = String(date.getMonth() + 1).padStart(2, '0');
     const year = date.getFullYear();
     return `${day}/${month}/${year}`;
+  };
+
+  const numberToWords = (num) => {
+    const a = ['', 'One ', 'Two ', 'Three ', 'Four ', 'Five ', 'Six ', 'Seven ', 'Eight ', 'Nine ', 'Ten ', 'Eleven ', 'Twelve ', 'Thirteen ', 'Fourteen ', 'Fifteen ', 'Sixteen ', 'Seventeen ', 'Eighteen ', 'Nineteen '];
+    const b = ['', '', 'Twenty', 'Thirty', 'Forty', 'Fifty', 'Sixty', 'Seventy', 'Eighty', 'Ninety'];
+
+    const numToWords = (n) => {
+      if (n < 20) return a[n];
+      if (n < 100) return b[Math.floor(n / 10)] + (n % 10 !== 0 ? ' ' + a[n % 10] : '');
+      if (n < 1000) return a[Math.floor(n / 100)] + 'Hundred ' + (n % 100 !== 0 ? 'and ' + numToWords(n % 100) : '');
+      if (n < 100000) return numToWords(Math.floor(n / 1000)) + 'Thousand ' + (n % 1000 !== 0 ? numToWords(n % 1000) : '');
+      if (n < 10000000) return numToWords(Math.floor(n / 100000)) + 'Lakh ' + (n % 100000 !== 0 ? numToWords(n % 100000) : '');
+      return numToWords(Math.floor(n / 10000000)) + 'Crore ' + (n % 10000000 !== 0 ? numToWords(n % 10000000) : '');
+    };
+
+    const totalStr = Math.round(num).toString();
+    const parsedNum = parseInt(totalStr, 10);
+    if (parsedNum === 0) return 'Zero';
+    return 'Indian Rupee ' + numToWords(parsedNum).trim() + ' Only';
+  };
+
+  const formatA4Date = (val) => {
+    if (!val) return '---';
+    let date;
+    if (val.toDate) {
+      date = val.toDate();
+    } else {
+      if (typeof val === 'string' && val.includes('/')) {
+        const [d, m, y] = val.split('/');
+        date = new Date(`${y}-${m}-${d}`);
+      } else {
+        date = new Date(val);
+      }
+    }
+    if (isNaN(date.getTime())) return val;
+    const day = date.getDate();
+    const months = ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec'];
+    const month = months[date.getMonth()];
+    const year = date.getFullYear();
+    return `${day} ${month} ${year}`;
+  };
+
+  const handleDownloadInvoice = (invoice) => {
+    if (!invoice) return;
+
+    const customerObj = storeCustomers.find(c => c.id === invoice.customerId || c.fullName === invoice.customerName) || {};
+    const customerName = customerObj.fullName || invoice.customerName || '---';
+    const customerAddress = customerObj.address || 'Maharashtra<br/>India';
+    const customerPhone = customerObj.phone || '---';
+    const customerEmail = customerObj.email || '---';
+
+    const now = new Date();
+    const formattedTimestamp = now.toLocaleDateString('en-GB') + ' ' + now.toLocaleTimeString('en-US', { hour: '2-digit', minute: '2-digit', second: '2-digit', hour12: true });
+
+    const printWindow = window.open('', '_blank');
+    if (!printWindow) {
+      toast.error("Popup blocked! Please allow popups to download/print invoice.");
+      return;
+    }
+
+    const itemsHtml = (invoice.items || []).map((item, index) => `
+      <tr style="border-bottom: 1px solid #000;">
+        <td style="border-right: 1px solid #000; padding: 10px 8px; font-size: 13px; text-align: center; vertical-align: top;">${index + 1}</td>
+        <td style="border-right: 1px solid #000; padding: 10px 12px; font-size: 13px; text-align: left; vertical-align: top;">
+          <div style="font-weight: bold; color: #000;">${item.name || item.productName || '---'}</div>
+        </td>
+        <td style="border-right: 1px solid #000; padding: 10px 8px; font-size: 13px; text-align: center; vertical-align: top;">${(item.quantity || 0).toFixed(2)}</td>
+        <td style="border-right: 1px solid #000; padding: 10px 8px; font-size: 13px; text-align: right; vertical-align: top;">${(item.rate || item.price || 0).toFixed(2)}</td>
+        <td style="padding: 10px 8px; font-size: 13px; text-align: right; vertical-align: top; font-weight: bold;">${(item.amount || item.subtotal || 0).toFixed(2)}</td>
+      </tr>
+    `).join('');
+
+    printWindow.document.write(`
+      <html>
+        <head>
+          <title>Invoice - ${invoice.invoiceNumber || invoice.saleOrderNumber || invoice.id}</title>
+          <style>
+            @page {
+              size: A4;
+              margin: 0;
+            }
+            body {
+              font-family: 'Times New Roman', Times, serif;
+              color: #000;
+              padding: 15mm 20mm;
+              margin: 0;
+              box-sizing: border-box;
+              -webkit-print-color-adjust: exact;
+              print-color-adjust: exact;
+            }
+            .header-table {
+              width: 100%;
+              border-collapse: collapse;
+              margin-bottom: 25px;
+            }
+            .company-name {
+              font-size: 26px;
+              font-weight: bold;
+              text-transform: uppercase;
+              margin: 0 0 5px 0;
+            }
+            .company-details {
+              font-size: 14px;
+              line-height: 1.4;
+              color: #000;
+            }
+            .invoice-title {
+              font-size: 38px;
+              font-family: Georgia, serif;
+              font-weight: normal;
+              text-transform: uppercase;
+              text-align: right;
+              letter-spacing: 2px;
+              margin: 0;
+            }
+            .info-table {
+              width: 100%;
+              border-collapse: collapse;
+              border: 1.5px solid #000;
+              margin-bottom: 25px;
+            }
+            .info-cell {
+              width: 50%;
+              padding: 12px;
+              vertical-align: top;
+              font-size: 13px;
+              line-height: 1.6;
+            }
+            .info-sub-table {
+              width: 100%;
+              border-collapse: collapse;
+            }
+            .info-sub-table td {
+              padding: 3px 0;
+            }
+            .items-table {
+              width: 100%;
+              border-collapse: collapse;
+              border: 1.5px solid #000;
+              margin-bottom: 25px;
+            }
+            .items-table th {
+              background-color: #f9fafb;
+              font-size: 12px;
+              font-weight: bold;
+              text-transform: capitalize;
+              padding: 10px 8px;
+            }
+            .bottom-table {
+              width: 100%;
+              border-collapse: collapse;
+              border: 1.5px solid #000;
+            }
+            .bottom-left-cell {
+              width: 55%;
+              border-right: 1.5px solid #000;
+              padding: 15px;
+              vertical-align: top;
+              line-height: 1.5;
+            }
+            .bottom-right-cell {
+              width: 45%;
+              vertical-align: top;
+              padding: 0;
+            }
+            .totals-table {
+              width: 100%;
+              border-collapse: collapse;
+            }
+            .totals-table td {
+              padding: 10px 15px;
+              font-size: 13px;
+            }
+            .totals-table tr.total-row {
+              font-weight: bold;
+              font-size: 14px;
+              background-color: #f9fafb;
+              border-top: 1.5px solid #000;
+              border-bottom: 1.5px solid #000;
+            }
+            .signature-cell {
+              padding: 40px 15px 15px 15px;
+              text-align: center;
+            }
+            .signature-line {
+              font-family: monospace;
+              font-size: 12px;
+              margin-bottom: 5px;
+              letter-spacing: -1px;
+              color: #000;
+            }
+            .signature-text {
+              font-size: 11px;
+              font-weight: bold;
+              text-transform: uppercase;
+              letter-spacing: 1px;
+              color: #000;
+              margin-top: 50px;
+              display: block;
+            }
+          </style>
+        </head>
+        <body>
+          <table class="header-table">
+            <tr>
+              <td style="vertical-align: top; width: 60%;">
+                <h1 class="company-name">${customerName}</h1>
+                <div class="company-details">
+                  ${customerAddress}<br/>
+                  ${customerPhone}<br/>
+                  ${customerEmail}
+                </div>
+              </td>
+              <td style="vertical-align: middle; text-align: right; width: 40%;">
+                <h2 class="invoice-title">Tax Invoice</h2>
+              </td>
+            </tr>
+          </table>
+
+          <table class="info-table">
+            <tr>
+              <td class="info-cell" style="border-right: 1.5px solid #000; width: 50%;">
+                <table class="info-sub-table">
+                  <tr>
+                    <td style="width: 35%;">#</td>
+                    <td style="width: 65%; font-weight: bold;">: ${invoice.invoiceNumber || invoice.orderNumber || invoice.saleOrderNumber || '---'}</td>
+                  </tr>
+                  <tr>
+                    <td>Invoice Date</td>
+                    <td style="font-weight: bold;">: ${formatA4Date(invoice.invoiceDate || invoice.createdAt)}</td>
+                  </tr>
+                  <tr>
+                    <td>Terms</td>
+                    <td style="font-weight: bold;">: Due on Receipt</td>
+                  </tr>
+                  <tr>
+                    <td>Due Date</td>
+                    <td style="font-weight: bold;">: ${formatA4Date(invoice.invoiceDate || invoice.createdAt)}</td>
+                  </tr>
+                  <tr>
+                    <td>P.O.#</td>
+                    <td style="font-weight: bold;">: ${invoice.saleOrderNumber || invoice.orderNumber || '---'}</td>
+                  </tr>
+                </table>
+              </td>
+              <td class="info-cell" style="width: 50%;">
+                <!-- Blank -->
+              </td>
+            </tr>
+          </table>
+
+          <table class="items-table">
+            <thead>
+              <tr style="border-bottom: 1.5px solid #000;">
+                <th style="width: 6%; border-right: 1px solid #000; text-align: center;">Sr No</th>
+                <th style="border-right: 1px solid #000; text-align: left; padding-left: 12px;">Item & Description</th>
+                <th style="width: 12%; border-right: 1px solid #000; text-align: center;">Qty</th>
+                <th style="width: 15%; border-right: 1px solid #000; text-align: right; padding-right: 12px;">Rate</th>
+                <th style="width: 15%; text-align: right; padding-right: 12px;">Amount</th>
+              </tr>
+            </thead>
+            <tbody>
+              ${itemsHtml}
+            </tbody>
+          </table>
+
+          <table class="bottom-table">
+            <tr>
+              <td class="bottom-left-cell">
+                <div style="font-size: 11px; font-weight: bold; color: #555; text-transform: uppercase; margin-bottom: 4px;">Total In Words</div>
+                <div style="font-size: 13px; font-weight: bold; font-style: italic; color: #000;">
+                  ${numberToWords(invoice.pricing?.grandTotal || invoice.total || 0)}
+                </div>
+              </td>
+              <td class="bottom-right-cell">
+                <table class="totals-table">
+                  <tr style="border-bottom: 1px solid #ddd;">
+                    <td style="text-align: right; color: #333; width: 50%;">Sub Total</td>
+                    <td style="text-align: right; font-weight: bold; color: #000; width: 50%;">${(invoice.pricing?.subtotal || invoice.subTotal || invoice.total || 0).toFixed(2)}</td>
+                  </tr>
+                  ${invoice.pricing?.tax || invoice.tax ? `
+                  <tr style="border-bottom: 1px solid #ddd;">
+                    <td style="text-align: right; color: #333;">Tax (${invoice.pricing?.tax || invoice.tax}%)</td>
+                    <td style="text-align: right; font-weight: bold; color: #000;">₹${((invoice.pricing?.grandTotal || invoice.total || 0) * ((invoice.pricing?.tax || invoice.tax) / 100)).toFixed(2)}</td>
+                  </tr>
+                  ` : ''}
+                  <tr class="total-row">
+                    <td style="text-align: right;">Total</td>
+                    <td style="text-align: right; color: #000;">₹${(invoice.pricing?.grandTotal || invoice.total || 0).toFixed(2)}</td>
+                  </tr>
+                  <tr>
+                    <td colspan="2" class="signature-cell">
+                      <div class="signature-text">Authorized Signature</div>
+                    </td>
+                  </tr>
+                </table>
+              </td>
+            </tr>
+          </table>
+
+          <div style="text-align: center; margin-top: 60px; font-size: 13px; font-weight: bold; color: #000; font-family: 'Times New Roman', Times, serif; letter-spacing: 0.5px;">
+            Thanks for your business...!
+          </div>
+
+          <div style="position: fixed; bottom: 15mm; right: 20mm; font-size: 10px; color: #777; font-family: Arial, sans-serif; white-space: nowrap;">
+            Downloaded: ${formattedTimestamp}
+          </div>
+
+          <script>
+            window.onload = function() {
+              window.print();
+              setTimeout(function() { window.close(); }, 500);
+            }
+          </script>
+        </body>
+      </html>
+    `);
+    printWindow.document.close();
   };
 
   if (loading) {
@@ -318,6 +645,7 @@ export default function SalesOrders() {
                          Amount <SortIcon colKey="total" />
                        </button>
                      </th>
+                     <th className="px-6 py-4 text-center text-[14px] font-bold text-[#1BAFAF]">Download</th>
                   </tr>
                </thead>
                <tbody className="divide-y divide-gray-50/50">
@@ -347,10 +675,24 @@ export default function SalesOrders() {
                        <td className="px-6 py-4 whitespace-nowrap">
                           <span className="text-[14px] text-gray-500 font-medium">₹{(order.pricing?.grandTotal || order.total || 0).toFixed(2)}</span>
                        </td>
+                       <td className="px-6 py-4 text-center">
+                          <div className="flex items-center justify-center">
+                            <button
+                              onClick={(e) => {
+                                e.stopPropagation();
+                                handleDownloadInvoice(order);
+                              }}
+                              className="w-8 h-8 inline-flex items-center justify-center text-gray-400 hover:text-[#1BAFAF] hover:bg-[#1BAFAF]/5 rounded-lg transition-all active:scale-90"
+                              title="Download Invoice"
+                            >
+                              <Download size={16} strokeWidth={2.5} />
+                            </button>
+                          </div>
+                       </td>
                     </tr>
                   )) : (
                     <tr>
-                       <td colSpan="6" className="py-20 text-center">
+                       <td colSpan="7" className="py-20 text-center">
                           <div className="w-16 h-16 bg-gray-50 rounded-full flex items-center justify-center mx-auto mb-4 text-gray-200">
                              <ShoppingBag size={32} />
                           </div>

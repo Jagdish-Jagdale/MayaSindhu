@@ -95,29 +95,7 @@ export default function Navbar() {
   }, []);
 
 
-  // Define the preferred order for main categories
-  const categoryOrder = [
-    'APPAREL',
-    'CURATED SAREES',
-    'DESIGNER DRESS MATERIALS',
-    'FESTIVE SPECIAL COLLECTION',
-    'HANDCRAFTED JEWELLERY',
-    'ELEGANT ACCESSORIES',
-    'BAGS',
-    'TRENDY READYMADES'
-  ];
-
-  const sortedCategories = [...categories].sort((a, b) => {
-    const indexA = categoryOrder.indexOf(a.name.toUpperCase().trim());
-    const indexB = categoryOrder.indexOf(b.name.toUpperCase().trim());
-
-    // If not in our list, put it at the end
-    if (indexA === -1 && indexB === -1) return a.name.localeCompare(b.name);
-    if (indexA === -1) return 1;
-    if (indexB === -1) return -1;
-
-    return indexA - indexB;
-  });
+  const sortedCategories = [...categories];
 
   useEffect(() => {
     const q = new URLSearchParams(location.search).get('q') || '';

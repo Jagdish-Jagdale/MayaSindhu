@@ -355,13 +355,12 @@ export default function ProductManagement() {
         rootCatName.toLowerCase().includes(searchTerm.toLowerCase());
       const matchesFilter = activeFilter === 'All' || rootCatName === activeFilter;
       let matchesStockFilter = true;
-      const stockNum = Number(p.stock || 0);
-      const thresholdNum = Number(stockAlertThreshold);
+      const thresholdNum = Number(p.stockAlertThreshold !== undefined ? p.stockAlertThreshold : 5);
       
       if (stockFilter === 'in_stock') {
         matchesStockFilter = stockNum >= thresholdNum;
       } else if (stockFilter === 'low_stock') {
-        matchesStockFilter = stockNum > 0 && stockNum < thresholdNum;
+        matchesStockFilter = (p.productType || '').toLowerCase() !== 'unique' && stockNum > 0 && stockNum <= thresholdNum;
       } else if (stockFilter === 'out_of_stock') {
         const typeStr = (p.productType || '').trim().toLowerCase();
         matchesStockFilter = stockNum <= 0 && typeStr !== 'unique';
@@ -462,7 +461,7 @@ export default function ProductManagement() {
         {[
           { name: 'Total Products', value: products.length, icon: Package, color: 'text-[#1BAFAF]', bg: 'bg-[#E8F7F7]' },
           { name: 'Total Stock', value: products.reduce((sum, p) => sum + (Number(p.stock) || Number(p.inventory) || 0), 0), icon: TrendingUp, color: 'text-emerald-500', bg: 'bg-emerald-50' },
-          { name: 'Low Stock', value: products.filter(p => { const s = Number(p.stock) || Number(p.inventory) || 0; return s > 0 && s <= stockAlertThreshold; }).length, icon: AlertTriangle, color: 'text-amber-500', bg: 'bg-amber-50' },
+          { name: 'Low Stock', value: products.filter(p => { const s = Number(p.stock) || Number(p.inventory) || 0; const threshold = Number(p.stockAlertThreshold !== undefined ? p.stockAlertThreshold : 5); const isUnique = (p.productType || '').toLowerCase() === 'unique'; return !isUnique && s > 0 && s <= threshold; }).length, icon: AlertTriangle, color: 'text-amber-500', bg: 'bg-amber-50' },
           { name: 'Out of Stock', value: products.filter(p => (Number(p.stock) || Number(p.inventory) || 0) === 0).length, icon: AlertCircle, color: 'text-red-500', bg: 'bg-red-50' },
         ].map((stat) => (
           <div 
@@ -498,39 +497,6 @@ export default function ProductManagement() {
             />
           </div>
 
-          {/* Stock Alert Settings */}
-          <div className="flex items-center gap-2 bg-gray-50 border border-gray-100 hover:border-gray-200 rounded-xl px-3 py-1.5 transition-all shrink-0">
-            <span className="text-[12px] font-semibold text-gray-500 whitespace-nowrap">Stock Alert Below:</span>
-            <input
-              type="number"
-              min="0"
-              value={stockAlertThresholdInput}
-              onChange={(e) => {
-                const val = e.target.value === '' ? '' : Math.max(0, parseInt(e.target.value, 10) || 0);
-                setStockAlertThresholdInput(val);
-              }}
-              onBlur={() => {
-                if (stockAlertThresholdInput === '' || isNaN(parseInt(stockAlertThresholdInput, 10))) {
-                  setStockAlertThresholdInput(stockAlertThreshold);
-                }
-              }}
-              onKeyDown={(e) => {
-                if (e.key === 'Enter') {
-                  saveStockAlert();
-                }
-              }}
-              className="w-8 bg-transparent border-none text-[12px] font-bold text-gray-700 outline-none text-center p-0 focus:ring-0 focus:outline-none no-spinner"
-            />
-            {stockAlertThresholdInput !== stockAlertThreshold && (
-              <button
-                onClick={saveStockAlert}
-                title="Save Stock Alert"
-                className="w-5 h-5 flex items-center justify-center bg-[#1BAFAF] hover:bg-[#17a0a0] text-white rounded-md transition-all active:scale-90"
-              >
-                <Check size={12} strokeWidth={3} />
-              </button>
-            )}
-          </div>
           {/* Stock Filter Dropdown */}
           <div className="flex items-center bg-gray-50 border border-gray-100 hover:border-gray-200 rounded-xl px-1.5 transition-all shrink-0">
             <CustomSelect
@@ -743,7 +709,7 @@ export default function ProductManagement() {
                           <span className="text-[12px] font-bold text-red-600 bg-red-50 border border-red-100 px-2.5 py-0.5 rounded-full">
                             {(product.productType || '').toLowerCase() === 'unique' ? 'Sold Out' : 'Out Of Stock'}
                           </span>
-                        ) : Number(product.stock) < Number(stockAlertThreshold) ? (
+                        ) : (product.productType || '').toLowerCase() !== 'unique' && Number(product.stock) <= Number(product.stockAlertThreshold !== undefined ? product.stockAlertThreshold : 5) ? (
                           <div className="flex items-center justify-center gap-1 text-[14px] font-bold text-amber-600">
                             <span>{product.stock}</span>
                             <AlertTriangle size={14} className="text-amber-600 fill-amber-400 animate-subtle-bounce" />
