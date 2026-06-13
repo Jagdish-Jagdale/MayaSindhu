@@ -18,7 +18,7 @@ export default function Checkout() {
   const [deliveryRates, setDeliveryRates] = useState([]);
   const [savedAddresses, setSavedAddresses] = useState([]);
   const [selectedAddressId, setSelectedAddressId] = useState(null);
-  const [paymentMethod, setPaymentMethod] = useState('card');
+  const [paymentMethod, setPaymentMethod] = useState('upi');
   const [isAddingAddress, setIsAddingAddress] = useState(false);
   const [isStateDropdownOpen, setIsStateDropdownOpen] = useState(false);
   const [addressErrors, setAddressErrors] = useState({});
@@ -93,7 +93,7 @@ export default function Checkout() {
           } else {
             setAddressErrors(prev => ({
               ...prev,
-              zip: 'Invalid pincode.'
+              zip: 'Entered pincode is not recognized.'
             }));
             setNewAddress(prev => ({
               ...prev,
@@ -306,6 +306,8 @@ export default function Checkout() {
       errors.zip = "Pincode is required.";
     } else if (!/^\d{6}$/.test(zip)) {
       errors.zip = "Pincode must be exactly 6 digits.";
+    } else if (addressErrors.zip === 'Entered pincode is not recognized.') {
+      errors.zip = "Entered pincode is not recognized.";
     }
 
     if (!locality || !locality.trim()) {
@@ -318,12 +320,14 @@ export default function Checkout() {
       errors.address = "Address cannot exceed 200 characters.";
     }
 
-    if (!city || !city.trim()) {
-      errors.city = "City is required.";
-    }
+    if (!errors.zip) {
+      if (!city || !city.trim()) {
+        errors.city = "City is required.";
+      }
 
-    if (!state) {
-      errors.state = "Please select a State.";
+      if (!state) {
+        errors.state = "Please select a State.";
+      }
     }
 
     if (alternatePhone && !/^[6-9]\d{9}$/.test(alternatePhone)) {
@@ -451,9 +455,23 @@ export default function Checkout() {
     }
   };
 
-  const processOrder = async (razorpayPaymentId = null) => {
+  const processOrder = async (razorpayPaymentId = null, overrideMethod = null) => {
     try {
-      const orderId = `ORD-${Math.floor(100000 + Math.random() * 900000)}`;
+      const generateOrderId = () => {
+        const chars = 'ABCDEFGHIJKLMNOPQRSTUVWXYZ';
+        const digits = '0123456789';
+        const all = chars + digits;
+        let suffix = '';
+        // Guarantee at least one character and one digit in the suffix
+        suffix += chars[Math.floor(Math.random() * chars.length)];
+        suffix += digits[Math.floor(Math.random() * digits.length)];
+        for (let i = 2; i < 7; i++) {
+          suffix += all[Math.floor(Math.random() * all.length)];
+        }
+        suffix = suffix.split('').sort(() => Math.random() - 0.5).join('');
+        return 'ORD' + suffix;
+      };
+      const orderId = generateOrderId();
 
       const isStockAvailable = await validateStock();
       if (!isStockAvailable) return;
@@ -485,18 +503,22 @@ export default function Checkout() {
       });
       await Promise.all(availabilityPromises);
 
+      const finalMethod = (typeof overrideMethod === 'string') ? overrideMethod : paymentMethod;
+      const totalQty = items.reduce((sum, item) => sum + (item.qty || 1), 0);
       await addDoc(collection(db, "orders"), {
         orderId: orderId,
         customerUid: user.uid,
         customerName: `${formData.firstName} ${formData.lastName}`,
+        email: user.email,
         totalAmount: total,
-        paymentMethod: paymentMethod,
+        paymentMethod: finalMethod,
         razorpayPaymentId: razorpayPaymentId,
         items: items.map(i => ({ id: i.id, name: i.name, qty: i.qty, price: i.price, productType: i.productType || 'Standard' })),
+        quantity: totalQty,
         subtotal,
         shipping: deliveryCharges,
         total,
-        status: paymentMethod === 'cod' ? 'Pending' : 'Paid',
+        status: finalMethod === 'upi' ? 'Paid' : 'Pending',
         shippingAddress: formData,
         createdAt: serverTimestamp(),
       });
@@ -518,25 +540,25 @@ export default function Checkout() {
       setActiveStep('confirm');
     } catch (error) {
       console.error("Order Error:", error);
-      showError("Failed to place order. Please try again.");
+      showError("Failed to place order: " + (error.message || error));
     }
   };
 
-  const handleRazorpayPayment = () => {
+  const handleRazorpayPayment = (method = null) => {
     if (!window.Razorpay) {
       showError("Razorpay SDK failed to load. Please check your internet connection.");
       return;
     }
 
     const options = {
-      key: import.meta.env.VITE_RAZORPAY_KEY_ID,
+      key: import.meta.env.VITE_RAZORPAY_KEY_ID || "rzp_test_5P3aU2HnL6k9Xq",
       amount: total * 100,
       currency: "INR",
       name: "MayaSindhu",
       description: "Heritage Purchase",
       image: "/src/assets/mstitle.png",
       handler: async function (response) {
-        await processOrder(response.razorpay_payment_id);
+        await processOrder(response.razorpay_payment_id, method);
       },
       prefill: {
         name: `${formData.firstName} ${formData.lastName}`,
@@ -557,7 +579,7 @@ export default function Checkout() {
     rzp.open();
   };
 
-  const handlePlaceOrder = async () => {
+  const handlePlaceOrder = async (overrideMethod = null) => {
     if (items.length === 0) return;
     
     if (!formData.firstName || !formData.address || !formData.phone) {
@@ -568,10 +590,11 @@ export default function Checkout() {
     const isStockAvailable = await validateStock();
     if (!isStockAvailable) return;
 
-    if (paymentMethod === 'card' || paymentMethod === 'upi') {
-      handleRazorpayPayment();
+    const method = (typeof overrideMethod === 'string') ? overrideMethod : paymentMethod;
+    if (method === 'upi') {
+      handleRazorpayPayment(method);
     } else {
-      await processOrder();
+      await processOrder(null, method);
     }
   };
 
@@ -1055,21 +1078,26 @@ export default function Checkout() {
                   <span className="text-[15px] text-[#1A1A1A] font-medium">UPI / Net Banking</span>
                 </label>
                 
-                <label className={`flex items-center p-4 border-b border-gray-100 cursor-pointer transition ${paymentMethod === 'card' ? 'bg-[#f1f3f6]/30' : ''}`}>
+                <div 
+                  className={`flex items-center p-4 border-b border-gray-100 cursor-pointer transition ${paymentMethod === 'card' ? 'bg-[#f1f3f6]/30' : ''}`}
+                  onClick={() => {
+                    setPaymentMethod('card');
+                    handlePlaceOrder('card');
+                  }}
+                >
                   <input 
                     type="radio" 
                     name="payment" 
                     className="w-4 h-4 text-brand-orange focus:ring-brand-orange accent-brand-orange mr-4" 
                     checked={paymentMethod === 'card'}
-                    onChange={() => setPaymentMethod('card')}
+                    readOnly
                   />
-                  <span className="text-[15px] text-[#1A1A1A] font-medium">Credit / Debit / ATM Card</span>
-                </label>
-
+                  <span className="text-[15px] text-[#1A1A1A] font-medium select-none">Credit / Debit / ATM Card</span>
+                </div>
 
                 <div className="p-6 border-t border-gray-100 bg-[#f1f3f6]/30 flex justify-end">
                   <button 
-                    onClick={handlePlaceOrder} 
+                    onClick={() => handlePlaceOrder()} 
                     className="bg-brand-orange text-white px-10 py-3.5 font-bold text-[15px] rounded-[2px] shadow-sm hover:shadow transition uppercase"
                   >
                     Place Order

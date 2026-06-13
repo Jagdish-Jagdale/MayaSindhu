@@ -30,6 +30,7 @@ import Categories from './pages/admin/Categories';
 import Orders from './pages/admin/Orders';
 import Reports from './pages/admin/Reports';
 import DeliveryCharges from './pages/admin/DeliveryCharges';
+import Reviews from './pages/admin/Reviews';
 import useOnlineStatus from './hooks/useOnlineStatus';
 import AdminProtectedRoute from './components/admin/AdminProtectedRoute';
 import Settings from './pages/admin/Settings';
@@ -145,6 +146,7 @@ function App() {
             <Route path="products" element={<ProductManagement />} />
             <Route path="categories" element={<Categories />} />
             <Route path="orders" element={<Orders />} />
+            <Route path="reviews" element={<Reviews />} />
             <Route path="reports" element={<Reports />} />
             <Route path="delivery-charges" element={<DeliveryCharges />} />
             <Route path="settings" element={<Settings />} />

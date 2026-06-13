@@ -429,7 +429,7 @@ export default function ProductDetail() {
       const reviewData = snapshot.docs.map(doc => ({
         id: doc.id,
         ...doc.data()
-      }));
+      })).filter(r => r.visible !== false);
 
       // Sort reviews client-side by createdAt descending to avoid requiring composite indexes
       reviewData.sort((a, b) => {

@@ -77,12 +77,7 @@ export default function TrendProductsModal({ isOpen, onClose, trend, products })
                 </div>
               )}
             </div>
-            
-            {/* Footer with counts */}
-            <div className="px-6 py-4 bg-gray-50 border-t border-gray-100 flex items-center justify-between text-[10px] font-semibold text-gray-500 uppercase tracking-wider">
-              <span>Curated Selection</span>
-              <span>{trendProducts.length} {trendProducts.length === 1 ? 'Product' : 'Products'} Available</span>
-            </div>
+            {/* Grid end */}
           </motion.div>
         </div>
       )}

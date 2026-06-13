@@ -460,7 +460,7 @@ export default function ProductManagement() {
       <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-6">
         {[
           { name: 'Total Products', value: products.length, icon: Package, color: 'text-[#1BAFAF]', bg: 'bg-[#E8F7F7]' },
-          { name: 'Total Stock', value: products.reduce((sum, p) => sum + (Number(p.stock) || Number(p.inventory) || 0), 0), icon: TrendingUp, color: 'text-emerald-500', bg: 'bg-emerald-50' },
+          { name: 'Total Categories', value: hierarchy.length, icon: Layers, color: 'text-emerald-500', bg: 'bg-emerald-50' },
           { name: 'Low Stock', value: products.filter(p => { const s = Number(p.stock) || Number(p.inventory) || 0; const threshold = Number(p.stockAlertThreshold !== undefined ? p.stockAlertThreshold : 5); const isUnique = (p.productType || '').toLowerCase() === 'unique'; return !isUnique && s > 0 && s <= threshold; }).length, icon: AlertTriangle, color: 'text-amber-500', bg: 'bg-amber-50' },
           { name: 'Out of Stock', value: products.filter(p => (Number(p.stock) || Number(p.inventory) || 0) === 0).length, icon: AlertCircle, color: 'text-red-500', bg: 'bg-red-50' },
         ].map((stat) => (
