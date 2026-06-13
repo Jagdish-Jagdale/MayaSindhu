@@ -22,7 +22,9 @@ import {
   Video,
   Image as  ImageIcon,
   Search,
-  Repeat
+  Repeat,
+  ChevronDown,
+  ChevronUp
 } from 'lucide-react';
 import toast from 'react-hot-toast';
 import { uploadToCloudinary, deleteMultipleFromCloudinary, deleteFromCloudinary } from '../../../utils/cloudinary';
@@ -36,6 +38,16 @@ export default function Stories() {
   const [isSaving, setIsSaving] = useState(false);
   const [hasChanges, setHasChanges] = useState(false);
   const [flippedLooks, setFlippedLooks] = useState(new Set());
+  const [expandedProductLooks, setExpandedProductLooks] = useState(new Set());
+
+  const toggleProductExpand = (id) => {
+    setExpandedProductLooks(prev => {
+      const next = new Set(prev);
+      if (next.has(id)) next.delete(id);
+      else next.add(id);
+      return next;
+    });
+  };
 
   // Delete Modal State
   const [isDeleteModalOpen, setIsDeleteModalOpen] = useState(false);
@@ -66,10 +78,14 @@ export default function Stories() {
   useEffect(() => {
     const qStories = query(collection(db, 'shopTheLook'), orderBy('order', 'asc'));
     const unsubscribeStories = onSnapshot(qStories, (snapshot) => {
-      const data = snapshot.docs.map(doc => ({
-        id: doc.id,
-        ...doc.data()
-      }));
+      const data = snapshot.docs.map(doc => {
+        const docData = doc.data();
+        return {
+          id: doc.id,
+          ...docData,
+          productIds: (docData.productIds || (docData.productId ? [docData.productId] : [])).filter(id => id && String(id).trim() !== '')
+        };
+      });
       setLooks(data);
       setLoading(false);
       setHasChanges(false);
@@ -189,9 +205,38 @@ export default function Stories() {
   };
 
   const triggerAdd = () => {
+    if (looks.length >= 8) {
+      toast.error("Maximum limit of 8 stories reached!");
+      return;
+    }
     setEditingLookId(null);
     setEditingType('video');
     videoInputRef.current?.click();
+  };
+
+  const linkProductToLook = (lookId, prodId) => {
+    setLooks(prev => prev.map(l => {
+      if (l.id === lookId) {
+        const currentIds = (l.productIds || (l.productId ? [l.productId] : [])).filter(id => id && String(id).trim() !== '');
+        if (currentIds.includes(prodId)) return l;
+        const nextIds = [...currentIds, prodId];
+        return { ...l, productIds: nextIds, productId: nextIds[0] || '', isModified: true };
+      }
+      return l;
+    }));
+    setHasChanges(true);
+  };
+
+  const unlinkProductFromLook = (lookId, prodId) => {
+    setLooks(prev => prev.map(l => {
+      if (l.id === lookId) {
+        const currentIds = (l.productIds || (l.productId ? [l.productId] : [])).filter(id => id && String(id).trim() !== '');
+        const nextIds = currentIds.filter(id => id !== prodId);
+        return { ...l, productIds: nextIds, productId: nextIds[0] || '', isModified: true };
+      }
+      return l;
+    }));
+    setHasChanges(true);
   };
 
   const updateField = (id, field, value) => {
@@ -270,13 +315,15 @@ export default function Stories() {
         const prodImgUrl = uploadedUrls[`${look.id}_productImage`] || look.productImage;
         const videoUrl = uploadedUrls[`${look.id}_video`] || look.url;
 
+        const nextProductIds = (look.productIds || (look.productId ? [look.productId] : [])).filter(id => id && String(id).trim() !== '');
         const data = {
           title: look.title || '',
           category: look.category || '',
           url: videoUrl || '',
           thumbnail: thumbUrl || '',
           productImage: prodImgUrl || '',
-          productId: look.productId || '',
+          productId: nextProductIds[0] || '',
+          productIds: nextProductIds,
           order: index,
         };
 
@@ -472,37 +519,57 @@ export default function Stories() {
                   </div>
 
                   {/* Integrated Product Overlay (If Linked) */}
-                  {look.productId && allProducts.find(prod => prod.id === look.productId) ? (
-                    <div className="absolute bottom-2 left-2 right-2 bg-white/95 backdrop-blur-md rounded-2xl p-2.5 flex items-center gap-3 shadow-lg z-20 group/prod transition-all hover:bg-white border border-gray-100">
-                      {(() => {
-                        const p = allProducts.find(prod => prod.id === look.productId);
-                        return (
-                          <>
-                            <img src={p.images?.[0]} alt="" className="w-10 h-12 rounded-lg object-cover flex-shrink-0" />
-                            <div className="flex-1 min-w-0 text-left">
-                              <p className="text-[10px] font-bold text-gray-900 truncate uppercase tracking-tight">{p.name}</p>
-                              <p className="text-[11px] text-[#1BAFAF] font-black">₹{Number(p.discountedPrice || p.price || p.actualPrice || 0).toLocaleString('en-IN')}</p>
-                            </div>
-                            
-                            <div className="flex flex-col gap-1">
-                              <button 
-                                onClick={() => setActiveProductSearchId(look.id)}
-                                className="p-1 text-gray-400 hover:text-[#1BAFAF] transition-colors"
-                                title="Change Product"
-                              >
-                                <Search size={12} />
-                              </button>
-                              <button 
-                                onClick={() => updateField(look.id, 'productId', '')}
-                                className="p-1 text-gray-400 hover:text-red-500 transition-colors"
-                                title="Unlink Product"
-                              >
-                                <Trash2 size={12} />
-                              </button>
-                            </div>
-                          </>
-                        );
-                      })()}
+                  {look.productIds && look.productIds.filter(pid => allProducts.some(p => p.id === pid)).length > 0 ? (
+                    <div className="absolute bottom-2 left-2 right-2 bg-white/95 backdrop-blur-md rounded-2xl p-2 flex flex-col gap-1.5 shadow-lg z-20 border border-gray-100 max-h-40 overflow-hidden" onClick={(e) => e.stopPropagation()}>
+                      <button 
+                        onClick={() => toggleProductExpand(look.id)}
+                        className="flex items-center justify-between w-full text-[9px] font-bold text-gray-700 pb-1"
+                      >
+                        <span>{look.productIds.filter(pid => allProducts.some(p => p.id === pid)).length} Products Linked</span>
+                        {expandedProductLooks.has(look.id) ? <ChevronUp size={12} className="text-gray-500" /> : <ChevronDown size={12} className="text-gray-500" />}
+                      </button>
+                      
+                      {expandedProductLooks.has(look.id) && (
+                        <div className="flex flex-col gap-1.5 max-h-24 overflow-y-auto no-scrollbar mt-1">
+                          {look.productIds.map(pid => {
+                            const p = allProducts.find(prod => prod.id === pid);
+                            if (!p) return null;
+                            return (
+                              <div key={pid} className="flex items-center gap-2 pb-1 border-b border-gray-105 last:border-0">
+                                <img src={p.images?.[0]} alt="" className="w-6 h-8 rounded object-cover flex-shrink-0" />
+                                <div className="flex-1 min-w-0 text-left">
+                                  <p className="text-[9px] font-bold text-gray-900 truncate uppercase tracking-tight">{p.name}</p>
+                                  <p className="text-[9px] text-[#1BAFAF] font-black">₹{Number(p.discountedPrice || p.price || p.actualPrice || 0).toLocaleString('en-IN')}</p>
+                                </div>
+                                <button 
+                                  onClick={(e) => { e.stopPropagation(); unlinkProductFromLook(look.id, pid); }}
+                                  className="p-1 text-gray-400 hover:text-red-500 transition-colors"
+                                  title="Unlink Product"
+                                >
+                                  <Trash2 size={10} />
+                                </button>
+                              </div>
+                            );
+                          })}
+                          {/* Link Product Button / Search Input */}
+                          <div className="relative mt-1">
+                            <Search size={8} className="absolute left-2.5 top-1/2 -translate-y-1/2 text-gray-400" />
+                            <input 
+                              type="text"
+                              placeholder="Link another..."
+                              value={activeProductSearchId === look.id ? productSearch : ''}
+                              data-search-input={look.id}
+                              onFocus={(e) => {
+                                e.stopPropagation();
+                                setActiveProductSearchId(look.id);
+                                setProductSearch('');
+                              }}
+                              onChange={(e) => setProductSearch(e.target.value)}
+                              className="w-full bg-gray-50 border border-gray-100 pl-6 pr-2 py-1 text-[9px] font-bold text-gray-800 placeholder:text-gray-400 rounded-lg outline-none"
+                            />
+                          </div>
+                        </div>
+                      )}
                     </div>
                   ) : (
                     /* Integrated Search Bar (If NOT linked) */
@@ -511,7 +578,7 @@ export default function Stories() {
                         <Search size={10} className="absolute left-3 top-1/2 -translate-y-1/2 text-white/60" />
                         <input 
                           type="text"
-                          placeholder="Link Product..."
+                          placeholder="Link Products..."
                           value={activeProductSearchId === look.id ? productSearch : ''}
                           data-search-input={look.id}
                           onFocus={() => {
@@ -579,16 +646,16 @@ export default function Stories() {
                 <div className="search-dropdown absolute z-[50] top-full mt-3 bg-white border border-gray-100 rounded-2xl shadow-2xl w-64 py-2 animate-in fade-in zoom-in-95">
                   <div className="max-h-64 overflow-y-auto no-scrollbar">
                     {allProducts
+                      .filter(p => !(look.productIds || []).includes(p.id))
                       .filter(p => !productSearch || p.name.toLowerCase().includes(productSearch.toLowerCase()))
                       .map(p => (
                         <button
                           key={p.id}
                           onClick={() => {
-                            updateField(look.id, 'productId', p.id);
-                            setActiveProductSearchId(null);
+                            linkProductToLook(look.id, p.id);
                             setProductSearch('');
                           }}
-                          className={`w-full flex items-center gap-3 px-4 py-2.5 hover:bg-gray-50 transition-colors text-left ${look.productId === p.id ? 'bg-[#1BAFAF]/5' : ''}`}
+                          className="w-full flex items-center gap-3 px-4 py-2.5 hover:bg-gray-50 transition-colors text-left"
                         >
                           <img src={p.images?.[0]} alt="" className="w-9 h-9 rounded-lg object-cover bg-gray-100" />
                           <div className="flex-1 min-w-0">

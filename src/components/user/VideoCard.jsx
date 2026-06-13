@@ -3,11 +3,13 @@ import { useState, useRef, useEffect } from 'react';
 import { db } from '../../firebase';
 import { doc, getDoc } from 'firebase/firestore';
 
-export default function VideoCard({ videoUrl, title, category, thumbnail, productImage, productId }) {
+export default function VideoCard({ videoUrl, title, category, thumbnail, productImage, productId, productIds }) {
   const [videoError, setVideoError] = useState(false);
   const [isHovered, setIsHovered] = useState(false);
   const videoRef = useRef(null);
   const [productData, setProductData] = useState(null);
+
+  const targetProductId = productIds?.[0] || productId;
 
   // Auto-generate thumbnail from video URL if missing (Cloudinary support)
   const displayThumbnail = (() => {
@@ -20,10 +22,10 @@ export default function VideoCard({ videoUrl, title, category, thumbnail, produc
 
   // Fetch linked product data
   useEffect(() => {
-    if (!productId) return;
+    if (!targetProductId) return;
     const fetchProd = async () => {
       try {
-        const docRef = doc(db, 'products', productId);
+        const docRef = doc(db, 'products', targetProductId);
         const docSnap = await getDoc(docRef);
         if (docSnap.exists()) {
           setProductData(docSnap.data());
@@ -33,7 +35,7 @@ export default function VideoCard({ videoUrl, title, category, thumbnail, produc
       }
     };
     fetchProd();
-  }, [productId]);
+  }, [targetProductId]);
 
   const handleMouseEnter = () => {
     if (videoError) return;
@@ -112,40 +114,6 @@ export default function VideoCard({ videoUrl, title, category, thumbnail, produc
           <p className="text-white text-[11px] md:text-[14px] font-medium leading-tight max-w-[180px] drop-shadow-md px-1">
             {title}
           </p>
-        )}
-
-        {/* Dynamic Product Card Overlay (The "Shop" part) - Instant Display */}
-        {productData && isHovered && (
-          <div className="bg-white rounded-xl md:rounded-2xl p-2 md:p-2.5 flex items-center gap-3 shadow-2xl border border-white/20 backdrop-blur-sm transition-transform duration-500 group-hover:scale-[1.02] animate-in fade-in duration-100">
-            {/* Product Image */}
-            <div className="relative w-9 h-11 md:w-12 md:h-15 rounded-lg overflow-hidden flex-shrink-0 bg-gray-50">
-              <img
-                src={productData.images?.[0] || productImage}
-                alt={productData.name}
-                className="w-full h-full object-cover"
-              />
-              {productData.isNew && (
-                <span className="absolute top-0 left-0 bg-brand-orange text-white text-[6px] font-bold px-1 py-0.5 rounded-br-md uppercase">New</span>
-              )}
-            </div>
-
-            {/* Product Info */}
-            <div className="flex-1 min-w-0">
-              <h4 className="text-[10px] md:text-[12px] font-bold text-gray-800 truncate leading-tight mb-1">
-                {productData.name}
-              </h4>
-              <div className="flex items-center gap-2">
-                <span className="text-[10px] md:text-[13px] font-bold text-brand-orange">
-                  ₹{Number(productData.discountedPrice || productData.price || productData.actualPrice || 0).toLocaleString('en-IN')}
-                </span>
-                {productData.actualPrice && Number(productData.actualPrice) > Number(productData.discountedPrice || productData.price || 0) && (
-                  <span className="text-[8px] md:text-[10px] text-gray-400 line-through">
-                    ₹{Number(productData.actualPrice).toLocaleString('en-IN')}
-                  </span>
-                )}
-              </div>
-            </div>
-          </div>
         )}
       </div>
 

@@ -29,6 +29,7 @@ export default function ProductFormModal({ isOpen, onClose, product = null, init
     productType: 'Repeat', // Unique or Repeat
     discountedPrice: '',
     actualPrice: '',
+    discountPercent: 0,
     stock: '',
     isAvailable: true,
     description: '',
@@ -61,12 +62,20 @@ export default function ProductFormModal({ isOpen, onClose, product = null, init
 
   useEffect(() => {
     if (product) {
+      const actual = Number(product.actualPrice || product.costPrice || 0);
+      const discounted = Number(product.discountedPrice || product.price || 0);
+      let initialDiscount = 0;
+      if (actual > 0 && discounted < actual) {
+        initialDiscount = Math.round(((actual - discounted) / actual) * 100);
+      }
+
       setFormData({
         name: product.name || '',
         categoryId: product.categoryId || '',
         productType: product.productType || 'Repeat',
         discountedPrice: product.discountedPrice || product.price || '',
         actualPrice: product.actualPrice || product.costPrice || '',
+        discountPercent: initialDiscount,
         stock: product.stock || '',
         isAvailable: product.isAvailable !== undefined ? product.isAvailable : true,
         description: product.description || '',
@@ -95,6 +104,7 @@ export default function ProductFormModal({ isOpen, onClose, product = null, init
         productType: 'Repeat',
         discountedPrice: '',
         actualPrice: '',
+        discountPercent: 0,
         stock: '',
         isAvailable: true,
         description: '',
@@ -125,7 +135,10 @@ export default function ProductFormModal({ isOpen, onClose, product = null, init
     const { name, value, type, checked } = e.target;
 
     // Ensure numeric fields are not negative
-    if ((name === 'stock' || name === 'discountedPrice' || name === 'actualPrice') && value < 0) {
+    if ((name === 'stock' || name === 'discountedPrice' || name === 'actualPrice' || name === 'discountPercent') && value < 0) {
+      return;
+    }
+    if (name === 'discountPercent' && value > 100) {
       return;
     }
     if (name === 'stockAlertThreshold' && value !== '' && Number(value) < 1) {
@@ -141,6 +154,14 @@ export default function ProductFormModal({ isOpen, onClose, product = null, init
       // Force stock to 1 if productType is switched to Unique
       if (name === 'productType' && value === 'Unique') {
         newData.stock = '1';
+      }
+
+      // If editing actualPrice or discountPercent, auto-calculate discountedPrice
+      if (name === 'actualPrice' || name === 'discountPercent') {
+        const actual = Number(name === 'actualPrice' ? value : prev.actualPrice) || 0;
+        const discount = Number(name === 'discountPercent' ? value : prev.discountPercent) || 0;
+        const discounted = actual - (actual * discount / 100);
+        newData.discountedPrice = discounted > 0 ? discounted.toFixed(2) : actual.toString();
       }
 
       return newData;
@@ -160,8 +181,8 @@ export default function ProductFormModal({ isOpen, onClose, product = null, init
       if (!/[0-9]/.test(e.key)) {
         e.preventDefault();
       }
-    } else if (name === 'discountedPrice' || name === 'actualPrice') {
-      // Digits and one decimal point for pricing
+    } else if (name === 'discountedPrice' || name === 'actualPrice' || name === 'discountPercent') {
+      // Digits and one decimal point for pricing/discount
       if (!/[0-9.]/.test(e.key)) {
         e.preventDefault();
       }
@@ -288,8 +309,8 @@ export default function ProductFormModal({ isOpen, onClose, product = null, init
 
   const handleSubmit = async (e) => {
     e.preventDefault();
-    if (!formData.name || !formData.categoryId || !formData.discountedPrice || !formData.sku) {
-      toast.error('Please fill required fields (Name, Category, Discounted Price, SKU)', { id: 'form-validation-error' });
+    if (!formData.name || !formData.categoryId || !formData.actualPrice || !formData.sku) {
+      toast.error('Please fill required fields (Name, Category, Original Price, SKU)', { id: 'form-validation-error' });
       return;
     }
 
@@ -319,11 +340,6 @@ export default function ProductFormModal({ isOpen, onClose, product = null, init
 
     const dPrice = Number(formData.discountedPrice);
     const aPrice = Number(formData.actualPrice || 0);
-
-    if (aPrice > 0 && dPrice > aPrice) {
-      toast.error('Discounted Price cannot be higher than Original Price', { id: 'price-validation-error' });
-      return;
-    }
 
     if (formData.stockAlertThreshold !== undefined && formData.stockAlertThreshold !== '' && Number(formData.stockAlertThreshold) < 1) {
       toast.error('Stock Alert threshold must be at least 1', { id: 'stock-alert-validation-error' });
@@ -669,22 +685,9 @@ export default function ProductFormModal({ isOpen, onClose, product = null, init
 
                   <div className="grid grid-cols-2 gap-4">
                     <div className="space-y-1.5">
-                      <label className="text-[13px] font-bold text-gray-700 ml-1">Discounted Price (₹) *</label>
+                      <label className="text-[13px] font-bold text-gray-700 ml-1">Original Price (₹) *</label>
                       <input
                         required
-                        type="number"
-                        min="0"
-                        name="discountedPrice"
-                        value={formData.discountedPrice}
-                        onChange={handleInputChange}
-                        onKeyDown={handleKeyPress}
-                        placeholder="0.00"
-                        className="w-full bg-gray-50 border-none px-4 py-3 rounded-xl text-[14px] outline-none focus:ring-2 focus:ring-[#1BAFAF]/20 focus:bg-white transition-all font-bold text-[#1BAFAF]"
-                      />
-                    </div>
-                    <div className="space-y-1.5">
-                      <label className="text-[13px] font-bold text-gray-700 ml-1">Original Price (₹)</label>
-                      <input
                         type="number"
                         min="0"
                         name="actualPrice"
@@ -692,8 +695,34 @@ export default function ProductFormModal({ isOpen, onClose, product = null, init
                         onChange={handleInputChange}
                         onKeyDown={handleKeyPress}
                         placeholder="0.00"
-                        className="w-full bg-gray-50 border-none px-4 py-3 rounded-xl text-[14px] outline-none focus:ring-2 focus:ring-[#1BAFAF]/20 focus:bg-white transition-all font-medium text-gray-500"
+                        className="w-full bg-gray-50 border-none px-4 py-3 rounded-xl text-[14px] outline-none focus:ring-2 focus:ring-[#1BAFAF]/20 focus:bg-white transition-all font-bold text-gray-900"
                       />
+                    </div>
+                    <div className="space-y-1.5">
+                      <label className="text-[13px] font-bold text-gray-700 ml-1">Discount (%)</label>
+                      <input
+                        type="number"
+                        min="0"
+                        max="100"
+                        name="discountPercent"
+                        value={formData.discountPercent}
+                        onChange={handleInputChange}
+                        onKeyDown={handleKeyPress}
+                        placeholder="0"
+                        className="w-full bg-gray-50 border-none px-4 py-3 rounded-xl text-[14px] outline-none focus:ring-2 focus:ring-[#1BAFAF]/20 focus:bg-white transition-all font-medium text-gray-700"
+                      />
+                    </div>
+                  </div>
+
+                  <div className="space-y-1.5 pt-2">
+                    <label className="text-[13px] font-bold text-gray-400 ml-1">Auto-calculated Discounted Price (₹)</label>
+                    <div className="w-full bg-[#E8F7F7] border border-[#1BAFAF]/10 px-4 py-3 rounded-xl text-[16px] font-black text-[#1BAFAF] flex items-center justify-between">
+                      <span>₹ {formData.discountedPrice ? Number(formData.discountedPrice).toLocaleString('en-IN', { minimumFractionDigits: 2, maximumFractionDigits: 2 }) : '0.00'}</span>
+                      {Number(formData.discountPercent) > 0 && (
+                        <span className="text-[11px] font-bold bg-[#1BAFAF]/20 px-2 py-0.5 rounded-lg">
+                          Saved {formData.discountPercent}%
+                        </span>
+                      )}
                     </div>
                   </div>
                 </div>

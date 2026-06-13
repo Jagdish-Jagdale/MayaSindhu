@@ -43,22 +43,33 @@ const UserViewModal = ({ isOpen, onClose, user }) => {
 
   useEffect(() => {
     const fetchUserOrders = async () => {
-      if (!user?.email) {
+      if (!user?.id && !user?.email) {
         setOrders([]);
         setLoading(false);
         return;
       }
       setLoading(true);
       try {
-        const q = query(
-          collection(db, 'orders'),
-          where('email', '==', user.email)
-        );
-        const querySnapshot = await getDocs(q);
-        const userOrders = querySnapshot.docs.map(doc => ({
-          id: doc.id,
-          ...doc.data()
-        }));
+        const ordersRef = collection(db, 'orders');
+        const promises = [];
+        
+        if (user.id) {
+          promises.push(getDocs(query(ordersRef, where('customerUid', '==', user.id))));
+        }
+        if (user.email) {
+          promises.push(getDocs(query(ordersRef, where('email', '==', user.email))));
+        }
+        
+        const snapshots = await Promise.all(promises);
+        const ordersMap = new Map();
+        
+        snapshots.forEach(snapshot => {
+          snapshot.docs.forEach(docSnap => {
+            ordersMap.set(docSnap.id, { id: docSnap.id, ...docSnap.data() });
+          });
+        });
+        
+        const userOrders = Array.from(ordersMap.values());
         
         // Sort orders by date descending in memory since we can't easily compound query without an index
         userOrders.sort((a, b) => {
@@ -84,8 +95,8 @@ const UserViewModal = ({ isOpen, onClose, user }) => {
 
   const totalOrders = orders.length;
   const deliveredOrders = orders.filter(o => o.status === 'Delivered').length;
-  const cancelledOrders = orders.filter(o => o.status === 'Cancelled').length;
-  const totalSpent = orders.filter(o => o.status !== 'Cancelled').reduce((acc, curr) => {
+  const cancelledOrders = orders.filter(o => ['Cancelled', 'Returned', 'Return Requested'].includes(o.status)).length;
+  const totalSpent = orders.filter(o => !['Cancelled', 'Returned'].includes(o.status)).reduce((acc, curr) => {
     const total = typeof curr.total === 'number' ? curr.total : Number((curr.total || '').toString().replace(/[^0-9.-]+/g,""));
     return acc + (isNaN(total) ? 0 : total);
   }, 0);
@@ -249,7 +260,7 @@ const UserViewModal = ({ isOpen, onClose, user }) => {
                                 </td>
                                 <td className="px-5 py-4">
                                   <span className="text-[13px] font-medium text-gray-900">
-                                    {order.quantity || 1} Item(s)
+                                    {order.items ? order.items.reduce((sum, i) => sum + (i.qty || i.quantity || 1), 0) : (order.quantity || 1)} Item(s)
                                   </span>
                                 </td>
                                 <td className="px-5 py-4">

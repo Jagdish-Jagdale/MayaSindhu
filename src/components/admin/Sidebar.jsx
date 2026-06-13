@@ -20,7 +20,8 @@ import {
   CircleDollarSign,
   Users2,
   ShoppingCart,
-  Truck
+  Truck,
+  MessageSquare
 } from 'lucide-react';
 import { Link, useLocation, useNavigate } from 'react-router-dom';
 import { auth } from '../../firebase';
@@ -47,6 +48,7 @@ function getMenuItems(pathname) {
     { title: 'Products', icon: Package, path: `${base}/products` },
     { title: 'Categories', icon: Grid2X2, path: `${base}/categories` },
     { title: 'Orders', icon: ShoppingBag, path: `${base}/orders` },
+    { title: 'Reviews', icon: MessageSquare, path: `${base}/reviews` },
     { title: 'Reports', icon: BarChart3, path: `${base}/reports` },
     { title: 'Delivery Charges', icon: Truck, path: `${base}/delivery-charges` },
     {

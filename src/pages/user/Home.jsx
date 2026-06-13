@@ -5,7 +5,7 @@ import ProductCard from '../../components/user/ProductCard';
 import VideoCard from '../../components/user/VideoCard';
 import VideoModal from '../../components/user/VideoModal';
 import TestimonialCard from '../../components/user/TestimonialCard';
-import { ChevronLeft, ChevronRight, Plus, Loader2, Calendar, CheckCircle2 } from 'lucide-react';
+import { ChevronLeft, ChevronRight, ArrowLeft, ArrowRight, Plus, Loader2, Calendar, CheckCircle2 } from 'lucide-react';
 import WorkshopModal from '../../components/user/WorkshopModal';
 import TrendProductsModal from '../../components/user/TrendProductsModal';
 
@@ -540,15 +540,39 @@ export default function Home() {
             </div>
           </motion.div>
 
-          <div
-            ref={featuredRef}
-            className="flex space-x-8 overflow-x-auto pb-12 no-scrollbar scroll-smooth snap-x"
-          >
-            {featuredTreasures.map(product => (
-              <div key={product.id} className="flex-shrink-0 w-[200px] md:w-[280px] snap-start">
-                <ProductCard {...product} />
-              </div>
-            ))}
+          <div className="relative group px-4">
+            {/* Left Arrow */}
+            {featuredTreasures.length > 4 && (
+              <button
+                onClick={() => scroll(featuredRef, 'left')}
+                className="absolute left-0 top-[38%] -translate-y-1/2 -translate-x-8 md:-translate-x-14 z-10 p-3.5 rounded-full bg-white shadow-lg border border-gray-150 hover:bg-brand-orange hover:text-white text-gray-700 hover:scale-110 hover:shadow-xl transition-all opacity-0 group-hover:opacity-100 hidden md:block active:scale-95"
+                aria-label="Scroll left"
+              >
+                <ArrowLeft size={18} strokeWidth={2} />
+              </button>
+            )}
+
+            {/* Right Arrow */}
+            {featuredTreasures.length > 4 && (
+              <button
+                onClick={() => scroll(featuredRef, 'right')}
+                className="absolute right-0 top-[38%] -translate-y-1/2 translate-x-8 md:translate-x-14 z-10 p-3.5 rounded-full bg-white shadow-lg border border-gray-150 hover:bg-brand-orange hover:text-white text-gray-700 hover:scale-110 hover:shadow-xl transition-all opacity-0 group-hover:opacity-100 hidden md:block active:scale-95"
+                aria-label="Scroll right"
+              >
+                <ArrowRight size={18} strokeWidth={2} />
+              </button>
+            )}
+
+            <div
+              ref={featuredRef}
+              className="flex space-x-8 overflow-x-auto pb-12 no-scrollbar scroll-smooth snap-x"
+            >
+              {featuredTreasures.map(product => (
+                <div key={product.id} className="flex-shrink-0 w-[200px] md:w-[280px] snap-start">
+                  <ProductCard {...product} />
+                </div>
+              ))}
+            </div>
           </div>
 
           <div className="flex justify-center pt-1">
@@ -621,22 +645,51 @@ export default function Home() {
               <div className="mx-auto w-16 md:w-24 h-[1px] bg-brand-orange opacity-40 mt-6" />
             </div>
 
-            <div
-              ref={videoRef}
-              className="flex flex-nowrap justify-start md:justify-center gap-6 pb-12 overflow-x-auto md:overflow-visible no-scrollbar snap-x snap-mandatory"
-            >
-              {looks.map((video) => (
-                <div key={video.id} className="snap-center" onClick={() => openVideo(video)}>
-                  <VideoCard
-                    videoUrl={resolveVideoUrl(video.url)}
-                    title={video.title}
-                    category={video.category}
-                    thumbnail={video.thumbnail}
-                    productImage={video.productImage}
-                    productId={video.productId}
-                  />
-                </div>
-              ))}
+            <div className="relative group px-4">
+              {/* Left Arrow */}
+              {looks.length > 4 && (
+                <button
+                  onClick={() => scroll(videoRef, 'left')}
+                  className="absolute left-0 top-1/2 -translate-y-1/2 -translate-x-8 md:-translate-x-14 z-10 p-3 rounded-full bg-white shadow-lg border border-gray-150 hover:bg-gray-50 text-gray-700 transition-all opacity-0 group-hover:opacity-100 hidden md:block active:scale-95"
+                  aria-label="Scroll left"
+                >
+                  <ChevronLeft size={20} />
+                </button>
+              )}
+
+              {/* Right Arrow */}
+              {looks.length > 4 && (
+                <button
+                  onClick={() => scroll(videoRef, 'right')}
+                  className="absolute right-0 top-1/2 -translate-y-1/2 translate-x-8 md:translate-x-14 z-10 p-3 rounded-full bg-white shadow-lg border border-gray-150 hover:bg-gray-50 text-gray-700 transition-all opacity-0 group-hover:opacity-100 hidden md:block active:scale-95"
+                  aria-label="Scroll right"
+                >
+                  <ChevronRight size={20} />
+                </button>
+              )}
+
+              <div
+                ref={videoRef}
+                className={`flex flex-nowrap gap-6 pb-12 overflow-x-auto no-scrollbar snap-x snap-mandatory scroll-smooth ${
+                  looks.length > 4 
+                    ? 'justify-start md:overflow-x-auto' 
+                    : 'justify-start md:justify-center md:overflow-visible'
+                }`}
+              >
+                {looks.map((video) => (
+                  <div key={video.id} className="snap-center flex-shrink-0 cursor-pointer" onClick={() => openVideo(video)}>
+                    <VideoCard
+                      videoUrl={resolveVideoUrl(video.url)}
+                      title={video.title}
+                      category={video.category}
+                      thumbnail={video.thumbnail}
+                      productImage={video.productImage}
+                      productId={video.productId}
+                      productIds={video.productIds}
+                    />
+                  </div>
+                ))}
+              </div>
             </div>
           </div>
         </section>

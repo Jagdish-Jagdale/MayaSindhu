@@ -335,7 +335,7 @@ const StoreCustomers = () => {
                       <span className="text-[14px] font-bold text-gray-900">{c.fullName}</span>
                     </td>
                     <td className="px-6 py-4">
-                      <span className="text-[14px] text-gray-500 font-medium">{c.email}</span>
+                      <span className="text-[14px] text-gray-500 font-medium">{c.email || '---'}</span>
                     </td>
                     <td className="px-6 py-4">
                       <span className="text-[14px] text-gray-500 font-medium">{c.phone || '---'}</span>

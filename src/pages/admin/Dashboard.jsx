@@ -181,9 +181,9 @@ export default function Dashboard() {
   useEffect(() => {
     if (!productsLoaded || !categoriesLoaded) return;
 
-    // Sum of stock (using both p.stock and p.inventory)
-    const totalStock = rawProducts.reduce((sum, p) => sum + (Number(p.stock) || Number(p.inventory) || 0), 0);
-    setStats(prev => ({ ...prev, inventory: totalStock }));
+    // Count of unique products (actual items count)
+    const totalProductsCount = rawProducts.length;
+    setStats(prev => ({ ...prev, inventory: totalProductsCount }));
 
     // Helper to find the main category (level = 0) for a given categoryId
     const getMainCategory = (catId) => {

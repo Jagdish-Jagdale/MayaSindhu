@@ -44,7 +44,7 @@ export default function StoreCustomerModal({ isOpen, onClose, customer = null })
     }
 
     const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
-    if (!emailRegex.test(formData.email)) {
+    if (formData.email && !emailRegex.test(formData.email)) {
       toast.error("Please enter a valid email address");
       return;
     }
@@ -55,8 +55,8 @@ export default function StoreCustomerModal({ isOpen, onClose, customer = null })
       return;
     }
 
-    if (!formData.fullName || !formData.email) {
-      toast.error("Name and Email are required");
+    if (!formData.fullName) {
+      toast.error("Full Name is required");
       return;
     }
 
@@ -140,7 +140,6 @@ export default function StoreCustomerModal({ isOpen, onClose, customer = null })
                 <Mail className="absolute left-4 top-1/2 -translate-y-1/2 w-4 h-4 text-gray-300 group-focus-within:text-[#1BAFAF] transition-colors" />
                 <input
                   type="email"
-                  required
                   value={formData.email}
                   onChange={(e) => setFormData({ ...formData, email: e.target.value })}
                   placeholder="customer@example.com"
