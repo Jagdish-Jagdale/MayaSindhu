@@ -64,7 +64,8 @@ export default function Workshops() {
     summary: '',
     date: new Date().toISOString().split('T')[0],
     details: '',
-    image: ''
+    image: '',
+    fees: ''
   });
   const [selectedFile, setSelectedFile] = useState(null);
   const fileInputRef = useRef(null);
@@ -97,7 +98,8 @@ export default function Workshops() {
         summary: workshop.summary || '',
         date: workshop.date || '',
         details: workshop.details || '',
-        image: workshop.image || ''
+        image: workshop.image || '',
+        fees: workshop.fees !== undefined ? workshop.fees.toString() : '0'
       });
     } else {
       setEditingWorkshop(null);
@@ -106,7 +108,8 @@ export default function Workshops() {
         summary: '',
         date: new Date().toISOString().split('T')[0],
         details: '',
-        image: ''
+        image: '',
+        fees: ''
       });
     }
     setIsModalOpen(true);
@@ -142,6 +145,7 @@ export default function Workshops() {
 
         await updateDoc(doc(db, 'workshops', editingWorkshop.id), {
           ...formData,
+          fees: Number(formData.fees) || 0,
           image: imageUrl,
           updatedAt: serverTimestamp()
         });
@@ -149,6 +153,7 @@ export default function Workshops() {
       } else {
         await addDoc(collection(db, 'workshops'), {
           ...formData,
+          fees: Number(formData.fees) || 0,
           image: imageUrl,
           createdAt: serverTimestamp(),
           updatedAt: serverTimestamp()
@@ -294,6 +299,7 @@ export default function Workshops() {
                 <th className="px-4 py-6 text-[14px] font-bold text-[#1BAFAF] min-w-[200px]">Workshop Name</th>
                 <th className="px-4 py-6 text-[14px] font-bold text-[#1BAFAF]">Date</th>
                 <th className="px-4 py-6 text-[14px] font-bold text-[#1BAFAF] max-w-[300px]">Summary</th>
+                <th className="px-4 py-6 text-[14px] font-bold text-[#1BAFAF]">Fees</th>
                 <th className="px-10 py-6 text-[14px] font-bold text-[#1BAFAF] text-right">Action</th>
               </tr>
             </thead>
@@ -325,6 +331,11 @@ export default function Workshops() {
                   <td className="px-4 py-6 max-w-[300px]">
                     <span className="text-[13px] text-gray-500 font-medium" title={workshop.summary}>
                       {workshop.summary?.length > 50 ? `${workshop.summary.substring(0, 50)}...` : workshop.summary}
+                    </span>
+                  </td>
+                  <td className="px-4 py-6">
+                    <span className="text-[13px] text-gray-900 font-bold whitespace-nowrap">
+                      {workshop.fees && Number(workshop.fees) > 0 ? `₹${workshop.fees}` : 'Free'}
                     </span>
                   </td>
                   <td className="px-10 py-6 text-right">
@@ -438,16 +449,33 @@ export default function Workshops() {
                       </div>
                     </div>
 
-                    <div className="space-y-1.5">
-                      <label className="text-[11px] font-bold text-gray-500 ml-1">Workshop Date</label>
-                      <div className="relative">
-                        <Calendar className="absolute left-4 top-1/2 -translate-y-1/2 w-4 h-4 text-gray-300" />
-                        <input
-                          type="date"
-                          value={formData.date}
-                          onChange={(e) => setFormData({ ...formData, date: e.target.value })}
-                          className="w-full bg-gray-50 border-none pl-11 pr-5 py-3.5 text-[14px] font-bold text-gray-700 rounded-xl focus:ring-2 focus:ring-[#1BAFAF]/10 outline-none transition-all shadow-sm"
-                        />
+                    <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                      <div className="space-y-1.5">
+                        <label className="text-[11px] font-bold text-gray-500 ml-1">Workshop Date</label>
+                        <div className="relative">
+                          <Calendar className="absolute left-4 top-1/2 -translate-y-1/2 w-4 h-4 text-gray-300" />
+                          <input
+                            type="date"
+                            value={formData.date}
+                            onChange={(e) => setFormData({ ...formData, date: e.target.value })}
+                            className="w-full bg-gray-50 border-none pl-11 pr-5 py-3.5 text-[14px] font-bold text-gray-700 rounded-xl focus:ring-2 focus:ring-[#1BAFAF]/10 outline-none transition-all shadow-sm"
+                          />
+                        </div>
+                      </div>
+
+                      <div className="space-y-1.5">
+                        <label className="text-[11px] font-bold text-gray-500 ml-1">Workshop Fees (₹)</label>
+                        <div className="relative">
+                          <span className="absolute left-4 top-1/2 -translate-y-1/2 text-gray-400 font-bold text-sm">₹</span>
+                          <input
+                            type="number"
+                            min="0"
+                            placeholder="0 (Free)"
+                            value={formData.fees}
+                            onChange={(e) => setFormData({ ...formData, fees: e.target.value })}
+                            className="w-full bg-gray-50 border-none pl-11 pr-5 py-3.5 text-[14px] font-bold text-gray-700 rounded-xl focus:ring-2 focus:ring-[#1BAFAF]/10 outline-none transition-all shadow-sm"
+                          />
+                        </div>
                       </div>
                     </div>
 

@@ -122,31 +122,6 @@ export default function ProfileInfo({ user }) {
           </form>
         </div>
       </div>
-
-      {/* Bottom Grid: Account Security & Newsletter */}
-      <div className="grid grid-cols-1 md:grid-cols-2 gap-8">
-        <div className="bg-white p-8 rounded-xl shadow-sm border border-gray-100">
-          <div className="flex items-center gap-3 mb-6">
-            <div className="w-10 h-10 bg-gray-50 rounded-xl flex items-center justify-center text-gray-400">
-              <Sparkles size={20} />
-            </div>
-            <h3 className="text-lg font-bold text-[#1A1A1A]">Vault Security</h3>
-          </div>
-          <p className="text-xs text-gray-400 mb-6 font-medium">Protect your handcrafted treasures. Manage your password and security keys to keep your vault safe.</p>
-          <button className="text-brand-orange font-bold text-sm hover:underline">Change Password</button>
-        </div>
-
-        <div className="bg-white p-8 rounded-xl shadow-sm border border-gray-100">
-          <div className="flex items-center gap-3 mb-6">
-            <div className="w-10 h-10 bg-gray-50 rounded-xl flex items-center justify-center text-gray-400">
-              <Mail size={20} />
-            </div>
-            <h3 className="text-lg font-bold text-[#1A1A1A]">Heritage Newsletter</h3>
-          </div>
-          <p className="text-xs text-gray-400 mb-6 font-medium">Be the first to explore our latest weaves and exclusive boutique collections.</p>
-          <button className="text-brand-orange font-bold text-sm hover:underline">Manage Subscription</button>
-        </div>
-      </div>
     </div>
   );
 }

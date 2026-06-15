@@ -83,6 +83,10 @@ service cloud.firestore {
       allow read: if isSignedIn();
       allow write: if isAdmin(); 
     }
+    // 6. Super Admin Sessions
+    match /superadmin_sessions/{sessionId} {
+      allow read, write: if isSignedIn();
+    }
     
     // Default Deny
     match /{allPaths=**} {

@@ -1,31 +1,68 @@
 import { db } from '../firebase';
 import { doc, getDoc, setDoc, updateDoc, serverTimestamp, collection, query, where, getDocs } from 'firebase/firestore';
 
-export const addToCart = async (user, product, quantity = 1) => {
+export const addToCart = async (user, product, quantity = 1, selectedVariant = null) => {
   if (!user || !product) throw new Error("User or Product missing");
 
   const productId = product.id?.toString();
   if (!productId) throw new Error("Product ID missing");
 
-  console.log(`CartUtil: Adding product ${productId} for user ${user.uid} with quantity ${quantity}`);
+  const variantId = selectedVariant?.id;
+  const cartItemId = variantId ? `${productId}_${variantId}` : productId;
+
+  console.log(`CartUtil: Adding product ${productId} (Variant: ${variantId || 'none'}) for user ${user.uid} with quantity ${quantity}`);
   
-  const cartItemRef = doc(db, 'users', user.uid, 'cart', productId);
+  const cartItemRef = doc(db, 'users', user.uid, 'cart', cartItemId);
   const cartItemSnap = await getDoc(cartItemRef);
 
-  // Fetch fresh product document from products collection to get exact real-time stock/type info
-  const productRef = doc(db, 'products', productId);
-  const productSnap = await getDoc(productRef);
-  const productData = productSnap.exists() ? productSnap.data() : product;
+  // Fetch fresh product/variant details
+  let stockVal = 15;
+  let isUnique = product.isUniquePiece === true || product.productType === 'Unique';
+  let itemPrice = product.discountedPrice || product.price || 0;
+  let itemImage = product.image || product.imageUrl || (product.images && product.images[0]) || '';
+  let itemSku = product.sku || '';
 
-  const isUnique = productData.isUniquePiece === true || productData.productType === 'Unique';
-  const stockVal = typeof productData.stock === 'number' ? productData.stock : (isUnique ? 1 : 15);
-
-  if (stockVal === 0) {
-    throw new Error("This product is currently out of stock.");
+  if (selectedVariant) {
+    // If a variant is selected, fetch the latest variant data from Firestore
+    try {
+      const varSnap = await getDoc(doc(db, 'products', productId, 'variants', variantId));
+      if (varSnap.exists()) {
+        const varData = varSnap.data();
+        stockVal = typeof varData.stock === 'number' ? varData.stock : 0;
+        itemPrice = varData.price || varData.actualPrice || 0;
+        itemImage = (varData.images && varData.images[0]) || itemImage;
+        itemSku = varData.sku || '';
+        isUnique = varData.productType === 'Unique';
+      } else {
+        stockVal = typeof selectedVariant.stock === 'number' ? selectedVariant.stock : 0;
+        itemPrice = selectedVariant.price || selectedVariant.actualPrice || 0;
+        itemImage = (selectedVariant.images && selectedVariant.images[0]) || itemImage;
+        itemSku = selectedVariant.sku || '';
+        isUnique = selectedVariant.productType === 'Unique';
+      }
+    } catch (err) {
+      console.error("Error reading fresh variant data:", err);
+      stockVal = typeof selectedVariant.stock === 'number' ? selectedVariant.stock : 0;
+      isUnique = selectedVariant.productType === 'Unique';
+    }
+  } else {
+    // Fetch parent product document
+    const productRef = doc(db, 'products', productId);
+    const productSnap = await getDoc(productRef);
+    const productData = productSnap.exists() ? productSnap.data() : product;
+    isUnique = productData.isUniquePiece === true || productData.productType === 'Unique';
+    stockVal = typeof productData.stock === 'number' ? productData.stock : (isUnique ? 1 : 15);
   }
 
+  if (stockVal === 0) {
+    throw new Error("This product/variant is currently out of stock.");
+  }
+
+  const itemName = selectedVariant
+    ? `${product.name || 'Handcrafted Treasure'} (${selectedVariant.color}${selectedVariant.design ? ` - ${selectedVariant.design}` : ''})`
+    : (product.name || 'Handcrafted Treasure');
+
   if (cartItemSnap.exists()) {
-    // If product is unique, do not increment quantity
     if (isUnique) {
       return { type: 'already_in_cart' };
     }
@@ -47,12 +84,16 @@ export const addToCart = async (user, product, quantity = 1) => {
     await setDoc(cartItemRef, {
       id: productId,
       productId: product.productId || '',
+      variantId: variantId || '',
       slug: product.slug || productId,
-      name: product.name || 'Handcrafted Treasure',
-      price: product.discountedPrice || product.price || 0,
-      image: product.image || product.imageUrl || (product.images && product.images[0]) || '',
+      name: itemName,
+      price: Number(itemPrice),
+      image: itemImage,
       qty: targetQty,
       productType: isUnique ? 'Unique' : (product.productType || 'Standard'),
+      color: selectedVariant?.color || '',
+      design: selectedVariant?.design || '',
+      sku: itemSku,
       addedAt: serverTimestamp()
     });
     return { type: 'added' };

@@ -1,7 +1,7 @@
 import React, { useState, useEffect, useRef } from 'react';
 import { X, Upload, Plus, Trash2, Loader2, Image as ImageIcon, Settings, Info } from 'lucide-react';
 import { db } from '../../firebase';
-import { collection, addDoc, updateDoc, doc, serverTimestamp, getDocs, query, orderBy, limit, where } from 'firebase/firestore';
+import { collection, addDoc, updateDoc, doc, deleteDoc, serverTimestamp, getDocs, query, orderBy, limit, where } from 'firebase/firestore';
 import useCategories from '../../hooks/useCategories';
 import toast from 'react-hot-toast';
 import { uploadToCloudinary, deleteMultipleFromCloudinary } from '../../utils/cloudinary';
@@ -22,171 +22,190 @@ const findPathToCategory = (id, items, currentPath = []) => {
 export default function ProductFormModal({ isOpen, onClose, product = null, initialCategoryId = null }) {
   const { categories: heirarchy } = useCategories();
   const [loading, setLoading] = useState(false);
+  const [isDirty, setIsDirty] = useState(false);
 
   const [formData, setFormData] = useState({
     name: '',
     categoryId: '',
-    productType: 'Repeat', // Unique or Repeat
-    discountedPrice: '',
-    actualPrice: '',
-    discountPercent: 0,
-    stock: '',
     isAvailable: true,
     description: '',
     tagline: '',
     care: '',
-    sku: '',
-    size: '',
-    images: [], // Will store Cloudinary URLs
+    brand: '',
     productId: '',
-    stockAlertThreshold: 5
+    faqs: [{ question: '', answer: '' }]
   });
 
+  const [variants, setVariants] = useState([]);
+  const [deletedVariantIds, setDeletedVariantIds] = useState([]);
   const [selectedPathIds, setSelectedPathIds] = useState([]);
-
-  const [imageFiles, setImageFiles] = useState([]);
-  const [previews, setPreviews] = useState([]);
   const [removedImageUrls, setRemovedImageUrls] = useState([]);
-  const fileInputRef = useRef(null);
 
   const generateProductId = () => {
     const random10Digits = Math.floor(1000000000 + Math.random() * 9000000000);
     return `PRD${random10Digits}`;
   };
 
-  const generateSKU = () => {
+  const generateSKU = (color = '', design = '') => {
     const year = new Date().getFullYear();
     const randomNum = Math.floor(1000 + Math.random() * 9000);
-    return `MS-${year}-${randomNum}`;
+    const colCode = color ? color.substring(0, 3).toUpperCase() : 'DEF';
+    const desCode = design ? design.substring(0, 2).toUpperCase() : 'PL';
+    return `MS-${year}-${colCode}-${desCode}-${randomNum}`;
   };
 
+  // Fetch variants if editing
   useEffect(() => {
-    if (product) {
-      const actual = Number(product.actualPrice || product.costPrice || 0);
-      const discounted = Number(product.discountedPrice || product.price || 0);
-      let initialDiscount = 0;
-      if (actual > 0 && discounted < actual) {
-        initialDiscount = Math.round(((actual - discounted) / actual) * 100);
-      }
+    const initForm = async () => {
+      if (product) {
+        setFormData({
+          name: product.name || '',
+          categoryId: product.categoryId || '',
+          isAvailable: product.isAvailable !== undefined ? product.isAvailable : true,
+          description: product.description || '',
+          tagline: product.tagline || '',
+          care: product.care || '',
+          brand: product.brand || '',
+          productId: product.productId || '',
+          faqs: product.faqs && product.faqs.length > 0 ? product.faqs : [{ question: '', answer: '' }]
+        });
 
-      setFormData({
-        name: product.name || '',
-        categoryId: product.categoryId || '',
-        productType: product.productType || 'Repeat',
-        discountedPrice: product.discountedPrice || product.price || '',
-        actualPrice: product.actualPrice || product.costPrice || '',
-        discountPercent: initialDiscount,
-        stock: product.stock || '',
-        isAvailable: product.isAvailable !== undefined ? product.isAvailable : true,
-        description: product.description || '',
-        tagline: product.tagline || '',
-        care: product.care || '',
-        sku: product.sku || generateSKU(),
-        size: product.size || '',
-        images: product.images || [],
-        productId: product.productId || '',
-        stockAlertThreshold: product.stockAlertThreshold !== undefined ? product.stockAlertThreshold : 5
-      });
+        if (product.categoryId) {
+          const path = findPathToCategory(product.categoryId, heirarchy);
+          setSelectedPathIds(path || []);
+        } else {
+          setSelectedPathIds([]);
+        }
 
-      if (product.categoryId) {
-        const path = findPathToCategory(product.categoryId, heirarchy);
-        setSelectedPathIds(path || []);
+        setDeletedVariantIds([]);
+        setRemovedImageUrls([]);
+        setLoading(true);
+
+        try {
+          const variantsSnap = await getDocs(collection(db, 'products', product.id, 'variants'));
+          const fetchedVariants = variantsSnap.docs.map(doc => {
+            const data = doc.data();
+            const actual = Number(data.actualPrice || data.price || 0);
+            const discounted = Number(data.price || 0);
+            let initialDiscount = 0;
+            if (actual > 0 && discounted < actual) {
+              initialDiscount = Math.round(((actual - discounted) / actual) * 100);
+            }
+            return {
+              id: doc.id,
+              color: data.color || '',
+              design: data.design || '',
+              sku: data.sku || '',
+              price: discounted || '',
+              actualPrice: actual || '',
+              discountPercent: initialDiscount,
+              stock: data.stock || 0,
+              images: data.images || [],
+              previews: data.images || [],
+              newImageFiles: [],
+              productType: data.productType || product.productType || 'Repeat',
+              stockAlertThreshold: data.stockAlertThreshold !== undefined ? data.stockAlertThreshold : (product.stockAlertThreshold !== undefined ? product.stockAlertThreshold : 5)
+            };
+          });
+          
+          if (fetchedVariants.length > 0) {
+            setVariants(fetchedVariants);
+          } else {
+            // Fallback: create a variant from parent details if no subcollection found
+            setVariants([
+              {
+                id: 'temp_fallback',
+                color: 'Default',
+                design: 'Default',
+                sku: product.sku || generateSKU(),
+                price: product.discountedPrice || product.price || '',
+                actualPrice: product.actualPrice || product.price || '',
+                discountPercent: 0,
+                stock: product.stock || 0,
+                images: product.images || [],
+                previews: product.images || [],
+                newImageFiles: [],
+                productType: product.productType || 'Repeat',
+                stockAlertThreshold: product.stockAlertThreshold !== undefined ? product.stockAlertThreshold : 5
+              }
+            ]);
+          }
+        } catch (error) {
+          console.error("Error loading variants:", error);
+          toast.error("Failed to load variants");
+        } finally {
+          setLoading(false);
+        }
+        setIsDirty(false);
       } else {
-        setSelectedPathIds([]);
+        setFormData({
+          name: '',
+          categoryId: initialCategoryId || '',
+          isAvailable: true,
+          description: '',
+          tagline: '',
+          care: '',
+          brand: '',
+          productId: generateProductId(),
+          faqs: [{ question: '', answer: '' }]
+        });
+
+        if (initialCategoryId) {
+          const path = findPathToCategory(initialCategoryId, heirarchy);
+          setSelectedPathIds(path || []);
+        } else {
+          setSelectedPathIds([]);
+        }
+
+        setVariants([
+          {
+            id: 'temp_' + Date.now(),
+            color: 'Default',
+            design: 'Default',
+            sku: generateSKU('Default', 'Default'),
+            price: '',
+            actualPrice: '',
+            discountPercent: 0,
+            stock: '',
+            images: [],
+            previews: [],
+            newImageFiles: [],
+            productType: 'Repeat',
+            stockAlertThreshold: 5
+          }
+        ]);
+        setDeletedVariantIds([]);
+        setRemovedImageUrls([]);
+        setIsDirty(false);
       }
+    };
 
-      setPreviews(product.images || []);
-      setImageFiles([]);
-    } else {
-      setFormData({
-        name: '',
-        categoryId: initialCategoryId || '',
-        productType: 'Repeat',
-        discountedPrice: '',
-        actualPrice: '',
-        discountPercent: 0,
-        stock: '',
-        isAvailable: true,
-        description: '',
-        tagline: '',
-        care: '',
-        sku: generateSKU(),
-        size: '',
-        images: [],
-        productId: generateProductId(),
-        stockAlertThreshold: 5
-      });
-
-      if (initialCategoryId) {
-        const path = findPathToCategory(initialCategoryId, heirarchy);
-        setSelectedPathIds(path || []);
-      } else {
-        setSelectedPathIds([]);
-      }
-
-      setPreviews([]);
-      setImageFiles([]);
-      setRemovedImageUrls([]);
+    if (isOpen) {
+      initForm();
     }
-    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [product, isOpen, heirarchy, initialCategoryId]);
 
   const handleInputChange = (e) => {
     const { name, value, type, checked } = e.target;
-
-    // Ensure numeric fields are not negative
-    if ((name === 'stock' || name === 'discountedPrice' || name === 'actualPrice' || name === 'discountPercent') && value < 0) {
-      return;
-    }
-    if (name === 'discountPercent' && value > 100) {
-      return;
-    }
-    if (name === 'stockAlertThreshold' && value !== '' && Number(value) < 1) {
-      return;
-    }
-
-    setFormData(prev => {
-      const newData = {
-        ...prev,
-        [name]: type === 'checkbox' ? checked : value
-      };
-
-      // Force stock to 1 if productType is switched to Unique
-      if (name === 'productType' && value === 'Unique') {
-        newData.stock = '1';
-      }
-
-      // If editing actualPrice or discountPercent, auto-calculate discountedPrice
-      if (name === 'actualPrice' || name === 'discountPercent') {
-        const actual = Number(name === 'actualPrice' ? value : prev.actualPrice) || 0;
-        const discount = Number(name === 'discountPercent' ? value : prev.discountPercent) || 0;
-        const discounted = actual - (actual * discount / 100);
-        newData.discountedPrice = discounted > 0 ? discounted.toFixed(2) : actual.toString();
-      }
-
-      return newData;
-    });
+    setIsDirty(true);
+    setFormData(prev => ({
+      ...prev,
+      [name]: type === 'checkbox' ? checked : value
+    }));
   };
 
   const handleKeyPress = (e) => {
-    const { name } = e.target;
-
-    // List of allowed control keys
     const controlKeys = ['Backspace', 'Tab', 'ArrowLeft', 'ArrowRight', 'Delete', 'Enter'];
-
     if (controlKeys.includes(e.key)) return;
 
-    if (name === 'stock' || name === 'stockAlertThreshold') {
-      // ONLY digits for stock and threshold
+    if (e.target.name.includes('Threshold') || e.target.name.includes('stock')) {
       if (!/[0-9]/.test(e.key)) {
         e.preventDefault();
       }
-    } else if (name === 'discountedPrice' || name === 'actualPrice' || name === 'discountPercent') {
-      // Digits and one decimal point for pricing/discount
+    } else if (e.target.name.includes('Price') || e.target.name.includes('discount')) {
       if (!/[0-9.]/.test(e.key)) {
         e.preventDefault();
       }
-      // Prevent multiple decimal points
       if (e.key === '.' && e.target.value.includes('.')) {
         e.preventDefault();
       }
@@ -194,6 +213,7 @@ export default function ProductFormModal({ isOpen, onClose, product = null, init
   };
 
   const handleLevelChange = (level, id) => {
+    setIsDirty(true);
     if (!id) {
       const newPath = selectedPathIds.slice(0, level);
       setSelectedPathIds(newPath);
@@ -204,7 +224,6 @@ export default function ProductFormModal({ isOpen, onClose, product = null, init
     const newPath = [...selectedPathIds.slice(0, level), id];
     setSelectedPathIds(newPath);
 
-    // Check if this category has children
     const findCategory = (items, targetId) => {
       for (const item of items) {
         if (item.id === targetId) return item;
@@ -219,75 +238,131 @@ export default function ProductFormModal({ isOpen, onClose, product = null, init
     const selectedCategory = findCategory(heirarchy, id);
     const hasChildren = selectedCategory?.children && selectedCategory.children.length > 0;
 
-    // Only set the final categoryId if it's a leaf node
     if (!hasChildren) {
       setFormData(prev => ({ ...prev, categoryId: id }));
     }
   };
 
-  const handleImageChange = (e) => {
+  const handleVariantChange = (variantId, field, value) => {
+    setIsDirty(true);
+    setVariants(prev => prev.map(v => {
+      if (v.id === variantId) {
+        const updated = { ...v, [field]: value };
+        if (field === 'actualPrice' || field === 'discountPercent') {
+          const actual = Number(field === 'actualPrice' ? value : v.actualPrice) || 0;
+          const discount = Number(field === 'discountPercent' ? value : v.discountPercent) || 0;
+          const discounted = actual - (actual * discount / 100);
+          updated.price = discounted > 0 ? discounted.toFixed(2) : actual.toString();
+        }
+        return updated;
+      }
+      return v;
+    }));
+  };
+
+  const handleAddVariant = () => {
+    setIsDirty(true);
+    const col = '';
+    const des = '';
+    setVariants(prev => [
+      ...prev,
+      {
+        id: 'temp_' + Date.now(),
+        color: col,
+        design: des,
+        sku: generateSKU(col, des),
+        price: '',
+        actualPrice: '',
+        discountPercent: 0,
+        stock: '',
+        images: [],
+        previews: [],
+        newImageFiles: [],
+        productType: 'Repeat',
+        stockAlertThreshold: 5
+      }
+    ]);
+  };
+
+  const handleDeleteVariant = (variantId) => {
+    if (variants.length <= 1) {
+      toast.error("A product must have at least one variant.");
+      return;
+    }
+    setIsDirty(true);
+    if (!variantId.startsWith('temp_')) {
+      setDeletedVariantIds(prev => [...prev, variantId]);
+    }
+    setVariants(prev => prev.filter(v => v.id !== variantId));
+  };
+
+  const handleVariantImageChange = (variantId, e) => {
     const files = Array.from(e.target.files);
     if (files.length === 0) return;
 
-    // Filter out files that are too large (limit to 5MB for Cloudinary)
     const validFiles = files.filter(file => file.size <= 5 * 1024 * 1024);
     if (validFiles.length < files.length) {
       toast.error('Some images were skipped as they exceed 5MB');
     }
 
     const newPreviews = validFiles.map(file => URL.createObjectURL(file));
-    setPreviews(prev => [...prev, ...newPreviews]);
-    setImageFiles(prev => [...prev, ...validFiles]);
-  };
 
-  const removePreview = (index) => {
-    const previewToRemove = previews[index];
-    const isExistingImage = formData.images.includes(previewToRemove);
-
-    if (isExistingImage) {
-      // Track Cloudinary URLs for deletion on save
-      if (previewToRemove.includes('res.cloudinary.com')) {
-        setRemovedImageUrls(prev => [...prev, previewToRemove]);
+    setVariants(prev => prev.map(v => {
+      if (v.id === variantId) {
+        return {
+          ...v,
+          previews: [...v.previews, ...newPreviews],
+          newImageFiles: [...(v.newImageFiles || []), ...validFiles]
+        };
       }
-      setFormData(prev => ({
-        ...prev,
-        images: prev.images.filter((_, i) => prev.images[i] !== previewToRemove)
-      }));
-    } else {
-      // Find position among new files
-      const newFileIndex = previews.slice(0, index).filter(p => !formData.images.includes(p)).length;
-      setImageFiles(prev => prev.filter((_, i) => i !== newFileIndex));
-    }
-
-    setPreviews(prev => prev.filter((_, i) => i !== index));
-    if (previewToRemove.startsWith('blob:')) {
-      URL.revokeObjectURL(previewToRemove);
-    }
+      return v;
+    }));
+    setIsDirty(true);
   };
 
+  const removeVariantPreview = (variantId, index) => {
+    setIsDirty(true);
+    setVariants(prev => prev.map(v => {
+      if (v.id === variantId) {
+        const previewToRemove = v.previews[index];
+        const isExistingImage = v.images && v.images.includes(previewToRemove);
+
+        let newImages = v.images || [];
+        let newImageFiles = v.newImageFiles || [];
+
+        if (isExistingImage) {
+          if (previewToRemove.includes('res.cloudinary.com')) {
+            setRemovedImageUrls(prevRemoved => [...prevRemoved, previewToRemove]);
+          }
+          newImages = newImages.filter(img => img !== previewToRemove);
+        } else {
+          const newFileIndex = v.previews.slice(0, index).filter(p => !newImages.includes(p)).length;
+          newImageFiles = newImageFiles.filter((_, i) => i !== newFileIndex);
+        }
+
+        const newPreviews = v.previews.filter((_, i) => i !== index);
+        if (previewToRemove.startsWith('blob:')) {
+          URL.revokeObjectURL(previewToRemove);
+        }
+
+        return {
+          ...v,
+          images: newImages,
+          previews: newPreviews,
+          newImageFiles: newImageFiles
+        };
+      }
+      return v;
+    }));
+  };
 
   const createSlug = (name) => {
     return name
       .toLowerCase()
       .trim()
-      .replace(/[^\w\s-]/g, '') // Remove special characters
-      .replace(/[\s_-]+/g, '-') // Replace spaces and underscores with a single hyphen
-      .replace(/^-+|-+$/g, ''); // Remove leading and trailing hyphens
-  };
-
-  const getCategoryName = (id) => {
-    const findCat = (items) => {
-      if (!items) return null;
-      for (const item of items) {
-        if (item.id === id) return item.name;
-        if (item.children) {
-          const found = findCat(item.children);
-          if (found) return found;
-        }
-      }
-      return null;
-    };
-    return findCat(heirarchy);
+      .replace(/[^\w\s-]/g, '')
+      .replace(/[\s_-]+/g, '-')
+      .replace(/^-+|-+$/g, '');
   };
 
   const getCategoryShowSizes = (id) => {
@@ -309,90 +384,134 @@ export default function ProductFormModal({ isOpen, onClose, product = null, init
 
   const handleSubmit = async (e) => {
     e.preventDefault();
-    if (!formData.name || !formData.categoryId || !formData.actualPrice || !formData.sku) {
-      toast.error('Please fill required fields (Name, Category, Original Price, SKU)', { id: 'form-validation-error' });
+    if (!formData.name || !formData.categoryId) {
+      toast.error('Please fill required fields (Name, Category)', { id: 'form-validation-error' });
       return;
     }
 
-    if (isApparelReadymade && !formData.size) {
-      toast.error('Please select a size for this product', { id: 'size-validation-error' });
-      return;
-    }
-
-    if (formData.sku) {
-      try {
-        const skuQuery = query(collection(db, 'products'), where('sku', '==', formData.sku));
-        const skuSnapshot = await getDocs(skuQuery);
-        const existingProducts = skuSnapshot.docs.map(doc => ({ id: doc.id, ...doc.data() }));
-
-        // If product already exists and its id isn't the current product's id
-        if (existingProducts.length > 0) {
-          const isDuplicate = existingProducts.some(p => !product || p.id !== product.id);
-          if (isDuplicate) {
-            toast.error('This SKU is already in use by another product.', { id: 'sku-duplicate-error' });
-            return;
-          }
-        }
-      } catch (err) {
-        console.error("Error checking SKU:", err);
+    // Validate variants
+    for (const v of variants) {
+      if (!v.sku || !v.actualPrice) {
+        toast.error(`Please complete Price and SKU fields for all variants.`, { id: 'variant-validation-error' });
+        return;
       }
-    }
-
-    const dPrice = Number(formData.discountedPrice);
-    const aPrice = Number(formData.actualPrice || 0);
-
-    if (formData.stockAlertThreshold !== undefined && formData.stockAlertThreshold !== '' && Number(formData.stockAlertThreshold) < 1) {
-      toast.error('Stock Alert threshold must be at least 1', { id: 'stock-alert-validation-error' });
-      return;
     }
 
     setLoading(true);
     try {
-      // Upload new image files to Cloudinary
-      const uploadPromises = imageFiles.map(file => uploadToCloudinary(file, 'Products'));
-      const uploadedImageUrls = await Promise.all(uploadPromises);
+      // Upload images for each variant
+      const updatedVariants = await Promise.all(variants.map(async (v) => {
+        let uploadedImageUrls = [];
+        if (v.newImageFiles && v.newImageFiles.length > 0) {
+          const uploadPromises = v.newImageFiles.map(file => uploadToCloudinary(file, 'Products'));
+          uploadedImageUrls = await Promise.all(uploadPromises);
+        }
+        const finalImages = [...(v.images || []), ...uploadedImageUrls];
+        return {
+          ...v,
+          images: finalImages
+        };
+      }));
 
-      const finalImages = [...formData.images, ...uploadedImageUrls];
+      const firstVariant = updatedVariants[0];
+      const totalStock = updatedVariants.reduce((sum, v) => sum + (Number(v.stock) || 0), 0);
+      const allImages = Array.from(new Set(updatedVariants.flatMap(v => v.images || [])));
+
+      const cleanFaqs = (formData.faqs || [])
+        .map(item => ({ question: item.question.trim(), answer: item.answer.trim() }))
+        .filter(item => item.question || item.answer);
 
       const productData = {
-        ...formData,
+        name: formData.name,
+        categoryId: formData.categoryId,
+        productType: firstVariant?.productType || 'Repeat',
+        isAvailable: formData.isAvailable,
+        status: formData.isAvailable,
+        description: formData.description,
+        tagline: formData.tagline,
+        care: formData.care,
+        brand: formData.brand || 'MayaSindhu',
+        productId: formData.productId,
+        stockAlertThreshold: firstVariant?.stockAlertThreshold !== undefined ? Number(firstVariant.stockAlertThreshold) : 5,
+        faqs: cleanFaqs,
+        updatedAt: serverTimestamp(),
+
+        // Denormalized/derived fields
         slug: createSlug(formData.name),
-        images: finalImages,
-        stock: formData.productType === 'Unique' ? 1 : Number(formData.stock),
-        stockAlertThreshold: Number(formData.stockAlertThreshold !== undefined ? formData.stockAlertThreshold : 5),
-        discountedPrice: Number(formData.discountedPrice),
-        actualPrice: Number(formData.actualPrice || 0),
-        updatedAt: serverTimestamp()
+        defaultImage: firstVariant?.images[0] || '',
+        price: Number(firstVariant?.price || 0),
+        discountedPrice: Number(firstVariant?.price || 0),
+        actualPrice: Number(firstVariant?.actualPrice || 0),
+        stock: firstVariant?.productType === 'Unique' ? 1 : totalStock,
+        images: allImages,
+        sku: firstVariant?.sku || ''
       };
 
-      if (!isApparelReadymade) {
-        delete productData.size;
-      }
-
-      // Set isShow for Unique products based on stock (1 = true, 0 = false)
-      if (formData.productType === 'Unique') {
-        productData.isShow = productData.stock > 0;
-      }
+      let parentProductId = '';
 
       if (product) {
-        await updateDoc(doc(db, 'products', product.id), productData);
-        toast.success("Product updated successfully");
+        parentProductId = product.id;
+        await updateDoc(doc(db, 'products', parentProductId), productData);
+
+        // Delete deleted variants
+        for (const idToDelete of deletedVariantIds) {
+          await deleteDoc(doc(db, 'products', parentProductId, 'variants', idToDelete));
+        }
+
+        // Save remaining variants
+        for (const v of updatedVariants) {
+          const variantData = {
+            color: v.color || '',
+            design: v.design || '',
+            sku: v.sku || '',
+            price: Number(v.price || 0),
+            actualPrice: Number(v.actualPrice || 0),
+            stock: Number(v.stock || 0),
+            images: v.images || [],
+            productType: v.productType || 'Repeat',
+            stockAlertThreshold: Number(v.stockAlertThreshold !== undefined ? v.stockAlertThreshold : 5)
+          };
+
+          if (v.id.startsWith('temp_')) {
+            await addDoc(collection(db, 'products', parentProductId, 'variants'), variantData);
+          } else {
+            await updateDoc(doc(db, 'products', parentProductId, 'variants', v.id), variantData);
+          }
+        }
+        toast.success("Product and variants updated successfully");
       } else {
-        await addDoc(collection(db, 'products'), {
+        const docRef = await addDoc(collection(db, 'products'), {
           ...productData,
           createdAt: serverTimestamp()
         });
-        toast.success(`Product added with ID: ${productData.productId}`);
+        parentProductId = docRef.id;
+
+        // Save all variants
+        for (const v of updatedVariants) {
+          const variantData = {
+            color: v.color || '',
+            design: v.design || '',
+            sku: v.sku || '',
+            price: Number(v.price || 0),
+            actualPrice: Number(v.actualPrice || 0),
+            stock: Number(v.stock || 0),
+            images: v.images || [],
+            productType: v.productType || 'Repeat',
+            stockAlertThreshold: Number(v.stockAlertThreshold !== undefined ? v.stockAlertThreshold : 5)
+          };
+          await addDoc(collection(db, 'products', parentProductId, 'variants'), variantData);
+        }
+        toast.success(`Product added with variants. ID: ${productData.productId}`);
       }
+
       onClose();
     } catch (error) {
-      console.error('Error saving product:', error);
+      console.error('Error saving product and variants:', error);
       toast.error(error.message || 'Failed to save product');
     } finally {
       setLoading(false);
     }
 
-    // Delete removed images from Cloudinary (best-effort, after save)
     if (removedImageUrls.length > 0) {
       deleteMultipleFromCloudinary(removedImageUrls);
       setRemovedImageUrls([]);
@@ -404,7 +523,7 @@ export default function ProductFormModal({ isOpen, onClose, product = null, init
   return (
     <div className="fixed inset-0 z-[200] flex items-center justify-center p-4 bg-black/60 backdrop-blur-sm transition-all animate-in fade-in duration-300">
       <div
-        className="bg-white w-full max-w-4xl max-h-[90vh] rounded-[24px] shadow-2xl flex flex-col overflow-hidden animate-in zoom-in-95 duration-300"
+        className="bg-white w-full max-w-5xl max-h-[90vh] rounded-[24px] shadow-2xl flex flex-col overflow-hidden animate-in zoom-in-95 duration-300"
         onClick={(e) => e.stopPropagation()}
       >
         {/* Header */}
@@ -413,17 +532,17 @@ export default function ProductFormModal({ isOpen, onClose, product = null, init
             <h2 className="text-[20px] font-bold text-gray-900 tracking-tight flex items-center">
               {product ? (
                 <>
-                  <span>Edit Product</span>
+                  <span>Edit Product (With Variants)</span>
                   <span className="mx-3 text-gray-200 font-light">|</span>
                   <span className="text-[11px] font-bold text-[#1BAFAF] bg-[#1BAFAF]/10 px-3 py-1 rounded-full border border-[#1BAFAF]/10 tracking-wider">
                     {product.productId || '---'}
                   </span>
                 </>
               ) : (
-                'Add Product'
+                'Add Product (With Variants)'
               )}
             </h2>
-            <p className="text-[12px] text-gray-400 font-medium">Capture the essence of your creation</p>
+            <p className="text-[12px] text-gray-400 font-medium">Capture the variety of your creation</p>
           </div>
           <button
             onClick={onClose}
@@ -435,26 +554,60 @@ export default function ProductFormModal({ isOpen, onClose, product = null, init
 
         {/* Form Body */}
         <form onSubmit={handleSubmit} className="flex-1 overflow-y-auto custom-scrollbar bg-[#FAFAFA]">
+          {loading && (
+            <div className="absolute inset-0 bg-white/70 backdrop-blur-sm z-[250] flex flex-col items-center justify-center gap-4">
+              <Loader2 className="w-10 h-10 animate-spin text-[#1BAFAF]" />
+              <p className="text-[14px] font-medium text-gray-500">Processing changes, please wait...</p>
+            </div>
+          )}
           <div className="p-8 pb-32 space-y-8">
-
             <div className="grid grid-cols-1 lg:grid-cols-2 gap-8">
-
+              
               {/* Left Column: Basic Details */}
               <div className="space-y-6">
                 <div className="bg-white p-6 rounded-2xl border border-gray-100 shadow-sm space-y-5 flex flex-col">
                   <div className="flex items-center justify-between">
                     <h3 className="text-[14px] font-bold text-[#1BAFAF] uppercase tracking-wider">Basic Information</h3>
+                    <label className="flex items-center gap-3 cursor-pointer group">
+                      <div className="relative">
+                        <input
+                          type="checkbox"
+                          name="isAvailable"
+                          checked={formData.isAvailable}
+                          onChange={handleInputChange}
+                          className="sr-only"
+                        />
+                        <div className={`w-11 h-6 rounded-full transition-colors ${formData.isAvailable ? 'bg-[#1BAFAF]' : 'bg-gray-200'}`} />
+                        <div className={`absolute top-1 left-1 bg-white w-4 h-4 rounded-full transition-transform duration-200 ${formData.isAvailable ? 'translate-x-5' : ''}`} />
+                      </div>
+                      <span className={`text-[13px] font-bold transition-colors ${formData.isAvailable ? 'text-[#1BAFAF]' : 'text-gray-400'}`}>
+                        {formData.isAvailable ? 'Available' : 'Hidden'}
+                      </span>
+                    </label>
                   </div>
                   <hr className="border-gray-200 -mt-2 mb-3" />
 
-                  <div className="space-y-1.5">
-                    <label className="text-[13px] font-bold text-gray-700 ml-1">Product ID</label>
-                    <input
-                      type="text"
-                      readOnly
-                      value={formData.productId}
-                      className="w-full bg-gray-100 border-none px-4 py-3 rounded-xl text-[14px] outline-none text-gray-500 font-bold cursor-not-allowed"
-                    />
+                  <div className="grid grid-cols-2 gap-4">
+                    <div className="space-y-1.5">
+                      <label className="text-[13px] font-bold text-gray-700 ml-1">Product ID</label>
+                      <input
+                        type="text"
+                        readOnly
+                        value={formData.productId}
+                        className="w-full bg-gray-100 border-none px-4 py-3 rounded-xl text-[14px] outline-none text-gray-500 font-bold cursor-not-allowed"
+                      />
+                    </div>
+                    <div className="space-y-1.5">
+                      <label className="text-[13px] font-bold text-gray-700 ml-1">Brand</label>
+                      <input
+                        type="text"
+                        name="brand"
+                        value={formData.brand}
+                        onChange={handleInputChange}
+                        placeholder="e.g. Nike, MayaSindhu"
+                        className="w-full bg-gray-50 border-none px-4 py-3 rounded-xl text-[14px] outline-none focus:ring-2 focus:ring-[#1BAFAF]/20 focus:bg-white transition-all font-medium"
+                      />
+                    </div>
                   </div>
 
                   <div className="space-y-1.5">
@@ -465,33 +618,34 @@ export default function ProductFormModal({ isOpen, onClose, product = null, init
                       name="name"
                       value={formData.name}
                       onChange={handleInputChange}
-                      placeholder="e.g. Banarasi Silk Saree"
+                      placeholder="e.g. Men's Cotton T-Shirt"
                       className="w-full bg-gray-50 border-none px-4 py-3 rounded-xl text-[14px] outline-none focus:ring-2 focus:ring-[#1BAFAF]/20 focus:bg-white transition-all font-medium"
                     />
                   </div>
 
-                  <div className="space-y-1.5">
-                    <label className="text-[13px] font-bold text-gray-700 ml-1">Tagline</label>
-                    <input
-                      type="text"
-                      name="tagline"
-                      value={formData.tagline}
-                      onChange={handleInputChange}
-                      placeholder="Short catchy phrase"
-                      className="w-full bg-gray-50 border-none px-4 py-3 rounded-xl text-[14px] outline-none focus:ring-2 focus:ring-[#1BAFAF]/20 focus:bg-white transition-all font-medium"
-                    />
-                  </div>
-
-                  <div className="space-y-1.5">
-                    <label className="text-[13px] font-bold text-gray-700 ml-1">Care Instructions</label>
-                    <input
-                      type="text"
-                      name="care"
-                      value={formData.care}
-                      onChange={handleInputChange}
-                      placeholder="e.g. Dry clean only"
-                      className="w-full bg-gray-50 border-none px-4 py-3 rounded-xl text-[14px] outline-none focus:ring-2 focus:ring-[#1BAFAF]/20 focus:bg-white transition-all font-medium"
-                    />
+                  <div className="grid grid-cols-2 gap-4">
+                    <div className="space-y-1.5">
+                      <label className="text-[13px] font-bold text-gray-700 ml-1">Tagline</label>
+                      <input
+                        type="text"
+                        name="tagline"
+                        value={formData.tagline}
+                        onChange={handleInputChange}
+                        placeholder="Short catchy phrase"
+                        className="w-full bg-gray-50 border-none px-4 py-3 rounded-xl text-[14px] outline-none focus:ring-2 focus:ring-[#1BAFAF]/20 focus:bg-white transition-all font-medium"
+                      />
+                    </div>
+                    <div className="space-y-1.5">
+                      <label className="text-[13px] font-bold text-gray-700 ml-1">Care Instructions</label>
+                      <input
+                        type="text"
+                        name="care"
+                        value={formData.care}
+                        onChange={handleInputChange}
+                        placeholder="e.g. Dry clean only"
+                        className="w-full bg-gray-50 border-none px-4 py-3 rounded-xl text-[14px] outline-none focus:ring-2 focus:ring-[#1BAFAF]/20 focus:bg-white transition-all font-medium"
+                      />
+                    </div>
                   </div>
 
                   <div className="space-y-4">
@@ -517,9 +671,7 @@ export default function ProductFormModal({ isOpen, onClose, product = null, init
                           options = parentId ? (findChildren(heirarchy, parentId) || []) : [];
                         }
 
-                        // Always show level 0 and 1. Hide level 2+ if no options.
                         if (level > 1 && options.length === 0) return null;
-
                         const isDisabled = level > 0 && !selectedPathIds[level - 1];
 
                         return (
@@ -566,17 +718,6 @@ export default function ProductFormModal({ isOpen, onClose, product = null, init
                     })()}
                   </div>
 
-                  {isApparelReadymade && (
-                    <div className="space-y-1.5 animate-in fade-in slide-in-from-top-2 duration-300">
-                      <label className="text-[13px] font-bold text-gray-700 ml-1 mb-1.5 block">Size *</label>
-                      <CustomSelect
-                        value={formData.size}
-                        onChange={(val) => setFormData(prev => ({ ...prev, size: val }))}
-                        options={['xs', 'sm', 'm', 'l', 'xl', 'xxl', 'others']}
-                      />
-                    </div>
-                  )}
-
                   <div className="space-y-1.5 flex flex-col">
                     <label className="text-[13px] font-bold text-gray-700 ml-1">Description</label>
                     <textarea
@@ -584,207 +725,271 @@ export default function ProductFormModal({ isOpen, onClose, product = null, init
                       value={formData.description}
                       onChange={handleInputChange}
                       placeholder="Tell the story of this product..."
-                      rows={4}
+                      rows={5}
                       className="w-full bg-gray-50 border-none px-4 py-3 rounded-xl text-[14px] outline-none focus:ring-2 focus:ring-[#1BAFAF]/20 focus:bg-white transition-all font-medium resize-none"
                     ></textarea>
                   </div>
                 </div>
               </div>
 
-              {/* Right Column: Pricing, Media, Inventory */}
+              {/* Right Column: Variant Management */}
               <div className="space-y-6">
-                {/* Inventory & Status Card */}
-                <div className="bg-white p-6 rounded-2xl border border-gray-100 shadow-sm space-y-5 animate-in fade-in slide-in-from-top-4 duration-300">
+                <div className="bg-white p-6 rounded-2xl border border-gray-100 shadow-sm space-y-6 flex flex-col">
                   <div className="flex items-center justify-between">
-                    <h3 className="text-[14px] font-bold text-[#1BAFAF] uppercase tracking-wider">Inventory & Status</h3>
-                    <label className="flex items-center gap-3 cursor-pointer group">
-                      <div className="relative">
-                        <input
-                          type="checkbox"
-                          name="isAvailable"
-                          checked={formData.isAvailable}
-                          onChange={handleInputChange}
-                          className="sr-only"
-                        />
-                        <div className={`w-11 h-6 rounded-full transition-colors ${formData.isAvailable ? 'bg-[#1BAFAF]' : 'bg-gray-200'}`} />
-                        <div className={`absolute top-1 left-1 bg-white w-4 h-4 rounded-full transition-transform duration-200 ${formData.isAvailable ? 'translate-x-5' : ''}`} />
-                      </div>
-                      <span className={`text-[13px] font-bold transition-colors ${formData.isAvailable ? 'text-[#1BAFAF]' : 'text-gray-400'}`}>
-                        {formData.isAvailable ? 'Available' : 'Hidden'}
-                      </span>
-                    </label>
-                  </div>
-                  <hr className="border-gray-200 -mt-2 mb-3" />
-                  <div className="grid grid-cols-2 gap-4 mt-4 animate-in fade-in slide-in-from-top-2 duration-300">
-                    <div className="space-y-1.5 relative">
-                      <label className="text-[13px] font-bold text-gray-700 ml-1">
-                        SKU *
-                      </label>
-                      <input
-                        type="text"
-                        readOnly
-                        value={formData.sku}
-                        className="w-full bg-gray-100 border-none px-4 py-3 rounded-xl text-[14px] outline-none text-gray-500 font-bold cursor-not-allowed uppercase"
-                      />
-                    </div>
-                    <div className="space-y-1.5 relative">
-                      <label className="text-[13px] font-bold text-gray-700 ml-1">
-                        Stock Alert Below *
-                      </label>
-                      <input
-                        required={formData.productType !== 'Unique'}
-                        type="number"
-                        min="1"
-                        name="stockAlertThreshold"
-                        value={formData.productType === 'Unique' ? '' : formData.stockAlertThreshold}
-                        onChange={handleInputChange}
-                        onKeyDown={handleKeyPress}
-                        disabled={formData.productType === 'Unique'}
-                        placeholder={formData.productType === 'Unique' ? 'N/A' : 'e.g. 5'}
-                        className={`w-full border-none px-4 py-3 rounded-xl text-[14px] outline-none transition-all font-bold ${formData.productType === 'Unique'
-                            ? 'bg-gray-100 text-gray-400 cursor-not-allowed'
-                            : 'bg-gray-50 text-gray-700 focus:ring-2 focus:ring-[#1BAFAF]/20 focus:bg-white'
-                          }`}
-                      />
-                    </div>
-                  </div>
-                  <div className="grid grid-cols-2 gap-4">
-                    <div className="space-y-1.5">
-                      <label className="text-[13px] font-bold text-gray-700 ml-1">Product Type</label>
-                      <CustomSelect
-                        value={formData.productType}
-                        onChange={(val) => setFormData(prev => ({ ...prev, productType: val, stock: val === 'Unique' ? '1' : prev.stock }))}
-                        options={['Repeat', 'Unique']}
-                      />
-                    </div>
-
-                    <div className="space-y-1.5">
-                      <label className="text-[13px] font-bold text-gray-700 ml-1">Stock Quantity</label>
-                      <input
-                        required={formData.productType !== 'Unique'}
-                        type="number"
-                        min="0"
-                        name="stock"
-                        value={formData.stock}
-                        onChange={handleInputChange}
-                        onKeyDown={handleKeyPress}
-                        disabled={formData.productType === 'Unique'}
-                        placeholder={formData.productType === 'Unique' ? '1' : '0'}
-                        className={`w-full border-none px-4 py-3 rounded-xl text-[14px] outline-none transition-all font-bold ${formData.productType === 'Unique'
-                            ? 'bg-gray-100 text-gray-400 cursor-not-allowed'
-                            : 'bg-gray-50 text-gray-700 focus:ring-2 focus:ring-[#1BAFAF]/20 focus:bg-white'
-                          }`}
-                      />
-                    </div>
-                  </div>
-                </div>
-
-                <div className="bg-white p-6 rounded-2xl border border-gray-100 shadow-sm space-y-5">
-                  <h3 className="text-[14px] font-bold text-[#1BAFAF] uppercase tracking-wider">Pricing</h3>
-                  <hr className="border-gray-200 -mt-2 mb-3" />
-
-                  <div className="grid grid-cols-2 gap-4">
-                    <div className="space-y-1.5">
-                      <label className="text-[13px] font-bold text-gray-700 ml-1">Original Price (₹) *</label>
-                      <input
-                        required
-                        type="number"
-                        min="0"
-                        name="actualPrice"
-                        value={formData.actualPrice}
-                        onChange={handleInputChange}
-                        onKeyDown={handleKeyPress}
-                        placeholder="0.00"
-                        className="w-full bg-gray-50 border-none px-4 py-3 rounded-xl text-[14px] outline-none focus:ring-2 focus:ring-[#1BAFAF]/20 focus:bg-white transition-all font-bold text-gray-900"
-                      />
-                    </div>
-                    <div className="space-y-1.5">
-                      <label className="text-[13px] font-bold text-gray-700 ml-1">Discount (%)</label>
-                      <input
-                        type="number"
-                        min="0"
-                        max="100"
-                        name="discountPercent"
-                        value={formData.discountPercent}
-                        onChange={handleInputChange}
-                        onKeyDown={handleKeyPress}
-                        placeholder="0"
-                        className="w-full bg-gray-50 border-none px-4 py-3 rounded-xl text-[14px] outline-none focus:ring-2 focus:ring-[#1BAFAF]/20 focus:bg-white transition-all font-medium text-gray-700"
-                      />
-                    </div>
-                  </div>
-
-                  <div className="space-y-1.5 pt-2">
-                    <label className="text-[13px] font-bold text-gray-400 ml-1">Auto-calculated Discounted Price (₹)</label>
-                    <div className="w-full bg-[#E8F7F7] border border-[#1BAFAF]/10 px-4 py-3 rounded-xl text-[16px] font-black text-[#1BAFAF] flex items-center justify-between">
-                      <span>₹ {formData.discountedPrice ? Number(formData.discountedPrice).toLocaleString('en-IN', { minimumFractionDigits: 2, maximumFractionDigits: 2 }) : '0.00'}</span>
-                      {Number(formData.discountPercent) > 0 && (
-                        <span className="text-[11px] font-bold bg-[#1BAFAF]/20 px-2 py-0.5 rounded-lg">
-                          Saved {formData.discountPercent}%
-                        </span>
-                      )}
-                    </div>
-                  </div>
-                </div>
-
-                <div className="bg-white p-6 rounded-2xl border border-gray-100 shadow-sm flex flex-col">
-                  <div className="flex items-center justify-between mb-5">
-                    <h3 className="text-[14px] font-bold text-[#1BAFAF] uppercase tracking-wider">Product Media</h3>
-                    <span className="text-[11px] font-bold text-gray-300 uppercase">{previews.length} Files</span>
-                  </div>
-                  <hr className="border-gray-200 -mt-2 mb-5" />
-
-                  <div className="flex flex-col gap-4">
-                    <input
-                      type="file"
-                      multiple
-                      accept="image/*"
-                      ref={fileInputRef}
-                      onChange={handleImageChange}
-                      className="hidden"
-                    />
-
-                    {/* Dropzone */}
-                    <div
-                      onClick={() => fileInputRef.current.click()}
-                      className={`border-2 border-dashed border-gray-100 rounded-2xl p-8 flex flex-col items-center justify-center gap-3 cursor-pointer hover:border-[#1BAFAF]/30 hover:bg-[#1BAFAF]/5 transition-all group ${previews.length === 0 ? '' : 'hidden'}`}
+                    <h3 className="text-[14px] font-bold text-[#1BAFAF] uppercase tracking-wider">Product Variants</h3>
+                    <button
+                      type="button"
+                      onClick={handleAddVariant}
+                      className="flex items-center gap-1 text-[12px] font-bold text-[#1BAFAF] hover:text-[#17a0a0] transition-colors"
                     >
-                      <div className="w-12 h-12 bg-[#eaf6f6] rounded-xl flex items-center justify-center text-[#1BAFAF] group-hover:scale-110 transition-transform">
-                        <Upload size={24} />
-                      </div>
-                      <div className="text-center">
-                        <p className="text-[14px] font-bold text-gray-700">Click to upload images</p>
-                        <p className="text-[11px] text-gray-400 font-medium">PNG, JPG or WebP (Max 5MB each)</p>
-                      </div>
-                    </div>
+                      <Plus size={16} /> Add Variant
+                    </button>
+                  </div>
+                  <hr className="border-gray-200 -mt-2 mb-2" />
 
-                    {/* Previews */}
-                    {previews.length > 0 && (
-                      <div className="flex overflow-x-auto custom-scrollbar gap-3 pb-2 items-start">
-                        {previews.map((src, index) => (
-                          <div key={index} className="relative group w-[110px] h-[110px] flex-shrink-0 rounded-xl overflow-hidden border border-gray-100 shadow-sm bg-gray-50 flex items-center justify-center">
-                            <img src={src} alt="Preview" className="w-full h-full object-contain" />
+                  <div className="space-y-6 max-h-[600px] overflow-y-auto pr-1 custom-scrollbar">
+                    {variants.map((variant, index) => (
+                      <div key={variant.id} className="p-5 bg-gray-50/50 rounded-2xl relative space-y-4 animate-in fade-in duration-200">
+                        <div className="flex items-center justify-between">
+                          <span className="text-[11px] font-bold text-[#1BAFAF] bg-[#1BAFAF]/10 px-2.5 py-0.5 rounded-full">
+                            Variant #{index + 1}
+                          </span>
+                          {variants.length > 1 && (
                             <button
                               type="button"
-                              onClick={() => removePreview(index)}
-                              className="absolute top-1.5 right-1.5 w-6 h-6 bg-red-500 text-white rounded-lg flex items-center justify-center opacity-0 group-hover:opacity-100 transition-opacity shadow-lg"
+                              onClick={() => handleDeleteVariant(variant.id)}
+                              className="text-red-500 hover:text-red-700 transition-colors p-1.5 hover:bg-red-50 rounded-lg"
                             >
-                              <X size={14} strokeWidth={3} />
+                              <Trash2 size={16} />
+                            </button>
+                          )}
+                        </div>
+
+                        {/* Color & Design */}
+                        <div className="grid grid-cols-2 gap-3">
+                          <div className="space-y-1">
+                            <label className="text-[11px] font-bold text-gray-500 ml-1">Color *</label>
+                            <input
+                              type="text"
+                              required
+                              placeholder="e.g. Red, Blue"
+                              value={variant.color}
+                              onChange={(e) => handleVariantChange(variant.id, 'color', e.target.value)}
+                              className="w-full bg-white border border-gray-250 px-3 py-2 rounded-lg text-[13px] outline-none focus:ring-2 focus:ring-[#1BAFAF]/20 transition-all font-medium"
+                            />
+                          </div>
+                          <div className="space-y-1">
+                            <label className="text-[11px] font-bold text-gray-500 ml-1">Design</label>
+                            <input
+                              type="text"
+                              placeholder="e.g. Plain, Printed"
+                              value={variant.design}
+                              onChange={(e) => handleVariantChange(variant.id, 'design', e.target.value)}
+                              className="w-full bg-white border border-gray-250 px-3 py-2 rounded-lg text-[13px] outline-none focus:ring-2 focus:ring-[#1BAFAF]/20 transition-all font-medium"
+                            />
+                          </div>
+                        </div>
+
+                        {/* Product Type & Stock Alert Threshold */}
+                        <div className="grid grid-cols-2 gap-3">
+                          <div className="space-y-1">
+                            <label className="text-[11px] font-bold text-gray-500 ml-1">Product Type</label>
+                            <CustomSelect
+                              value={variant.productType || 'Repeat'}
+                              onChange={(val) => {
+                                handleVariantChange(variant.id, 'productType', val);
+                                if (val === 'Unique') {
+                                  handleVariantChange(variant.id, 'stock', 1);
+                                }
+                              }}
+                              options={['Repeat', 'Unique']}
+                            />
+                          </div>
+                          <div className="space-y-1">
+                            <label className="text-[11px] font-bold text-gray-500 ml-1">Stock Alert Threshold</label>
+                            <input
+                              type="number"
+                              min="1"
+                              disabled={variant.productType === 'Unique'}
+                              value={variant.productType === 'Unique' ? '' : (variant.stockAlertThreshold !== undefined ? variant.stockAlertThreshold : 5)}
+                              onChange={(e) => handleVariantChange(variant.id, 'stockAlertThreshold', Number(e.target.value))}
+                              onKeyDown={handleKeyPress}
+                              className={`w-full border px-3 py-2 rounded-lg text-[13px] outline-none transition-all font-medium ${
+                                variant.productType === 'Unique'
+                                  ? 'bg-gray-100 text-gray-400 border-gray-200 cursor-not-allowed'
+                                  : 'bg-white text-gray-700 border-gray-200 focus:ring-2 focus:ring-[#1BAFAF]/20'
+                              }`}
+                            />
+                          </div>
+                        </div>
+
+                        {/* SKU & Stock */}
+                        <div className="grid grid-cols-2 gap-3">
+                          <div className="space-y-1">
+                            <label className="text-[11px] font-bold text-gray-500 ml-1">SKU *</label>
+                            <input
+                              type="text"
+                              required
+                              placeholder="SKU"
+                              value={variant.sku}
+                              onChange={(e) => handleVariantChange(variant.id, 'sku', e.target.value)}
+                              className="w-full bg-white border border-gray-250 px-3 py-2 rounded-lg text-[13px] outline-none focus:ring-2 focus:ring-[#1BAFAF]/20 transition-all font-medium uppercase"
+                            />
+                          </div>
+                          <div className="space-y-1">
+                            <label className="text-[11px] font-bold text-gray-500 ml-1">Stock Qty *</label>
+                            <input
+                              type="number"
+                              required
+                              placeholder="0"
+                              min="0"
+                              disabled={variant.productType === 'Unique'}
+                              value={variant.productType === 'Unique' ? 1 : variant.stock}
+                              onChange={(e) => handleVariantChange(variant.id, 'stock', Number(e.target.value))}
+                              onKeyDown={handleKeyPress}
+                              className={`w-full border px-3 py-2 rounded-lg text-[13px] outline-none transition-all font-medium ${
+                                variant.productType === 'Unique'
+                                  ? 'bg-gray-100 text-gray-400 border-gray-200 cursor-not-allowed'
+                                  : 'bg-white text-gray-700 border-gray-200 focus:ring-2 focus:ring-[#1BAFAF]/20'
+                              }`}
+                            />
+                          </div>
+                        </div>
+
+                        {/* Pricing */}
+                        <div className="grid grid-cols-3 gap-3">
+                          <div className="space-y-1">
+                            <label className="text-[11px] font-bold text-gray-500 ml-1">Original Price *</label>
+                            <input
+                              type="number"
+                              required
+                              placeholder="0.00"
+                              value={variant.actualPrice}
+                              onChange={(e) => handleVariantChange(variant.id, 'actualPrice', e.target.value)}
+                              onKeyDown={handleKeyPress}
+                              className="w-full bg-white border border-gray-250 px-3 py-2 rounded-lg text-[13px] outline-none focus:ring-2 focus:ring-[#1BAFAF]/20 transition-all font-medium text-gray-900"
+                            />
+                          </div>
+                          <div className="space-y-1">
+                            <label className="text-[11px] font-bold text-gray-500 ml-1">Discount (%)</label>
+                            <input
+                              type="number"
+                              min="0"
+                              max="100"
+                              placeholder="0"
+                              value={variant.discountPercent}
+                              onChange={(e) => handleVariantChange(variant.id, 'discountPercent', e.target.value)}
+                              onKeyDown={handleKeyPress}
+                              className="w-full bg-white border border-gray-250 px-3 py-2 rounded-lg text-[13px] outline-none focus:ring-2 focus:ring-[#1BAFAF]/20 transition-all font-medium text-gray-750"
+                            />
+                          </div>
+                          <div className="space-y-1">
+                            <label className="text-[11px] font-bold text-gray-400 ml-1">Sale Price</label>
+                            <div className="w-full bg-[#E8F7F7] px-3 py-2 rounded-lg text-[13px] font-bold text-[#1BAFAF] border border-[#1BAFAF]/10 overflow-hidden text-ellipsis whitespace-nowrap">
+                              ₹ {variant.price || '0.00'}
+                            </div>
+                          </div>
+                        </div>
+
+                        {/* Variant Media */}
+                        <div className="space-y-2">
+                          <label className="text-[11px] font-bold text-gray-500 ml-1 block">Variant Photos ({variant.previews?.length || 0})</label>
+                          <input
+                            type="file"
+                            multiple
+                            accept="image/*"
+                            id={`file-${variant.id}`}
+                            onChange={(e) => handleVariantImageChange(variant.id, e)}
+                            className="hidden"
+                          />
+                          <div className="flex flex-wrap gap-2 items-center">
+                            {variant.previews?.map((src, idx) => (
+                              <div key={idx} className="relative group w-14 h-14 rounded-lg overflow-hidden border border-gray-200 bg-white flex items-center justify-center">
+                                <img src={src} alt="Preview" className="w-full h-full object-cover" />
+                                <button
+                                  type="button"
+                                  onClick={() => removeVariantPreview(variant.id, idx)}
+                                  className="absolute inset-0 bg-black/40 text-white opacity-0 group-hover:opacity-100 transition-opacity flex items-center justify-center"
+                                >
+                                  <X size={12} strokeWidth={3} />
+                                </button>
+                              </div>
+                            ))}
+                            <button
+                              type="button"
+                              onClick={() => document.getElementById(`file-${variant.id}`).click()}
+                              className="w-14 h-14 rounded-lg border-2 border-dashed border-gray-200 flex flex-col items-center justify-center text-gray-400 hover:text-[#1BAFAF] hover:border-[#1BAFAF]/30 hover:bg-[#1BAFAF]/5 transition-all bg-white"
+                            >
+                              <Plus size={16} />
                             </button>
                           </div>
-                        ))}
-                        <button
-                          type="button"
-                          onClick={() => fileInputRef.current.click()}
-                          className="w-[110px] h-[110px] flex-shrink-0 rounded-xl border-2 border-dashed border-gray-100 flex flex-col items-center justify-center gap-2 text-gray-400 hover:text-[#1BAFAF] hover:border-[#1BAFAF]/30 hover:bg-[#1BAFAF]/5 transition-all bg-gray-50/50"
-                        >
-                          <Plus size={24} />
-                          <span className="text-[10px] font-bold uppercase tracking-wider">Add Photo</span>
-                        </button>
+                        </div>
                       </div>
-                    )}
+                    ))}
                   </div>
                 </div>
+              </div>
+            </div>
+
+            {/* FAQ Questionnaire Section */}
+            <div className="bg-white p-6 rounded-2xl border border-gray-100 shadow-sm space-y-5 flex flex-col w-full mt-6">
+              <div className="flex items-center justify-between">
+                <h3 className="text-[14px] font-bold text-[#1BAFAF] uppercase tracking-wider">Product Questionnaire (FAQ)</h3>
+                <button
+                  type="button"
+                  onClick={() => { setFormData(prev => ({ ...prev, faqs: [...prev.faqs, { question: '', answer: '' }] })); setIsDirty(true); }}
+                  className="flex items-center gap-1.5 text-[12px] font-bold text-[#1BAFAF] hover:text-[#17a0a0] transition-colors"
+                >
+                  <Plus size={16} /> Add Question
+                </button>
+              </div>
+              <hr className="border-gray-200 -mt-2 mb-3" />
+
+              <div className="space-y-4 w-full">
+                {formData.faqs.map((faq, index) => (
+                  <div key={index} className="p-4 bg-gray-50/50 rounded-xl border border-gray-100/80 relative space-y-3 w-full animate-in fade-in duration-200">
+                    <div className="flex items-center justify-between">
+                      <span className="text-[11px] font-bold text-[#1BAFAF] bg-[#1BAFAF]/10 px-2.5 py-0.5 rounded-full border border-[#1BAFAF]/10">
+                        Question #{index + 1}
+                      </span>
+                      {formData.faqs.length > 1 && (
+                        <button
+                          type="button"
+                          onClick={() => { setFormData(prev => ({ ...prev, faqs: prev.faqs.filter((_, i) => i !== index) })); setIsDirty(true); }}
+                          className="text-red-500 hover:text-red-700 transition-colors p-1 hover:bg-red-50 rounded-lg"
+                        >
+                          <Trash2 size={16} />
+                        </button>
+                      )}
+                    </div>
+                    <div className="space-y-2">
+                      <input
+                        type="text"
+                        placeholder="Question"
+                        value={faq.question}
+                        onChange={(e) => {
+                          const newFaqs = [...formData.faqs];
+                          newFaqs[index].question = e.target.value;
+                          setFormData(prev => ({ ...prev, faqs: newFaqs }));
+                          setIsDirty(true);
+                        }}
+                        className="w-full bg-white border border-gray-200 px-3 py-2 rounded-lg text-[13px] outline-none focus:ring-2 focus:ring-[#1BAFAF]/20 transition-all font-medium"
+                      />
+                      <textarea
+                        placeholder="Answer"
+                        value={faq.answer}
+                        onChange={(e) => {
+                          const newFaqs = [...formData.faqs];
+                          newFaqs[index].answer = e.target.value;
+                          setFormData(prev => ({ ...prev, faqs: newFaqs }));
+                          setIsDirty(true);
+                        }}
+                        rows={2}
+                        className="w-full bg-white border border-gray-200 px-3 py-2 rounded-lg text-[13px] outline-none focus:ring-2 focus:ring-[#1BAFAF]/20 transition-all font-medium resize-none"
+                      />
+                    </div>
+                  </div>
+                ))}
               </div>
             </div>
           </div>
@@ -801,8 +1006,8 @@ export default function ProductFormModal({ isOpen, onClose, product = null, init
           </button>
           <button
             onClick={handleSubmit}
-            disabled={loading}
-            className="flex items-center gap-2 bg-[#1BAFAF] hover:bg-[#17a0a0] text-white px-8 py-2.5 rounded-xl text-[14px] font-bold transition-all shadow-lg shadow-[#1BAFAF]/20 active:scale-95 disabled:opacity-70 disabled:cursor-not-allowed"
+            disabled={loading || !isDirty}
+            className="flex items-center gap-2 bg-[#1BAFAF] hover:bg-[#17a0a0] text-white px-8 py-2.5 rounded-xl text-[14px] font-bold transition-all shadow-lg shadow-[#1BAFAF]/20 active:scale-95 disabled:opacity-50 disabled:cursor-not-allowed disabled:shadow-none"
           >
             {loading ? (
               <>
@@ -811,7 +1016,7 @@ export default function ProductFormModal({ isOpen, onClose, product = null, init
               </>
             ) : (
               <>
-                {product ? 'Update' : 'Add Product'}
+                {product ? 'Update Product' : 'Add Product'}
               </>
             )}
           </button>

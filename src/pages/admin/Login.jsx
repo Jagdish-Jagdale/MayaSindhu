@@ -22,7 +22,10 @@ const AdminLogin = () => {
     isEcommerceAdmin, 
     isOfflineStoreAdmin, 
     adminRole, 
-    loading: authLoading 
+    loading: authLoading,
+    login,
+    sessionError,
+    setSessionError
   } = useAuth();
 
   const [loginLoading, setLoginLoading] = useState(false);
@@ -35,6 +38,14 @@ const AdminLogin = () => {
       setShowPortalSelect(false);
     }
   }, [isEcommerceAdmin, isOfflineStoreAdmin]);
+
+  // Synchronize Session Errors
+  useEffect(() => {
+    if (sessionError) {
+      toast.error(sessionError);
+      setSessionError(null);
+    }
+  }, [sessionError, setSessionError]);
 
   const triggerError = (msg) => {
     setError(msg);
@@ -58,12 +69,16 @@ const AdminLogin = () => {
     setLoginLoading(true);
     try {
       await setPersistence(auth, browserSessionPersistence);
-      await signInWithEmailAndPassword(auth, email, password);
+      await login(email, password);
       // Logic for redirection is handled by AdminProtectedRoute or the useEffect above
       toast.success("Identity verified.");
     } catch (err) {
       console.error(err);
-      triggerError('Invalid email or password.');
+      if (err.code === "auth/max-devices-exceeded" || err.message?.includes("Maximum 3 devices")) {
+        // Handled by sessionError useEffect to prevent double toast notifications
+      } else {
+        triggerError('Invalid email or password.');
+      }
     } finally {
       setLoginLoading(false);
     }
