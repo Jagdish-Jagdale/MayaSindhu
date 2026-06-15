@@ -24,6 +24,8 @@ import {
   MessageSquare
 } from 'lucide-react';
 import { Link, useLocation, useNavigate } from 'react-router-dom';
+import { PiUserSwitchLight } from 'react-icons/pi';
+import { useAuth } from '../../context/AuthContext';
 import { auth } from '../../firebase';
 import { signOut, onAuthStateChanged } from 'firebase/auth';
 import { useState, useEffect } from 'react';
@@ -49,6 +51,7 @@ function getMenuItems(pathname) {
     { title: 'Categories', icon: Grid2X2, path: `${base}/categories` },
     { title: 'Orders', icon: ShoppingBag, path: `${base}/orders` },
     { title: 'Reviews', icon: MessageSquare, path: `${base}/reviews` },
+    { title: 'Return', icon: RotateCcw, path: `${base}/return` },
     { title: 'Reports', icon: BarChart3, path: `${base}/reports` },
     { title: 'Delivery Charges', icon: Truck, path: `${base}/delivery-charges` },
     {
@@ -74,10 +77,24 @@ function getMenuItems(pathname) {
 export default function Sidebar({ isCollapsed }) {
   const location = useLocation();
   const navigate = useNavigate();
+  const { adminRole } = useAuth();
   const [userEmail, setUserEmail] = useState('');
   const [openMenus, setOpenMenus] = useState([]); // Closed by default
   const [isLogoutModalOpen, setIsLogoutModalOpen] = useState(false);
   const [isLoggingOut, setIsLoggingOut] = useState(false);
+  const [isSwitchOpen, setIsSwitchOpen] = useState(false);
+
+  const currentPanel = location.pathname.startsWith('/superadmin')
+    ? 'Super Admin'
+    : location.pathname.startsWith('/admin-offline')
+    ? 'Offline Admin'
+    : 'Online Admin';
+
+  const panels = [
+    { name: 'Super Admin', path: '/superadmin/dashboard', color: 'from-purple-500 to-indigo-600' },
+    { name: 'Online Admin', path: '/admin/dashboard', color: 'from-[#1BAFAF] to-[#148F8F]' },
+    { name: 'Offline Admin', path: '/admin-offline/dashboard', color: 'from-orange-500 to-red-600' },
+  ];
 
   useEffect(() => {
     const unsub = onAuthStateChanged(auth, (u) => {
@@ -133,6 +150,63 @@ export default function Sidebar({ isCollapsed }) {
           </>
         )}
       </div>
+
+      {/* Panel Switcher (Only for Super Admin) */}
+      {adminRole === 'Super Admin' && (
+        <div className="px-3 py-2 border-b border-gray-100 relative shrink-0">
+          <button
+            onClick={() => setIsSwitchOpen(!isSwitchOpen)}
+            title={isCollapsed ? "Switch Admin Panel" : ""}
+            className={`
+              w-full flex items-center rounded-xl transition-all duration-300 text-gray-700 hover:bg-gray-100 hover:text-gray-900 border border-gray-100 shadow-sm
+              ${isCollapsed ? 'justify-center p-2.5' : 'gap-2.5 px-3 py-2.5 text-[12px] font-semibold'}
+            `}
+          >
+            <PiUserSwitchLight size={isCollapsed ? 20 : 16} className="text-gray-500 shrink-0" />
+            {!isCollapsed && (
+              <>
+                <span className="truncate flex-1 text-left">{currentPanel} Panel</span>
+                <ChevronDown
+                  size={14}
+                  className={`text-gray-400 transition-transform duration-300 ${isSwitchOpen ? 'rotate-180' : ''}`}
+                />
+              </>
+            )}
+          </button>
+
+          {isSwitchOpen && (
+            <div 
+              className={`
+                absolute z-50 mt-1 bg-white border border-gray-100 rounded-xl shadow-lg py-1.5 animate-in fade-in slide-in-from-top-2 duration-200
+                ${isCollapsed ? 'left-full top-0 ml-2 w-48' : 'left-3 right-3'}
+              `}
+            >
+              {panels.map((p) => {
+                const active = currentPanel === p.name;
+                return (
+                  <button
+                    key={p.name}
+                    onClick={() => {
+                      setIsSwitchOpen(false);
+                      navigate(p.path);
+                    }}
+                    className={`
+                      w-full text-left px-3 py-2 text-[12px] font-medium transition-colors flex items-center gap-2
+                      ${active 
+                        ? 'bg-gray-50 text-[#1BAFAF] font-semibold' 
+                        : 'text-gray-600 hover:bg-gray-50 hover:text-gray-900'
+                      }
+                    `}
+                  >
+                    <span className={`w-2 h-2 rounded-full bg-gradient-to-r ${p.color}`} />
+                    <span>{p.name}</span>
+                  </button>
+                );
+              })}
+            </div>
+          )}
+        </div>
+      )}
 
       {/* Nav links */}
       <nav className="flex-1 px-2 py-3 space-y-1 overflow-y-auto min-h-0 scrollbar-hide">

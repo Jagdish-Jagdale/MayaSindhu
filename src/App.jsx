@@ -31,6 +31,7 @@ import Orders from './pages/admin/Orders';
 import Reports from './pages/admin/Reports';
 import DeliveryCharges from './pages/admin/DeliveryCharges';
 import Reviews from './pages/admin/Reviews';
+import OnlineReturns from './pages/admin/Returns';
 import useOnlineStatus from './hooks/useOnlineStatus';
 import AdminProtectedRoute from './components/admin/AdminProtectedRoute';
 import Settings from './pages/admin/Settings';
@@ -48,6 +49,7 @@ import SuperAdminDashboard from './pages/superadmin/Dashboard';
 import SuperAdminAdmins from './pages/superadmin/Admins';
 import SuperAdminUsers from './pages/superadmin/Users';
 import SuperAdminSuperAdmins from './pages/superadmin/SuperAdmins';
+import SuperAdminActiveSessions from './pages/superadmin/ActiveSessions';
 
 
 // Settings Sub-pages
@@ -147,6 +149,7 @@ function App() {
             <Route path="categories" element={<Categories />} />
             <Route path="orders" element={<Orders />} />
             <Route path="reviews" element={<Reviews />} />
+            <Route path="return" element={<OnlineReturns />} />
             <Route path="reports" element={<Reports />} />
             <Route path="delivery-charges" element={<DeliveryCharges />} />
             <Route path="settings" element={<Settings />} />
@@ -194,6 +197,7 @@ function App() {
             <Route path="admins" element={<SuperAdminAdmins />} />
             <Route path="users" element={<SuperAdminUsers />} />
             <Route path="reports" element={<Reports />} />
+            <Route path="sessions" element={<SuperAdminActiveSessions />} />
           </Route>
 
           {/* Catch-all Route for 404 - Page Not Found */}

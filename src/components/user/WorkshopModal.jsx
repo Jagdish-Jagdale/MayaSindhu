@@ -1,6 +1,6 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
-import { X, User, Phone, Mail, MapPin, Users, Calendar, Loader2, CheckCircle2 } from 'lucide-react';
+import { X, User, Phone, Mail, MapPin, Users, Calendar, Loader2, CheckCircle2, AlertCircle } from 'lucide-react';
 import { db } from '../../firebase';
 import { collection, addDoc, serverTimestamp } from 'firebase/firestore';
 import toast from 'react-hot-toast';
@@ -8,6 +8,7 @@ import toast from 'react-hot-toast';
 export default function WorkshopModal({ isOpen, onClose, workshop }) {
   const [loading, setLoading] = useState(false);
   const [success, setSuccess] = useState(false);
+  const [showConfirmModal, setShowConfirmModal] = useState(false);
   const [formData, setFormData] = useState({
     fullName: '',
     phone: '',
@@ -16,18 +17,31 @@ export default function WorkshopModal({ isOpen, onClose, workshop }) {
     participants: '1'
   });
 
+  // Load Razorpay script dynamically
+  useEffect(() => {
+    if (!isOpen) return;
+    if (window.Razorpay) return;
+    const script = document.createElement('script');
+    script.src = "https://checkout.razorpay.com/v1/checkout.js";
+    script.async = true;
+    document.body.appendChild(script);
+  }, [isOpen]);
+
   if (!isOpen || !workshop) return null;
 
-  const handleSubmit = async (e) => {
-    e.preventDefault();
+  const totalAmount = Number(workshop.fees || 0) * Number(formData.participants || 1);
+
+  const handleFreeBooking = async () => {
     setLoading(true);
     try {
       await addDoc(collection(db, 'workshopBookings'), {
         ...formData,
         workshopName: workshop.name,
         workshopDate: workshop.date,
-        createdAt: serverTimestamp(),
-        status: 'pending'
+        fees: 0,
+        totalAmountPaid: 0,
+        status: 'free',
+        createdAt: serverTimestamp()
       });
       setSuccess(true);
       toast.success('Slot booked successfully!');
@@ -41,6 +55,77 @@ export default function WorkshopModal({ isOpen, onClose, workshop }) {
       toast.error('Failed to book slot. Please try again.');
     } finally {
       setLoading(false);
+    }
+  };
+
+  const handleRazorpayPayment = () => {
+    if (!window.Razorpay) {
+      toast.error("Razorpay payment gateway failed to load. Please check your internet connection.");
+      return;
+    }
+
+    setShowConfirmModal(false);
+    setLoading(true);
+
+    const options = {
+      key: import.meta.env.VITE_RAZORPAY_KEY_ID || "rzp_test_5P3aU2HnL6k9Xq",
+      amount: totalAmount * 100, // in paise
+      currency: "INR",
+      name: "MayaSindhu Workshops",
+      description: `Workshop Booking: ${workshop.name}`,
+      image: "/src/assets/mstitle.png",
+      handler: async function (response) {
+        try {
+          await addDoc(collection(db, 'workshopBookings'), {
+            ...formData,
+            workshopName: workshop.name,
+            workshopDate: workshop.date,
+            fees: Number(workshop.fees) || 0,
+            totalAmountPaid: totalAmount,
+            razorpayPaymentId: response.razorpay_payment_id,
+            status: 'paid',
+            createdAt: serverTimestamp()
+          });
+          setSuccess(true);
+          toast.success('Slot booked and payment received!');
+          setTimeout(() => {
+            onClose();
+            setSuccess(false);
+            setFormData({ fullName: '', phone: '', email: '', address: '', participants: '1' });
+          }, 3000);
+        } catch (error) {
+          console.error("Booking save error:", error);
+          toast.error("Failed to save booking. Please contact support with payment ID: " + response.razorpay_payment_id);
+        } finally {
+          setLoading(false);
+        }
+      },
+      prefill: {
+        name: formData.fullName,
+        email: formData.email,
+        contact: formData.phone
+      },
+      theme: {
+        color: "#1BAFAF"
+      },
+      modal: {
+        ondismiss: function() {
+          toast.error("Payment cancelled.");
+          setLoading(false);
+        }
+      }
+    };
+
+    const rzp = new window.Razorpay(options);
+    rzp.open();
+  };
+
+  const handleSubmit = (e) => {
+    e.preventDefault();
+    if (workshop.fees && Number(workshop.fees) > 0) {
+      setShowConfirmModal(true);
+    } else {
+      handleFreeBooking();
     }
   };
 
@@ -70,7 +155,7 @@ export default function WorkshopModal({ isOpen, onClose, workshop }) {
             initial={{ opacity: 0, scale: 0.9, y: 20 }}
             animate={{ opacity: 1, scale: 1, y: 0 }}
             exit={{ opacity: 0, scale: 0.9, y: 20 }}
-            className="relative bg-white w-full max-w-2xl rounded-3xl overflow-hidden shadow-2xl"
+            className="relative bg-white w-full max-w-2xl rounded-3xl overflow-hidden shadow-2xl z-10"
           >
             {success ? (
               <div className="p-12 text-center flex flex-col items-center justify-center min-h-[400px]">
@@ -95,8 +180,13 @@ export default function WorkshopModal({ isOpen, onClose, workshop }) {
                     <p className="text-[10px] font-bold uppercase tracking-widest opacity-80 mb-1">Selected Workshop</p>
                     <h4 className="text-xl font-bold font-sans leading-tight">{workshop.name}</h4>
                     <div className="flex items-center gap-2 mt-3 opacity-90">
-                      <Calendar size={14} className="text-brand-orange" />
+                      <Calendar size={14} className="text-[#1BAFAF]" />
                       <span className="text-xs font-medium tracking-wide">{formatWorkshopDate(workshop.date)}</span>
+                    </div>
+                    <div className="flex items-center gap-2 mt-2 opacity-90">
+                      <span className="text-xs font-bold bg-[#1BAFAF]/30 text-white border border-white/20 px-2 py-0.5 rounded">
+                        {workshop.fees && Number(workshop.fees) > 0 ? `₹${workshop.fees} / Person` : 'Free'}
+                      </span>
                     </div>
                   </div>
                 </div>
@@ -190,6 +280,16 @@ export default function WorkshopModal({ isOpen, onClose, workshop }) {
                       </div>
                     </div>
 
+                    {workshop.fees && Number(workshop.fees) > 0 && (
+                      <div className="flex justify-between items-center bg-[#1BAFAF]/5 border border-[#1BAFAF]/10 p-4 rounded-2xl mt-4">
+                        <div className="text-left">
+                          <p className="text-[10px] font-bold text-gray-400 uppercase tracking-widest">Fees ({formData.participants} {formData.participants === '1' ? 'Person' : 'People'})</p>
+                          <p className="text-[11px] text-gray-400 font-medium">₹{workshop.fees} per person</p>
+                        </div>
+                        <span className="text-[18px] font-black text-gray-900">₹{totalAmount}</span>
+                      </div>
+                    )}
+
                     <button
                       disabled={loading}
                       type="submit"
@@ -198,13 +298,56 @@ export default function WorkshopModal({ isOpen, onClose, workshop }) {
                       {loading ? (
                         <><Loader2 className="animate-spin" size={16} /> Securely Processing...</>
                       ) : (
-                        <>Confirm Booking <CheckCircle2 size={16} className="group-hover:translate-x-1 transition-transform" /></>
+                        <>{workshop.fees && Number(workshop.fees) > 0 ? 'Proceed to Payment' : 'Confirm Booking'} <CheckCircle2 size={16} className="group-hover:translate-x-1 transition-transform" /></>
                       )}
                     </button>
                   </form>
                 </div>
               </div>
             )}
+
+            {/* Confirmation Payment Modal Overlay */}
+            <AnimatePresence>
+              {showConfirmModal && (
+                <div className="absolute inset-0 bg-black/50 backdrop-blur-sm z-50 flex items-center justify-center p-6">
+                  <motion.div
+                    initial={{ opacity: 0, scale: 0.95 }}
+                    animate={{ opacity: 1, scale: 1 }}
+                    exit={{ opacity: 0, scale: 0.95 }}
+                    className="bg-white rounded-3xl p-8 max-w-sm w-full text-center shadow-2xl relative"
+                  >
+                    <button onClick={() => setShowConfirmModal(false)} className="absolute top-4 right-4 text-gray-400 hover:text-gray-600">
+                      <X size={18} />
+                    </button>
+                    <div className="w-14 h-14 bg-amber-50 text-amber-500 rounded-full flex items-center justify-center mx-auto mb-4 border border-amber-100">
+                      <AlertCircle size={28} />
+                    </div>
+                    <h4 className="text-lg font-bold text-gray-900 mb-2">Confirm Booking & Pay</h4>
+                    <p className="text-xs text-gray-500 mb-6 leading-relaxed">
+                      You are booking a slot for **{formData.fullName}** ({formData.participants} {formData.participants === '1' ? 'person' : 'people'}) to attend **{workshop.name}**.
+                    </p>
+                    <div className="border-t border-b border-gray-50 py-4 mb-6 flex justify-between items-center px-2">
+                      <span className="text-xs font-bold text-gray-400 uppercase">Total Amount:</span>
+                      <span className="text-xl font-black text-[#1BAFAF]">₹{totalAmount}</span>
+                    </div>
+                    <div className="flex gap-3">
+                      <button
+                        onClick={() => setShowConfirmModal(false)}
+                        className="flex-1 py-3 text-xs font-bold text-gray-400 hover:text-gray-600 rounded-xl transition-colors"
+                      >
+                        Cancel
+                      </button>
+                      <button
+                        onClick={handleRazorpayPayment}
+                        className="flex-1 bg-[#1BAFAF] hover:bg-[#17a0a0] text-white py-3 rounded-xl text-xs font-bold shadow-lg shadow-[#1BAFAF]/10 transition-all active:scale-95"
+                      >
+                        Pay Now
+                      </button>
+                    </div>
+                  </motion.div>
+                </div>
+              )}
+            </AnimatePresence>
           </motion.div>
         </div>
       )}

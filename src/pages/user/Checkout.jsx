@@ -417,22 +417,41 @@ export default function Checkout() {
     try {
       for (const item of items) {
         const productId = item.id?.toString();
+        const variantId = item.variantId;
         if (!productId) {
           showError(`Unable to validate stock for "${item.name}". Invalid Product ID.`);
           return false;
         }
-        const productRef = doc(db, 'products', productId);
-        const productSnap = await getDoc(productRef);
-        if (!productSnap.exists()) {
-          showError(`Product "${item.name}" was not found in our collection.`);
-          return false;
+
+        let currentStock = 0;
+        let isAvailable = true;
+        let isUnique = item.productType === 'Unique';
+
+        if (variantId) {
+          const variantRef = doc(db, 'products', productId, 'variants', variantId);
+          const variantSnap = await getDoc(variantRef);
+          if (!variantSnap.exists()) {
+            showError(`Selected variant of "${item.name}" was not found.`);
+            return false;
+          }
+          const variantData = variantSnap.data();
+          currentStock = typeof variantData.stock === 'number' ? variantData.stock : 0;
+          isUnique = variantData.productType === 'Unique';
+        } else {
+          const productRef = doc(db, 'products', productId);
+          const productSnap = await getDoc(productRef);
+          if (!productSnap.exists()) {
+            showError(`Product "${item.name}" was not found in our collection.`);
+            return false;
+          }
+          const productData = productSnap.data();
+          isUnique = productData.isUniquePiece === true || productData.productType === 'Unique';
+          currentStock = typeof productData.stock === 'number' ? productData.stock : (isUnique ? 1 : 15);
+          isAvailable = productData.isAvailable !== false;
         }
-        const productData = productSnap.data();
-        const isUnique = productData.isUniquePiece === true || productData.productType === 'Unique';
-        const currentStock = typeof productData.stock === 'number' ? productData.stock : (isUnique ? 1 : 15);
 
         if (isUnique) {
-          if (currentStock === 0 || productData.isAvailable === false) {
+          if (currentStock === 0 || isAvailable === false) {
             showError(`Apologies! The unique piece "${item.name}" is already sold out.`);
             return false;
           }
@@ -462,7 +481,6 @@ export default function Checkout() {
         const digits = '0123456789';
         const all = chars + digits;
         let suffix = '';
-        // Guarantee at least one character and one digit in the suffix
         suffix += chars[Math.floor(Math.random() * chars.length)];
         suffix += digits[Math.floor(Math.random() * digits.length)];
         for (let i = 2; i < 7; i++) {
@@ -478,26 +496,50 @@ export default function Checkout() {
 
       const availabilityPromises = items.map(async (item) => {
         const productId = item.id?.toString();
+        const variantId = item.variantId;
         const productRef = doc(db, 'products', productId);
         const productSnap = await getDoc(productRef);
+        
         if (productSnap.exists()) {
           const productData = productSnap.data();
           const isUnique = productData.isUniquePiece === true || productData.productType === 'Unique';
-          const currentStock = typeof productData.stock === 'number' ? productData.stock : (isUnique ? 1 : 15);
+          const parentStock = typeof productData.stock === 'number' ? productData.stock : (isUnique ? 1 : 15);
 
-          if (isUnique) {
+          if (variantId) {
+            const variantRef = doc(db, 'products', productId, 'variants', variantId);
+            const variantSnap = await getDoc(variantRef);
+            if (variantSnap.exists()) {
+              const variantStock = Number(variantSnap.data().stock) || 0;
+              const newVarStock = Math.max(0, variantStock - item.qty);
+              await updateDoc(variantRef, {
+                stock: newVarStock,
+                updatedAt: serverTimestamp()
+              });
+            }
+            const newParentStock = Math.max(0, parentStock - item.qty);
             return updateDoc(productRef, {
-              isAvailable: false,
-              stock: 0,
+              stock: newParentStock,
+              isAvailable: newParentStock > 0,
+              status: newParentStock > 0,
               updatedAt: serverTimestamp()
             });
           } else {
-            const newStock = Math.max(0, currentStock - item.qty);
-            return updateDoc(productRef, {
-              stock: newStock,
-              isAvailable: newStock > 0,
-              updatedAt: serverTimestamp()
-            });
+            if (isUnique) {
+              return updateDoc(productRef, {
+                isAvailable: false,
+                status: false,
+                stock: 0,
+                updatedAt: serverTimestamp()
+              });
+            } else {
+              const newStock = Math.max(0, parentStock - item.qty);
+              return updateDoc(productRef, {
+                stock: newStock,
+                isAvailable: newStock > 0,
+                status: newStock > 0,
+                updatedAt: serverTimestamp()
+              });
+            }
           }
         }
       });
@@ -513,7 +555,7 @@ export default function Checkout() {
         totalAmount: total,
         paymentMethod: finalMethod,
         razorpayPaymentId: razorpayPaymentId,
-        items: items.map(i => ({ id: i.id, name: i.name, qty: i.qty, price: i.price, productType: i.productType || 'Standard' })),
+        items: items.map(i => ({ id: i.id, name: i.name, qty: i.qty, price: i.price, productType: i.productType || 'Standard', variantId: i.variantId || '', sku: i.sku || '', image: i.image || '', color: i.color || '', design: i.design || '' })),
         quantity: totalQty,
         subtotal,
         shipping: deliveryCharges,

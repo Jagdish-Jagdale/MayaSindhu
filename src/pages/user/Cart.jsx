@@ -69,12 +69,30 @@ export default function Cart() {
       if (newQty < 1) return;
 
       if (delta > 0) {
-        const productRef = doc(db, 'products', docId);
-        const productSnap = await getDoc(productRef);
-        if (productSnap.exists()) {
-          const productData = productSnap.data();
-          const isUnique = productData.isUniquePiece === true || productData.productType === 'Unique';
-          const stockVal = typeof productData.stock === 'number' ? productData.stock : (isUnique ? 1 : 15);
+        const item = items.find(i => i.docId === docId);
+        if (item) {
+          const productId = item.id;
+          const variantId = item.variantId;
+          
+          let stockVal = 15;
+          let isUnique = item.productType === 'Unique';
+          
+          if (variantId) {
+            const varSnap = await getDoc(doc(db, 'products', productId, 'variants', variantId));
+            if (varSnap.exists()) {
+              const varData = varSnap.data();
+              stockVal = Number(varData.stock) || 0;
+              isUnique = varData.productType === 'Unique';
+            }
+          } else {
+            const productRef = doc(db, 'products', productId);
+            const productSnap = await getDoc(productRef);
+            if (productSnap.exists()) {
+              const productData = productSnap.data();
+              isUnique = productData.isUniquePiece === true || productData.productType === 'Unique';
+              stockVal = typeof productData.stock === 'number' ? productData.stock : (isUnique ? 1 : 15);
+            }
+          }
 
           if (isUnique) {
             toast.error("Unique pieces are limited to 1 item.");
