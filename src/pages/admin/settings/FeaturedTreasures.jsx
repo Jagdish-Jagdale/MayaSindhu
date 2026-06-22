@@ -164,7 +164,6 @@ export default function FeaturedTreasures() {
       setHasChanges(false);
       toast.success("Featured Treasures updated successfully");
     } catch (err) {
-      console.error(err);
       toast.error("Failed to save masterpieces");
     } finally {
       setIsSaving(false);

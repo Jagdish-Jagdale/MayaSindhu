@@ -114,7 +114,6 @@ export const AuthProvider = ({ children }) => {
                     const ipData = await ipRes.json();
                     ipAddress = ipData.ip || 'Unknown';
                   } catch (e) {
-                    console.warn("Could not retrieve IP address:", e);
                   }
 
                   await setDoc(sessionRef, {
@@ -159,7 +158,6 @@ export const AuthProvider = ({ children }) => {
             setIsOfflineStoreAdmin(false);
           }
         } catch (error) {
-          console.error("Error fetching admin status in Context:", error);
         }
       } else {
         setIsAdmin(false);
@@ -189,7 +187,6 @@ export const AuthProvider = ({ children }) => {
       try {
         await updateDoc(sessionRef, { last_activity: serverTimestamp() });
       } catch (error) {
-        console.error("Failed to update activity heartbeat:", error);
       }
     }, 2 * 60 * 1000);
 
@@ -270,7 +267,6 @@ export const AuthProvider = ({ children }) => {
       await updateProfile(user, { displayName });
 
       // 3. Create User Document in Firestore
-      console.log("Creating Firestore profile for UID:", user.uid);
       await setDoc(doc(db, "users", user.uid), {
         uid: user.uid,
         fullName: displayName,
@@ -290,11 +286,8 @@ export const AuthProvider = ({ children }) => {
         createdAt: serverTimestamp(),
       });
 
-      console.log("Signup and Firestore Profile Created Successfully!");
       return result;
     } catch (error) {
-      console.error("Firebase Signup/Firestore Error Code:", error.code);
-      console.error("Full Error:", error);
       throw error;
     }
   };
@@ -306,7 +299,6 @@ export const AuthProvider = ({ children }) => {
         const sessionDocId = `${user.email.toLowerCase()}_${deviceId}`;
         await updateDoc(doc(db, 'superadmin_sessions', sessionDocId), { is_active: false });
       } catch (error) {
-        console.error("Failed to deactivate session on logout:", error);
       }
     }
     return signOut(auth);

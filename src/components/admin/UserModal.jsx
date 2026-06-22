@@ -128,7 +128,6 @@ export default function UserModal({ isOpen, onClose, user = null }) {
       }
       onClose();
     } catch (error) {
-      console.error("Error saving user:", error);
       toast.error("Failed to save user");
     } finally {
       setLoading(false);

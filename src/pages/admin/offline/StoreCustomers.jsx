@@ -61,7 +61,6 @@ const StoreCustomers = () => {
       setCustomers(data);
       setLoading(false);
     }, (error) => {
-      console.error("Error fetching store customers:", error);
       toast.error("Failed to load customer data.");
       setLoading(false);
     });
@@ -93,7 +92,6 @@ const StoreCustomers = () => {
       setIsDeleteModalOpen(false);
       setCustomerToDelete(null);
     } catch (error) {
-      console.error("Error deleting customer:", error);
       toast.error("Failed to delete customer");
     } finally {
       setIsDeleting(false);

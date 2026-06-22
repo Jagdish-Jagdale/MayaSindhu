@@ -32,7 +32,6 @@ export default function ProfileInfo({ user }) {
           });
         }
       } catch (error) {
-        console.error("Fetch error:", error);
       } finally {
         setLoading(false);
       }
@@ -51,7 +50,6 @@ export default function ProfileInfo({ user }) {
       toast.success('Profile updated successfully!');
       setIsEditing(false);
     } catch (error) {
-      console.error("Update error:", error);
       toast.error('Failed to update profile');
     } finally {
       setSaving(false);

@@ -138,7 +138,6 @@ const VendorModal = ({ isOpen, onClose, vendor = null }) => {
       }
       onClose();
     } catch (error) {
-      console.error("Error saving vendor:", error);
       toast.error("Failed to save vendor");
     } finally {
       setLoading(false);

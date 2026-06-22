@@ -31,7 +31,6 @@ export default function VideoCard({ videoUrl, title, category, thumbnail, produc
           setProductData(docSnap.data());
         }
       } catch (error) {
-        console.error("Error fetching product for look:", error);
       }
     };
     fetchProd();
@@ -48,7 +47,6 @@ export default function VideoCard({ videoUrl, title, category, thumbnail, produc
     if (videoRef.current) {
       videoRef.current.play().catch(e => {
         // Log warning for debugging, but do not set videoError to true
-        console.warn("Video play interrupted or blocked:", e.message);
       });
     }
   };
@@ -87,7 +85,6 @@ export default function VideoCard({ videoUrl, title, category, thumbnail, produc
         loop
         playsInline
         onError={() => {
-          console.error("❌ Video Source Error:", videoUrl);
           setVideoError(true);
         }}
         className={`absolute inset-0 w-full h-full object-cover transition-opacity duration-700 ease-in-out ${isHovered && !videoError ? 'opacity-100' : 'opacity-0'}`}

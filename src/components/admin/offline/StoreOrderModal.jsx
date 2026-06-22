@@ -107,7 +107,6 @@ const StoreOrderModal = ({ isOpen, onClose }) => {
       const snapshot = await getDocs(q);
       setVendors(snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() })));
     } catch (error) {
-      console.error("Error fetching vendors:", error);
     }
   };
 
@@ -116,7 +115,6 @@ const StoreOrderModal = ({ isOpen, onClose }) => {
       const snapshot = await getDocs(collection(db, 'products'));
       setProducts(snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() })));
     } catch (error) {
-      console.error("Error fetching products:", error);
     }
   };
 
@@ -139,7 +137,6 @@ const StoreOrderModal = ({ isOpen, onClose }) => {
       const formattedNum = `${orderSettings.prefix}${nextNum.toString().padStart(orderSettings.nextNumber.length, '0')}`;
       setFormData(prev => ({ ...prev, purchaseOrderNumber: formattedNum }));
     } catch (error) {
-      console.error("Error generating PO number:", error);
       const fallback = `${orderSettings.prefix}${orderSettings.nextNumber}`;
       setFormData(prev => ({ ...prev, purchaseOrderNumber: fallback }));
     }
@@ -234,7 +231,6 @@ const StoreOrderModal = ({ isOpen, onClose }) => {
             stock: increment(Number(item.quantity || 0))
           });
         } catch (err) {
-          console.error(`Error updating stock for product ${item.productId}:`, err);
         }
       });
       await Promise.all(updatePromises);
@@ -242,7 +238,6 @@ const StoreOrderModal = ({ isOpen, onClose }) => {
       toast.success("Purchase Order created successfully!");
       onClose();
     } catch (error) {
-      console.error("Error saving order:", error);
       toast.error("Failed to place order");
     } finally {
       setLoading(false);

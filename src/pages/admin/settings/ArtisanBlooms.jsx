@@ -77,7 +77,6 @@ export default function ArtisanBlooms() {
       setAllProducts(data);
       setProdsLoading(false);
     }, (error) => {
-      console.error("Products load error:", error);
       setProdsLoading(false);
     });
     return () => unsubscribe();
@@ -176,7 +175,6 @@ export default function ArtisanBlooms() {
           try {
             await deleteMultipleFromCloudinary([modalTrend.imageUrl]);
           } catch(err) {
-            console.error("Failed to delete old image:", err);
           }
         }
 
@@ -203,7 +201,6 @@ export default function ArtisanBlooms() {
       }
       setIsFormModalOpen(false);
     } catch (err) {
-      console.error("Save error:", err);
       toast.error("Failed to save trend configuration");
     } finally {
       setIsModalSaving(false);
@@ -227,7 +224,6 @@ export default function ArtisanBlooms() {
       toast.success("Trend card deleted");
       setIsDeleteModalOpen(false);
     } catch (err) {
-      console.error("Delete error:", err);
       toast.error("Failed to delete trend card");
     } finally {
       setIsDeleting(false);

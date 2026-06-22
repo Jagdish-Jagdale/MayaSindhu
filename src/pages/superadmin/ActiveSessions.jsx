@@ -47,7 +47,6 @@ export default function ActiveSessions() {
       setSessions(list);
       setLoading(false);
     }, (error) => {
-      console.error("Error fetching sessions:", error);
       toast.error("Failed to load active sessions");
       setLoading(false);
     });
@@ -63,7 +62,6 @@ export default function ActiveSessions() {
       });
       toast.success("Session revoked successfully");
     } catch (error) {
-      console.error("Error revoking session:", error);
       toast.error("Failed to revoke session");
     } finally {
       setRevokingId(null);

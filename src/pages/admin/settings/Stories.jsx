@@ -91,7 +91,6 @@ export default function Stories() {
       setHasChanges(false);
       setDeletedIds([]);
     }, (error) => {
-      console.error(error);
       setLoading(false);
       toast.error("Failed to load stories");
     });
@@ -277,7 +276,6 @@ export default function Stories() {
       toast.success("Story deleted");
       setIsDeleteModalOpen(false);
     } catch (err) {
-      console.error("Delete error:", err);
       toast.error("Failed to delete story");
     } finally {
       setIsDeleting(false);
@@ -355,7 +353,6 @@ export default function Stories() {
       setHasChanges(false);
       toast.success("Stories configuration saved");
     } catch (err) {
-      console.error(err);
       toast.error("Failed to save changes");
     } finally {
       setIsSaving(false);
@@ -448,7 +445,7 @@ export default function Stories() {
                   onMouseEnter={(e) => {
                     const video = e.currentTarget.querySelector('video');
                     if (video) {
-                      video.play().catch(err => console.log("Video play failed:", err));
+                      video.play().catch(() => {});
                     }
                   }}
                   onMouseLeave={(e) => {

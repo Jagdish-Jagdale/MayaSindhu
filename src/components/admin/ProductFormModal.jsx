@@ -131,7 +131,6 @@ export default function ProductFormModal({ isOpen, onClose, product = null, init
             ]);
           }
         } catch (error) {
-          console.error("Error loading variants:", error);
           toast.error("Failed to load variants");
         } finally {
           setLoading(false);
@@ -506,7 +505,6 @@ export default function ProductFormModal({ isOpen, onClose, product = null, init
 
       onClose();
     } catch (error) {
-      console.error('Error saving product and variants:', error);
       toast.error(error.message || 'Failed to save product');
     } finally {
       setLoading(false);

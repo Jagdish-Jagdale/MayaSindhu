@@ -499,7 +499,6 @@ export default function Orders() {
         }
       );
     } catch (error) {
-      console.error("Error updating status:", error);
       toast.error("Failed to update order status");
     }
   };

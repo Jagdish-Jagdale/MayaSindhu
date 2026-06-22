@@ -69,7 +69,6 @@ export default function BlogDetail() {
         setRecentBlogs(others);
 
       } catch (error) {
-        console.error("Error loading blog:", error);
       } finally {
         if (isMounted) setLoading(false);
       }

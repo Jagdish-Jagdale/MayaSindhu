@@ -98,14 +98,12 @@ const InvoiceModal = ({ isOpen, onClose }) => {
         const q = query(collection(db, 'storeCustomers'), orderBy('fullName'));
         snapshot = await getDocs(q);
       } catch (err) {
-        console.warn("Fallback: fetching storeCustomers without orderBy");
         snapshot = await getDocs(collection(db, 'storeCustomers'));
       }
       let fetchedCustomers = snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() }));
       fetchedCustomers.sort((a, b) => (a.fullName || '').localeCompare(b.fullName || ''));
       setCustomers(fetchedCustomers);
     } catch (error) {
-      console.error("Error fetching customers:", error);
     }
   };
 
@@ -114,7 +112,6 @@ const InvoiceModal = ({ isOpen, onClose }) => {
       const snapshot = await getDocs(collection(db, 'products'));
       setProducts(snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() })));
     } catch (error) {
-      console.error("Error fetching products:", error);
     }
   };
 
@@ -125,7 +122,6 @@ const InvoiceModal = ({ isOpen, onClose }) => {
         const q = query(collection(db, 'storeOrders'), orderBy('createdAt', 'desc'));
         snapshot = await getDocs(q);
       } catch (err) {
-        console.warn("Fallback: fetching storeOrders without orderBy");
         snapshot = await getDocs(collection(db, 'storeOrders'));
       }
       let fetchedOrders = snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() }));
@@ -136,7 +132,6 @@ const InvoiceModal = ({ isOpen, onClose }) => {
       });
       setOrders(fetchedOrders);
     } catch (error) {
-      console.error("Error fetching orders:", error);
     }
   };
 
@@ -183,7 +178,6 @@ const InvoiceModal = ({ isOpen, onClose }) => {
       const formattedNum = `${invoiceSettings.prefix}${nextNum.toString().padStart(invoiceSettings.nextNumber.length, '0')}`;
       setFormData(prev => ({ ...prev, invoiceNumber: formattedNum }));
     } catch (error) {
-      console.error("Error generating invoice number:", error);
       const fallback = `${invoiceSettings.prefix}${invoiceSettings.nextNumber}`;
       setFormData(prev => ({ ...prev, invoiceNumber: fallback }));
     }
@@ -272,7 +266,6 @@ const InvoiceModal = ({ isOpen, onClose }) => {
       toast.success("Invoice generated successfully!");
       onClose();
     } catch (error) {
-      console.error("Error saving invoice:", error);
       toast.error("Failed to generate invoice");
     } finally {
       setLoading(false);

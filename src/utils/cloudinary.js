@@ -22,7 +22,6 @@ export const uploadToCloudinary = async (file, folder = '') => {
     const data = await response.json();
     return data.secure_url;
   } catch (error) {
-    console.error('Cloudinary upload error:', error);
     throw error;
   }
 };
@@ -92,10 +91,8 @@ export const deleteFromCloudinary = async (url) => {
     );
     const data = await response.json();
     if (data.result !== 'ok' && data.result !== 'not found') {
-      console.warn('Cloudinary delete warning:', data);
     }
   } catch (error) {
-    console.error('Cloudinary delete error:', error);
   }
 };
 

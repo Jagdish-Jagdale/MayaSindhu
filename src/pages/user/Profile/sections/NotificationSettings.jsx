@@ -24,7 +24,6 @@ export default function NotificationSettings({ user }) {
           setPrefs(docSnap.data().notifications);
         }
       } catch (error) {
-        console.error("Error fetching notification prefs:", error);
       } finally {
         setLoading(false);
       }

@@ -155,7 +155,6 @@ export default function Dashboard() {
       setRawCategories(cats);
       setCategoriesLoaded(true);
     }, (error) => {
-      console.error("Error listening to categories:", error);
       setCategoriesLoaded(true);
     });
 
@@ -166,7 +165,6 @@ export default function Dashboard() {
       setRawProducts(products);
       setProductsLoaded(true);
     }, (error) => {
-      console.error("Error listening to products:", error);
       setProductsLoaded(true);
     });
 

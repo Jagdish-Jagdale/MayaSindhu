@@ -59,7 +59,6 @@ export default function Categories() {
         }
       }
     }, (error) => {
-      console.error("Error listening to settings:", error);
     });
     return () => unsubscribe();
   }, []);
@@ -194,7 +193,6 @@ export default function Categories() {
       await Promise.all(updates);
       toast.success("Categories reordered successfully");
     } catch (error) {
-      console.error("Error reordering:", error);
       toast.error("Failed to reorder categories");
     }
     setDraggedItem(null);
@@ -372,7 +370,6 @@ export default function Categories() {
       setIsModalOpen(false);
       setCategoryDraft({ name: '', position: '', showSizes: false });
     } catch (err) {
-      console.error("Error saving category:", err);
       toast.error("Failed to save category");
     } finally {
       setIsSaving(false);
@@ -411,7 +408,6 @@ export default function Categories() {
       setIsDeleteModalOpen(false);
       setCategoryToDelete(null);
     } catch (err) {
-      console.error("Error deleting category branch:", err);
       toast.error("Failed to prune category branch");
     } finally {
       setIsDeleting(false);
@@ -433,7 +429,6 @@ export default function Categories() {
       setIsDeleteProductModalOpen(false);
       setProductToDelete(null);
     } catch (err) {
-      console.error("Error deleting product:", err);
       toast.error("Failed to delete product");
     } finally {
       setIsDeletingProduct(false);
@@ -449,7 +444,6 @@ export default function Categories() {
       });
       toast.success(`${category.name} ${!category.isTrendy ? 'marked as trendy' : 'removed from trendy'}`);
     } catch (err) {
-      console.error("Error toggling trendy status:", err);
       toast.error("Failed to update trendy status");
     }
   };

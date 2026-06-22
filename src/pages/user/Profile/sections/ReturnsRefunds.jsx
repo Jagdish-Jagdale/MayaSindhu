@@ -37,7 +37,6 @@ export default function ReturnsRefunds({ user }) {
       setExchangeTickets(data);
       setLoading(false);
     }, (error) => {
-      console.error("Exchange tickets fetch error:", error);
       setLoading(false);
     });
 

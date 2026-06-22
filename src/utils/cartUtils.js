@@ -10,7 +10,6 @@ export const addToCart = async (user, product, quantity = 1, selectedVariant = n
   const variantId = selectedVariant?.id;
   const cartItemId = variantId ? `${productId}_${variantId}` : productId;
 
-  console.log(`CartUtil: Adding product ${productId} (Variant: ${variantId || 'none'}) for user ${user.uid} with quantity ${quantity}`);
   
   const cartItemRef = doc(db, 'users', user.uid, 'cart', cartItemId);
   const cartItemSnap = await getDoc(cartItemRef);
@@ -41,7 +40,6 @@ export const addToCart = async (user, product, quantity = 1, selectedVariant = n
         isUnique = selectedVariant.productType === 'Unique';
       }
     } catch (err) {
-      console.error("Error reading fresh variant data:", err);
       stockVal = typeof selectedVariant.stock === 'number' ? selectedVariant.stock : 0;
       isUnique = selectedVariant.productType === 'Unique';
     }

@@ -82,7 +82,6 @@ const Users = () => {
       setUsers(usersData);
       setLoading(false);
     }, (error) => {
-      console.error("Error fetching users:", error);
       toast.error("Failed to load users data.");
       setLoading(false);
     });
@@ -128,7 +127,6 @@ const Users = () => {
       setIsDeleteModalOpen(false);
       setUserToDelete(null);
     } catch (error) {
-      console.error("Error deleting user:", error);
       toast.error("Failed to delete user profile and data");
     } finally {
       setIsDeleting(false);

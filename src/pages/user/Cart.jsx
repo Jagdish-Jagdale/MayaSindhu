@@ -47,7 +47,6 @@ export default function Cart() {
               };
             }
           } catch (err) {
-            console.error("Error resolving live price for cart item:", err);
           }
         }
         return item;
@@ -56,7 +55,6 @@ export default function Cart() {
       setItems(resolvedItems);
       setLoading(false);
     }, (error) => {
-      console.error("Cart real-time error:", error);
       setLoading(false);
     });
 
@@ -111,7 +109,6 @@ export default function Cart() {
         updatedAt: serverTimestamp()
       });
     } catch (error) {
-      console.error("Error updating qty:", error);
       toast.error("Failed to update quantity");
     }
   };
@@ -121,7 +118,6 @@ export default function Cart() {
       const itemRef = doc(db, 'users', user.uid, 'cart', docId);
       await deleteDoc(itemRef);
     } catch (error) {
-      console.error("Error removing item:", error);
     }
   };
 

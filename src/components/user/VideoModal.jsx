@@ -54,7 +54,6 @@ export default function VideoModal({ isOpen, onClose, look, onNext, onPrev }) {
         const results = await Promise.all(promises);
         setProductsData(results.filter(Boolean));
       } catch (error) {
-        console.error("Error fetching products for look:", error);
       } finally {
         setLoadingProduct(false);
       }

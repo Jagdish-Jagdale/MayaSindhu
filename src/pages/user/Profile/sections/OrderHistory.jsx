@@ -45,7 +45,6 @@ export default function OrderHistory({ user }) {
       }));
       setProducts(prods);
     }, (error) => {
-      console.error("Products load error:", error);
     });
     return () => unsubscribe();
   }, []);
@@ -69,7 +68,6 @@ export default function OrderHistory({ user }) {
       });
       setUserReviews(reviewMap);
     }, (error) => {
-      console.error("Reviews load error:", error);
     });
 
     return () => unsubscribe();
@@ -95,7 +93,6 @@ export default function OrderHistory({ user }) {
       setOrders(orderData);
       setLoading(false);
     }, (error) => {
-      console.error("Orders listener error:", error);
       setLoading(false);
     });
 
@@ -173,7 +170,6 @@ export default function OrderHistory({ user }) {
       toast.success('Exchange request submitted and ticket raised');
       setIsExchangeModalOpen(false);
     } catch (error) {
-      console.error('Exchange submit error:', error);
       toast.error('Failed to submit exchange request');
     } finally {
       setSubmittingExchange(false);
@@ -240,7 +236,6 @@ export default function OrderHistory({ user }) {
       toast.success('Review submitted successfully');
       setIsReviewModalOpen(false);
     } catch (error) {
-      console.error("Error submitting review:", error);
       toast.error('Failed to submit review');
     } finally {
       setSubmittingReview(false);
@@ -336,7 +331,15 @@ export default function OrderHistory({ user }) {
             <div class="totals" style="width: 100%; max-width: 350px; margin-left: auto;">
               <table style="width: 100%;">
                 <tr>
-                  <td>Subtotal</td>
+                  <td>Price (excl. GST)</td>
+                  <td style="text-align: right;">₹${((item.price * item.qty) - Math.round((item.price * item.qty) * 0.08))?.toLocaleString('en-IN')}</td>
+                </tr>
+                <tr>
+                  <td>GST (8%)</td>
+                  <td style="text-align: right;">₹${Math.round((item.price * item.qty) * 0.08)?.toLocaleString('en-IN')}</td>
+                </tr>
+                <tr>
+                  <td>Gross Subtotal</td>
                   <td style="text-align: right;">₹${(item.price * item.qty)?.toLocaleString('en-IN')}</td>
                 </tr>
                 <tr>
@@ -668,14 +671,27 @@ export default function OrderHistory({ user }) {
                       Price details
                     </h4>
                     <div className="space-y-2.5 text-xs text-gray-700">
-                      <div className="flex justify-between font-medium">
-                        <span className="text-gray-400">Listing price</span>
-                        <span>₹{(selectedOrderDetail.item.price * selectedOrderDetail.item.qty)?.toLocaleString('en-IN')}</span>
-                      </div>
-                      <div className="flex justify-between font-medium">
-                        <span className="text-gray-400">Special price</span>
-                        <span>₹{(selectedOrderDetail.item.price * selectedOrderDetail.item.qty)?.toLocaleString('en-IN')}</span>
-                      </div>
+                      {(() => {
+                        const itemTotal = selectedOrderDetail.item.price * selectedOrderDetail.item.qty;
+                        const itemGst = Math.round(itemTotal * 0.08);
+                        const itemBasePrice = itemTotal - itemGst;
+                        return (
+                          <>
+                            <div className="flex justify-between font-medium">
+                              <span className="text-gray-400">Price (excl. GST)</span>
+                              <span>₹{itemBasePrice.toLocaleString('en-IN')}</span>
+                            </div>
+                            <div className="flex justify-between font-medium">
+                              <span className="text-gray-400">GST (8%)</span>
+                              <span>₹{itemGst.toLocaleString('en-IN')}</span>
+                            </div>
+                            <div className="flex justify-between font-medium text-gray-500">
+                              <span className="text-gray-400">Special price</span>
+                              <span>₹{itemTotal.toLocaleString('en-IN')}</span>
+                            </div>
+                          </>
+                        );
+                      })()}
                       <div className="flex justify-between font-medium">
                         <span className="text-gray-400">Delivery fees</span>
                         <span className="text-green-600">

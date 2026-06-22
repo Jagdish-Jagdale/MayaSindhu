@@ -29,7 +29,6 @@ export default function CartTab({ user }) {
       setItems(cartItems);
       setLoading(false);
     }, (error) => {
-      console.error("CartTab fetch error:", error);
       setLoading(false);
     });
 
@@ -42,7 +41,6 @@ export default function CartTab({ user }) {
       const itemRef = doc(db, 'users', user.uid, 'cart', docId);
       await updateDoc(itemRef, { qty: newQty });
     } catch (error) {
-      console.error("Error updating quantity:", error);
     }
   };
 
@@ -51,7 +49,6 @@ export default function CartTab({ user }) {
       const itemRef = doc(db, 'users', user.uid, 'cart', docId);
       await deleteDoc(itemRef);
     } catch (error) {
-      console.error("Error removing item:", error);
     }
   };
 

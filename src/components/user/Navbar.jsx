@@ -74,7 +74,6 @@ export default function Navbar() {
         ).slice(0, 6);
         setSuggestions(filtered);
       } catch (err) {
-        console.error("Suggestion Error:", err);
       } finally {
         setIsSearching(false);
       }

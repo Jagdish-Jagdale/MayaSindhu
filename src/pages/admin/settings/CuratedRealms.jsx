@@ -154,7 +154,6 @@ export default function CuratedRealms() {
       setHasChanges(false);
       toast.success("Curated Realms updated successfully");
     } catch (err) {
-      console.error(err);
       toast.error("Failed to save configurations");
     } finally {
       setIsSaving(false);

@@ -71,7 +71,6 @@ export default function Login() {
       }
       handleCloseModal();
     } catch (err) {
-      console.error("Login Submission Error:", err);
       const errorCode = err.code;
 
       let message = 'An unexpected error occurred. Please try again.';
