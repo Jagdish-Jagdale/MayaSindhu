@@ -73,7 +73,6 @@ const AdminLogin = () => {
       // Logic for redirection is handled by AdminProtectedRoute or the useEffect above
       toast.success("Identity verified.");
     } catch (err) {
-      console.error(err);
       if (err.code === "auth/max-devices-exceeded" || err.message?.includes("Maximum 3 devices")) {
         // Handled by sessionError useEffect to prevent double toast notifications
       } else {

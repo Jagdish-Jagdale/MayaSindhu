@@ -122,7 +122,6 @@ export default function ProductManagement() {
         }
       }
     }, (error) => {
-      console.error("Error listening to settings:", error);
     });
     return () => unsubscribe();
   }, []);
@@ -140,7 +139,6 @@ export default function ProductManagement() {
       setStockAlertThresholdInput(val);
       toast.success(`Stock alert threshold saved: ${val}`);
     } catch (error) {
-      console.error("Error saving stock alert threshold:", error);
       toast.error("Failed to save stock alert threshold");
     }
   };
@@ -177,7 +175,6 @@ export default function ProductManagement() {
       setProducts(productsData);
       setLoading(false);
     }, (error) => {
-      console.error("Error fetching products:", error);
       toast.error("Failed to load products");
       setLoading(false);
     });
@@ -220,7 +217,6 @@ export default function ProductManagement() {
           try {
             await updateDoc(doc(db, 'products', p.id), { slug });
           } catch (err) {
-            console.error(`Slug migration failed for ${p.id}:`, err);
           }
         }
       };
@@ -251,7 +247,6 @@ export default function ProductManagement() {
         toast.success(`Added "${product.name}" to favorites`);
       }
     } catch (error) {
-      console.error("Error toggling featured:", error);
       toast.error("Action failed");
     }
   };
@@ -307,7 +302,6 @@ export default function ProductManagement() {
       setIsDeleteModalOpen(false);
       setProductToDelete(null);
     } catch (error) {
-      console.error("Error deleting product:", error);
       toast.error("Failed to delete product");
     } finally {
       setIsDeleting(false);

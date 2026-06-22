@@ -116,7 +116,6 @@ const OfflineOrderModal = ({ isOpen, onClose }) => {
         }
       }
     } catch (error) {
-      console.error("Error fetching GST config:", error);
     }
   };
 
@@ -128,7 +127,6 @@ const OfflineOrderModal = ({ isOpen, onClose }) => {
       setIsGstSettingsOpen(false);
       toast.success("GST configuration saved");
     } catch (error) {
-      console.error("Error saving GST config:", error);
       toast.error("Failed to save GST");
     }
   };
@@ -139,7 +137,6 @@ const OfflineOrderModal = ({ isOpen, onClose }) => {
       const snapshot = await getDocs(q);
       setCustomers(snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() })));
     } catch (error) {
-      console.error("Error fetching customers:", error);
     }
   };
 
@@ -148,7 +145,6 @@ const OfflineOrderModal = ({ isOpen, onClose }) => {
       const snapshot = await getDocs(collection(db, 'products'));
       setProducts(snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() })));
     } catch (error) {
-      console.error("Error fetching products:", error);
     }
   };
 
@@ -293,7 +289,6 @@ const OfflineOrderModal = ({ isOpen, onClose }) => {
             stock: increment(-Number(item.quantity || 0))
           });
         } catch (err) {
-          console.error(`Error updating stock for product ${item.productId}:`, err);
         }
       });
       await Promise.all(updatePromises);
@@ -301,7 +296,6 @@ const OfflineOrderModal = ({ isOpen, onClose }) => {
       toast.success("sales order created successfully!");
       onClose();
     } catch (error) {
-      console.error("Error saving order:", error);
       toast.error("Failed to place order");
     } finally {
       setLoading(false);

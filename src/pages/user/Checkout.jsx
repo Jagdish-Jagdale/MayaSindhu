@@ -11,7 +11,7 @@ export default function Checkout() {
   const navigate = useNavigate();
   const location = useLocation();
   const { buyNowItem } = location.state || {};
-  
+
   const [activeStep, setActiveStep] = useState('address'); // 'address', 'summary', 'payment', 'confirm'
   const [items, setItems] = useState([]);
   const [loading, setLoading] = useState(true);
@@ -26,6 +26,7 @@ export default function Checkout() {
   const [addressToDelete, setAddressToDelete] = useState(null);
   const [isDeletingAddress, setIsDeletingAddress] = useState(false);
   const [showLogoutConfirm, setShowLogoutConfirm] = useState(false);
+  const [consentChecked, setConsentChecked] = useState(false);
 
   // Form states
   const [formData, setFormData] = useState({
@@ -77,7 +78,7 @@ export default function Checkout() {
             const office = data[0].PostOffice[0];
             const stateName = office.State;
             const districtName = office.District;
-            
+
             setNewAddress(prev => ({
               ...prev,
               city: districtName || prev.city,
@@ -103,7 +104,6 @@ export default function Checkout() {
           }
         }
       } catch (error) {
-        console.error("Error fetching location by pincode:", error);
       } finally {
         setIsFetchingLocation(false);
       }
@@ -112,12 +112,12 @@ export default function Checkout() {
   }, [newAddress.zip]);
 
   const INDIAN_STATES = [
-    "Andhra Pradesh", "Arunachal Pradesh", "Assam", "Bihar", "Chhattisgarh", "Goa", "Gujarat", 
-    "Haryana", "Himachal Pradesh", "Jharkhand", "Karnataka", "Kerala", "Madhya Pradesh", 
-    "Maharashtra", "Manipur", "Meghalaya", "Mizoram", "Nagaland", "Odisha", "Punjab", 
-    "Rajasthan", "Sikkim", "Tamil Nadu", "Telangana", "Tripura", "Uttar Pradesh", 
-    "Uttarakhand", "West Bengal", "Andaman and Nicobar Islands", "Chandigarh", 
-    "Dadra and Nagar Haveli and Daman and Diu", "Delhi", "Jammu and Kashmir", "Ladakh", 
+    "Andhra Pradesh", "Arunachal Pradesh", "Assam", "Bihar", "Chhattisgarh", "Goa", "Gujarat",
+    "Haryana", "Himachal Pradesh", "Jharkhand", "Karnataka", "Kerala", "Madhya Pradesh",
+    "Maharashtra", "Manipur", "Meghalaya", "Mizoram", "Nagaland", "Odisha", "Punjab",
+    "Rajasthan", "Sikkim", "Tamil Nadu", "Telangana", "Tripura", "Uttar Pradesh",
+    "Uttarakhand", "West Bengal", "Andaman and Nicobar Islands", "Chandigarh",
+    "Dadra and Nagar Haveli and Daman and Diu", "Delhi", "Jammu and Kashmir", "Ladakh",
     "Lakshadweep", "Puducherry"
   ];
 
@@ -130,8 +130,34 @@ export default function Checkout() {
 
     // Handle Buy Now Case
     if (buyNowItem) {
-      setItems([buyNowItem]);
-      setLoading(false);
+      const resolveBuyNow = async () => {
+        try {
+          const prodRef = doc(db, 'products', buyNowItem.id.toString());
+          const prodSnap = await getDoc(prodRef);
+          if (prodSnap.exists()) {
+            const prodData = prodSnap.data();
+            let actualPrice = prodData.actualPrice || prodData.price || 0;
+            if (buyNowItem.variantId) {
+              const variantRef = doc(db, 'products', buyNowItem.id.toString(), 'variants', buyNowItem.variantId);
+              const variantSnap = await getDoc(variantRef);
+              if (variantSnap.exists()) {
+                const variantData = variantSnap.data();
+                actualPrice = variantData.actualPrice || variantData.price || actualPrice;
+              }
+            }
+            setItems([{
+              ...buyNowItem,
+              actualPrice: actualPrice
+            }]);
+          } else {
+            setItems([buyNowItem]);
+          }
+        } catch (e) {
+          setItems([buyNowItem]);
+        }
+        setLoading(false);
+      };
+      resolveBuyNow();
     } else {
       const cartItemsQuery = query(collection(db, 'users', user.uid, 'cart'));
       const unsubscribeCart = onSnapshot(cartItemsQuery, async (snapshot) => {
@@ -141,20 +167,27 @@ export default function Checkout() {
         }));
 
         const resolvedItems = await Promise.all(cartItems.map(async (item) => {
-          if (!item.price || item.price === 0) {
-            try {
-              const prodRef = doc(db, 'products', item.id);
-              const prodSnap = await getDoc(prodRef);
-              if (prodSnap.exists()) {
-                const prodData = prodSnap.data();
-                return {
-                  ...item,
-                  price: prodData.discountedPrice || prodData.price || 0
-                };
+          try {
+            const prodRef = doc(db, 'products', item.id.toString());
+            const prodSnap = await getDoc(prodRef);
+            if (prodSnap.exists()) {
+              const prodData = prodSnap.data();
+              let actualPrice = prodData.actualPrice || prodData.price || 0;
+              if (item.variantId) {
+                const variantRef = doc(db, 'products', item.id.toString(), 'variants', item.variantId);
+                const variantSnap = await getDoc(variantRef);
+                if (variantSnap.exists()) {
+                  const variantData = variantSnap.data();
+                  actualPrice = variantData.actualPrice || variantData.price || actualPrice;
+                }
               }
-            } catch (err) {
-              console.error("Error resolving live price for checkout item:", err);
+              return {
+                ...item,
+                price: item.price || prodData.discountedPrice || prodData.price || 0,
+                actualPrice: actualPrice
+              };
             }
+          } catch (err) {
           }
           return item;
         }));
@@ -207,7 +240,6 @@ export default function Checkout() {
       }));
       setDeliveryRates(data);
     }, (error) => {
-      console.error("Error fetching delivery charges in checkout:", error);
     });
     return () => unsubscribe();
   }, []);
@@ -229,7 +261,7 @@ export default function Checkout() {
   const subtotal = items.reduce((acc, item) => acc + (item.price * item.qty), 0);
   const deliveryCharges = (() => {
     let zipToEvaluate = null;
-    
+
     if (selectedAddressId) {
       const selectedAddress = savedAddresses.find(a => a.id === selectedAddressId);
       if (selectedAddress && selectedAddress.zip) {
@@ -249,10 +281,17 @@ export default function Checkout() {
     return rate ? rate.charge : 0;
   })();
   const total = subtotal + deliveryCharges;
+  const gstAmount = Math.round(subtotal * 0.08);
+  const actualPrice = subtotal - gstAmount;
+  const totalSavings = items.reduce((acc, item) => {
+    const itemActual = Number(item.actualPrice || item.price || 0);
+    const itemPaid = Number(item.price || 0);
+    return acc + (Math.max(0, itemActual - itemPaid) * Number(item.qty || 1));
+  }, 0);
 
   const handleUpdateQuantity = async (item, newQty) => {
     if (newQty < 1) return;
-    
+
     // Check if unique piece is being incremented
     const isUnique = item.isUniquePiece === true || item.productType === 'Unique';
     if (isUnique && newQty > 1) {
@@ -408,7 +447,6 @@ export default function Checkout() {
       });
 
     } catch (error) {
-      console.error("Error saving address:", error);
       showError("Failed to save address. Please try again.");
     }
   };
@@ -468,7 +506,6 @@ export default function Checkout() {
       }
       return true;
     } catch (error) {
-      console.error("Stock validation error:", error);
       showError("An error occurred while validating stock. Please try again.");
       return false;
     }
@@ -499,7 +536,7 @@ export default function Checkout() {
         const variantId = item.variantId;
         const productRef = doc(db, 'products', productId);
         const productSnap = await getDoc(productRef);
-        
+
         if (productSnap.exists()) {
           const productData = productSnap.data();
           const isUnique = productData.isUniquePiece === true || productData.productType === 'Unique';
@@ -581,7 +618,6 @@ export default function Checkout() {
 
       setActiveStep('confirm');
     } catch (error) {
-      console.error("Order Error:", error);
       showError("Failed to place order: " + (error.message || error));
     }
   };
@@ -593,7 +629,7 @@ export default function Checkout() {
     }
 
     const options = {
-      key: import.meta.env.VITE_RAZORPAY_KEY_ID || "rzp_test_5P3aU2HnL6k9Xq",
+      key: import.meta.env.VITE_RAZORPAY_KEY_ID || "",
       amount: total * 100,
       currency: "INR",
       name: "MayaSindhu",
@@ -611,8 +647,7 @@ export default function Checkout() {
         color: "brand-orange"
       },
       modal: {
-        ondismiss: function() {
-          console.log("Payment cancelled by user");
+        ondismiss: function () {
         }
       }
     };
@@ -623,9 +658,14 @@ export default function Checkout() {
 
   const handlePlaceOrder = async (overrideMethod = null) => {
     if (items.length === 0) return;
-    
+
     if (!formData.firstName || !formData.address || !formData.phone) {
       showError("Please select or add a delivery address.");
+      return;
+    }
+
+    if (!consentChecked) {
+      showError("Please acknowledge the unboxing video requirement to proceed.", "Consent Required");
       return;
     }
 
@@ -643,18 +683,18 @@ export default function Checkout() {
   const StepHeader = ({ stepNum, title, isCompleted, onEdit, summary, isActive }) => {
     if (isCompleted && !isActive) {
       return (
-        <div onClick={onEdit} className={`bg-brand-orange px-4 py-3 flex justify-between items-center text-white ${onEdit ? 'cursor-pointer hover:bg-brand-orange-dark transition' : ''}`}>
+        <div onClick={onEdit} className={`bg-brand-orange px-3 py-2 md:px-4 md:py-3 flex justify-between items-center text-white ${onEdit ? 'cursor-pointer hover:bg-brand-orange-dark transition' : ''}`}>
           <div className="flex items-start">
-            <div className="bg-white/20 text-white font-bold text-xs w-6 h-6 flex items-center justify-center mr-4 rounded-[2px] mt-0.5">
+            <div className="bg-white/20 text-white font-bold text-[10px] md:text-xs w-5 h-5 md:w-6 md:h-6 flex items-center justify-center mr-2 md:mr-4 rounded-[2px] mt-0.5">
               ✓
             </div>
             <div>
-              <div className="font-semibold text-[15px]">{title}</div>
-              {summary && <div className="text-sm font-medium mt-1">{summary}</div>}
+              <div className="font-semibold text-xs md:text-[15px]">{title}</div>
+              {summary && <div className="text-xs md:text-sm font-medium mt-0.5 md:mt-1">{summary}</div>}
             </div>
           </div>
           {onEdit && (
-            <button className="bg-white text-brand-orange font-semibold text-sm px-6 py-2 rounded shadow-sm hover:shadow transition">
+            <button className="bg-white text-brand-orange font-semibold text-xs md:text-sm px-4 py-1.5 md:px-6 md:py-2 rounded shadow-sm hover:shadow transition">
               CHANGE
             </button>
           )}
@@ -662,27 +702,27 @@ export default function Checkout() {
       );
     }
     return (
-      <div onClick={onEdit} className={`bg-brand-orange px-4 py-3 flex items-center text-white ${onEdit ? 'cursor-pointer hover:bg-brand-orange-dark transition' : ''}`}>
-        <div className="bg-white text-brand-orange text-sm font-bold w-6 h-6 flex items-center justify-center mr-4 rounded-[2px]">
+      <div onClick={onEdit} className={`bg-brand-orange px-3 py-2 md:px-4 md:py-3 flex items-center text-white ${onEdit ? 'cursor-pointer hover:bg-brand-orange-dark transition' : ''}`}>
+        <div className="bg-white text-brand-orange text-xs md:text-sm font-bold w-5 h-5 md:w-6 md:h-6 flex items-center justify-center mr-2 md:mr-4 rounded-[2px]">
           {stepNum}
         </div>
-        <span className="font-semibold text-[15px]">{title}</span>
+        <span className="font-semibold text-xs md:text-[15px]">{title}</span>
       </div>
     );
   };
 
   if (activeStep === 'confirm') {
     return (
-      <div className="bg-[#f1f3f6] min-h-screen pt-8 pb-20 font-sans flex items-center justify-center">
-        <div className="bg-white p-12 rounded-sm shadow-sm text-center max-w-lg mx-4">
-          <div className="w-20 h-20 bg-green-100 text-green-600 rounded-full flex items-center justify-center mx-auto mb-6">
-            <Check size={40} strokeWidth={3} />
+      <div className="bg-[#f1f3f6] min-h-screen pt-4 pb-10 md:pt-8 md:pb-20 font-sans flex items-center justify-center">
+        <div className="bg-white p-6 md:p-12 rounded-sm shadow-sm text-center max-w-lg mx-4">
+          <div className="w-16 h-16 md:w-20 md:h-20 bg-green-100 text-green-600 rounded-full flex items-center justify-center mx-auto mb-4 md:mb-6">
+            <Check size={32} md:size={40} strokeWidth={3} />
           </div>
-          <h2 className="text-2xl font-bold text-[#1A1A1A] mb-4">Order Placed Successfully!</h2>
-          <p className="text-gray-500 mb-8">
+          <h2 className="text-xl md:text-2xl font-bold text-[#1A1A1A] mb-2 md:mb-4">Order Placed Successfully!</h2>
+          <p className="text-sm md:text-gray-500 mb-6 md:mb-8">
             Thank you for your purchase. We've sent the confirmation details to your email.
           </p>
-          <Link to="/" className="bg-brand-orange text-white px-8 py-3 rounded-sm font-semibold shadow hover:bg-green-700 transition">
+          <Link to="/" className="bg-brand-orange text-white px-6 py-2.5 md:px-8 md:py-3 rounded-sm font-semibold shadow hover:bg-green-700 transition">
             Continue Shopping
           </Link>
         </div>
@@ -691,21 +731,21 @@ export default function Checkout() {
   }
 
   return (
-    <div className="bg-[#f1f3f6] min-h-screen pt-8 pb-20 font-sans">
-      <div className="max-w-[1200px] mx-auto px-4 grid grid-cols-1 lg:grid-cols-3 gap-6 items-start">
-        
+    <div className="bg-[#f1f3f6] min-h-screen pt-4 pb-12 md:pt-8 md:pb-20 font-sans">
+      <div className="max-w-[1200px] mx-auto px-2 md:px-4 grid grid-cols-1 lg:grid-cols-3 gap-3 md:gap-6 items-start">
+
         {/* Accordion List */}
-        <div className="lg:col-span-2 space-y-4">
-          
+        <div className="lg:col-span-2 space-y-4 order-2 lg:order-1">
+
           {/* STEP 1: LOGIN */}
           <div className="bg-white shadow-sm overflow-hidden rounded-[2px]">
-            <StepHeader 
-              stepNum="1" 
-              title="LOGIN OR SIGNUP" 
-              isCompleted={!!user && activeStep !== 'login'} 
-              isActive={activeStep === 'login'} 
-              summary={user && activeStep !== 'login' ? `Logged in as ${user.email}` : null} 
-              onEdit={() => setActiveStep('login')} 
+            <StepHeader
+              stepNum="1"
+              title="LOGIN OR SIGNUP"
+              isCompleted={!!user && activeStep !== 'login'}
+              isActive={activeStep === 'login'}
+              summary={user && activeStep !== 'login' ? `Logged in as ${user.email}` : null}
+              onEdit={() => setActiveStep('login')}
             />
             {activeStep === 'login' && (
               <div className="p-4 md:p-6 bg-[#f1f3f6]/30 border-t border-gray-100">
@@ -715,7 +755,7 @@ export default function Checkout() {
                     <input type="email" placeholder="Email" className="w-full border border-gray-300 px-4 py-3 rounded-[2px] mb-3 text-sm focus:outline-none focus:border-brand-orange" id="checkout-email" />
                     <input type="password" placeholder="Password" className="w-full border border-gray-300 px-4 py-3 rounded-[2px] mb-4 text-sm focus:outline-none focus:border-brand-orange" id="checkout-password" />
                     <div className="flex gap-4 items-center">
-                      <button 
+                      <button
                         onClick={async () => {
                           const email = document.getElementById('checkout-email').value;
                           const password = document.getElementById('checkout-password').value;
@@ -728,14 +768,14 @@ export default function Checkout() {
                             }
                           }
                         }}
-                        className="bg-brand-orange text-white px-8 py-3 font-semibold text-[15px] rounded-[2px] shadow-sm hover:shadow transition uppercase flex-1"
+                        className="bg-brand-orange text-white px-4 py-2 md:px-8 md:py-3 font-semibold text-xs md:text-[15px] rounded-[2px] shadow-sm hover:shadow transition uppercase flex-1"
                       >
                         Login
                       </button>
-                      <button 
+                      <button
                         type="button"
                         onClick={() => navigate(-1)}
-                        className="text-gray-500 font-semibold text-[15px] hover:text-brand-orange transition uppercase px-4"
+                        className="text-gray-500 font-semibold text-xs md:text-[15px] hover:text-brand-orange transition uppercase px-4"
                       >
                         Cancel
                       </button>
@@ -745,15 +785,15 @@ export default function Checkout() {
                   <div className="max-w-sm bg-white p-6 border border-gray-200 rounded-[2px]">
                     <p className="text-sm text-gray-800 font-semibold mb-2">You are logged in securely.</p>
                     <p className="text-sm text-gray-600 mb-6">{user.email}</p>
-                    <button 
+                    <button
                       onClick={() => setActiveStep('address')}
-                      className="bg-brand-orange text-white px-8 py-3 font-semibold text-[15px] rounded-[2px] shadow-sm hover:shadow transition uppercase w-full mb-3"
+                      className="bg-brand-orange text-white px-4 py-2 md:px-8 md:py-3 font-semibold text-xs md:text-[15px] rounded-[2px] shadow-sm hover:shadow transition uppercase w-full mb-3"
                     >
                       Continue Checkout
                     </button>
-                    <button 
+                    <button
                       onClick={() => setShowLogoutConfirm(true)}
-                      className="text-brand-orange font-semibold text-sm w-full uppercase hover:underline"
+                      className="text-brand-orange font-semibold text-xs md:text-sm w-full uppercase hover:underline"
                     >
                       Logout and use another account
                     </button>
@@ -765,23 +805,23 @@ export default function Checkout() {
 
           {/* STEP 2: ADDRESS */}
           <div className="bg-white shadow-sm overflow-hidden rounded-[2px]">
-            <StepHeader 
-              stepNum="2" 
-              title="DELIVERY ADDRESS" 
-              isCompleted={activeStep !== 'address' && selectedAddressId} 
-              isActive={activeStep === 'address'} 
+            <StepHeader
+              stepNum="2"
+              title="DELIVERY ADDRESS"
+              isCompleted={activeStep !== 'address' && selectedAddressId}
+              isActive={activeStep === 'address'}
               summary={activeStep !== 'address' && formData.address ? `${formData.firstName} - ${formData.address}, ${formData.city}` : null}
               onEdit={() => setActiveStep('address')}
             />
-            
+
             {activeStep === 'address' && (
               <div className="p-4 md:p-6 bg-[#f1f3f6]/30">
                 {savedAddresses.map((addr) => (
                   <label key={addr.id} className={`flex items-start p-4 mb-4 border rounded-[2px] cursor-pointer bg-white transition-all ${selectedAddressId === addr.id ? 'border-brand-orange' : 'border-gray-200'}`}>
-                    <input 
-                      type="radio" 
-                      name="address" 
-                      className="mt-1 w-4 h-4 text-brand-orange focus:ring-brand-orange accent-brand-orange" 
+                    <input
+                      type="radio"
+                      name="address"
+                      className="mt-1 w-4 h-4 text-brand-orange focus:ring-brand-orange accent-brand-orange"
                       checked={selectedAddressId === addr.id}
                       onChange={() => handleSelectAddress(addr)}
                     />
@@ -792,8 +832,8 @@ export default function Checkout() {
                           <span className="bg-gray-100 px-2 py-0.5 text-[11px] text-gray-500 font-bold uppercase tracking-wider rounded-sm">{addr.type || 'HOME'}</span>
                         </div>
                         <div className="flex items-center gap-3">
-                          <button 
-                            type="button" 
+                          <button
+                            type="button"
                             onClick={(e) => {
                               e.preventDefault();
                               e.stopPropagation();
@@ -816,8 +856,8 @@ export default function Checkout() {
                           >
                             <Edit2 size={15} />
                           </button>
-                          <button 
-                            type="button" 
+                          <button
+                            type="button"
                             onClick={(e) => {
                               e.preventDefault();
                               e.stopPropagation();
@@ -834,11 +874,11 @@ export default function Checkout() {
                         {addr.address}, {addr.city}, {addr.state} - <span className="font-medium">{addr.zip}</span>
                       </p>
                       <p className="text-sm text-gray-700 mb-4">Phone: <span className="font-semibold">{addr.phone}</span></p>
-                      
+
                       {selectedAddressId === addr.id && (
-                        <button 
-                          onClick={() => setActiveStep('summary')} 
-                          className="bg-brand-orange text-white px-8 py-3 font-semibold text-sm rounded-[2px] shadow-sm hover:shadow transition uppercase"
+                        <button
+                          onClick={() => setActiveStep('summary')}
+                          className="bg-brand-orange text-white px-4 py-2 md:px-8 md:py-3 font-semibold text-xs md:text-sm rounded-[2px] shadow-sm hover:shadow transition uppercase"
                         >
                           Deliver Here
                         </button>
@@ -847,7 +887,7 @@ export default function Checkout() {
                   </label>
                 ))}
 
-                <div 
+                <div
                   onClick={() => {
                     if (savedAddresses.length >= 3) {
                       showError("You can save a maximum of 3 addresses. Please delete an address to add a new one.");
@@ -868,7 +908,7 @@ export default function Checkout() {
                     setAddressErrors({});
                     setIsAddingAddress(!isAddingAddress);
                   }}
-                  className="bg-white border border-dashed border-brand-orange p-4 text-brand-orange font-bold flex items-center justify-center gap-2 cursor-pointer rounded-[2px] hover:bg-orange-50 transition uppercase"
+                  className="bg-white border border-dashed border-brand-orange p-2.5 md:p-4 text-brand-orange font-bold flex items-center justify-center gap-2 cursor-pointer rounded-[2px] hover:bg-orange-50 transition uppercase text-xs md:text-sm"
                 >
                   <Plus size={18} strokeWidth={2.5} /> ADD A NEW ADDRESS
                 </div>
@@ -878,12 +918,12 @@ export default function Checkout() {
                     <div className="mb-6 flex items-center text-[15px] font-semibold text-gray-800">
                       <Check size={18} strokeWidth={2.5} className="text-[#1BAFAF] mr-2" /> {editingAddressId ? "Edit Address" : "Delivery available in Kolhapur"}
                     </div>
-                    
+
                     <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                       <div className="flex flex-col">
-                        <input 
-                          type="text" 
-                          placeholder="Name" 
+                        <input
+                          type="text"
+                          placeholder="Name"
                           maxLength={50}
                           value={newAddress.fullName}
                           onChange={(e) => {
@@ -893,14 +933,14 @@ export default function Checkout() {
                               setAddressErrors({ ...addressErrors, fullName: '' });
                             }
                           }}
-                          className="w-full border border-gray-300 px-4 py-3 rounded-[2px] text-sm focus:outline-none focus:border-brand-orange" 
+                          className="w-full border border-gray-300 px-4 py-3 rounded-[2px] text-sm focus:outline-none focus:border-brand-orange"
                         />
                         {addressErrors.fullName && <span className="text-red-500 text-xs mt-1">{addressErrors.fullName}</span>}
                       </div>
                       <div className="flex flex-col">
-                        <input 
-                          type="text" 
-                          placeholder="10-digit mobile number" 
+                        <input
+                          type="text"
+                          placeholder="10-digit mobile number"
                           value={newAddress.phone}
                           onChange={(e) => {
                             const val = e.target.value.replace(/\D/g, '').slice(0, 10);
@@ -909,14 +949,14 @@ export default function Checkout() {
                               setAddressErrors({ ...addressErrors, phone: '' });
                             }
                           }}
-                          className="w-full border border-gray-300 px-4 py-3 rounded-[2px] text-sm focus:outline-none focus:border-brand-orange" 
+                          className="w-full border border-gray-300 px-4 py-3 rounded-[2px] text-sm focus:outline-none focus:border-brand-orange"
                         />
                         {addressErrors.phone && <span className="text-red-500 text-xs mt-1">{addressErrors.phone}</span>}
                       </div>
                       <div className="relative flex flex-col">
-                        <input 
-                          type="text" 
-                          placeholder="Pincode" 
+                        <input
+                          type="text"
+                          placeholder="Pincode"
                           value={newAddress.zip}
                           onChange={(e) => {
                             const val = e.target.value.replace(/\D/g, '').slice(0, 6);
@@ -925,7 +965,7 @@ export default function Checkout() {
                               setAddressErrors({ ...addressErrors, zip: '' });
                             }
                           }}
-                          className="w-full border border-gray-300 px-4 py-3 rounded-[2px] text-sm focus:outline-none focus:border-brand-orange pr-10" 
+                          className="w-full border border-gray-300 px-4 py-3 rounded-[2px] text-sm focus:outline-none focus:border-brand-orange pr-10"
                         />
                         {isFetchingLocation && (
                           <div className="absolute right-3 top-3.5 flex items-center justify-center">
@@ -935,9 +975,9 @@ export default function Checkout() {
                         {addressErrors.zip && <span className="text-red-500 text-xs mt-1">{addressErrors.zip}</span>}
                       </div>
                       <div className="flex flex-col">
-                        <input 
-                          type="text" 
-                          placeholder="City" 
+                        <input
+                          type="text"
+                          placeholder="City"
                           maxLength={50}
                           value={newAddress.locality}
                           onChange={(e) => {
@@ -947,14 +987,14 @@ export default function Checkout() {
                               setAddressErrors({ ...addressErrors, locality: '' });
                             }
                           }}
-                          className="w-full border border-gray-300 px-4 py-3 rounded-[2px] text-sm focus:outline-none focus:border-brand-orange" 
+                          className="w-full border border-gray-300 px-4 py-3 rounded-[2px] text-sm focus:outline-none focus:border-brand-orange"
                         />
                         {addressErrors.locality && <span className="text-red-500 text-xs mt-1">{addressErrors.locality}</span>}
                       </div>
                       <div className="md:col-span-2 flex flex-col">
-                        <textarea 
-                          placeholder="Address (Area and Street)" 
-                          rows="3" 
+                        <textarea
+                          placeholder="Address (Area and Street)"
+                          rows="3"
                           maxLength={200}
                           value={newAddress.address}
                           onChange={(e) => {
@@ -963,34 +1003,34 @@ export default function Checkout() {
                               setAddressErrors({ ...addressErrors, address: '' });
                             }
                           }}
-                          className="w-full border border-gray-300 px-4 py-3 rounded-[2px] text-sm focus:outline-none focus:border-brand-orange resize-none" 
+                          className="w-full border border-gray-300 px-4 py-3 rounded-[2px] text-sm focus:outline-none focus:border-brand-orange resize-none"
                         ></textarea>
                         {addressErrors.address && <span className="text-red-500 text-xs mt-1">{addressErrors.address}</span>}
                       </div>
                       <div className="flex flex-col">
-                        <input 
-                          type="text" 
-                          placeholder="District" 
+                        <input
+                          type="text"
+                          placeholder="District"
                           value={newAddress.city}
                           readOnly
-                          className="w-full border border-gray-300 px-4 py-3 rounded-[2px] text-sm focus:outline-none bg-gray-50 text-[#1A1A1A] cursor-not-allowed" 
+                          className="w-full border border-gray-300 px-4 py-3 rounded-[2px] text-sm focus:outline-none bg-gray-50 text-[#1A1A1A] cursor-not-allowed"
                         />
                         {addressErrors.city && <span className="text-red-500 text-xs mt-1">{addressErrors.city}</span>}
                       </div>
                       <div className="flex flex-col">
-                        <input 
-                          type="text" 
-                          placeholder="State" 
+                        <input
+                          type="text"
+                          placeholder="State"
                           value={newAddress.state}
                           readOnly
-                          className="w-full border border-gray-300 px-4 py-3 rounded-[2px] text-sm focus:outline-none bg-gray-50 text-[#1A1A1A] cursor-not-allowed" 
+                          className="w-full border border-gray-300 px-4 py-3 rounded-[2px] text-sm focus:outline-none bg-gray-50 text-[#1A1A1A] cursor-not-allowed"
                         />
                         {addressErrors.state && <span className="text-red-500 text-xs mt-1">{addressErrors.state}</span>}
                       </div>
                       <div className="flex flex-col">
-                        <input 
-                          type="text" 
-                          placeholder="Alternate Phone (Optional)" 
+                        <input
+                          type="text"
+                          placeholder="Alternate Phone (Optional)"
                           value={newAddress.alternatePhone}
                           onChange={(e) => {
                             const val = e.target.value.replace(/\D/g, '').slice(0, 10);
@@ -999,26 +1039,26 @@ export default function Checkout() {
                               setAddressErrors({ ...addressErrors, alternatePhone: '' });
                             }
                           }}
-                          className="w-full border border-gray-300 px-4 py-3 rounded-[2px] text-sm focus:outline-none focus:border-brand-orange" 
+                          className="w-full border border-gray-300 px-4 py-3 rounded-[2px] text-sm focus:outline-none focus:border-brand-orange"
                         />
                         {addressErrors.alternatePhone && <span className="text-red-500 text-xs mt-1">{addressErrors.alternatePhone}</span>}
                       </div>
                     </div>
-                    
+
                     <div className="mt-6 flex gap-4">
-                      <button 
+                      <button
                         onClick={handleSaveAddress}
-                        className="bg-brand-orange text-white px-8 py-3 font-semibold text-[15px] rounded-[2px] shadow-sm hover:shadow transition uppercase"
+                        className="bg-brand-orange text-white px-4 py-2 md:px-8 md:py-3 font-semibold text-xs md:text-[15px] rounded-[2px] shadow-sm hover:shadow transition uppercase"
                       >
                         Save and Deliver Here
                       </button>
-                      <button 
+                      <button
                         onClick={() => {
                           setIsAddingAddress(false);
                           setEditingAddressId(null);
                           setAddressErrors({});
                         }}
-                        className="text-gray-500 font-semibold text-[15px] hover:text-brand-orange transition uppercase px-4"
+                        className="text-gray-500 font-semibold text-xs md:text-[15px] hover:text-brand-orange transition uppercase px-4"
                       >
                         Cancel
                       </button>
@@ -1031,15 +1071,15 @@ export default function Checkout() {
 
           {/* STEP 3: ORDER SUMMARY */}
           <div className="bg-white shadow-sm overflow-hidden rounded-[2px]">
-            <StepHeader 
-              stepNum="3" 
-              title="ORDER SUMMARY" 
-              isCompleted={activeStep === 'payment'} 
-              isActive={activeStep === 'summary'} 
-              summary={activeStep === 'payment' ? `${items.reduce((a,b)=>a+b.qty,0)} Item(s)` : null}
+            <StepHeader
+              stepNum="3"
+              title="ORDER SUMMARY"
+              isCompleted={activeStep === 'payment'}
+              isActive={activeStep === 'summary'}
+              summary={activeStep === 'payment' ? `${items.reduce((a, b) => a + b.qty, 0)} Item(s)` : null}
               onEdit={() => setActiveStep('summary')}
             />
-            
+
             {activeStep === 'summary' && (
               <div className="p-4 md:p-6 bg-white">
                 <div className="max-h-[390px] overflow-y-auto custom-scrollbar pr-2">
@@ -1058,37 +1098,39 @@ export default function Checkout() {
                           </div>
                           <div className="flex items-center gap-4 mt-2">
                             <div className="flex items-center bg-gray-50 rounded border border-gray-200 px-1 py-0.5">
-                              <button 
+                              <button
                                 onClick={() => handleUpdateQuantity(item, item.qty - 1)}
                                 className="p-1 text-gray-500 hover:text-black transition"
                               >
                                 <Minus size={14} />
                               </button>
                               <span className="w-8 text-center text-sm font-semibold">{item.qty}</span>
-                              <button 
+                              <button
                                 onClick={() => handleUpdateQuantity(item, item.qty + 1)}
                                 className="p-1 text-gray-500 hover:text-black transition"
                               >
                                 <Plus size={14} />
                               </button>
                             </div>
-                            <button 
-                              onClick={() => handleRemoveItem(item)}
-                              className="text-xs font-bold text-gray-400 hover:text-red-500 uppercase tracking-wider transition flex items-center gap-1"
-                            >
-                              <Trash2 size={12} /> Remove
-                            </button>
+                            {items.length > 1 && (
+                              <button
+                                onClick={() => handleRemoveItem(item)}
+                                className="text-xs font-bold text-gray-400 hover:text-red-500 uppercase tracking-wider transition flex items-center gap-1"
+                              >
+                                <Trash2 size={12} /> Remove
+                              </button>
+                            )}
                           </div>
                         </div>
                       </div>
                     ))
                   )}
                 </div>
-                
-                <div className="mt-6 flex justify-end">
-                  <button 
-                    onClick={() => setActiveStep('payment')} 
-                    className="bg-brand-orange text-white px-10 py-3.5 font-bold text-[15px] rounded-[2px] shadow-sm hover:shadow transition uppercase"
+
+                <div className="mt-4 md:mt-6 flex justify-end">
+                  <button
+                    onClick={() => setActiveStep('payment')}
+                    className="bg-brand-orange text-white px-5 py-2 md:px-10 md:py-3.5 font-bold text-xs md:text-[15px] rounded-[2px] shadow-sm hover:shadow transition uppercase"
                   >
                     Continue
                   </button>
@@ -1099,48 +1141,62 @@ export default function Checkout() {
 
           {/* STEP 4: PAYMENT OPTIONS */}
           <div className="bg-white shadow-sm overflow-hidden rounded-[2px]">
-            <StepHeader 
-              stepNum="4" 
-              title="PAYMENT OPTIONS" 
-              isCompleted={false} 
-              isActive={activeStep === 'payment'} 
+            <StepHeader
+              stepNum="4"
+              title="PAYMENT OPTIONS"
+              isCompleted={false}
+              isActive={activeStep === 'payment'}
               onEdit={() => setActiveStep('payment')}
             />
-            
+
             {activeStep === 'payment' && (
               <div className="bg-white">
                 <label className={`flex items-center p-4 border-b border-gray-100 cursor-pointer transition ${paymentMethod === 'upi' ? 'bg-[#f1f3f6]/30' : ''}`}>
-                  <input 
-                    type="radio" 
-                    name="payment" 
-                    className="w-4 h-4 text-brand-orange focus:ring-brand-orange accent-brand-orange mr-4" 
+                  <input
+                    type="radio"
+                    name="payment"
+                    className="w-4 h-4 text-brand-orange focus:ring-brand-orange accent-brand-orange mr-4"
                     checked={paymentMethod === 'upi'}
                     onChange={() => setPaymentMethod('upi')}
                   />
-                  <span className="text-[15px] text-[#1A1A1A] font-medium">UPI / Net Banking</span>
+                  <span className="text-xs md:text-[15px] text-[#1A1A1A] font-medium">UPI / Net Banking</span>
                 </label>
-                
-                <div 
+
+                <div
                   className={`flex items-center p-4 border-b border-gray-100 cursor-pointer transition ${paymentMethod === 'card' ? 'bg-[#f1f3f6]/30' : ''}`}
                   onClick={() => {
                     setPaymentMethod('card');
                     handlePlaceOrder('card');
                   }}
                 >
-                  <input 
-                    type="radio" 
-                    name="payment" 
-                    className="w-4 h-4 text-brand-orange focus:ring-brand-orange accent-brand-orange mr-4" 
+                  <input
+                    type="radio"
+                    name="payment"
+                    className="w-4 h-4 text-brand-orange focus:ring-brand-orange accent-brand-orange mr-4"
                     checked={paymentMethod === 'card'}
                     readOnly
                   />
-                  <span className="text-[15px] text-[#1A1A1A] font-medium select-none">Credit / Debit / ATM Card</span>
+                  <span className="text-xs md:text-[15px] text-[#1A1A1A] font-medium select-none">Credit / Debit / ATM Card</span>
                 </div>
 
-                <div className="p-6 border-t border-gray-100 bg-[#f1f3f6]/30 flex justify-end">
-                  <button 
-                    onClick={() => handlePlaceOrder()} 
-                    className="bg-brand-orange text-white px-10 py-3.5 font-bold text-[15px] rounded-[2px] shadow-sm hover:shadow transition uppercase"
+                {/* Return Policy Consent Checkbox */}
+                <div className="p-4 border-b border-gray-100 bg-amber-50/40 flex items-start gap-3">
+                  <input
+                    type="checkbox"
+                    id="unboxing-consent"
+                    checked={consentChecked}
+                    onChange={(e) => setConsentChecked(e.target.checked)}
+                    className="mt-1 w-4 h-4 rounded text-brand-orange focus:ring-brand-orange accent-brand-orange cursor-pointer"
+                  />
+                  <label htmlFor="unboxing-consent" className="text-xs md:text-sm text-gray-700 cursor-pointer select-none leading-relaxed">
+                    I acknowledge that <strong className="text-brand-orange font-semibold">recording an unboxing video is mandatory</strong> for any package returns, exchanges.
+                  </label>
+                </div>
+
+                <div className="p-4 md:p-6 border-t border-gray-100 bg-[#f1f3f6]/30 flex justify-end">
+                  <button
+                    onClick={() => handlePlaceOrder()}
+                    className="bg-brand-orange text-white px-5 py-2 md:px-10 md:py-3.5 font-bold text-xs md:text-[15px] rounded-[2px] shadow-sm hover:shadow transition uppercase"
                   >
                     Place Order
                   </button>
@@ -1152,23 +1208,23 @@ export default function Checkout() {
         </div>
 
         {/* Sidebar Price Details */}
-        <div className="lg:col-span-1">
+        <div className="lg:col-span-1 order-1 lg:order-2">
           <div className="bg-white shadow-sm rounded-[2px] sticky top-24">
             <div className="border-b border-gray-200 p-4">
               <h3 className="text-gray-500 font-bold text-sm tracking-wide uppercase">Price Details</h3>
             </div>
-            <div className="p-4 space-y-5 text-[15px]">
+            <div className="p-4 space-y-3 md:space-y-5 text-xs md:text-[15px]">
               <div className="flex justify-between">
-                <span>Price ({items.reduce((a,b)=>a+b.qty, 0)} item{items.reduce((a,b)=>a+b.qty, 0) !== 1 ? 's' : ''})</span>
-                <span>₹{subtotal.toLocaleString()}</span>
+                <span>Price ({items.reduce((a, b) => a + b.qty, 0)} item{items.reduce((a, b) => a + b.qty, 0) !== 1 ? 's' : ''})</span>
+                <span>₹{actualPrice.toLocaleString()}</span>
               </div>
               <div className="flex justify-between">
+                <span>GST (8%)</span>
+                <span>₹{gstAmount.toLocaleString()}</span>
+              </div>
+              <div className="flex justify-between font-medium text-gray-600">
                 <span>Gross Amount</span>
                 <span>₹{subtotal.toLocaleString()}</span>
-              </div>
-              <div className="flex justify-between">
-                <span>GST (5%)</span>
-                <span>₹0</span>
               </div>
               <div className="flex justify-between">
                 <span>Delivery Charges</span>
@@ -1177,24 +1233,19 @@ export default function Checkout() {
 
             </div>
             <div className="border-t border-dashed border-gray-200 p-4">
-              <div className="flex justify-between font-bold text-lg text-[#1A1A1A]">
+              <div className="flex justify-between font-bold text-sm md:text-lg text-[#1A1A1A]">
                 <span>Total Payable</span>
                 <span>₹{total.toLocaleString()}</span>
               </div>
             </div>
-            <div className="border-t border-gray-200 p-4 text-brand-orange font-bold text-sm">
-              Your Total Savings on this order ₹0
+            <div className="border-t border-gray-200 p-4 text-brand-orange font-bold text-xs md:text-sm">
+              Your Total Savings on this order ₹{totalSavings.toLocaleString()}
             </div>
-          </div>
-          
-          <div className="mt-4 flex items-center gap-2 text-gray-500 text-xs font-medium px-2">
-            <Shield size={24} className="text-gray-400" />
-            <p>Safe and Secure Payments. Easy returns. 100% Authentic products.</p>
           </div>
         </div>
 
       </div>
-      
+
       {/* Delete Address Confirmation Modal */}
       {addressToDelete && (
         <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50 p-4">
@@ -1202,7 +1253,7 @@ export default function Checkout() {
             <h3 className="text-lg font-bold text-[#1A1A1A] mb-2 font-sans">Delete Address</h3>
             <p className="text-sm text-gray-600 mb-6 leading-relaxed">Are you sure you want to delete this address? This action cannot be undone.</p>
             <div className="flex gap-4 justify-center">
-              <button 
+              <button
                 type="button"
                 disabled={isDeletingAddress}
                 onClick={() => setAddressToDelete(null)}
@@ -1210,7 +1261,7 @@ export default function Checkout() {
               >
                 Cancel
               </button>
-              <button 
+              <button
                 type="button"
                 disabled={isDeletingAddress}
                 onClick={async () => {
@@ -1221,15 +1272,13 @@ export default function Checkout() {
                       setSelectedAddressId(null);
                     }
                   } catch (error) {
-                    console.error("Error deleting address:", error);
                   } finally {
                     setIsDeletingAddress(false);
                     setAddressToDelete(null);
                   }
                 }}
-                className={`px-6 py-2 bg-red-600 text-white rounded-[2px] font-semibold text-sm transition uppercase tracking-wide text-xs ${
-                  isDeletingAddress ? 'opacity-50 cursor-not-allowed' : 'hover:bg-red-700'
-                }`}
+                className={`px-6 py-2 bg-red-600 text-white rounded-[2px] font-semibold text-sm transition uppercase tracking-wide text-xs ${isDeletingAddress ? 'opacity-50 cursor-not-allowed' : 'hover:bg-red-700'
+                  }`}
               >
                 {isDeletingAddress ? "Deleting..." : "Delete"}
               </button>
@@ -1245,14 +1294,14 @@ export default function Checkout() {
             <h3 className="text-lg font-bold text-[#1A1A1A] mb-2 font-sans">Confirm Logout</h3>
             <p className="text-sm text-gray-600 mb-6 leading-relaxed">Are you sure you want to logout and login as another account?</p>
             <div className="flex gap-4 justify-center">
-              <button 
+              <button
                 type="button"
                 onClick={() => setShowLogoutConfirm(false)}
                 className="px-6 py-2 border border-gray-300 rounded-[2px] text-gray-700 font-semibold text-sm hover:bg-gray-50 transition uppercase tracking-wide text-xs"
               >
                 Cancel
               </button>
-              <button 
+              <button
                 type="button"
                 onClick={() => {
                   logout();
@@ -1271,7 +1320,7 @@ export default function Checkout() {
       <AnimatePresence>
         {errorModal.isOpen && (
           <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-[100] p-4 animate-in fade-in duration-200">
-            <motion.div 
+            <motion.div
               initial={{ scale: 0.95, opacity: 0 }}
               animate={{ scale: 1, opacity: 1 }}
               exit={{ scale: 0.95, opacity: 0 }}
@@ -1282,7 +1331,7 @@ export default function Checkout() {
               </div>
               <h3 className="text-lg font-bold text-[#1A1A1A] mb-2">{errorModal.title || "Alert"}</h3>
               <p className="text-sm text-gray-600 mb-6 leading-relaxed">{errorModal.message}</p>
-              <button 
+              <button
                 type="button"
                 onClick={() => setErrorModal({ isOpen: false, title: 'Alert', message: '' })}
                 className="w-full py-2.5 bg-brand-orange hover:bg-brand-orange-dark text-white rounded-[2px] font-semibold text-sm transition uppercase tracking-wide"

@@ -68,7 +68,6 @@ export default function SalesOrders() {
       setOrders(snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() })));
       setLoading(false);
     }, (error) => {
-      console.error("Error fetching store orders:", error);
       toast.error("Failed to load order data.");
       setLoading(false);
     });

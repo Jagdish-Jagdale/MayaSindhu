@@ -67,7 +67,6 @@ const startGlobalListener = () => {
       });
     });
   }, (error) => {
-    console.error("Error fetching categories: ", error);
     cachedCategories = [];
     globalLoading = false;
     listeners.forEach(listener => {

@@ -105,7 +105,6 @@ export default function Blogs() {
       setBlogs(blogsData);
       setLoading(false);
     }, (error) => {
-      console.error(error);
       setLoading(false);
       toast.error("Failed to load blogs");
     });
@@ -126,7 +125,6 @@ export default function Blogs() {
       setHasConfigChanges(false);
       toast.success("Settings updated");
     } catch (err) {
-      console.error(err);
       toast.error("Failed to save settings");
     } finally {
       setIsSavingConfig(false);
@@ -207,7 +205,6 @@ export default function Blogs() {
       });
       setSelectedFile(null);
     } catch (err) {
-      console.error("Save error:", err);
       toast.error(err.message || "Failed to save blog");
     } finally {
       setIsSavingBlog(false);
@@ -234,7 +231,6 @@ export default function Blogs() {
       toast.success("Blog removed from system");
       setIsDeleteModalOpen(false);
     } catch (err) {
-      console.error("Delete error:", err);
       toast.error("Permission denied or system error");
     } finally {
       setIsDeleting(false);

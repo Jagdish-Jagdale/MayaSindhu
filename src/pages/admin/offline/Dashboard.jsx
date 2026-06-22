@@ -98,7 +98,6 @@ export default function OfflineDashboard() {
       });
       setSalesData(trend);
     }, (error) => {
-      console.error("Error fetching store orders for dashboard:", error);
     });
 
     // 2. Fetch Products

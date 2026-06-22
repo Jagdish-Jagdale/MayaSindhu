@@ -80,7 +80,6 @@ export default function Testimonial() {
       setTestimonials(data);
       setLoading(false);
     }, (error) => {
-      console.error(error);
       setLoading(false);
       toast.error("Failed to load testimonials");
     });
@@ -157,7 +156,6 @@ export default function Testimonial() {
       }
       setIsModalOpen(false);
     } catch (err) {
-      console.error("Save error:", err);
       toast.error("Failed to save testimonial");
     } finally {
       setIsSaving(false);
@@ -180,7 +178,6 @@ export default function Testimonial() {
       toast.success("Testimonial deleted");
       setIsDeleteModalOpen(false);
     } catch (err) {
-      console.error("Delete error:", err);
       toast.error("Failed to delete testimonial");
     } finally {
       setIsDeleting(false);

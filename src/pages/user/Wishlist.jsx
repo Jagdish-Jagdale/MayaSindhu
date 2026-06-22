@@ -48,13 +48,11 @@ export default function Wishlist() {
         const resolvedProducts = await Promise.all(productPromises);
         setFullProducts(resolvedProducts);
       } catch (error) {
-        console.error("Error fetching full products for wishlist:", error);
         setFullProducts(wishlistItems);
       }
       
       setLoading(false);
     }, (error) => {
-      console.error("Wishlist real-time error:", error);
       setLoading(false);
     });
 
@@ -66,7 +64,6 @@ export default function Wishlist() {
       const itemRef = doc(db, 'users', user.uid, 'wishlist', docId);
       await deleteDoc(itemRef);
     } catch (error) {
-      console.error("Error removing from wishlist:", error);
     }
   };
 

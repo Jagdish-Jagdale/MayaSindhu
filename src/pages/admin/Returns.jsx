@@ -47,7 +47,6 @@ export default function Returns() {
       setTickets(data);
       setLoading(false);
     }, (error) => {
-      console.error("Error fetching exchange tickets:", error);
       toast.error("Failed to load exchange tickets.");
       setLoading(false);
     });
@@ -72,7 +71,6 @@ export default function Returns() {
 
       toast.success(`Exchange request ticket successfully ${ticketStatus.toLowerCase()}`);
     } catch (error) {
-      console.error("Error updating ticket/order status:", error);
       toast.error("Failed to update status");
     }
   };

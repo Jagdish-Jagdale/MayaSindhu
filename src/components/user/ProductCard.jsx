@@ -56,14 +56,12 @@ export default function ProductCard({ id, productId, slug, name, price, discount
     e.stopPropagation();
 
     if (!user) {
-      console.log("Cart: Redirecting guest to login...");
       setLoginModalOpen(true);
       return;
     }
 
     const docId = id?.toString();
     if (!docId) {
-      console.error("Cart: Operation failed - Product ID is missing.");
       return;
     }
 
@@ -72,7 +70,6 @@ export default function ProductCard({ id, productId, slug, name, price, discount
       setIsAdded(true);
       setTimeout(() => setIsAdded(false), 2000);
     } catch (error) {
-      console.error("Cart Error:", error);
       alert(`Database Vault Error: ${error.code || error.message}. Please check your Firebase permissions.`);
     }
   };
@@ -82,24 +79,20 @@ export default function ProductCard({ id, productId, slug, name, price, discount
     e.stopPropagation();
 
     if (!user) {
-      console.log("Wishlist: Redirecting guest to login...");
       setLoginModalOpen(true);
       return;
     }
 
     const docId = id?.toString();
     if (!docId) {
-      console.error("Wishlist: Operation failed - Product ID is missing.");
       return;
     }
 
     try {
-      console.log(`Wishlist: Toggling Product [${docId}] for User [${user.uid}]`);
       const wishItemRef = doc(db, 'users', user.uid, 'wishlist', docId);
 
       if (isWishlisted) {
         await deleteDoc(wishItemRef);
-        console.log("Wishlist: Item removed.");
       } else {
         await setDoc(wishItemRef, {
           id: docId,
@@ -111,10 +104,8 @@ export default function ProductCard({ id, productId, slug, name, price, discount
           rating: rating || 4.8,
           addedAt: serverTimestamp()
         });
-        console.log("Wishlist: Item added.");
       }
     } catch (error) {
-      console.error("Wishlist Error:", error);
     }
   };
 

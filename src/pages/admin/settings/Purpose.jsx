@@ -87,7 +87,6 @@ export default function Purpose() {
       const list = snap.docs.map(doc => ({ id: doc.id, ...doc.data() }));
       setArtisans(list);
     } catch (error) {
-      console.error("Artisans fetch error:", error);
     } finally {
       if (showLoading) setLoading(false);
     }
@@ -100,7 +99,6 @@ export default function Purpose() {
         setData(prev => ({ ...prev, ...docSnap.data() }));
       }
     }, (error) => {
-      console.error(error);
       toast.error("Failed to load manifesto details");
     });
 
@@ -337,7 +335,6 @@ export default function Purpose() {
       setHasChanges(false);
       toast.success("Our Manifesto updated successfully");
     } catch (err) {
-      console.error(err);
       toast.error("Failed to save changes");
     } finally {
       setIsSaving(false);

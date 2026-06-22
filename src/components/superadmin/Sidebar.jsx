@@ -59,7 +59,6 @@ export default function Sidebar({ isCollapsed }) {
       await logout();
       navigate('/admin/login'); // Defaulting to admin login for now
     } catch (err) {
-      console.error('Logout error:', err);
     } finally {
       setIsLoggingOut(false);
       setIsLogoutModalOpen(false);

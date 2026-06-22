@@ -66,7 +66,6 @@ export default function DeliveryCharges() {
       setDeliveryRates(data);
       setLoading(false);
     }, (error) => {
-      console.error("Error fetching delivery charges:", error);
       toast.error("Failed to load delivery charges");
       setLoading(false);
     });
@@ -173,7 +172,6 @@ export default function DeliveryCharges() {
 
         toast.success(`Successfully imported ${uniqueImported.length} unique pincode(s)`);
       } catch (err) {
-        console.error("Error parsing Excel:", err);
         toast.error("Failed to parse Excel file");
       }
       e.target.value = '';
@@ -269,7 +267,6 @@ export default function DeliveryCharges() {
       }
       setIsModalOpen(false);
     } catch (error) {
-      console.error("Error saving rate:", error);
       toast.error("Failed to save delivery charge configuration");
     } finally {
       setIsSaving(false);
@@ -290,7 +287,6 @@ export default function DeliveryCharges() {
       setIsDeleteModalOpen(false);
       setRateToDelete(null);
     } catch (error) {
-      console.error("Error deleting rate:", error);
       toast.error("Failed to delete delivery charge configuration");
     } finally {
       setIsDeleting(false);

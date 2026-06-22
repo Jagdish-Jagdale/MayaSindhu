@@ -177,7 +177,6 @@ export default function TopNav({ sidebarOpen, onToggleSidebar, isMobile }) {
     try {
       await deleteDoc(doc(db, 'notifications', id));
     } catch (error) {
-      console.error("Error deleting notification:", error);
     }
   };
 

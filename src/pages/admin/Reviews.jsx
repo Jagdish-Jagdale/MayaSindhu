@@ -73,7 +73,6 @@ export default function Reviews() {
       setReviews(data);
       setLoading(false);
     }, (error) => {
-      console.error("Error loading reviews:", error);
       toast.error("Failed to load reviews");
       setLoading(false);
     });
@@ -124,7 +123,6 @@ export default function Reviews() {
       await updateDoc(docRef, { visible: newStatus });
       toast.success(newStatus ? "Review is now visible on product details" : "Review hidden from product details");
     } catch (error) {
-      console.error("Error updating review visibility:", error);
       toast.error("Failed to update status");
     }
   };
@@ -144,7 +142,6 @@ export default function Reviews() {
       toast.success("Review deleted successfully");
       setIsDeleteModalOpen(false);
     } catch (error) {
-      console.error("Error deleting review:", error);
       toast.error("Failed to delete review");
     } finally {
       setIsDeleting(false);

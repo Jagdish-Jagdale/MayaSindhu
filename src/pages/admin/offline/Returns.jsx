@@ -141,7 +141,6 @@ export default function Returns() {
         const formattedNum = `${returnSettings.prefix}${nextNum.toString().padStart(returnSettings.nextNumber.length, '0')}`;
         setReturnFormData(prev => ({ ...prev, returnId: formattedNum }));
       } catch (error) {
-        console.error("Error generating Return ID:", error);
         const fallback = `${returnSettings.prefix}${returnSettings.nextNumber}`;
         setReturnFormData(prev => ({ ...prev, returnId: fallback }));
       }
@@ -160,7 +159,6 @@ export default function Returns() {
             }));
           }
         } catch (error) {
-          console.error("Error fetching customer phone:", error);
         }
       };
       fetchCustomerPhone();
@@ -191,7 +189,6 @@ export default function Returns() {
         const formattedNum = `${returnSettings.prefix}${nextNum.toString().padStart(returnSettings.nextNumber.length, '0')}`;
         setReturnFormData(prev => ({ ...prev, returnId: formattedNum }));
       } catch (error) {
-        console.error("Error generating Return ID:", error);
         const fallback = `${returnSettings.prefix}${returnSettings.nextNumber}`;
         setReturnFormData(prev => ({ ...prev, returnId: fallback }));
       }
@@ -276,7 +273,6 @@ export default function Returns() {
             stock: increment(Number(item.returnQty || 0))
           });
         } catch (err) {
-          console.error(`Error updating stock for product ${item.productId}:`, err);
         }
       });
       await Promise.all(updatePromises);
@@ -284,7 +280,6 @@ export default function Returns() {
       toast.success("Return processed successfully!");
       setIsReturnFormOpen(false);
     } catch (error) {
-      console.error("Error processing return:", error);
       toast.error("Failed to process return.");
     } finally {
       setLoading(false);
@@ -308,7 +303,6 @@ export default function Returns() {
       setReturns(snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() })));
       setLoading(false);
     }, (error) => {
-      console.error("Error fetching returns:", error);
       toast.error("Failed to load return records.");
       setLoading(false);
     });
@@ -321,7 +315,6 @@ export default function Returns() {
     const unsubscribe = onSnapshot(q, (snapshot) => {
       setOfflineReturns(snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() })));
     }, (error) => {
-      console.error("Error fetching offline returns:", error);
     });
 
     return () => unsubscribe();
@@ -346,7 +339,6 @@ export default function Returns() {
           toast.success("Return record deleted successfully");
           setDeleteConfirmOpen(false);
         } catch (error) {
-          console.error("Error deleting return:", error);
           toast.error("Failed to delete record");
         } finally {
           setDeleteLoading(false);
@@ -382,7 +374,6 @@ export default function Returns() {
                 stock: increment(-Number(item.quantity || 0))
               });
             } catch (err) {
-              console.error(`Error reverting stock for product ${item.productId}:`, err);
             }
           });
           await Promise.all(revertPromises);
@@ -395,7 +386,6 @@ export default function Returns() {
           setSelectedReturn(null);
           setDeleteConfirmOpen(false);
         } catch (error) {
-          console.error("Error deleting return:", error);
           toast.error("Failed to delete return record.");
         } finally {
           setDeleteLoading(false);

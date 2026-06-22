@@ -80,7 +80,6 @@ const UserViewModal = ({ isOpen, onClose, user }) => {
 
         setOrders(userOrders);
       } catch (error) {
-        console.error("Error fetching user orders:", error);
       } finally {
         setLoading(false);
       }

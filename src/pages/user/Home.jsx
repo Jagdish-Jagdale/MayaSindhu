@@ -202,7 +202,6 @@ export default function Home() {
 
       setBannersLoading(false);
     }, (error) => {
-      console.error("Banners fetch error:", error);
       setBannersLoading(false);
     });
     return () => unsubscribe();
@@ -216,7 +215,6 @@ export default function Home() {
       setRealms(data);
       setRealmsLoading(false);
     }, (error) => {
-      console.error("Realms fetch error:", error);
       setRealmsLoading(false);
     });
     return () => unsubscribe();
@@ -230,7 +228,6 @@ export default function Home() {
       setTrends(data);
       setTrendsLoading(false);
     }, (error) => {
-      console.error("Trends fetch error:", error);
       setTrendsLoading(false);
     });
     return () => unsubscribe();
@@ -244,7 +241,6 @@ export default function Home() {
       setLooks(data);
       setLooksLoading(false);
     }, (error) => {
-      console.error("Looks fetch error:", error);
       setLooksLoading(false);
     });
     return () => unsubscribe();
@@ -258,7 +254,6 @@ export default function Home() {
       }
       setPurposeLoading(false);
     }, (error) => {
-      console.error("Purpose fetch error:", error);
       setPurposeLoading(false);
     });
     return () => unsubscribe();
@@ -272,7 +267,6 @@ export default function Home() {
       setTestimonials(data);
       setTestimonialsLoading(false);
     }, (error) => {
-      console.error("Testimonials fetch error:", error);
       setTestimonialsLoading(false);
     });
     return () => unsubscribe();
@@ -289,7 +283,6 @@ export default function Home() {
       setWorkshops(data);
       setWorkshopsLoading(false);
     }, (error) => {
-      console.error("Workshops fetch error:", error);
       setWorkshopsLoading(false);
     });
     return () => unsubscribe();

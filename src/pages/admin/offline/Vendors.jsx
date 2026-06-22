@@ -58,7 +58,6 @@ export default function Vendors() {
       setVendors(snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() })));
       setLoading(false);
     }, (error) => {
-      console.error("Error fetching vendors:", error);
       toast.error("Failed to load vendor data.");
       setLoading(false);
     });
@@ -72,7 +71,6 @@ export default function Vendors() {
       await deleteDoc(doc(db, 'storeVendors', id));
       toast.success("Vendor removed successfully");
     } catch (error) {
-      console.error("Error deleting vendor:", error);
       toast.error("Failed to delete vendor");
     }
   };

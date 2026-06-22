@@ -81,7 +81,6 @@ export default function Workshops() {
       setWorkshops(data);
       setLoading(false);
     }, (error) => {
-      console.error(error);
       setLoading(false);
       toast.error("Failed to load workshops");
     });
@@ -162,7 +161,6 @@ export default function Workshops() {
       }
       setIsModalOpen(false);
     } catch (err) {
-      console.error("Save error:", err);
       toast.error("Failed to save workshop");
     } finally {
       setIsSaving(false);
@@ -185,7 +183,6 @@ export default function Workshops() {
       toast.success("Workshop deleted");
       setIsDeleteModalOpen(false);
     } catch (err) {
-      console.error("Delete error:", err);
       toast.error("Failed to delete workshop");
     } finally {
       setIsDeleting(false);

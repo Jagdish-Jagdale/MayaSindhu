@@ -122,7 +122,6 @@ export default function Reports() {
       const orders = snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() }));
       setAllOrders(orders);
     }, (error) => {
-      console.error("Error fetching orders:", error);
     });
 
     // 2. Fetch Customers
@@ -130,7 +129,6 @@ export default function Reports() {
       const custs = snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() }));
       setCustomers(custs);
     }, (error) => {
-      console.error("Error fetching customers:", error);
     });
 
     // 3. Fetch Products
@@ -138,7 +136,6 @@ export default function Reports() {
       const prods = snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() }));
       setProducts(prods);
     }, (error) => {
-      console.error("Error fetching products:", error);
     });
 
     // 4. Fetch Categories
@@ -147,7 +144,6 @@ export default function Reports() {
       setCategories(cats);
       setLoading(false);
     }, (error) => {
-      console.error("Error fetching categories:", error);
       setLoading(false);
     });
 

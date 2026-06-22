@@ -69,7 +69,6 @@ export default function Profile() {
       await logout();
       navigate('/');
     } catch (error) {
-      console.error("Logout failed:", error);
     }
   };
 

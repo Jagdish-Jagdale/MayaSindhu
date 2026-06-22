@@ -47,7 +47,6 @@ export default function ScrollToTop() {
             clearTimeout(t5);
           };
         } catch (e) {
-          console.error("Scroll restoration failed:", e);
         }
       }
     } else {

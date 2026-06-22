@@ -83,7 +83,6 @@ export default function AboutUs() {
       setLoading(false);
       setHasChanges(false);
     }, (error) => {
-      console.error(error);
       setLoading(false);
       toast.error("Failed to load details");
     });
@@ -189,7 +188,6 @@ export default function AboutUs() {
       setHasChanges(false);
       toast.success("All changes saved successfully");
     } catch (err) {
-      console.error(err);
       toast.error("Failed to save changes");
     } finally {
       setIsSaving(false);

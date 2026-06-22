@@ -64,6 +64,21 @@ const findCategoryById = (catId, categoriesList) => {
   return null;
 };
 
+// Helper to find category object by slug
+const findCategoryBySlug = (slugVal, categoriesList) => {
+  if (!slugVal || !categoriesList) return null;
+  for (const item of categoriesList) {
+    if (item.slug?.toLowerCase() === slugVal.toLowerCase() || item.id?.toLowerCase() === slugVal.toLowerCase()) {
+      return item;
+    }
+    if (item.children && item.children.length > 0) {
+      const found = findCategoryBySlug(slugVal, item.children);
+      if (found) return found;
+    }
+  }
+  return null;
+};
+
 // Helper to get all descendant category IDs under a given category ID
 const getAllDescendantIds = (catId, categoriesList) => {
   const findCategory = (items, targetId) => {
@@ -310,19 +325,16 @@ export default function ProductDetail() {
                   }
                   setLoading(false);
                 }, (err) => {
-                  console.error("Error querying legacy slug fallback:", err);
                   setLoading(false);
                 });
               }
             }
           }, (err) => {
-            console.error("Error querying productId fallback:", err);
             setLoading(false);
           });
         }
       }
     }, (error) => {
-      console.error("Error listening to product ID in real-time:", error);
       setLoading(false);
     });
 
@@ -332,6 +344,19 @@ export default function ProductDetail() {
       if (unsubSlugQuery) unsubSlugQuery();
     };
   }, [id]);
+
+  // Redirect to category view or collections if product is not found
+  useEffect(() => {
+    if (!loading && !product && categories && categories.length > 0) {
+      const targetSlug = slug || id;
+      const foundCategory = findCategoryBySlug(targetSlug, categories);
+      if (foundCategory) {
+        navigate(foundCategory.fullPath, { replace: true });
+      } else {
+        navigate('/collections', { replace: true });
+      }
+    }
+  }, [loading, product, slug, id, categories, navigate]);
 
   useEffect(() => {
     if (!product) return;
@@ -344,7 +369,6 @@ export default function ProductDetail() {
           setSelectedVariant(list[0]);
         }
       } catch (err) {
-        console.error("Error fetching variants:", err);
       }
     };
     fetchVariants();
@@ -435,7 +459,6 @@ export default function ProductDetail() {
 
         setRelatedProducts(related.slice(0, 8));
       } catch (error) {
-        console.error("Error fetching related products:", error);
       } finally {
         setRelatedLoading(false);
       }
@@ -474,7 +497,6 @@ export default function ProductDetail() {
       setReviews(reviewData);
       setReviewsLoading(false);
     }, (error) => {
-      console.error("Error loading reviews:", error);
       setReviewsLoading(false);
     });
 
@@ -494,7 +516,6 @@ export default function ProductDetail() {
       // Auto-hide success message after 3 seconds
       setTimeout(() => setIsAdded(false), 3000);
     } catch (error) {
-      console.error("Cart Error:", error);
       toast.error(error.message || "Failed to add to cart");
     } finally {
       setAdding(false);
@@ -526,7 +547,10 @@ export default function ProductDetail() {
         sku: selectedVariant?.sku || product.sku || '',
         productType: selectedVariant 
           ? (selectedVariant.productType || 'Standard')
-          : (isUnique ? 'Unique' : (product.productType || 'Standard'))
+          : (isUnique ? 'Unique' : (product.productType || 'Standard')),
+        actualPrice: selectedVariant 
+          ? (selectedVariant.actualPrice || selectedVariant.price || 0)
+          : (product.actualPrice || product.price || 0)
       };
 
       navigate('/checkout', {
@@ -535,7 +559,6 @@ export default function ProductDetail() {
         }
       });
     } catch (error) {
-      console.error("Buy Now Error:", error);
     } finally {
       setAdding(false);
     }
@@ -564,7 +587,6 @@ export default function ProductDetail() {
         });
       }
     } catch (error) {
-      console.error("Error toggling wishlist:", error);
     }
   };
 
@@ -590,7 +612,6 @@ export default function ProductDetail() {
         await navigator.share(shareData);
       } catch (err) {
         if (err.name !== 'AbortError') {
-          console.error("Error sharing:", err);
           toast.error("Failed to share product.");
         }
       }
@@ -610,9 +631,8 @@ export default function ProductDetail() {
 
   if (!product) {
     return (
-      <div className="min-h-screen flex flex-col items-center justify-center bg-[#FDFBF7] p-6 text-center">
-        <h2 className="text-3xl font-sans font-bold text-[#1A1A1A] mb-4">Treasure Not Found</h2>
-        <button onClick={() => navigate('/')} className="btn btn-primary px-12">Return to Shop</button>
+      <div className="min-h-screen flex items-center justify-center bg-[#FDFBF7]">
+        <Loader2 className="w-10 h-10 animate-spin text-brand-orange" />
       </div>
     );
   }

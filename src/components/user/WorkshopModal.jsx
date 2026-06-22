@@ -51,7 +51,6 @@ export default function WorkshopModal({ isOpen, onClose, workshop }) {
         setFormData({ fullName: '', phone: '', email: '', address: '', participants: '1' });
       }, 3000);
     } catch (error) {
-      console.error("Booking error:", error);
       toast.error('Failed to book slot. Please try again.');
     } finally {
       setLoading(false);
@@ -68,7 +67,7 @@ export default function WorkshopModal({ isOpen, onClose, workshop }) {
     setLoading(true);
 
     const options = {
-      key: import.meta.env.VITE_RAZORPAY_KEY_ID || "rzp_test_5P3aU2HnL6k9Xq",
+      key: import.meta.env.VITE_RAZORPAY_KEY_ID || "",
       amount: totalAmount * 100, // in paise
       currency: "INR",
       name: "MayaSindhu Workshops",
@@ -94,7 +93,6 @@ export default function WorkshopModal({ isOpen, onClose, workshop }) {
             setFormData({ fullName: '', phone: '', email: '', address: '', participants: '1' });
           }, 3000);
         } catch (error) {
-          console.error("Booking save error:", error);
           toast.error("Failed to save booking. Please contact support with payment ID: " + response.razorpay_payment_id);
         } finally {
           setLoading(false);

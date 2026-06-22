@@ -59,7 +59,6 @@ export default function PurchaseOrders() {
       setOrders(snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() })));
       setLoading(false);
     }, (error) => {
-      console.error("Error fetching store orders:", error);
       toast.error("Failed to load order data.");
       setLoading(false);
     });
@@ -73,7 +72,6 @@ export default function PurchaseOrders() {
       await deleteDoc(doc(db, 'purchaseOrders', id));
       toast.success("Order deleted successfully");
     } catch (error) {
-      console.error("Error deleting order:", error);
       toast.error("Failed to delete order");
     }
   };

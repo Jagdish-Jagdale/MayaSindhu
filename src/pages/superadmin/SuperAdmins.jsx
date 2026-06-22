@@ -49,7 +49,6 @@ export default function SuperAdmins() {
       setAdmins(list);
       setLoading(false);
     }, (error) => {
-      console.error("Error fetching super admins:", error);
       toast.error("Failed to load super admin team");
       setLoading(false);
     });
@@ -151,7 +150,6 @@ export default function SuperAdmins() {
       }
       setIsModalOpen(false);
     } catch (error) {
-      console.error("Save error: ", error);
       toast.error(error.message || "Failed to save super administrator");
     } finally {
       setIsSaving(false);
@@ -172,7 +170,6 @@ export default function SuperAdmins() {
       setIsDeleteModalOpen(false);
       setAdminToDelete(null);
     } catch (error) {
-      console.error("Error deleting super admin:", error);
       toast.error("Failed to remove super administrator");
     } finally {
       setIsDeleting(false);

@@ -51,7 +51,6 @@ export default function Admins() {
       setAdmins(list);
       setLoading(false);
     }, (error) => {
-      console.error("Error fetching admins:", error);
       toast.error("Failed to load admin team");
       setLoading(false);
     });
@@ -166,7 +165,6 @@ export default function Admins() {
       }
       setIsModalOpen(false);
     } catch (error) {
-      console.error("Save error: ", error);
       toast.error(error.message || "Failed to save administrator");
     } finally {
       setIsSaving(false);
@@ -187,7 +185,6 @@ export default function Admins() {
       setIsDeleteModalOpen(false);
       setAdminToDelete(null);
     } catch (error) {
-      console.error("Error deleting admin:", error);
       toast.error("Failed to remove administrator");
     } finally {
       setIsDeleting(false);

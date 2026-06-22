@@ -159,7 +159,6 @@ export default function Banner() {
       setIsDeleteModalOpen(false);
       setHasChanges(true); // Need to save if other orders were re-aligned
     } catch (err) {
-      console.error("Delete error:", err);
       toast.error("Failed to delete banner");
     } finally {
       setIsDeleting(false);
@@ -253,7 +252,6 @@ export default function Banner() {
       setHasChanges(false);
       toast.success("Banners updated successfully");
     } catch (err) {
-      console.error(err);
       toast.error("Failed to save changes");
     } finally {
       setIsSaving(false);

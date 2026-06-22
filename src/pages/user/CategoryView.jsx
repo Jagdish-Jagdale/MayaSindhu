@@ -37,7 +37,6 @@ export default function CategoryView() {
       setProducts(data);
       setProductsLoading(false);
     }, (error) => {
-      console.error("CategoryView fetch error:", error);
       setProductsLoading(false);
     });
     return () => unsubscribe();

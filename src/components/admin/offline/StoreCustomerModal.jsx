@@ -80,7 +80,6 @@ export default function StoreCustomerModal({ isOpen, onClose, customer = null })
       }
       onClose();
     } catch (error) {
-      console.error("Error saving customer:", error);
       toast.error("Failed to save customer");
     } finally {
       setLoading(false);
