@@ -63,7 +63,7 @@ import Testimonial from './pages/admin/settings/Testimonial';
 import AboutUs from './pages/admin/settings/AboutUs';
 import Blogs from './pages/admin/settings/Blogs';
 import Workshops from './pages/admin/settings/Workshops';
-
+import AdminDisclaimer from './pages/admin/settings/Disclaimer';
 
 import './App.css';
 
@@ -163,6 +163,7 @@ function App() {
             <Route path="settings/about-us" element={<AboutUs />} />
             <Route path="settings/blogs" element={<Blogs />} />
             <Route path="settings/artician-workshop" element={<Workshops />} />
+            <Route path="settings/disclaimer" element={<AdminDisclaimer />} />
           </Route>
 
 

@@ -69,6 +69,7 @@ function getMenuItems(pathname) {
         { title: 'About Us', icon: Users, path: `${base}/settings/about-us` },
         { title: 'Artician Workshop', icon: Users2, path: `${base}/settings/artician-workshop` },
         { title: 'Blogs', icon: FileText, path: `${base}/settings/blogs` },
+        { title: 'Disclaimer', icon: FileText, path: `${base}/settings/disclaimer` },
       ]
     },
   ];
@@ -87,8 +88,8 @@ export default function Sidebar({ isCollapsed }) {
   const currentPanel = location.pathname.startsWith('/superadmin')
     ? 'Super Admin'
     : location.pathname.startsWith('/admin-offline')
-    ? 'Offline Admin'
-    : 'Online Admin';
+      ? 'Offline Admin'
+      : 'Online Admin';
 
   const panels = [
     { name: 'Super Admin', path: '/superadmin/dashboard', color: 'from-purple-500 to-indigo-600' },
@@ -174,7 +175,7 @@ export default function Sidebar({ isCollapsed }) {
           </button>
 
           {isSwitchOpen && (
-            <div 
+            <div
               className={`
                 absolute z-50 mt-1 bg-white border border-gray-100 rounded-xl shadow-lg py-1.5 animate-in fade-in slide-in-from-top-2 duration-200
                 ${isCollapsed ? 'left-full top-0 ml-2 w-48' : 'left-3 right-3'}
@@ -191,8 +192,8 @@ export default function Sidebar({ isCollapsed }) {
                     }}
                     className={`
                       w-full text-left px-3 py-2 text-[12px] font-medium transition-colors flex items-center gap-2
-                      ${active 
-                        ? 'bg-gray-50 text-[#1BAFAF] font-semibold' 
+                      ${active
+                        ? 'bg-gray-50 text-[#1BAFAF] font-semibold'
                         : 'text-gray-600 hover:bg-gray-50 hover:text-gray-900'
                       }
                     `}

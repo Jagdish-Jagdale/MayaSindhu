@@ -277,15 +277,31 @@ export default function ProductDetail() {
 
   const [reviews, setReviews] = useState([]);
   const [reviewsLoading, setReviewsLoading] = useState(true);
+  const [globalDisclaimer, setGlobalDisclaimer] = useState("The actual product color may vary slightly from the images shown due to photography lighting, camera settings, and differences in screen/display settings");
+
+  useEffect(() => {
+    const fetchDisclaimer = async () => {
+      try {
+        const docRef = doc(db, 'settings', 'general');
+        const docSnap = await getDoc(docRef);
+        if (docSnap.exists() && docSnap.data().productDisclaimer) {
+          setGlobalDisclaimer(docSnap.data().productDisclaimer);
+        }
+      } catch (err) {
+        // Fallback to default
+      }
+    };
+    fetchDisclaimer();
+  }, []);
 
   const [activeImage, setActiveImage] = useState(0);
   const [quantity, setQuantity] = useState(1);
   const [openFaqIndex, setOpenFaqIndex] = useState(0);
 
-  const isUnique = selectedVariant 
-    ? (selectedVariant.productType === 'Unique') 
+  const isUnique = selectedVariant
+    ? (selectedVariant.productType === 'Unique')
     : (product ? (product.isUniquePiece === true || product.productType === 'Unique') : false);
-  const stockVal = selectedVariant 
+  const stockVal = selectedVariant
     ? (typeof selectedVariant.stock === 'number' ? selectedVariant.stock : 0)
     : (product ? (typeof product.stock === 'number' ? product.stock : (isUnique ? 1 : 15)) : 15);
 
@@ -545,10 +561,10 @@ export default function ProductDetail() {
         isDirectBuy: true,
         variantId: selectedVariant?.id || '',
         sku: selectedVariant?.sku || product.sku || '',
-        productType: selectedVariant 
+        productType: selectedVariant
           ? (selectedVariant.productType || 'Standard')
           : (isUnique ? 'Unique' : (product.productType || 'Standard')),
-        actualPrice: selectedVariant 
+        actualPrice: selectedVariant
           ? (selectedVariant.actualPrice || selectedVariant.price || 0)
           : (product.actualPrice || product.price || 0)
       };
@@ -638,9 +654,9 @@ export default function ProductDetail() {
   }
 
   const images = variants.length > 0
-    ? (selectedVariant?.images && selectedVariant.images.length > 0 
-        ? selectedVariant.images 
-        : (product.images && product.images.length > 0 ? product.images : [product.image]))
+    ? (selectedVariant?.images && selectedVariant.images.length > 0
+      ? selectedVariant.images
+      : (product.images && product.images.length > 0 ? product.images : [product.image]))
     : (product.images || [product.image]);
 
   return (
@@ -792,7 +808,7 @@ export default function ProductDetail() {
                             const variantWithColor = variants.find(v => (v.color || '') === (color || ''));
                             const isSelected = (selectedVariant?.color || '') === (color || '');
                             const thumbnail = variantWithColor?.images?.[0] || product.image || (product.images && product.images[0]);
-                            
+
                             return (
                               <button
                                 key={color || 'default'}
@@ -800,11 +816,10 @@ export default function ProductDetail() {
                                   const match = variants.find(v => (v.color || '') === (color || ''));
                                   if (match) setSelectedVariant(match);
                                 }}
-                                className={`flex items-center p-0.5 rounded-lg border transition-all flex-shrink-0 ${
-                                  isSelected
+                                className={`flex items-center p-0.5 rounded-lg border transition-all flex-shrink-0 ${isSelected
                                     ? 'border-[#1BAFAF] bg-[#1BAFAF]/5 ring-2 ring-[#1BAFAF]'
                                     : 'border-gray-200 bg-white hover:border-gray-400'
-                                }`}
+                                  }`}
                               >
                                 {thumbnail && (
                                   <img src={thumbnail} alt="" className="w-16 h-22 object-cover rounded-md" />
@@ -832,11 +847,10 @@ export default function ProductDetail() {
                               <button
                                 key={v.id}
                                 onClick={() => setSelectedVariant(v)}
-                                className={`px-4 py-2 rounded-xl border text-xs font-semibold transition-all ${
-                                  isSelected
+                                className={`px-4 py-2 rounded-xl border text-xs font-semibold transition-all ${isSelected
                                     ? 'border-[#1BAFAF] bg-[#1BAFAF]/5 ring-1 ring-[#1BAFAF] text-[#1BAFAF]'
                                     : 'border-gray-250 bg-white hover:border-gray-450 text-gray-700'
-                                }`}
+                                  }`}
                               >
                                 {v.design || 'Standard'}
                               </button>
@@ -848,18 +862,34 @@ export default function ProductDetail() {
                 </div>
               )}
 
-              <p className="text-gray-500 text-xs sm:text-sm leading-relaxed mb-4 sm:mb-6 font-medium">
+              <p className="text-gray-500 text-xs sm:text-sm leading-relaxed mb-4 sm:mb-6 font-medium whitespace-pre-wrap">
                 {product.description || "A masterpiece of artisanal craftsmanship, each thread tells a story of heritage and handcrafted excellence."}
               </p>
 
+              {product.productDetails && (
+                <div className="mb-4 lg:mb-6 py-4 border-t border-gray-100">
+                  <p className="text-[10px] sm:text-xs font-black uppercase tracking-wider text-gray-400 mb-1.5">Product Details</p>
+                  <p className="text-[#1A1A1A] text-xs sm:text-sm font-bold leading-relaxed whitespace-pre-wrap">
+                    {product.productDetails}
+                  </p>
+                </div>
+              )}
+
               {product.care && (
-                <div className="mb-6 lg:mb-8 py-4 border-t border-gray-100">
+                <div className="mb-4 lg:mb-6 py-4 border-t border-gray-100">
                   <p className="text-[10px] sm:text-xs font-black uppercase tracking-wider text-gray-400 mb-1.5">Care Instructions</p>
-                  <p className="text-[#1A1A1A] text-xs sm:text-sm font-bold leading-relaxed">
+                  <p className="text-[#1A1A1A] text-xs sm:text-sm font-bold leading-relaxed whitespace-pre-wrap">
                     {product.care}
                   </p>
                 </div>
               )}
+
+              <div className="mb-6 lg:mb-8 py-4 border-t border-gray-100">
+                <p className="text-[10px] sm:text-xs font-black uppercase tracking-wider text-gray-400 mb-1.5">Disclaimer</p>
+                <p className="text-gray-500 text-xs sm:text-sm font-medium leading-relaxed italic">
+                  {product.disclaimer || globalDisclaimer}
+                </p>
+              </div>
             </div>
 
             {/* Actions */}
@@ -979,7 +1009,7 @@ export default function ProductDetail() {
                         <ChevronDown size={20} />
                       </motion.div>
                     </button>
-                    
+
                     <AnimatePresence initial={false}>
                       {isOpen && (
                         <motion.div
