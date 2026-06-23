@@ -99,6 +99,8 @@ export default function ProductFormModal({ isOpen, onClose, product = null, init
               id: doc.id,
               color: data.color || '',
               design: data.design || '',
+              size: data.size || '',
+              sizes: data.sizes || (data.size ? [data.size] : []),
               sku: data.sku || '',
               price: discounted || '',
               actualPrice: actual || '',
@@ -121,6 +123,8 @@ export default function ProductFormModal({ isOpen, onClose, product = null, init
                 id: 'temp_fallback',
                 color: 'Default',
                 design: 'Default',
+                size: product.size || '',
+                sizes: product.sizes || (product.size ? [product.size] : []),
                 sku: product.sku || generateSKU(),
                 price: product.discountedPrice || product.price || '',
                 actualPrice: product.actualPrice || product.price || '',
@@ -167,6 +171,8 @@ export default function ProductFormModal({ isOpen, onClose, product = null, init
             id: 'temp_' + Date.now(),
             color: 'Default',
             design: 'Default',
+            size: '',
+            sizes: [],
             sku: generateSKU('Default', 'Default'),
             price: '',
             actualPrice: '',
@@ -245,6 +251,8 @@ export default function ProductFormModal({ isOpen, onClose, product = null, init
 
     if (!hasChildren) {
       setFormData(prev => ({ ...prev, categoryId: id }));
+    } else {
+      setFormData(prev => ({ ...prev, categoryId: '' }));
     }
   };
 
@@ -275,6 +283,8 @@ export default function ProductFormModal({ isOpen, onClose, product = null, init
         id: 'temp_' + Date.now(),
         color: col,
         design: des,
+        size: '',
+        sizes: [],
         sku: generateSKU(col, des),
         price: '',
         actualPrice: '',
@@ -371,21 +381,42 @@ export default function ProductFormModal({ isOpen, onClose, product = null, init
   };
 
   const getCategoryShowSizes = (id) => {
-    const findCat = (items) => {
-      if (!items) return null;
+    const findCategory = (items, targetId) => {
       for (const item of items) {
-        if (item.id === id) return item.showSizes || false;
+        if (item.id === targetId) return item;
         if (item.children) {
-          const found = findCat(item.children);
-          if (found !== null) return found;
+          const found = findCategory(item.children, targetId);
+          if (found) return found;
         }
       }
       return null;
     };
-    return findCat(heirarchy) || false;
+
+    const findParent = (items, targetParentId) => {
+      for (const item of items) {
+        if (item.id === targetParentId) return item;
+        if (item.children) {
+          const found = findParent(item.children, targetParentId);
+          if (found) return found;
+        }
+      }
+      return null;
+    };
+
+    const cat = findCategory(heirarchy, id);
+    if (!cat) return false;
+    if (cat.showSizes === true) return true;
+
+    let parent = cat.parentId ? findParent(heirarchy, cat.parentId) : null;
+    while (parent) {
+      if (parent.showSizes === true) return true;
+      parent = parent.parentId ? findParent(heirarchy, parent.parentId) : null;
+    }
+    return false;
   };
 
-  const isApparelReadymade = formData.categoryId ? getCategoryShowSizes(formData.categoryId) : false;
+  const lastSelectedCategoryId = selectedPathIds.filter(Boolean).pop();
+  const isApparelReadymade = lastSelectedCategoryId ? getCategoryShowSizes(lastSelectedCategoryId) : false;
 
   const handleSubmit = async (e) => {
     e.preventDefault();
@@ -426,6 +457,10 @@ export default function ProductFormModal({ isOpen, onClose, product = null, init
         .map(item => ({ question: item.question.trim(), answer: item.answer.trim() }))
         .filter(item => item.question || item.answer);
 
+      const allSizes = isApparelReadymade
+        ? Array.from(new Set(updatedVariants.map(v => v.size).filter(Boolean)))
+        : [];
+
       const productData = {
         name: formData.name,
         categoryId: formData.categoryId,
@@ -451,7 +486,9 @@ export default function ProductFormModal({ isOpen, onClose, product = null, init
         actualPrice: Number(firstVariant?.actualPrice || 0),
         stock: firstVariant?.productType === 'Unique' ? 1 : totalStock,
         images: allImages,
-        sku: firstVariant?.sku || ''
+        sku: firstVariant?.sku || '',
+        sizes: allSizes,
+        size: allSizes[0] || ''
       };
 
       let parentProductId = '';
@@ -470,6 +507,8 @@ export default function ProductFormModal({ isOpen, onClose, product = null, init
           const variantData = {
             color: v.color || '',
             design: v.design || '',
+            size: v.sizes?.[0] || v.size || '',
+            sizes: v.sizes || [],
             sku: v.sku || '',
             price: Number(v.price || 0),
             actualPrice: Number(v.actualPrice || 0),
@@ -498,6 +537,8 @@ export default function ProductFormModal({ isOpen, onClose, product = null, init
           const variantData = {
             color: v.color || '',
             design: v.design || '',
+            size: v.sizes?.[0] || v.size || '',
+            sizes: v.sizes || [],
             sku: v.sku || '',
             price: Number(v.price || 0),
             actualPrice: Number(v.actualPrice || 0),
@@ -794,7 +835,7 @@ export default function ProductFormModal({ isOpen, onClose, product = null, init
                           )}
                         </div>
 
-                        {/* Color & Design */}
+                         {/* Color & Design */}
                         <div className="grid grid-cols-2 gap-3">
                           <div className="space-y-1">
                             <label className="text-[11px] font-bold text-gray-500 ml-1">Color *</label>
@@ -804,7 +845,7 @@ export default function ProductFormModal({ isOpen, onClose, product = null, init
                               placeholder="e.g. Red, Blue"
                               value={variant.color}
                               onChange={(e) => handleVariantChange(variant.id, 'color', e.target.value)}
-                              className="w-full bg-white border border-gray-250 px-3 py-2 rounded-lg text-[13px] outline-none focus:ring-2 focus:ring-[#1BAFAF]/20 transition-all font-medium"
+                              className="w-full bg-gray-50 border-none px-3 py-2 rounded-lg text-[13px] outline-none focus:ring-2 focus:ring-[#1BAFAF]/20 transition-all font-medium"
                             />
                           </div>
                           <div className="space-y-1">
@@ -814,10 +855,43 @@ export default function ProductFormModal({ isOpen, onClose, product = null, init
                               placeholder="e.g. Plain, Printed"
                               value={variant.design}
                               onChange={(e) => handleVariantChange(variant.id, 'design', e.target.value)}
-                              className="w-full bg-white border border-gray-250 px-3 py-2 rounded-lg text-[13px] outline-none focus:ring-2 focus:ring-[#1BAFAF]/20 transition-all font-medium"
+                              className="w-full bg-gray-50 border-none px-3 py-2 rounded-lg text-[13px] outline-none focus:ring-2 focus:ring-[#1BAFAF]/20 transition-all font-medium"
                             />
                           </div>
                         </div>
+
+                        {/* Sizes Selection Checkboxes */}
+                        {isApparelReadymade && (
+                          <div className="space-y-1.5 bg-white border border-gray-200/60 p-3.5 rounded-xl">
+                            <label className="text-[11px] font-bold text-[#1BAFAF] uppercase tracking-wider block mb-1">Available Sizes *</label>
+                            <div className="flex flex-wrap gap-2">
+                              {['XS', 'S', 'M', 'L', 'XL', 'XXL'].map((sz) => {
+                                const sizesArray = variant.sizes || [];
+                                const isChecked = sizesArray.includes(sz);
+                                return (
+                                  <label key={sz} className={`flex items-center gap-1.5 px-3 py-2 rounded-xl text-xs font-black cursor-pointer border select-none transition-all ${
+                                    isChecked
+                                      ? 'bg-[#1BAFAF]/5 border-[#1BAFAF] text-[#1BAFAF] ring-1 ring-[#1BAFAF]/20'
+                                      : 'bg-gray-50/50 border-gray-200 text-gray-500 hover:bg-gray-50'
+                                  }`}>
+                                    <input
+                                      type="checkbox"
+                                      checked={isChecked}
+                                      onChange={(e) => {
+                                        const newSizes = e.target.checked
+                                          ? [...sizesArray, sz]
+                                          : sizesArray.filter(s => s !== sz);
+                                        handleVariantChange(variant.id, 'sizes', newSizes);
+                                      }}
+                                      className="rounded border-gray-300 text-[#1BAFAF] focus:ring-[#1BAFAF] w-3.5 h-3.5"
+                                    />
+                                    <span>{sz}</span>
+                                  </label>
+                                );
+                              })}
+                            </div>
+                          </div>
+                        )}
 
                         {/* Product Type & Stock Alert Threshold */}
                         <div className="grid grid-cols-2 gap-3">
@@ -862,7 +936,7 @@ export default function ProductFormModal({ isOpen, onClose, product = null, init
                               placeholder="SKU"
                               value={variant.sku}
                               onChange={(e) => handleVariantChange(variant.id, 'sku', e.target.value)}
-                              className="w-full bg-white border border-gray-250 px-3 py-2 rounded-lg text-[13px] outline-none focus:ring-2 focus:ring-[#1BAFAF]/20 transition-all font-medium uppercase"
+                              className="w-full bg-gray-50 border-none px-3 py-2 rounded-lg text-[13px] outline-none focus:ring-2 focus:ring-[#1BAFAF]/20 transition-all font-medium uppercase"
                             />
                           </div>
                           <div className="space-y-1">
@@ -896,7 +970,7 @@ export default function ProductFormModal({ isOpen, onClose, product = null, init
                               value={variant.actualPrice}
                               onChange={(e) => handleVariantChange(variant.id, 'actualPrice', e.target.value)}
                               onKeyDown={handleKeyPress}
-                              className="w-full bg-white border border-gray-250 px-3 py-2 rounded-lg text-[13px] outline-none focus:ring-2 focus:ring-[#1BAFAF]/20 transition-all font-medium text-gray-900"
+                              className="w-full bg-gray-50 border-none px-3 py-2 rounded-lg text-[13px] outline-none focus:ring-2 focus:ring-[#1BAFAF]/20 transition-all font-medium text-gray-900"
                             />
                           </div>
                           <div className="space-y-1">
@@ -909,7 +983,7 @@ export default function ProductFormModal({ isOpen, onClose, product = null, init
                               value={variant.discountPercent}
                               onChange={(e) => handleVariantChange(variant.id, 'discountPercent', e.target.value)}
                               onKeyDown={handleKeyPress}
-                              className="w-full bg-white border border-gray-250 px-3 py-2 rounded-lg text-[13px] outline-none focus:ring-2 focus:ring-[#1BAFAF]/20 transition-all font-medium text-gray-750"
+                              className="w-full bg-gray-50 border-none px-3 py-2 rounded-lg text-[13px] outline-none focus:ring-2 focus:ring-[#1BAFAF]/20 transition-all font-medium text-gray-750"
                             />
                           </div>
                           <div className="space-y-1">
