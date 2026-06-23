@@ -31,6 +31,8 @@ export default function ProductFormModal({ isOpen, onClose, product = null, init
     description: '',
     tagline: '',
     care: '',
+    productDetails: '',
+    disclaimer: '',
     brand: '',
     productId: '',
     faqs: [{ question: '', answer: '' }]
@@ -65,6 +67,8 @@ export default function ProductFormModal({ isOpen, onClose, product = null, init
           description: product.description || '',
           tagline: product.tagline || '',
           care: product.care || '',
+          productDetails: product.productDetails || '',
+          disclaimer: product.disclaimer || '',
           brand: product.brand || '',
           productId: product.productId || '',
           faqs: product.faqs && product.faqs.length > 0 ? product.faqs : [{ question: '', answer: '' }]
@@ -144,6 +148,8 @@ export default function ProductFormModal({ isOpen, onClose, product = null, init
           description: '',
           tagline: '',
           care: '',
+          productDetails: '',
+          disclaimer: '',
           brand: '',
           productId: generateProductId(),
           faqs: [{ question: '', answer: '' }]
@@ -429,6 +435,8 @@ export default function ProductFormModal({ isOpen, onClose, product = null, init
         description: formData.description,
         tagline: formData.tagline,
         care: formData.care,
+        productDetails: formData.productDetails || '',
+        disclaimer: formData.disclaimer || '',
         brand: formData.brand || 'MayaSindhu',
         productId: formData.productId,
         stockAlertThreshold: firstVariant?.stockAlertThreshold !== undefined ? Number(firstVariant.stockAlertThreshold) : 5,
@@ -621,29 +629,16 @@ export default function ProductFormModal({ isOpen, onClose, product = null, init
                     />
                   </div>
 
-                  <div className="grid grid-cols-2 gap-4">
-                    <div className="space-y-1.5">
-                      <label className="text-[13px] font-bold text-gray-700 ml-1">Tagline</label>
-                      <input
-                        type="text"
-                        name="tagline"
-                        value={formData.tagline}
-                        onChange={handleInputChange}
-                        placeholder="Short catchy phrase"
-                        className="w-full bg-gray-50 border-none px-4 py-3 rounded-xl text-[14px] outline-none focus:ring-2 focus:ring-[#1BAFAF]/20 focus:bg-white transition-all font-medium"
-                      />
-                    </div>
-                    <div className="space-y-1.5">
-                      <label className="text-[13px] font-bold text-gray-700 ml-1">Care Instructions</label>
-                      <input
-                        type="text"
-                        name="care"
-                        value={formData.care}
-                        onChange={handleInputChange}
-                        placeholder="e.g. Dry clean only"
-                        className="w-full bg-gray-50 border-none px-4 py-3 rounded-xl text-[14px] outline-none focus:ring-2 focus:ring-[#1BAFAF]/20 focus:bg-white transition-all font-medium"
-                      />
-                    </div>
+                  <div className="space-y-1.5">
+                    <label className="text-[13px] font-bold text-gray-700 ml-1">Tagline</label>
+                    <input
+                      type="text"
+                      name="tagline"
+                      value={formData.tagline}
+                      onChange={handleInputChange}
+                      placeholder="Short catchy phrase"
+                      className="w-full bg-gray-50 border-none px-4 py-3 rounded-xl text-[14px] outline-none focus:ring-2 focus:ring-[#1BAFAF]/20 focus:bg-white transition-all font-medium"
+                    />
                   </div>
 
                   <div className="space-y-4">
@@ -714,6 +709,42 @@ export default function ProductFormModal({ isOpen, onClose, product = null, init
                         </div>
                       );
                     })()}
+                  </div>
+
+                  <div className="space-y-1.5 flex flex-col">
+                    <label className="text-[13px] font-bold text-gray-700 ml-1">Care Instructions</label>
+                    <textarea
+                      name="care"
+                      value={formData.care}
+                      onChange={handleInputChange}
+                      placeholder="e.g. Dry clean only"
+                      rows={3}
+                      className="w-full bg-gray-50 border-none px-4 py-3 rounded-xl text-[14px] outline-none focus:ring-2 focus:ring-[#1BAFAF]/20 focus:bg-white transition-all font-medium resize-none"
+                    ></textarea>
+                  </div>
+
+                  <div className="space-y-1.5 flex flex-col">
+                    <label className="text-[13px] font-bold text-gray-700 ml-1">Disclaimer</label>
+                    <textarea
+                      name="disclaimer"
+                      value={formData.disclaimer}
+                      onChange={handleInputChange}
+                      placeholder="Product specific disclaimer. Leave blank to use the global disclaimer."
+                      rows={3}
+                      className="w-full bg-gray-50 border-none px-4 py-3 rounded-xl text-[14px] outline-none focus:ring-2 focus:ring-[#1BAFAF]/20 focus:bg-white transition-all font-medium resize-none"
+                    ></textarea>
+                  </div>
+
+                  <div className="space-y-1.5 flex flex-col">
+                    <label className="text-[13px] font-bold text-gray-700 ml-1">Product Details</label>
+                    <textarea
+                      name="productDetails"
+                      value={formData.productDetails}
+                      onChange={handleInputChange}
+                      placeholder="Material, fit, styling tips, etc."
+                      rows={3}
+                      className="w-full bg-gray-50 border-none px-4 py-3 rounded-xl text-[14px] outline-none focus:ring-2 focus:ring-[#1BAFAF]/20 focus:bg-white transition-all font-medium resize-none"
+                    ></textarea>
                   </div>
 
                   <div className="space-y-1.5 flex flex-col">

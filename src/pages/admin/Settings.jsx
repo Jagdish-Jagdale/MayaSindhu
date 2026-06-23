@@ -1,11 +1,11 @@
 import React, { useState } from 'react';
-import { 
-  Settings as SettingsIcon, 
-  Shield, 
-  Bell, 
-  Palette, 
-  Globe, 
-  Layout, 
+import {
+  Settings as SettingsIcon,
+  Shield,
+  Bell,
+  Palette,
+  Globe,
+  Layout,
   ChevronDown,
   Save,
   RotateCcw
@@ -34,7 +34,7 @@ const Settings = () => {
 
   return (
     <div className={`mx-auto space-y-8 animate-in fade-in slide-in-from-bottom-2 duration-500 transition-all duration-300 ${isCollapsed ? 'max-w-[1600px]' : 'max-w-[1280px]'}`} style={{ fontFamily: "'Inter', -apple-system, sans-serif" }}>
-      
+
       {/* Header Section */}
       <div className="space-y-2 py-2">
         <div className="flex items-center justify-between">
@@ -57,7 +57,7 @@ const Settings = () => {
       </div>
 
       <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
-        
+
         {/* Homepage Configuration Card (New) */}
         <div className="lg:col-span-1 bg-white border border-gray-100 rounded-[24px] p-8 shadow-sm hover:shadow-md transition-all flex flex-col h-full">
           <div className="w-12 h-12 bg-[#eaf6f6] rounded-2xl flex items-center justify-center text-[#1BAFAF] mb-6">
@@ -68,11 +68,11 @@ const Settings = () => {
             <p className="text-[13px] text-gray-400 font-medium leading-relaxed mb-8">
               Select which section of the homepage you'd like to configure or rearrange.
             </p>
-            
+
             <div className="space-y-4">
               <label className="text-[11px] font-bold text-gray-400 uppercase tracking-widest pl-1">Target Section</label>
               <div className="relative group">
-                <select 
+                <select
                   value={selectedHomeSection}
                   onChange={(e) => setSelectedHomeSection(e.target.value)}
                   className="w-full appearance-none bg-gray-50 border-none py-3.5 pl-5 pr-10 text-[14px] font-semibold text-gray-700 rounded-2xl focus:ring-2 focus:ring-[#1BAFAF]/10 focus:bg-white transition-all outline-none cursor-pointer"
