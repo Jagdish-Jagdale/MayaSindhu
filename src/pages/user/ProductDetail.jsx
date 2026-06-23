@@ -263,6 +263,7 @@ export default function ProductDetail() {
   const [loading, setLoading] = useState(true);
   const [variants, setVariants] = useState([]);
   const [selectedVariant, setSelectedVariant] = useState(null);
+  const [selectedSize, setSelectedSize] = useState(null);
   const [isWishlisted, setIsWishlisted] = useState(false);
   const [isAdded, setIsAdded] = useState(false);
   const [alreadyInBag, setAlreadyInBag] = useState(false);
@@ -274,6 +275,31 @@ export default function ProductDetail() {
   const rootCatId = product?.categoryId && categories ? findRootCategoryId(product.categoryId, categories) : null;
   const rootCategoryObj = rootCatId ? findCategoryById(rootCatId, categories) : null;
   const categoryLink = rootCategoryObj?.fullPath || categoryObj?.fullPath || '/collections';
+
+  const getCategoryShowSizes = (category) => {
+    if (!category) return false;
+    if (category.showSizes === true) return true;
+
+    const findParent = (items, targetParentId) => {
+      for (const item of items) {
+        if (item.id === targetParentId) return item;
+        if (item.children) {
+          const found = findParent(item.children, targetParentId);
+          if (found) return found;
+        }
+      }
+      return null;
+    };
+
+    let parent = category.parentId ? findParent(categories, category.parentId) : null;
+    while (parent) {
+      if (parent.showSizes === true) return true;
+      parent = parent.parentId ? findParent(categories, parent.parentId) : null;
+    }
+    return false;
+  };
+
+  const isApparelReadymade = categoryObj ? getCategoryShowSizes(categoryObj) : false;
 
   const [reviews, setReviews] = useState([]);
   const [reviewsLoading, setReviewsLoading] = useState(true);
@@ -376,6 +402,15 @@ export default function ProductDetail() {
 
   useEffect(() => {
     setActiveImage(0);
+  }, [selectedVariant]);
+
+  useEffect(() => {
+    if (selectedVariant) {
+      const sizesArray = selectedVariant.sizes || (selectedVariant.size ? [selectedVariant.size] : []);
+      setSelectedSize(sizesArray[0] || null);
+    } else {
+      setSelectedSize(null);
+    }
   }, [selectedVariant]);
 
   // Lock quantity to 1 for unique items
@@ -511,7 +546,10 @@ export default function ProductDetail() {
 
     setAdding(true);
     try {
-      await addToCart(user, product, quantity, selectedVariant);
+      const variantPayload = selectedVariant 
+        ? { ...selectedVariant, size: selectedSize || selectedVariant.size } 
+        : null;
+      await addToCart(user, product, quantity, variantPayload);
       setIsAdded(true);
       // Auto-hide success message after 3 seconds
       setTimeout(() => setIsAdded(false), 3000);
@@ -535,7 +573,7 @@ export default function ProductDetail() {
         productId: product.productId || '',
         slug: product.slug || product.id,
         name: selectedVariant
-          ? `${product.name} (${selectedVariant.color}${selectedVariant.design ? ` - ${selectedVariant.design}` : ''})`
+          ? `${product.name} (${selectedVariant.color}${isApparelReadymade ? (selectedSize ? ` - ${selectedSize}` : '') : (selectedVariant.design ? ` - ${selectedVariant.design}` : '')})`
           : product.name,
         price: selectedVariant
           ? (selectedVariant.price || selectedVariant.actualPrice || 0)
@@ -545,6 +583,9 @@ export default function ProductDetail() {
         isDirectBuy: true,
         variantId: selectedVariant?.id || '',
         sku: selectedVariant?.sku || product.sku || '',
+        color: selectedVariant?.color || '',
+        design: selectedVariant?.design || '',
+        size: isApparelReadymade ? (selectedSize || '') : '',
         productType: selectedVariant 
           ? (selectedVariant.productType || 'Standard')
           : (isUnique ? 'Unique' : (product.productType || 'Standard')),
@@ -779,8 +820,10 @@ export default function ProductDetail() {
                           if (!selectedVariant) return 'Default';
                           const colorText = selectedVariant.color && selectedVariant.color !== 'Default' ? selectedVariant.color : '';
                           const designText = selectedVariant.design && selectedVariant.design !== 'Default' ? selectedVariant.design : '';
-                          if (colorText && designText) return `${colorText} - ${designText}`;
-                          return colorText || designText || 'Default';
+                          const sizeText = selectedVariant.size && selectedVariant.size !== 'Default' ? selectedVariant.size : '';
+                          const detailText = isApparelReadymade ? sizeText : designText;
+                          if (colorText && detailText) return `${colorText} - ${detailText}`;
+                          return colorText || detailText || 'Default';
                         })()}
                       </span>
                     </span>
@@ -817,33 +860,65 @@ export default function ProductDetail() {
                     })()}
                   </div>
 
-                  {/* Design selector if multiple designs exist for the selected color */}
-                  {variants.filter(v => v.color === selectedVariant?.color).length > 1 && (
-                    <div>
-                      <span className="text-[10px] font-black uppercase tracking-wider text-gray-400 block mb-2">
-                        Style / Structure: <span className="text-gray-900 font-bold normal-case ml-1">{selectedVariant?.design || 'Standard'}</span>
-                      </span>
-                      <div className="flex flex-wrap gap-2">
-                        {variants
-                          .filter(v => v.color === selectedVariant?.color)
-                          .map(v => {
-                            const isSelected = selectedVariant?.id === v.id;
-                            return (
-                              <button
-                                key={v.id}
-                                onClick={() => setSelectedVariant(v)}
-                                className={`px-4 py-2 rounded-xl border text-xs font-semibold transition-all ${
-                                  isSelected
-                                    ? 'border-[#1BAFAF] bg-[#1BAFAF]/5 ring-1 ring-[#1BAFAF] text-[#1BAFAF]'
-                                    : 'border-gray-250 bg-white hover:border-gray-450 text-gray-700'
-                                }`}
-                              >
-                                {v.design || 'Standard'}
-                              </button>
-                            );
-                          })}
+                  {/* Size selector if it's apparel/readymade, else Design selector */}
+                  {isApparelReadymade ? (
+                    (() => {
+                      const sizesArray = selectedVariant?.sizes || (selectedVariant?.size ? [selectedVariant.size] : []);
+                      if (sizesArray.length === 0) return null;
+                      return (
+                        <div>
+                          <span className="text-[10px] font-black uppercase tracking-wider text-gray-400 block mb-2">
+                            Size: <span className="text-gray-900 font-bold normal-case ml-1">{selectedSize || 'M'}</span>
+                          </span>
+                          <div className="flex flex-wrap gap-2">
+                            {sizesArray.map(sz => {
+                              const isSelected = selectedSize === sz;
+                              return (
+                                <button
+                                  key={sz}
+                                  onClick={() => setSelectedSize(sz)}
+                                  className={`px-4 py-2 rounded-xl border text-xs font-semibold transition-all ${
+                                    isSelected
+                                      ? 'border-[#1BAFAF] bg-[#1BAFAF]/5 ring-1 ring-[#1BAFAF] text-[#1BAFAF]'
+                                      : 'border-gray-250 bg-white hover:border-gray-450 text-gray-700'
+                                  }`}
+                                >
+                                  {sz}
+                                </button>
+                              );
+                            })}
+                          </div>
+                        </div>
+                      );
+                    })()
+                  ) : (
+                    variants.filter(v => v.color === selectedVariant?.color).length > 1 && (
+                      <div>
+                        <span className="text-[10px] font-black uppercase tracking-wider text-gray-400 block mb-2">
+                          Style / Structure: <span className="text-gray-900 font-bold normal-case ml-1">{selectedVariant?.design || 'Standard'}</span>
+                        </span>
+                        <div className="flex flex-wrap gap-2">
+                          {variants
+                            .filter(v => v.color === selectedVariant?.color)
+                            .map(v => {
+                              const isSelected = selectedVariant?.id === v.id;
+                              return (
+                                <button
+                                  key={v.id}
+                                  onClick={() => setSelectedVariant(v)}
+                                  className={`px-4 py-2 rounded-xl border text-xs font-semibold transition-all ${
+                                    isSelected
+                                      ? 'border-[#1BAFAF] bg-[#1BAFAF]/5 ring-1 ring-[#1BAFAF] text-[#1BAFAF]'
+                                      : 'border-gray-250 bg-white hover:border-gray-450 text-gray-700'
+                                  }`}
+                                >
+                                  {v.design || 'Standard'}
+                                </button>
+                              );
+                            })}
+                        </div>
                       </div>
-                    </div>
+                    )
                   )}
                 </div>
               )}

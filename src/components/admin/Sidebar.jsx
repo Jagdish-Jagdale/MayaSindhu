@@ -39,6 +39,8 @@ function getMenuItems(pathname) {
     return [
       { title: 'Dashboard', icon: LayoutDashboard, path: `${base}/dashboard` },
       { title: 'Customers', icon: Users, path: `${base}/customers` },
+      { title: 'Products', icon: Package, path: `${base}/products` },
+      { title: 'Categories', icon: Grid2X2, path: `${base}/categories` },
       { title: 'Orders', icon: ShoppingBag, path: `${base}/orders` },
       { title: 'Return', icon: RotateCcw, path: `${base}/return` },
     ];

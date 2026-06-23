@@ -57,7 +57,7 @@ export const addToCart = async (user, product, quantity = 1, selectedVariant = n
   }
 
   const itemName = selectedVariant
-    ? `${product.name || 'Handcrafted Treasure'} (${selectedVariant.color}${selectedVariant.design ? ` - ${selectedVariant.design}` : ''})`
+    ? `${product.name || 'Handcrafted Treasure'} (${selectedVariant.color}${selectedVariant.size ? ` - ${selectedVariant.size}` : (selectedVariant.design ? ` - ${selectedVariant.design}` : '')})`
     : (product.name || 'Handcrafted Treasure');
 
   if (cartItemSnap.exists()) {
@@ -91,6 +91,7 @@ export const addToCart = async (user, product, quantity = 1, selectedVariant = n
       productType: isUnique ? 'Unique' : (product.productType || 'Standard'),
       color: selectedVariant?.color || '',
       design: selectedVariant?.design || '',
+      size: selectedVariant?.size || '',
       sku: itemSku,
       addedAt: serverTimestamp()
     });
