@@ -1,3 +1,9 @@
+/**
+ * File: Footer.jsx
+ * Description: Client-facing e-commerce UI components for filtering catalogs, carousel sliders, footer contents, and shopping card modals.
+ * Work Done: Integrated baseline UI layouts, state boundaries, CSS theme styling, and routing pathways.
+ */
+
 import { motion } from 'framer-motion';
 import { Link } from 'react-router-dom';
 import useCategories from '../../hooks/useCategories';

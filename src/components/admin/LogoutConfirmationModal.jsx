@@ -1,3 +1,9 @@
+/**
+ * File: LogoutConfirmationModal.jsx
+ * Description: Admin portal navigation layouts, forms confirmation dialogs, and product setup overlays.
+ * Work Done: Integrated baseline UI layouts, state boundaries, CSS theme styling, and routing pathways.
+ */
+
 import React from 'react';
 import { createPortal } from 'react-dom';
 import { LogOut, X, Loader2 } from 'lucide-react';

@@ -1,3 +1,9 @@
+/**
+ * File: Sidebar.jsx
+ * Description: Navigational menu drawer displayed in the administration panels containing link paths, roles displays, and session terminators.
+ * Work Done: Added successful logout toast notification indicators upon signing out of the admin panel.
+ */
+
 import {
   LayoutDashboard,
   Users,

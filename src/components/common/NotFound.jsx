@@ -1,3 +1,9 @@
+/**
+ * File: NotFound.jsx
+ * Description: Fallback redirect component displaying custom 404 page animations for invalid URL paths.
+ * Work Done: Added aria-hidden="true" properties to decorative floating petal animations to hide them from screen readers.
+ */
+
 import React, { useEffect, useMemo } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { motion } from 'framer-motion';

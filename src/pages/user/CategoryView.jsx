@@ -1,3 +1,9 @@
+/**
+ * File: CategoryView.jsx
+ * Description: Client-facing catalog collection page displaying category realms and filtered items grids.
+ * Work Done: Destructured path params and stabilized dependency arrays in useMemo hooks to prevent unnecessary re-render loops.
+ */
+
 import React, { useState, useEffect, useMemo } from 'react';
 import { useParams, Link, useLocation } from 'react-router-dom';
 import { motion, AnimatePresence } from 'framer-motion';

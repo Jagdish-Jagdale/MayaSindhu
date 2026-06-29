@@ -1,3 +1,9 @@
+/**
+ * File: TopNav.jsx
+ * Description: Admin portal navigation layouts, forms confirmation dialogs, and product setup overlays.
+ * Work Done: Integrated baseline UI layouts, state boundaries, CSS theme styling, and routing pathways.
+ */
+
 import React, { useState, useEffect, useRef } from 'react';
 import { 
   Search, 

@@ -1,3 +1,9 @@
+/**
+ * File: Login.jsx
+ * Description: Glassmorphic centralized login interface for online administrators and offline store administrators.
+ * Work Done: Cleaned up input forms by removing hardcoded mock credential values in favor of descriptive placeholder labels. Configured proper success notification feedback upon authentication.
+ */
+
 import React, { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { auth } from '../../firebase';

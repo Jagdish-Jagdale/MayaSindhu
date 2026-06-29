@@ -1,4 +1,10 @@
 /**
+ * File: dateHelper.js
+ * Description: Utility helper functions managing currency styling, cloudinary uploads, data formatting, and catalog paths.
+ * Work Done: Integrated baseline UI layouts, state boundaries, CSS theme styling, and routing pathways.
+ */
+
+/**
  * Standardizes date formatting across the application to DD/MM/YYYY
  * @param {any} dateValue - Firestore timestamp, Date object, or date string
  * @returns {string} - Formatted date string

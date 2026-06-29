@@ -1,3 +1,9 @@
+/**
+ * File: cartUtils.js
+ * Description: Utility helper functions managing currency styling, cloudinary uploads, data formatting, and catalog paths.
+ * Work Done: Integrated baseline UI layouts, state boundaries, CSS theme styling, and routing pathways.
+ */
+
 import { db } from '../firebase';
 import { doc, getDoc, setDoc, updateDoc, serverTimestamp } from 'firebase/firestore';
 

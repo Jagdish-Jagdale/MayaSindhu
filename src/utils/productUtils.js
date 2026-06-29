@@ -1,4 +1,10 @@
 /**
+ * File: productUtils.js
+ * Description: Utility helper functions managing currency styling, cloudinary uploads, data formatting, and catalog paths.
+ * Work Done: Integrated baseline UI layouts, state boundaries, CSS theme styling, and routing pathways.
+ */
+
+/**
  * Generates a clean URL path for a product detail page.
  * Format: /product/randomgeneratedid/slugified-product-name
  */

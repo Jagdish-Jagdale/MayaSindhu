@@ -1,3 +1,9 @@
+/**
+ * File: App.jsx
+ * Description: Main application routing table, layout boundaries, and global context provider wrappers defining core navigation paths.
+ * Work Done: Split the main App component into App and AppContent to wrap modular structures. Conditionalized loading of Cart and Login modals based on state context to optimize DOM mounting. Resolved React Router v7 relative route errors by removing leading slashes from nested route definitions.
+ */
+
 import { BrowserRouter as Router, Routes, Route, Navigate } from 'react-router-dom';
 import UserLayout from './layouts/UserLayout';
 import { Toaster } from 'react-hot-toast';

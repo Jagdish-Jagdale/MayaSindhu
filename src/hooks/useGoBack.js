@@ -1,3 +1,9 @@
+/**
+ * File: useGoBack.js
+ * Description: Custom React hook managing data loading operations and component lifecycle triggers.
+ * Work Done: Integrated baseline UI layouts, state boundaries, CSS theme styling, and routing pathways.
+ */
+
 import { useNavigate, useLocation } from 'react-router-dom';
 
 /**

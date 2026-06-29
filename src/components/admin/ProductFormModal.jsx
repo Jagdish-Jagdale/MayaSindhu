@@ -1,3 +1,9 @@
+/**
+ * File: ProductFormModal.jsx
+ * Description: Admin portal navigation layouts, forms confirmation dialogs, and product setup overlays.
+ * Work Done: Integrated baseline UI layouts, state boundaries, CSS theme styling, and routing pathways.
+ */
+
 import React, { useState, useEffect } from 'react';
 import { X, Upload, Plus, Trash2, Loader2, Image as ImageIcon, Settings, Info } from 'lucide-react';
 import { db } from '../../firebase';

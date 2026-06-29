@@ -1,3 +1,9 @@
+/**
+ * File: Orders.jsx
+ * Description: Offline POS store orders database registry with search filters, date ranges, and invoice download configurations.
+ * Work Done: Modularized local print logic (~280 lines of duplicate code) to route invoice printing through the unified global invoiceHelper utility.
+ */
+
 import React, { useState, useEffect, useRef } from 'react';
 import { 
   Plus, 
