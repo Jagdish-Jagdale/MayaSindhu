@@ -1,3 +1,9 @@
+/**
+ * File: Wishlist.jsx
+ * Description: Client-facing wishlist container displaying saved products and item removal controllers.
+ * Work Done: Cleaned up unused navigate and goBack hooks and their corresponding import statements.
+ */
+
 import React, { useState, useEffect } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { Heart, ShoppingBag, X, Trash2, ArrowLeft } from 'lucide-react';

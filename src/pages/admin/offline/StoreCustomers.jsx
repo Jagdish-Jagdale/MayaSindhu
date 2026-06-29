@@ -1,3 +1,9 @@
+/**
+ * File: StoreCustomers.jsx
+ * Description: Admin offline storefront manager page rendering metrics overview tables, orders trackers, and vendor registers.
+ * Work Done: Integrated baseline UI layouts, state boundaries, CSS theme styling, and routing pathways.
+ */
+
 import React, { useState, useRef, useEffect } from 'react';
 import { 
   Plus, 

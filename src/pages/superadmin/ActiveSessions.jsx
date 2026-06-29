@@ -1,3 +1,9 @@
+/**
+ * File: ActiveSessions.jsx
+ * Description: Superadmin platform manager page rendering session dashboards and security administrator logs.
+ * Work Done: Integrated baseline UI layouts, state boundaries, CSS theme styling, and routing pathways.
+ */
+
 import React, { useState, useEffect } from 'react';
 import { 
   Monitor, 

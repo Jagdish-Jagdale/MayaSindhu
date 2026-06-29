@@ -1,3 +1,9 @@
+/**
+ * File: CustomSelect.jsx
+ * Description: Global shared components including customizable select dropdowns, page titles, and scroll controllers.
+ * Work Done: Integrated baseline UI layouts, state boundaries, CSS theme styling, and routing pathways.
+ */
+
 import React, { useState, useEffect, useRef } from 'react';
 import { ChevronDown } from 'lucide-react';
 

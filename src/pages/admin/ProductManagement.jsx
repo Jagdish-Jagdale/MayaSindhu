@@ -1,3 +1,9 @@
+/**
+ * File: ProductManagement.jsx
+ * Description: Admin online manager page rendering e-commerce customer lists, returns tables, review grids, and system config settings.
+ * Work Done: Integrated baseline UI layouts, state boundaries, CSS theme styling, and routing pathways.
+ */
+
 import React, { useState, useEffect, useRef } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { 

@@ -1,3 +1,9 @@
+/**
+ * File: Orders.jsx
+ * Description: Online e-commerce platform orders list registry, sorting filters, status modifiers, and invoice triggers.
+ * Work Done: Refactored local handleDownloadInvoice code to import and use the global print utility, reducing code bloat by ~320 lines.
+ */
+
 import React, { useState, useEffect, useRef } from 'react';
 import { 
   ShoppingBag, 

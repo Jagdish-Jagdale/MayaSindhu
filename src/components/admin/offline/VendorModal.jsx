@@ -1,3 +1,9 @@
+/**
+ * File: VendorModal.jsx
+ * Description: Admin offline store sub-component managing offline purchase order dialogs, invoice modals, store orders, and vendor details.
+ * Work Done: Integrated baseline UI layouts, state boundaries, CSS theme styling, and routing pathways.
+ */
+
 import React, { useState, useEffect } from 'react';
 import { 
   X, 

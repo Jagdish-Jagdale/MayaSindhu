@@ -1,3 +1,9 @@
+/**
+ * File: Login.jsx
+ * Description: Modal side-panel containing forms for customer sign-in, account creation, and user input validation.
+ * Work Done: Restricted account authentication to email-only inputs, updating standard regex validations and placeholders. Removed mobile login and mock sub-email creation pipelines during form submission.
+ */
+
 import React, { useState } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { useAuth } from '../../context/AuthContext';

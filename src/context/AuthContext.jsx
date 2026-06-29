@@ -1,3 +1,9 @@
+/**
+ * File: AuthContext.jsx
+ * Description: Context provider for customer and administrator sessions, including Firebase Auth status tracking and device session concurrency limits.
+ * Work Done: Secured user password handling by eliminating plain-text writes to the database. Added a fallback search logic using emails to successfully authenticate admins having random auto-generated document IDs. Fixed a race condition where logouts triggered a session-terminated alert by converting the listener to a persistent React Ref.
+ */
+
 /* eslint-disable react-refresh/only-export-components */
 import React, { createContext, useContext, useEffect, useState, useRef } from 'react';
 import { 

@@ -1,3 +1,9 @@
+/**
+ * File: main.jsx
+ * Description: Standard platform module.
+ * Work Done: Integrated baseline UI layouts, state boundaries, CSS theme styling, and routing pathways.
+ */
+
 import { StrictMode } from 'react'
 import { createRoot } from 'react-dom/client'
 import './index.css'

@@ -1,3 +1,9 @@
+/**
+ * File: SuperAdmins.jsx
+ * Description: Superadmin sub-portal page for creating super administrator roles and checking status controls.
+ * Work Done: Fixed password regex escaping errors (no-useless-escape ESLint warnings).
+ */
+
 import React, { useState, useEffect } from 'react';
 import { 
   Plus, 

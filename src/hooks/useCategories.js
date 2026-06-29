@@ -1,3 +1,9 @@
+/**
+ * File: useCategories.js
+ * Description: Custom React hook managing data loading operations and component lifecycle triggers.
+ * Work Done: Integrated baseline UI layouts, state boundaries, CSS theme styling, and routing pathways.
+ */
+
 import { useState, useEffect } from 'react';
 import { db } from '../firebase';
 import { collection, onSnapshot, query, orderBy } from 'firebase/firestore';

@@ -1,3 +1,9 @@
+/**
+ * File: Privacy.jsx
+ * Description: Client-facing policy guidelines statement displaying personal information safeguards and details.
+ * Work Done: Removed unused imports and motion components to optimize package build weight.
+ */
+
 import React from 'react';
 import { ShieldCheck, Eye, Lock } from 'lucide-react';
 

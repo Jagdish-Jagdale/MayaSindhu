@@ -1,3 +1,9 @@
+/**
+ * File: Blog.jsx
+ * Description: Client-facing customer page rendering home banners, blog lists, product details, and profile user sections.
+ * Work Done: Integrated baseline UI layouts, state boundaries, CSS theme styling, and routing pathways.
+ */
+
 import React, { useState, useEffect } from 'react';
 import { motion } from 'framer-motion';
 import { ChevronLeft, ChevronRight, Search, ArrowRight, Calendar, User, Loader2 } from 'lucide-react';

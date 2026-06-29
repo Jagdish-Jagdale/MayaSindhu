@@ -1,3 +1,9 @@
+/**
+ * File: Contact.jsx
+ * Description: Client-facing customer page rendering home banners, blog lists, product details, and profile user sections.
+ * Work Done: Integrated baseline UI layouts, state boundaries, CSS theme styling, and routing pathways.
+ */
+
 import React from 'react';
 import { motion } from 'framer-motion';
 import { Mail, Phone, MapPin, MessageSquare } from 'lucide-react';

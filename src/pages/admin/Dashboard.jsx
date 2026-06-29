@@ -1,3 +1,9 @@
+/**
+ * File: Dashboard.jsx
+ * Description: Admin dashboard analytics interface displaying total sales, category distribution, and low-stock alerts.
+ * Work Done: Optimized product inventory count calculations by deriving stats directly from state to prevent cascading state-render cycles.
+ */
+
 import React, { useState, useEffect, useMemo } from 'react';
 import { 
   TrendingUp, 
