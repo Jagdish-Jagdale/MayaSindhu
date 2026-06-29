@@ -1,7 +1,7 @@
 export const uploadToCloudinary = async (file, folder = '') => {
   const formData = new FormData();
   formData.append('file', file);
-  formData.append('upload_preset', import.meta.env.VITE_CLOUDINARY_UPLOAD_PRESET); 
+  formData.append('upload_preset', import.meta.env.VITE_CLOUDINARY_UPLOAD_PRESET);
 
   const resourceType = file.type.startsWith('video/') ? 'video' : 'image';
 
@@ -28,7 +28,7 @@ export const uploadToCloudinary = async (file, folder = '') => {
 
 /**
  * Extract the public_id from a Cloudinary secure_url.
- * Example URL: https://res.cloudinary.com/ddph5s2u4/image/upload/v1234567890/MayaSindhu/Products/abc123.jpg
+ * Example URL: https://res.cloudinary.com/.../MayaSindhu/Products/abc123.jpg
  * Returns: MayaSindhu/Products/abc123
  */
 export const extractPublicId = (url) => {

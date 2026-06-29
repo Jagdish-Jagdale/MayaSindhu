@@ -1162,23 +1162,6 @@ export default function Checkout() {
                   <span className="text-xs md:text-[15px] text-[#1A1A1A] font-medium">UPI / Net Banking</span>
                 </label>
 
-                <div
-                  className={`flex items-center p-4 border-b border-gray-100 cursor-pointer transition ${paymentMethod === 'card' ? 'bg-[#f1f3f6]/30' : ''}`}
-                  onClick={() => {
-                    setPaymentMethod('card');
-                    handlePlaceOrder('card');
-                  }}
-                >
-                  <input
-                    type="radio"
-                    name="payment"
-                    className="w-4 h-4 text-brand-orange focus:ring-brand-orange accent-brand-orange mr-4"
-                    checked={paymentMethod === 'card'}
-                    readOnly
-                  />
-                  <span className="text-xs md:text-[15px] text-[#1A1A1A] font-medium select-none">Credit / Debit / ATM Card</span>
-                </div>
-
                 {/* Return Policy Consent Checkbox */}
                 <div className="p-4 border-b border-gray-100 bg-amber-50/40 flex items-start gap-3">
                   <input
