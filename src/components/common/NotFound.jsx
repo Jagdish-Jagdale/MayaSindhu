@@ -1,4 +1,4 @@
-import React, { useEffect } from 'react';
+import React, { useEffect, useMemo } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { motion } from 'framer-motion';
 import bgImage from '../../assets/lotus-404-bg.png';
@@ -8,6 +8,16 @@ const NotFound = () => {
 
   useEffect(() => {
     document.title = 'Page Not Found | MayaSindhu';
+  }, []);
+
+  const petals = useMemo(() => {
+    return Array.from({ length: 8 }).map((_, i) => ({
+      id: i,
+      xInitial: Math.random() * 400 - 200,
+      xAnimate: Math.random() * 200 - 100,
+      duration: 12 + Math.random() * 8,
+      left: Math.random() * 100,
+    }));
   }, []);
 
   return (
@@ -52,25 +62,26 @@ const NotFound = () => {
         </motion.div>
 
         {/* Floating Petals Decoration */}
-        {[...Array(8)].map((_, i) => (
+        {petals.map((petal) => (
           <motion.div
-            key={i}
+            key={petal.id}
+            aria-hidden="true"
             initial={{ 
               opacity: 0, 
-              x: Math.random() * 400 - 200, 
+              x: petal.xInitial, 
               y: -100,
               rotate: 0 
             }}
             animate={{ 
               opacity: [0, 0.4, 0],
               y: [null, 900],
-              x: [null, Math.random() * 200 - 100],
+              x: [null, petal.xAnimate],
               rotate: [0, 360]
             }}
             transition={{
-              duration: 12 + Math.random() * 8,
+              duration: petal.duration,
               repeat: Infinity,
-              delay: i * 1.5,
+              delay: petal.id * 1.5,
               ease: "linear"
             }}
             className="absolute pointer-events-none"
@@ -81,7 +92,7 @@ const NotFound = () => {
               borderRadius: '50% 0 50% 0',
               filter: 'blur(0.5px)', // Reduced blur for sharpness
               top: '-10%',
-              left: `${Math.random() * 100}%`
+              left: `${petal.left}%`
             }}
           />
         ))}

@@ -1,4 +1,4 @@
-import React, { useState, useEffect, useRef } from 'react';
+import React, { useState, useEffect, useRef, useCallback } from 'react';
 import { 
   X, 
   Loader2, 
@@ -14,17 +14,13 @@ import {
 import { db } from '../../../firebase';
 import { 
   collection, 
-  addDoc, 
   getDocs, 
   query, 
   orderBy, 
-  limit, 
-  serverTimestamp,
-  where,
-  doc,
-  updateDoc,
-  increment,
-  getDoc,
+  doc, 
+  updateDoc, 
+  increment, 
+  getDoc, 
   setDoc
 } from 'firebase/firestore';
 import toast from 'react-hot-toast';
@@ -102,9 +98,9 @@ const OfflineOrderModal = ({ isOpen, onClose }) => {
         generateSONumber();
       }
     }
-  }, [isOpen]);
+  }, [isOpen, fetchCustomers, fetchProducts, fetchGstConfiguration, generateSONumber, orderSettings.mode]);
 
-  const fetchGstConfiguration = async () => {
+  const fetchGstConfiguration = useCallback(async () => {
     try {
       const docRef = doc(db, 'settings', 'gst_configuration');
       const docSnap = await getDoc(docRef);
@@ -117,7 +113,7 @@ const OfflineOrderModal = ({ isOpen, onClose }) => {
       }
     } catch (error) {
     }
-  };
+  }, []);
 
   const handleSaveGst = async () => {
     try {
@@ -131,35 +127,28 @@ const OfflineOrderModal = ({ isOpen, onClose }) => {
     }
   };
 
-  const fetchCustomers = async () => {
+  const fetchCustomers = useCallback(async () => {
     try {
       const q = query(collection(db, 'storeCustomers'), orderBy('fullName'));
       const snapshot = await getDocs(q);
       setCustomers(snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() })));
     } catch (error) {
     }
-  };
+  }, []);
 
-  const fetchProducts = async () => {
+  const fetchProducts = useCallback(async () => {
     try {
       const snapshot = await getDocs(collection(db, 'products'));
       setProducts(snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() })));
     } catch (error) {
     }
-  };
+  }, []);
 
-  const generateSONumber = () => {
+  const generateSONumber = useCallback(() => {
     const random10Digits = Math.floor(1000000000 + Math.random() * 9000000000);
     const formattedNum = `POS${random10Digits}`;
     setFormData(prev => ({ ...prev, saleOrderNumber: formattedNum }));
-  };
-
-  const handleAddItem = () => {
-    setFormData(prev => ({
-      ...prev,
-      items: [...prev.items, { id: Date.now(), productId: '', name: '', quantity: 1, rate: 0, amount: 0 }]
-    }));
-  };
+  }, []);
 
   const handleBulkAdd = (selectedProducts) => {
     const newItems = selectedProducts.map(p => ({

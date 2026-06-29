@@ -1,4 +1,4 @@
-import React, { useState, useEffect, useRef } from 'react';
+import React, { useState, useEffect, useRef, useCallback } from 'react';
 import { 
   X, 
   Loader2, 
@@ -21,8 +21,7 @@ import {
   query, 
   orderBy, 
   limit, 
-  serverTimestamp,
-  where
+  serverTimestamp
 } from 'firebase/firestore';
 import toast from 'react-hot-toast';
 import StoreCustomerModal from './StoreCustomerModal';
@@ -89,9 +88,9 @@ const InvoiceModal = ({ isOpen, onClose }) => {
         generateInvoiceNumber();
       }
     }
-  }, [isOpen]);
+  }, [isOpen, fetchCustomers, fetchProducts, fetchOrders, generateInvoiceNumber, invoiceSettings.mode]);
 
-  const fetchCustomers = async () => {
+  const fetchCustomers = useCallback(async () => {
     try {
       let snapshot;
       try {
@@ -105,17 +104,17 @@ const InvoiceModal = ({ isOpen, onClose }) => {
       setCustomers(fetchedCustomers);
     } catch (error) {
     }
-  };
+  }, []);
 
-  const fetchProducts = async () => {
+  const fetchProducts = useCallback(async () => {
     try {
       const snapshot = await getDocs(collection(db, 'products'));
       setProducts(snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() })));
     } catch (error) {
     }
-  };
+  }, []);
 
-  const fetchOrders = async () => {
+  const fetchOrders = useCallback(async () => {
     try {
       let snapshot;
       try {
@@ -133,7 +132,7 @@ const InvoiceModal = ({ isOpen, onClose }) => {
       setOrders(fetchedOrders);
     } catch (error) {
     }
-  };
+  }, []);
 
   const handleOrderSelect = (order) => {
     const mappedItems = order.items.map(item => ({
@@ -159,7 +158,7 @@ const InvoiceModal = ({ isOpen, onClose }) => {
     toast.success(`Items from Order ${order.saleOrderNumber} loaded`);
   };
 
-  const generateInvoiceNumber = async () => {
+  const generateInvoiceNumber = useCallback(async () => {
     try {
       const q = query(collection(db, 'storeInvoices'), orderBy('createdAt', 'desc'), limit(1));
       const snapshot = await getDocs(q);
@@ -181,14 +180,7 @@ const InvoiceModal = ({ isOpen, onClose }) => {
       const fallback = `${invoiceSettings.prefix}${invoiceSettings.nextNumber}`;
       setFormData(prev => ({ ...prev, invoiceNumber: fallback }));
     }
-  };
-
-  const handleAddItem = () => {
-    setFormData(prev => ({
-      ...prev,
-      items: [...prev.items, { id: Date.now(), productId: '', name: '', quantity: 1, rate: 0, discount: 0, amount: 0 }]
-    }));
-  };
+  }, [invoiceSettings.prefix, invoiceSettings.nextNumber]);
 
   const handleBulkAdd = (selectedProducts) => {
     const newItems = selectedProducts.map(p => ({

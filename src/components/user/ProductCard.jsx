@@ -24,11 +24,18 @@ export default function ProductCard({ id, productId, slug, name, price, discount
   const isUnique = isUniquePiece === true || productType === 'Unique';
   const stockVal = typeof stock === 'number' ? stock : (isUnique ? 1 : 15);
 
-  // Listen for wishlist and cart status
-  useEffect(() => {
+  const [prevUser, setPrevUser] = useState(user);
+  if (user !== prevUser) {
+    setPrevUser(user);
     if (!user) {
       setIsWishlisted(false);
       setIsInCart(false);
+    }
+  }
+
+  // Listen for wishlist and cart status
+  useEffect(() => {
+    if (!user) {
       return;
     }
 

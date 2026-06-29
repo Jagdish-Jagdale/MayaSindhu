@@ -141,17 +141,7 @@ const Users = () => {
 
   const rowOptions = [5, 10, 20, 50];
 
-  const SortIcon = ({ colKey }) => {
-    const isActive = sortConfig.key === colKey;
-    const isDesc = isActive && sortConfig.dir === 'desc';
-    return (
-      <ChevronDown
-        size={13}
-        strokeWidth={3}
-        className={`transition-all duration-200 ${isActive ? 'text-[#1BAFAF]' : 'text-gray-300'} ${isDesc ? 'rotate-180' : 'rotate-0'}`}
-      />
-    );
-  };
+
 
   const formatDate = (timestamp) => {
     if (!timestamp) return '---';
@@ -352,27 +342,27 @@ const Users = () => {
                 <th className="px-6 py-4 text-left text-[14px] font-bold text-[#1BAFAF] whitespace-nowrap">Sr No</th>
                 <th className="px-6 py-4 text-left text-[14px] font-bold text-[#1BAFAF]">
                   <button onClick={() => handleSort('fullName')} className="flex items-center gap-1 hover:opacity-75 transition-opacity">
-                    Full Name <SortIcon colKey="fullName" />
+                    Full Name <SortIcon sortConfig={sortConfig} colKey="fullName" />
                   </button>
                 </th>
                 <th className="px-6 py-4 text-left text-[14px] font-bold text-[#1BAFAF]">
                   <button onClick={() => handleSort('email')} className="flex items-center gap-1 hover:opacity-75 transition-opacity">
-                    Email Address <SortIcon colKey="email" />
+                    Email Address <SortIcon sortConfig={sortConfig} colKey="email" />
                   </button>
                 </th>
                 <th className="px-6 py-4 text-left text-[14px] font-bold text-[#1BAFAF]">
                   <button onClick={() => handleSort('phone')} className="flex items-center gap-1 hover:opacity-75 transition-opacity">
-                    Phone Number <SortIcon colKey="phone" />
+                    Phone Number <SortIcon sortConfig={sortConfig} colKey="phone" />
                   </button>
                 </th>
                 <th className="px-6 py-4 text-left text-[14px] font-bold text-[#1BAFAF]">
                   <button onClick={() => handleSort('status')} className="flex items-center gap-1 hover:opacity-75 transition-opacity">
-                    Status <SortIcon colKey="status" />
+                    Status <SortIcon sortConfig={sortConfig} colKey="status" />
                   </button>
                 </th>
                 <th className="px-6 py-4 text-left text-[14px] font-bold text-[#1BAFAF]">
                   <button onClick={() => handleSort('createdAt')} className="flex items-center gap-1 hover:opacity-75 transition-opacity">
-                    Registered <SortIcon colKey="createdAt" />
+                    Registered <SortIcon sortConfig={sortConfig} colKey="createdAt" />
                   </button>
                 </th>
                 <th className="px-6 py-4 text-right text-[14px] font-bold text-[#1BAFAF]">Actions</th>
@@ -495,3 +485,15 @@ const Users = () => {
 };
 
 export default Users;
+
+const SortIcon = ({ colKey, sortConfig }) => {
+  const isActive = sortConfig.key === colKey;
+  const isDesc = isActive && sortConfig.dir === 'desc';
+  return (
+    <ChevronDown
+      size={13}
+      strokeWidth={3}
+      className={`transition-all duration-200 ${isActive ? 'text-[#1BAFAF]' : 'text-gray-300'} ${isDesc ? 'rotate-180' : 'rotate-0'}`}
+    />
+  );
+};

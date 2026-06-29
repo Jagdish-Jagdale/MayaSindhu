@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useMemo } from 'react';
 import { useParams, Link, useLocation } from 'react-router-dom';
 import { motion, AnimatePresence } from 'framer-motion';
 import { SlidersHorizontal, X, Loader2 } from 'lucide-react';
@@ -15,13 +15,11 @@ export default function CategoryView() {
   const location = useLocation();
   const params = useParams();
   const goBack = useGoBack();
-  const pathSegments = params['*'] ? params['*'].split('/') : [];
+  const categoryPath = params['*'] || '';
   const { categories, loading: categoriesLoading } = useCategories();
 
   const [products, setProducts] = useState([]);
   const [productsLoading, setProductsLoading] = useState(true);
-  const [currentCategory, setCurrentCategory] = useState(null);
-  const [breadcrumbs, setBreadcrumbs] = useState([]);
   const [isMobileFiltersOpen, setIsMobileFiltersOpen] = useState(false);
   const [activeFilters, setActiveFilters] = useState({});
 
@@ -43,37 +41,38 @@ export default function CategoryView() {
   }, []);
 
   // 2. Resolve the current category and breadcrumbs from the URL
-  useEffect(() => {
-    if (categories.length > 0) {
-      if (location.pathname === '/collections') {
-        setCurrentCategory({
+  const { currentCategory, breadcrumbs } = useMemo(() => {
+    if (categories.length === 0) {
+      return { currentCategory: null, breadcrumbs: [] };
+    }
+    if (location.pathname === '/collections') {
+      return {
+        currentCategory: {
           id: 'all',
           name: 'All Collections',
           fullPath: '/collections',
           description: 'Explore our entire collection of handcrafted heritage treasures.'
-        });
-        setBreadcrumbs([]);
-        return;
-      }
-      let current = categories;
-      let targetCat = null;
-      let path = [];
-
-      for (const segment of pathSegments) {
-        const found = current.find(cat => cat.slug === segment);
-        if (found) {
-          targetCat = found;
-          path.push(found);
-          current = found.children || [];
-        } else {
-          break;
-        }
-      }
-
-      setCurrentCategory(targetCat);
-      setBreadcrumbs(path);
+        },
+        breadcrumbs: []
+      };
     }
-  }, [categories, params['*']]);
+    const segments = categoryPath ? categoryPath.split('/') : [];
+    let current = categories;
+    let targetCat = null;
+    let path = [];
+
+    for (const segment of segments) {
+      const found = current.find(cat => cat.slug === segment);
+      if (found) {
+        targetCat = found;
+        path.push(found);
+        current = found.children || [];
+      } else {
+        break;
+      }
+    }
+    return { currentCategory: targetCat, breadcrumbs: path };
+  }, [categories, location.pathname, categoryPath]);
 
   // 3. Filter products based on the resolved category
   const filteredProducts = (() => {

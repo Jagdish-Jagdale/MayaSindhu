@@ -10,12 +10,14 @@ const CategoryNode = ({ category, currentPath }) => {
   const isPartiallyActive = currentPath.startsWith(category.fullPath) && !isActive;
 
   const [isOpen, setIsOpen] = useState(isActive || isPartiallyActive);
+  const [prevActive, setPrevActive] = useState(isActive || isPartiallyActive);
 
-  useEffect(() => {
+  if ((isActive || isPartiallyActive) !== prevActive) {
+    setPrevActive(isActive || isPartiallyActive);
     if (isActive || isPartiallyActive) {
       setIsOpen(true);
     }
-  }, [isActive, isPartiallyActive]);
+  }
 
   const handleToggle = (e) => {
     e.preventDefault();

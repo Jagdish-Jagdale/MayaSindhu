@@ -54,46 +54,15 @@ export const getResourceType = (url) => {
 };
 
 /**
- * Generate SHA-1 hash for Cloudinary API signature
- */
-const generateSHA1 = async (message) => {
-  const msgBuffer = new TextEncoder().encode(message);
-  const hashBuffer = await crypto.subtle.digest('SHA-1', msgBuffer);
-  const hashArray = Array.from(new Uint8Array(hashBuffer));
-  return hashArray.map(b => b.toString(16).padStart(2, '0')).join('');
-};
-
-/**
- * Delete a single item from Cloudinary using the destroy API (signed request)
+ * Delete a single item from Cloudinary using the destroy API
+ * Note: Signed deletions are disabled on the frontend to prevent exposing the API Secret.
  */
 export const deleteFromCloudinary = async (url) => {
-  const publicId = extractPublicId(url);
-  if (!publicId) return;
-
-  const resourceType = getResourceType(url);
-  const timestamp = Math.round(Date.now() / 1000);
-  const apiSecret = import.meta.env.VITE_CLOUDINARY_API_SECRET;
-  const apiKey = import.meta.env.VITE_CLOUDINARY_API_KEY;
-  const cloudName = import.meta.env.VITE_CLOUDINARY_CLOUD_NAME;
-
-  const signature = await generateSHA1(`public_id=${publicId}&timestamp=${timestamp}${apiSecret}`);
-
-  const formData = new FormData();
-  formData.append('public_id', publicId);
-  formData.append('signature', signature);
-  formData.append('api_key', apiKey);
-  formData.append('timestamp', timestamp);
-
-  try {
-    const response = await fetch(
-      `https://api.cloudinary.com/v1_1/${cloudName}/${resourceType}/destroy`,
-      { method: 'POST', body: formData }
-    );
-    const data = await response.json();
-    if (data.result !== 'ok' && data.result !== 'not found') {
-    }
-  } catch (error) {
-  }
+  // Cloudinary deletion requires a signed request with the API secret.
+  // Performing this on the frontend would expose the API Secret, posing a severe security risk.
+  // Therefore, client-side deletion is disabled to maintain project security.
+  console.warn("Cloudinary asset deletion skipped: Client-side deletion is disabled to prevent exposing the API Secret.");
+  return;
 };
 
 /**

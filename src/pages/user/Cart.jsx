@@ -15,10 +15,19 @@ export default function Cart() {
   const [items, setItems] = useState([]);
   const [loading, setLoading] = useState(true);
 
-  useEffect(() => {
+  const [prevUser, setPrevUser] = useState(user);
+  if (user !== prevUser) {
+    setPrevUser(user);
     if (!user) {
       setItems([]);
       setLoading(false);
+    } else {
+      setLoading(true);
+    }
+  }
+
+  useEffect(() => {
+    if (!user) {
       return;
     }
 

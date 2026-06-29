@@ -3,7 +3,7 @@ import { motion, AnimatePresence } from 'framer-motion';
 import { ShoppingBag, Trash2, ArrowRight, Loader2, Plus, Minus } from 'lucide-react';
 import { useNavigate } from 'react-router-dom';
 import { db } from '../../../../firebase';
-import { collection, query, orderBy, onSnapshot, doc, deleteDoc, updateDoc } from 'firebase/firestore';
+import { collection, query, onSnapshot, doc, deleteDoc, updateDoc } from 'firebase/firestore';
 
 export default function CartTab({ user }) {
   const [items, setItems] = useState([]);

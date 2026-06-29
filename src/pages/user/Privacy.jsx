@@ -1,5 +1,4 @@
 import React from 'react';
-import { motion } from 'framer-motion';
 import { ShieldCheck, Eye, Lock } from 'lucide-react';
 
 export default function Privacy() {

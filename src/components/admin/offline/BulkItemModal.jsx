@@ -12,12 +12,14 @@ const BulkItemModal = ({ isOpen, onClose, products, onAdd, onAddProduct, already
   const [searchTerm, setSearchTerm] = useState('');
   const [selectedIds, setSelectedIds] = useState([]);
 
-  useEffect(() => {
+  const [prevIsOpen, setPrevIsOpen] = useState(isOpen);
+  if (isOpen !== prevIsOpen) {
+    setPrevIsOpen(isOpen);
     if (!isOpen) {
       setSearchTerm('');
       setSelectedIds([]);
     }
-  }, [isOpen]);
+  }
 
   if (!isOpen) return null;
 

@@ -1,7 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { auth } from '../../firebase';
-import { signInWithEmailAndPassword, signOut, setPersistence, browserSessionPersistence } from 'firebase/auth';
+import { setPersistence, browserSessionPersistence } from 'firebase/auth';
 import { Mail, Lock, AlertCircle, Loader2, ArrowRight, ShoppingCart, Store, ChevronRight } from 'lucide-react';
 import toast from 'react-hot-toast';
 import { motion, AnimatePresence } from 'framer-motion';
@@ -71,7 +71,7 @@ const AdminLogin = () => {
       await setPersistence(auth, browserSessionPersistence);
       await login(email, password);
       // Logic for redirection is handled by AdminProtectedRoute or the useEffect above
-      toast.success("Identity verified.");
+      toast.success("Logged in successfully. Welcome back!");
     } catch (err) {
       if (err.code === "auth/max-devices-exceeded" || err.message?.includes("Maximum 3 devices")) {
         // Handled by sessionError useEffect to prevent double toast notifications
@@ -145,7 +145,7 @@ const AdminLogin = () => {
                         value={email}
                         onChange={(e) => setEmail(e.target.value.toLowerCase())}
                         className="w-full bg-black/20 border border-white/10 rounded-2xl py-4 pl-12 pr-4 text-[14px] text-white outline-none focus:border-[#1BAFAF]/50 transition-all"
-                        placeholder="admin@mayasindhu.com"
+                        placeholder="Email Address"
                       />
                       <Mail className="absolute left-4.5 top-1/2 -translate-y-1/2 w-4.5 h-4.5 text-white/30 group-focus-within:text-[#1BAFAF]" />
                     </div>
@@ -160,7 +160,7 @@ const AdminLogin = () => {
                         value={password}
                         onChange={(e) => setPassword(e.target.value)}
                         className="w-full bg-black/20 border border-white/10 rounded-2xl py-4 pl-12 pr-12 text-[14px] text-white outline-none focus:border-[#1BAFAF]/50 transition-all"
-                        placeholder="••••••••"
+                        placeholder="Password"
                       />
                       <Lock className="absolute left-4.5 top-1/2 -translate-y-1/2 w-4.5 h-4.5 text-white/30 group-focus-within:text-[#1BAFAF]" />
                       <button type="button" onClick={() => setShowPassword(!showPassword)} className="absolute right-5 top-1/2 -translate-y-1/2 text-[11px] font-bold text-white/30 hover:text-white uppercase">

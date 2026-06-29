@@ -411,17 +411,6 @@ export default function Returns() {
     );
   };
 
-  const SortIcon = ({ colKey }) => {
-    const isActive = sortConfig.key === colKey;
-    const isDesc = isActive && sortConfig.dir === 'desc';
-    return (
-      <ChevronDown
-        size={13}
-        strokeWidth={3}
-        className={`transition-all duration-200 ${isActive ? 'text-[#1BAFAF]' : 'text-gray-300'} ${isDesc ? 'rotate-180' : 'rotate-0'}`}
-      />
-    );
-  };
 
   const processedReturns = (() => {
     let list = returns.filter(r => {
@@ -557,27 +546,27 @@ export default function Returns() {
                 <th className="px-6 py-4 text-left text-[14px] font-bold text-[#1BAFAF]">Sr No</th>
                 <th className="px-6 py-4 text-left text-[14px] font-bold text-[#1BAFAF]">
                   <button onClick={() => handleSort('returnId')} className="flex items-center gap-1 hover:opacity-75 transition-opacity">
-                    Return ID <SortIcon colKey="returnId" />
+                    Return ID <SortIcon sortConfig={sortConfig} colKey="returnId" />
                   </button>
                 </th>
                 <th className="px-6 py-4 text-left text-[14px] font-bold text-[#1BAFAF]">
                   <button onClick={() => handleSort('customerName')} className="flex items-center gap-1 hover:opacity-75 transition-opacity">
-                    Customer Name <SortIcon colKey="customerName" />
+                    Customer Name <SortIcon sortConfig={sortConfig} colKey="customerName" />
                   </button>
                 </th>
                 <th className="px-6 py-4 text-left text-[14px] font-bold text-[#1BAFAF]">
                   <button onClick={() => handleSort('orderNumber')} className="flex items-center gap-1 hover:opacity-75 transition-opacity">
-                    Order ID <SortIcon colKey="orderNumber" />
+                    Order ID <SortIcon sortConfig={sortConfig} colKey="orderNumber" />
                   </button>
                 </th>
                 <th className="px-6 py-4 text-left text-[14px] font-bold text-[#1BAFAF]">
                   <button onClick={() => handleSort('createdAt')} className="flex items-center gap-1 hover:opacity-75 transition-opacity">
-                    Date <SortIcon colKey="createdAt" />
+                    Date <SortIcon sortConfig={sortConfig} colKey="createdAt" />
                   </button>
                 </th>
                 <th className="px-6 py-4 text-left text-[14px] font-bold text-[#1BAFAF]">
                   <button onClick={() => handleSort('amount')} className="flex items-center gap-1 hover:opacity-75 transition-opacity">
-                    Amount <SortIcon colKey="amount" />
+                    Amount <SortIcon sortConfig={sortConfig} colKey="amount" />
                   </button>
                 </th>
                 <th className="px-6 py-4 text-center text-[14px] font-bold text-[#1BAFAF]">Preview</th>
@@ -1175,5 +1164,17 @@ export default function Returns() {
         loading={deleteLoading}
       />
     </div>
+  );
+}
+
+const SortIcon = ({ colKey, sortConfig }) => {
+  const isActive = sortConfig.key === colKey;
+  const isDesc = isActive && sortConfig.dir === 'desc';
+  return (
+    <ChevronDown
+      size={13}
+      strokeWidth={3}
+      className={`transition-all duration-200 ${isActive ? 'text-[#1BAFAF]' : 'text-gray-300'} ${isDesc ? 'rotate-180' : 'rotate-0'}`}
+    />
   );
 }

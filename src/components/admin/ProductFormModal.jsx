@@ -1,7 +1,7 @@
-import React, { useState, useEffect, useRef } from 'react';
+import React, { useState, useEffect } from 'react';
 import { X, Upload, Plus, Trash2, Loader2, Image as ImageIcon, Settings, Info } from 'lucide-react';
 import { db } from '../../firebase';
-import { collection, addDoc, updateDoc, doc, deleteDoc, serverTimestamp, getDocs, query, orderBy, limit, where } from 'firebase/firestore';
+import { collection, addDoc, updateDoc, doc, deleteDoc, serverTimestamp, getDocs } from 'firebase/firestore';
 import useCategories from '../../hooks/useCategories';
 import toast from 'react-hot-toast';
 import { uploadToCloudinary, deleteMultipleFromCloudinary } from '../../utils/cloudinary';

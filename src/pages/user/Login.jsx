@@ -3,6 +3,7 @@ import { motion, AnimatePresence } from 'framer-motion';
 import { useAuth } from '../../context/AuthContext';
 import { Loader2, AlertCircle, Eye, EyeOff, X } from 'lucide-react';
 import navLogo from '../../assets/navbar logo.png';
+import toast from 'react-hot-toast';
 
 export default function Login() {
   const [isLogin, setIsLogin] = useState(true);
@@ -21,10 +22,9 @@ export default function Login() {
     setError('');
 
     if (isLogin) {
-      const isMobileLogin = /^[6-9]\d{9}$/.test(email);
       const isEmailLogin = /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email);
-      if (!isMobileLogin && !isEmailLogin) {
-        setError('Please enter a valid email or 10-digit mobile number.');
+      if (!isEmailLogin) {
+        setError('Please enter a valid email address.');
         return;
       }
     } else {
@@ -63,11 +63,12 @@ export default function Login() {
 
     try {
       if (isLogin) {
-        const loginEmail = /^[6-9]\d{9}$/.test(email) ? `${email}@mayasindhu.user` : email;
-        await login(loginEmail, password);
+        await login(email, password);
+        toast.success("Logged in successfully. Welcome back!");
       } else {
         const authEmail = email || `${mobile}@mayasindhu.user`;
         await signup(authEmail, password, name, mobile);
+        toast.success("Account created successfully. Welcome!");
       }
       handleCloseModal();
     } catch (err) {
@@ -206,11 +207,11 @@ export default function Login() {
                 </AnimatePresence>
 
                 <input
-                  type={isLogin ? "text" : "email"}
-                  required={isLogin}
+                  type="email"
+                  required
                   value={email}
                   onChange={(e) => setEmail(e.target.value)}
-                  placeholder={isLogin ? "Email or Mobile Number" : "Email"}
+                  placeholder="Email"
                   className="w-full bg-transparent border border-gray-300 rounded-md py-3.5 px-4 focus:outline-none focus:border-black focus:ring-1 focus:ring-black transition-all text-sm placeholder:text-gray-400"
                 />
 

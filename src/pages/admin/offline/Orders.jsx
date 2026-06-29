@@ -26,6 +26,7 @@ import {
 } from 'firebase/firestore';
 import toast from 'react-hot-toast';
 import OfflineOrderModal from '../../../components/admin/offline/OfflineOrderModal';
+import { handleDownloadInvoice as printInvoice } from '../../../utils/invoiceHelper';
 
 export default function SalesOrders() {
   const [orders, setOrders] = useState([]);
@@ -125,281 +126,8 @@ export default function SalesOrders() {
   };
 
   const handleDownloadInvoice = (invoice) => {
-    if (!invoice) return;
-
     const customerObj = storeCustomers.find(c => c.id === invoice.customerId || c.fullName === invoice.customerName) || {};
-    const customerName = customerObj.fullName || invoice.customerName || '---';
-    const customerAddress = customerObj.address || 'Maharashtra<br/>India';
-    const customerPhone = customerObj.phone || '---';
-    const customerEmail = customerObj.email || '---';
-
-    const now = new Date();
-    const formattedTimestamp = now.toLocaleDateString('en-GB') + ' ' + now.toLocaleTimeString('en-US', { hour: '2-digit', minute: '2-digit', second: '2-digit', hour12: true });
-
-    const printWindow = window.open('', '_blank');
-    if (!printWindow) {
-      toast.error("Popup blocked! Please allow popups to download/print invoice.");
-      return;
-    }
-
-    const itemsHtml = (invoice.items || []).map((item, index) => `
-      <tr style="border-bottom: 1px solid #000;">
-        <td style="border-right: 1px solid #000; padding: 10px 8px; font-size: 13px; text-align: center; vertical-align: top;">${index + 1}</td>
-        <td style="border-right: 1px solid #000; padding: 10px 12px; font-size: 13px; text-align: left; vertical-align: top;">
-          <div style="font-weight: bold; color: #000;">${item.name || item.productName || '---'}</div>
-        </td>
-        <td style="border-right: 1px solid #000; padding: 10px 8px; font-size: 13px; text-align: center; vertical-align: top;">${(item.quantity || 0).toFixed(2)}</td>
-        <td style="border-right: 1px solid #000; padding: 10px 8px; font-size: 13px; text-align: right; vertical-align: top;">${(item.rate || item.price || 0).toFixed(2)}</td>
-        <td style="padding: 10px 8px; font-size: 13px; text-align: right; vertical-align: top; font-weight: bold;">${(item.amount || item.subtotal || 0).toFixed(2)}</td>
-      </tr>
-    `).join('');
-
-    printWindow.document.write(`
-      <html>
-        <head>
-          <title>Invoice - ${invoice.invoiceNumber || invoice.saleOrderNumber || invoice.id}</title>
-          <style>
-            @page {
-              size: A4;
-              margin: 0;
-            }
-            body {
-              font-family: 'Times New Roman', Times, serif;
-              color: #000;
-              padding: 15mm 20mm;
-              margin: 0;
-              box-sizing: border-box;
-              -webkit-print-color-adjust: exact;
-              print-color-adjust: exact;
-            }
-            .header-table {
-              width: 100%;
-              border-collapse: collapse;
-              margin-bottom: 25px;
-            }
-            .company-name {
-              font-size: 26px;
-              font-weight: bold;
-              text-transform: uppercase;
-              margin: 0 0 5px 0;
-            }
-            .company-details {
-              font-size: 14px;
-              line-height: 1.4;
-              color: #000;
-            }
-            .invoice-title {
-              font-size: 38px;
-              font-family: Georgia, serif;
-              font-weight: normal;
-              text-transform: uppercase;
-              text-align: right;
-              letter-spacing: 2px;
-              margin: 0;
-            }
-            .info-table {
-              width: 100%;
-              border-collapse: collapse;
-              border: 1.5px solid #000;
-              margin-bottom: 25px;
-            }
-            .info-cell {
-              width: 50%;
-              padding: 12px;
-              vertical-align: top;
-              font-size: 13px;
-              line-height: 1.6;
-            }
-            .info-sub-table {
-              width: 100%;
-              border-collapse: collapse;
-            }
-            .info-sub-table td {
-              padding: 3px 0;
-            }
-            .items-table {
-              width: 100%;
-              border-collapse: collapse;
-              border: 1.5px solid #000;
-              margin-bottom: 25px;
-            }
-            .items-table th {
-              background-color: #f9fafb;
-              font-size: 12px;
-              font-weight: bold;
-              text-transform: capitalize;
-              padding: 10px 8px;
-            }
-            .bottom-table {
-              width: 100%;
-              border-collapse: collapse;
-              border: 1.5px solid #000;
-            }
-            .bottom-left-cell {
-              width: 55%;
-              border-right: 1.5px solid #000;
-              padding: 15px;
-              vertical-align: top;
-              line-height: 1.5;
-            }
-            .bottom-right-cell {
-              width: 45%;
-              vertical-align: top;
-              padding: 0;
-            }
-            .totals-table {
-              width: 100%;
-              border-collapse: collapse;
-            }
-            .totals-table td {
-              padding: 10px 15px;
-              font-size: 13px;
-            }
-            .totals-table tr.total-row {
-              font-weight: bold;
-              font-size: 14px;
-              background-color: #f9fafb;
-              border-top: 1.5px solid #000;
-              border-bottom: 1.5px solid #000;
-            }
-            .signature-cell {
-              padding: 40px 15px 15px 15px;
-              text-align: center;
-            }
-            .signature-line {
-              font-family: monospace;
-              font-size: 12px;
-              margin-bottom: 5px;
-              letter-spacing: -1px;
-              color: #000;
-            }
-            .signature-text {
-              font-size: 11px;
-              font-weight: bold;
-              text-transform: uppercase;
-              letter-spacing: 1px;
-              color: #000;
-              margin-top: 50px;
-              display: block;
-            }
-          </style>
-        </head>
-        <body>
-          <table class="header-table">
-            <tr>
-              <td style="vertical-align: top; width: 60%;">
-                <h1 class="company-name">${customerName}</h1>
-                <div class="company-details">
-                  ${customerAddress}<br/>
-                  ${customerPhone}<br/>
-                  ${customerEmail}
-                </div>
-              </td>
-              <td style="vertical-align: middle; text-align: right; width: 40%;">
-                <h2 class="invoice-title">Tax Invoice</h2>
-              </td>
-            </tr>
-          </table>
-
-          <table class="info-table">
-            <tr>
-              <td class="info-cell" style="border-right: 1.5px solid #000; width: 50%;">
-                <table class="info-sub-table">
-                  <tr>
-                    <td style="width: 35%;">#</td>
-                    <td style="width: 65%; font-weight: bold;">: ${invoice.invoiceNumber || invoice.orderNumber || invoice.saleOrderNumber || '---'}</td>
-                  </tr>
-                  <tr>
-                    <td>Invoice Date</td>
-                    <td style="font-weight: bold;">: ${formatA4Date(invoice.invoiceDate || invoice.createdAt)}</td>
-                  </tr>
-                  <tr>
-                    <td>Terms</td>
-                    <td style="font-weight: bold;">: Due on Receipt</td>
-                  </tr>
-                  <tr>
-                    <td>Due Date</td>
-                    <td style="font-weight: bold;">: ${formatA4Date(invoice.invoiceDate || invoice.createdAt)}</td>
-                  </tr>
-                  <tr>
-                    <td>P.O.#</td>
-                    <td style="font-weight: bold;">: ${invoice.saleOrderNumber || invoice.orderNumber || '---'}</td>
-                  </tr>
-                </table>
-              </td>
-              <td class="info-cell" style="width: 50%;">
-                <!-- Blank -->
-              </td>
-            </tr>
-          </table>
-
-          <table class="items-table">
-            <thead>
-              <tr style="border-bottom: 1.5px solid #000;">
-                <th style="width: 6%; border-right: 1px solid #000; text-align: center;">Sr No</th>
-                <th style="border-right: 1px solid #000; text-align: left; padding-left: 12px;">Item & Description</th>
-                <th style="width: 12%; border-right: 1px solid #000; text-align: center;">Qty</th>
-                <th style="width: 15%; border-right: 1px solid #000; text-align: right; padding-right: 12px;">Rate</th>
-                <th style="width: 15%; text-align: right; padding-right: 12px;">Amount</th>
-              </tr>
-            </thead>
-            <tbody>
-              ${itemsHtml}
-            </tbody>
-          </table>
-
-          <table class="bottom-table">
-            <tr>
-              <td class="bottom-left-cell">
-                <div style="font-size: 11px; font-weight: bold; color: #555; text-transform: uppercase; margin-bottom: 4px;">Total In Words</div>
-                <div style="font-size: 13px; font-weight: bold; font-style: italic; color: #000;">
-                  ${numberToWords(invoice.pricing?.grandTotal || invoice.total || 0)}
-                </div>
-              </td>
-              <td class="bottom-right-cell">
-                <table class="totals-table">
-                  <tr style="border-bottom: 1px solid #ddd;">
-                    <td style="text-align: right; color: #333; width: 50%;">Sub Total</td>
-                    <td style="text-align: right; font-weight: bold; color: #000; width: 50%;">${(invoice.pricing?.subtotal || invoice.subTotal || invoice.total || 0).toFixed(2)}</td>
-                  </tr>
-                  ${invoice.pricing?.tax || invoice.tax ? `
-                  <tr style="border-bottom: 1px solid #ddd;">
-                    <td style="text-align: right; color: #333;">Tax (${invoice.pricing?.tax || invoice.tax}%)</td>
-                    <td style="text-align: right; font-weight: bold; color: #000;">₹${((invoice.pricing?.grandTotal || invoice.total || 0) * ((invoice.pricing?.tax || invoice.tax) / 100)).toFixed(2)}</td>
-                  </tr>
-                  ` : ''}
-                  <tr class="total-row">
-                    <td style="text-align: right;">Total</td>
-                    <td style="text-align: right; color: #000;">₹${(invoice.pricing?.grandTotal || invoice.total || 0).toFixed(2)}</td>
-                  </tr>
-                  <tr>
-                    <td colspan="2" class="signature-cell">
-                      <div class="signature-text">Authorized Signature</div>
-                    </td>
-                  </tr>
-                </table>
-              </td>
-            </tr>
-          </table>
-
-          <div style="text-align: center; margin-top: 60px; font-size: 13px; font-weight: bold; color: #000; font-family: 'Times New Roman', Times, serif; letter-spacing: 0.5px;">
-            Thanks for your business...!
-          </div>
-
-          <div style="position: fixed; bottom: 15mm; right: 20mm; font-size: 10px; color: #777; font-family: Arial, sans-serif; white-space: nowrap;">
-            Downloaded: ${formattedTimestamp}
-          </div>
-
-          <script>
-            window.onload = function() {
-              window.print();
-              setTimeout(function() { window.close(); }, 500);
-            }
-          </script>
-        </body>
-      </html>
-    `);
-    printWindow.document.close();
+    printInvoice(invoice, true, customerObj);
   };
 
   if (loading) {
@@ -417,17 +145,6 @@ export default function SalesOrders() {
     );
   };
 
-  const SortIcon = ({ colKey }) => {
-    const isActive = sortConfig.key === colKey;
-    const isDesc = isActive && sortConfig.dir === 'desc';
-    return (
-      <ChevronDown
-        size={13}
-        strokeWidth={3}
-        className={`transition-all duration-200 ${isActive ? 'text-[#1BAFAF]' : 'text-gray-300'} ${isDesc ? 'rotate-180' : 'rotate-0'}`}
-      />
-    );
-  };
 
   const parseDateToMs = (dateStr) => {
     if (!dateStr) return 0;
@@ -626,22 +343,22 @@ export default function SalesOrders() {
                      <th className="px-6 py-4 text-left text-[14px] font-bold text-[#1BAFAF]">Sr No</th>
                      <th className="px-6 py-4 text-left text-[14px] font-bold text-[#1BAFAF]">
                        <button onClick={() => handleSort('saleOrderNumber')} className="flex items-center gap-1 hover:opacity-75 transition-opacity">
-                         Order ID <SortIcon colKey="saleOrderNumber" />
+                         Order ID <SortIcon sortConfig={sortConfig} colKey="saleOrderNumber" />
                        </button>
                      </th>
                      <th className="px-6 py-4 text-left text-[14px] font-bold text-[#1BAFAF]">
                        <button onClick={() => handleSort('customerName')} className="flex items-center gap-1 hover:opacity-75 transition-opacity">
-                         Customer <SortIcon colKey="customerName" />
+                         Customer <SortIcon sortConfig={sortConfig} colKey="customerName" />
                        </button>
                      </th>
                      <th className="px-6 py-4 text-left text-[14px] font-bold text-[#1BAFAF]">
                        <button onClick={() => handleSort('createdAt')} className="flex items-center gap-1 hover:opacity-75 transition-opacity">
-                         Date <SortIcon colKey="createdAt" />
+                         Date <SortIcon sortConfig={sortConfig} colKey="createdAt" />
                        </button>
                      </th>
                      <th className="px-6 py-4 text-left text-[14px] font-bold text-[#1BAFAF]">
                        <button onClick={() => handleSort('total')} className="flex items-center gap-1 hover:opacity-75 transition-opacity">
-                         Amount <SortIcon colKey="total" />
+                         Amount <SortIcon sortConfig={sortConfig} colKey="total" />
                        </button>
                      </th>
                      <th className="px-6 py-4 text-center text-[14px] font-bold text-[#1BAFAF]">Download</th>
@@ -836,5 +553,17 @@ export default function SalesOrders() {
       )}
 
     </div>
+  );
+}
+
+const SortIcon = ({ colKey, sortConfig }) => {
+  const isActive = sortConfig.key === colKey;
+  const isDesc = isActive && sortConfig.dir === 'desc';
+  return (
+    <ChevronDown
+      size={13}
+      strokeWidth={3}
+      className={`transition-all duration-200 ${isActive ? 'text-[#1BAFAF]' : 'text-gray-300'} ${isDesc ? 'rotate-180' : 'rotate-0'}`}
+    />
   );
 }

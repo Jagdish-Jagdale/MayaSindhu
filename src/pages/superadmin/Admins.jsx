@@ -13,7 +13,7 @@ import {
 } from 'lucide-react';
 import { useAdminUI } from '../../context/AdminUIContext';
 import { db, firebaseConfig } from '../../firebase';
-import { collection, onSnapshot, query, orderBy, doc, deleteDoc, addDoc, updateDoc, serverTimestamp } from 'firebase/firestore';
+import { collection, onSnapshot, query, orderBy, doc, deleteDoc, addDoc, setDoc, updateDoc, serverTimestamp } from 'firebase/firestore';
 import { initializeApp } from 'firebase/app';
 import { getAuth, createUserWithEmailAndPassword } from 'firebase/auth';
 import toast from 'react-hot-toast';
@@ -74,8 +74,8 @@ export default function Admins() {
       id: admin.id, 
       name: admin.name || '', 
       email: admin.email || '', 
-      password: admin.password || '', // Displaying original password as requested
-      confirmPassword: admin.password || '',
+      password: '',
+      confirmPassword: '',
       role: 'Admin', 
       status: admin.status || 'Active',
       isEcommerceAdmin: admin.isEcommerceAdmin || false,
@@ -117,7 +117,7 @@ export default function Admins() {
       }
 
       // Strong Password Rules: min 6 chars, 1 uppercase, 1 number, 1 symbol
-      const passwordRegex = /^(?=.*[A-Z])(?=.*\d)(?=.*[!@#$%^&*()_+\-=\[\]{};':"\\|,.<>\/?~`]).{6,}$/;
+      const passwordRegex = /^(?=.*[A-Z])(?=.*\d)(?=.*[!@#$%^&*()_+\-=[\]{};':"\\|,.<>/?~`]).{6,}$/;
       if (!passwordRegex.test(formData.password)) {
         return toast.error("Password must be at least 6 characters, contain 1 uppercase letter, 1 number, and 1 symbol.");
       }
@@ -138,7 +138,6 @@ export default function Admins() {
         await setDoc(doc(db, 'admins', uid), {
           name: formData.name,
           email: formData.email,
-          password: formData.password,
           role: formData.role,
           status: formData.status,
           isEcommerceAdmin: formData.isEcommerceAdmin,
@@ -157,8 +156,7 @@ export default function Admins() {
           isOfflineStoreAdmin: formData.isOfflineStoreAdmin,
           updatedAt: serverTimestamp()
         };
-        // In a real environment, changing email/password requires admin SDK or complex re-auth flows.
-        if (formData.password) updateData.password = formData.password;
+
         
         await updateDoc(doc(db, 'admins', formData.id), updateData);
         toast.success("Administrator updated successfully");

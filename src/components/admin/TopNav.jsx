@@ -16,6 +16,7 @@ import { motion, AnimatePresence } from 'framer-motion';
 import { db } from '../../firebase';
 import { collection, onSnapshot, query, orderBy, limit, doc, deleteDoc } from 'firebase/firestore';
 import mstitle from '../../assets/mstitle.png';
+import toast from 'react-hot-toast';
 
 const PAGE_TITLES = {
   '/admin/dashboard': { title: 'Dashboard' },
@@ -177,6 +178,8 @@ export default function TopNav({ sidebarOpen, onToggleSidebar, isMobile }) {
     try {
       await deleteDoc(doc(db, 'notifications', id));
     } catch (error) {
+      console.error("Failed to delete notification:", error);
+      toast.error("Failed to delete notification");
     }
   };
 

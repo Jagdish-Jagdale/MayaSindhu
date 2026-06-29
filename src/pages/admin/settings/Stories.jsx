@@ -27,7 +27,7 @@ import {
   ChevronUp
 } from 'lucide-react';
 import toast from 'react-hot-toast';
-import { uploadToCloudinary, deleteMultipleFromCloudinary, deleteFromCloudinary } from '../../../utils/cloudinary';
+import { uploadToCloudinary, deleteMultipleFromCloudinary } from '../../../utils/cloudinary';
 import DeleteConfirmationModal from '../../../components/admin/DeleteConfirmationModal';
 
 export default function Stories() {

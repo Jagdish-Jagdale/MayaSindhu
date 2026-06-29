@@ -1,4 +1,4 @@
-import React, { useState, useEffect, useRef } from 'react';
+import React, { useState, useEffect, useRef, useCallback } from 'react';
 import { 
   X, 
   Loader2, 
@@ -99,26 +99,26 @@ const StoreOrderModal = ({ isOpen, onClose }) => {
         generatePONumber();
       }
     }
-  }, [isOpen]);
+  }, [isOpen, fetchVendors, fetchProducts, generatePONumber, orderSettings.mode]);
 
-  const fetchVendors = async () => {
+  const fetchVendors = useCallback(async () => {
     try {
       const q = query(collection(db, 'storeVendors'), orderBy('vendorName'));
       const snapshot = await getDocs(q);
       setVendors(snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() })));
     } catch (error) {
     }
-  };
+  }, []);
 
-  const fetchProducts = async () => {
+  const fetchProducts = useCallback(async () => {
     try {
       const snapshot = await getDocs(collection(db, 'products'));
       setProducts(snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() })));
     } catch (error) {
     }
-  };
+  }, []);
 
-  const generatePONumber = async () => {
+  const generatePONumber = useCallback(async () => {
     try {
       const q = query(collection(db, 'purchaseOrders'), orderBy('createdAt', 'desc'), limit(1));
       const snapshot = await getDocs(q);
@@ -140,14 +140,8 @@ const StoreOrderModal = ({ isOpen, onClose }) => {
       const fallback = `${orderSettings.prefix}${orderSettings.nextNumber}`;
       setFormData(prev => ({ ...prev, purchaseOrderNumber: fallback }));
     }
-  };
+  }, [orderSettings.prefix, orderSettings.nextNumber]);
 
-  const handleAddItem = () => {
-    setFormData(prev => ({
-      ...prev,
-      items: [...prev.items, { id: Date.now(), productId: '', name: '', quantity: 1, rate: 0, amount: 0 }]
-    }));
-  };
 
   const handleBulkAdd = (selectedProducts) => {
     const newItems = selectedProducts.map(p => ({
