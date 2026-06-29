@@ -12,7 +12,7 @@ import {
 } from 'lucide-react';
 import { useAdminUI } from '../../context/AdminUIContext';
 import { db } from '../../firebase';
-import { collection, onSnapshot, query, where, doc, updateDoc, orderBy } from 'firebase/firestore';
+import { collection, onSnapshot, query, where, doc, updateDoc } from 'firebase/firestore';
 import { useAuth } from '../../context/AuthContext';
 import toast from 'react-hot-toast';
 

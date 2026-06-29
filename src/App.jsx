@@ -32,7 +32,6 @@ import Reports from './pages/admin/Reports';
 import DeliveryCharges from './pages/admin/DeliveryCharges';
 import Reviews from './pages/admin/Reviews';
 import OnlineReturns from './pages/admin/Returns';
-import useOnlineStatus from './hooks/useOnlineStatus';
 import AdminProtectedRoute from './components/admin/AdminProtectedRoute';
 import Settings from './pages/admin/Settings';
 import NotFound from './components/common/NotFound';
@@ -67,143 +66,151 @@ import AdminDisclaimer from './pages/admin/settings/Disclaimer';
 
 import './App.css';
 
-import { AuthProvider } from './context/AuthContext';
-import { CartUIProvider } from './context/CartUIContext';
+import { AuthProvider, useAuth } from './context/AuthContext';
+import { CartUIProvider, useCartUI } from './context/CartUIContext';
 import Login from './pages/user/Login';
 
-function App() {
-  const isOnline = useOnlineStatus();
+function AppContent() {
+  const { isLoginModalOpen } = useAuth();
+  const { isCartOpen } = useCartUI();
 
+  return (
+    <>
+      <TitleUpdater />
+      <Toaster
+        position="top-right"
+        reverseOrder={false}
+        toastOptions={{
+          style: {
+            background: '#fff',
+            color: '#333',
+            fontFamily: "'Montserrat', sans-serif",
+            fontSize: '13px',
+            fontWeight: '600',
+            borderRadius: '16px',
+            padding: '12px 20px',
+            boxShadow: '0 10px 25px -5px rgba(0, 0, 0, 0.1), 0 8px 10px -6px rgba(0, 0, 0, 0.1)',
+          },
+          success: {
+            iconTheme: {
+              primary: '#1BAFAF',
+              secondary: '#fff',
+            },
+          },
+        }}
+      />
+      {isLoginModalOpen && <Login />}
+      {isCartOpen && <Cart />}
+      <Routes>
+        <Route path="/" element={<UserLayout />}>
+          <Route index element={<Home />} />
+          <Route path="collections" element={<CategoryView />} />
+          <Route path="product/:id" element={<ProductDetail />} />
+          <Route path="product/:id/:slug" element={<ProductDetail />} />
+          <Route path="c/*" element={<CategoryView />} />
+          <Route path="cart" element={<Navigate to="/" replace />} />
+          <Route path="wishlist" element={<Wishlist />} />
+          <Route path="manifesto" element={<About />} />
+          <Route path="contact" element={<Contact />} />
+          <Route path="profile" element={<Profile />} />
+          <Route path="checkout" element={<Checkout />} />
+          <Route path="blog">
+            <Route index element={<Blog />} />
+            <Route path=":id" element={<BlogDetail />} />
+          </Route>
+          <Route path="terms" element={<Terms />} />
+          <Route path="privacy" element={<Privacy />} />
+          <Route path="disclaimer" element={<Disclaimer />} />
+        </Route>
+
+        {/* Standalone User Routes */}
+        <Route path="/login" element={<Login />} />
+
+        {/* Admin Login Route (Standalone) */}
+        <Route path="/admin/login" element={
+          <AdminProtectedRoute requireAuth={false}>
+            <AdminLogin />
+          </AdminProtectedRoute>
+        } />
+
+        {/* Admin Route */}
+        <Route path="/admin" element={
+          <AdminProtectedRoute>
+            <AdminLayout />
+          </AdminProtectedRoute>
+        }>
+          <Route index element={<Navigate to="/admin/dashboard" replace />} />
+          <Route path="dashboard" element={<Dashboard />} />
+          <Route path="users" element={<Users />} />
+          <Route path="products" element={<ProductManagement />} />
+          <Route path="categories" element={<Categories />} />
+          <Route path="orders" element={<Orders />} />
+          <Route path="reports" element={<Reports />} />
+          <Route path="delivery-charges" element={<DeliveryCharges />} />
+          <Route path="reviews" element={<Reviews />} />
+          <Route path="returns" element={<OnlineReturns />} />
+          <Route path="settings" element={<Settings />} />
+          <Route path="settings/banner" element={<Banner />} />
+          <Route path="settings/curated-realms" element={<CuratedRealms />} />
+          <Route path="settings/featured-treasures" element={<FeaturedTreasures />} />
+          <Route path="settings/artisan-blooms" element={<ArtisanBlooms />} />
+          <Route path="settings/stories" element={<Stories />} />
+          <Route path="settings/purpose" element={<Purpose />} />
+          <Route path="settings/testimonials" element={<Testimonial />} />
+          <Route path="settings/about-us" element={<AboutUs />} />
+          <Route path="settings/blogs" element={<Blogs />} />
+          <Route path="settings/workshops" element={<Workshops />} />
+          <Route path="settings/disclaimer" element={<AdminDisclaimer />} />
+        </Route>
+
+        {/* Admin Offline Store Panel Route */}
+        <Route path="/admin-offline" element={
+          <AdminProtectedRoute>
+            <AdminLayout />
+          </AdminProtectedRoute>
+        }>
+          <Route index element={<Navigate to="/admin-offline/dashboard" replace />} />
+          <Route path="dashboard" element={<OfflineDashboard />} />
+          <Route path="orders" element={<OfflineOrders />} />
+          <Route path="products" element={<ProductManagement />} />
+          <Route path="categories" element={<Categories />} />
+          <Route path="reports" element={<Reports />} />
+          <Route path="customers" element={<StoreCustomers />} />
+          <Route path="users" element={<Navigate to="/admin-offline/customers" replace />} />
+          <Route path="return" element={<Returns />} />
+          <Route path="vendors" element={<Vendors />} />
+          <Route path="purchase-orders" element={<PurchaseOrdersOffline />} />
+        </Route>
+
+        {/* Super Admin Route */}
+        <Route path="/superadmin" element={
+          <AdminProtectedRoute>
+            <SuperAdminLayout />
+          </AdminProtectedRoute>
+        }>
+          <Route index element={<Navigate to="/superadmin/dashboard" replace />} />
+          <Route path="dashboard" element={<SuperAdminDashboard />} />
+          <Route path="superadmins" element={<SuperAdminSuperAdmins />} />
+          <Route path="admins" element={<SuperAdminAdmins />} />
+          <Route path="users" element={<SuperAdminUsers />} />
+          <Route path="reports" element={<Reports />} />
+          <Route path="sessions" element={<SuperAdminActiveSessions />} />
+        </Route>
+
+        {/* Catch-all Route for 404 - Page Not Found */}
+        <Route path="*" element={<NotFound />} />
+      </Routes>
+    </>
+  );
+}
+
+function App() {
   return (
     <Router>
       <ScrollToTop />
       <AuthProvider>
         <CartUIProvider>
-          <TitleUpdater />
-          <Toaster
-          position="top-right"
-          reverseOrder={false}
-          toastOptions={{
-            style: {
-              background: '#fff',
-              color: '#333',
-              fontFamily: "'Montserrat', sans-serif",
-              fontSize: '13px',
-              fontWeight: '600',
-              borderRadius: '16px',
-              padding: '12px 20px',
-              boxShadow: '0 10px 25px -5px rgba(0, 0, 0, 0.1), 0 8px 10px -6px rgba(0, 0, 0, 0.1)',
-            },
-            success: {
-              iconTheme: {
-                primary: '#1BAFAF',
-                secondary: '#fff',
-              },
-            },
-          }}
-        />
-        <Login />
-        <Cart />
-        <Routes>
-          <Route path="/" element={<UserLayout />}>
-            <Route index element={<Home />} />
-            <Route path="collections" element={<CategoryView />} />
-            <Route path="product/:id" element={<ProductDetail />} />
-            <Route path="product/:id/:slug" element={<ProductDetail />} />
-            <Route path="c/*" element={<CategoryView />} />
-            <Route path="cart" element={<Navigate to="/" replace />} />
-            <Route path="wishlist" element={<Wishlist />} />
-            <Route path="manifesto" element={<About />} />
-            <Route path="contact" element={<Contact />} />
-            <Route path="profile" element={<Profile />} />
-            <Route path="checkout" element={<Checkout />} />
-            <Route path="/blog">
-              <Route index element={<Blog />} />
-              <Route path=":id" element={<BlogDetail />} />
-            </Route>
-            <Route path="terms" element={<Terms />} />
-            <Route path="privacy" element={<Privacy />} />
-            <Route path="disclaimer" element={<Disclaimer />} />
-          </Route>
-
-          {/* Standalone User Routes */}
-          <Route path="/login" element={<Login />} />
-
-          {/* Admin Login Route (Standalone) */}
-          <Route path="/admin/login" element={
-            <AdminProtectedRoute requireAuth={false}>
-              <AdminLogin />
-            </AdminProtectedRoute>
-          } />
-
-          {/* Admin Route */}
-          <Route path="/admin" element={
-            <AdminProtectedRoute>
-              <AdminLayout />
-            </AdminProtectedRoute>
-          }>
-            <Route index element={<Navigate to="/admin/dashboard" replace />} />
-            <Route path="dashboard" element={<Dashboard />} />
-            <Route path="users" element={<Users />} />
-            <Route path="products" element={<ProductManagement />} />
-            <Route path="categories" element={<Categories />} />
-            <Route path="orders" element={<Orders />} />
-            <Route path="reviews" element={<Reviews />} />
-            <Route path="return" element={<OnlineReturns />} />
-            <Route path="reports" element={<Reports />} />
-            <Route path="delivery-charges" element={<DeliveryCharges />} />
-            <Route path="settings" element={<Settings />} />
-            <Route path="settings/banner" element={<Banner />} />
-            <Route path="settings/curated-realms" element={<CuratedRealms />} />
-            <Route path="settings/featured-treasures" element={<FeaturedTreasures />} />
-            <Route path="settings/artisan-blooms" element={<ArtisanBlooms />} />
-            <Route path="settings/stories" element={<Stories />} />
-            <Route path="settings/purpose" element={<Purpose />} />
-            <Route path="settings/testimonial" element={<Testimonial />} />
-            <Route path="settings/about-us" element={<AboutUs />} />
-            <Route path="settings/blogs" element={<Blogs />} />
-            <Route path="settings/artician-workshop" element={<Workshops />} />
-            <Route path="settings/disclaimer" element={<AdminDisclaimer />} />
-          </Route>
-
-
-          {/* Offline Store Route */}
-          <Route path="/admin-offline" element={
-            <AdminProtectedRoute>
-              <AdminLayout />
-            </AdminProtectedRoute>
-          }>
-            <Route index element={<Navigate to="/admin-offline/dashboard" replace />} />
-            <Route path="dashboard" element={<OfflineDashboard />} />
-            <Route path="orders" element={<OfflineOrders />} />
-            <Route path="products" element={<ProductManagement />} />
-            <Route path="categories" element={<Categories />} />
-            <Route path="reports" element={<Reports />} />
-            <Route path="customers" element={<StoreCustomers />} />
-            <Route path="users" element={<Navigate to="/admin-offline/customers" replace />} />
-            <Route path="return" element={<Returns />} />
-            <Route path="vendors" element={<Vendors />} />
-            <Route path="purchase-orders" element={<PurchaseOrdersOffline />} />
-          </Route>
-
-          {/* Super Admin Route */}
-          <Route path="/superadmin" element={
-            <AdminProtectedRoute>
-              <SuperAdminLayout />
-            </AdminProtectedRoute>
-          }>
-            <Route index element={<Navigate to="/superadmin/dashboard" replace />} />
-            <Route path="dashboard" element={<SuperAdminDashboard />} />
-            <Route path="superadmins" element={<SuperAdminSuperAdmins />} />
-            <Route path="admins" element={<SuperAdminAdmins />} />
-            <Route path="users" element={<SuperAdminUsers />} />
-            <Route path="reports" element={<Reports />} />
-            <Route path="sessions" element={<SuperAdminActiveSessions />} />
-          </Route>
-
-          {/* Catch-all Route for 404 - Page Not Found */}
-          <Route path="*" element={<NotFound />} />
-        </Routes>
+          <AppContent />
         </CartUIProvider>
       </AuthProvider>
     </Router>

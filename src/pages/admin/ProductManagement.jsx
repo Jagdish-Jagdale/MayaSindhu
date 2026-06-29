@@ -94,14 +94,8 @@ export default function ProductManagement() {
   const [activeFilter, setActiveFilter] = useState('All');
   const [rowsPerPage, setRowsPerPage] = useState(10);
   const [currentPage, setCurrentPage] = useState(1);
-  const [direction, setDirection] = useState(0);
   const [sortConfig, setSortConfig] = useState({ key: 'updatedAt', dir: 'desc' });
   const [stockAlertThreshold, setStockAlertThreshold] = useState(() => {
-    const saved = localStorage.getItem('stockAlertThreshold');
-    const parsed = saved !== null ? parseInt(saved, 10) : 5;
-    return isNaN(parsed) ? 5 : parsed;
-  });
-  const [stockAlertThresholdInput, setStockAlertThresholdInput] = useState(() => {
     const saved = localStorage.getItem('stockAlertThreshold');
     const parsed = saved !== null ? parseInt(saved, 10) : 5;
     return isNaN(parsed) ? 5 : parsed;
@@ -117,7 +111,6 @@ export default function ProductManagement() {
         const parsed = parseInt(val, 10);
         if (!isNaN(parsed)) {
           setStockAlertThreshold(parsed);
-          setStockAlertThresholdInput(parsed);
           localStorage.setItem('stockAlertThreshold', parsed);
         }
       }
@@ -125,23 +118,6 @@ export default function ProductManagement() {
     });
     return () => unsubscribe();
   }, []);
-
-  const saveStockAlert = async () => {
-    const parsed = parseInt(stockAlertThresholdInput, 10);
-    const val = isNaN(parsed) ? 5 : parsed;
-    try {
-      await setDoc(doc(db, 'settings', 'inventory'), {
-        stockAlertThreshold: val,
-        updatedAt: serverTimestamp()
-      }, { merge: true });
-      localStorage.setItem('stockAlertThreshold', val);
-      setStockAlertThreshold(val);
-      setStockAlertThresholdInput(val);
-      toast.success(`Stock alert threshold saved: ${val}`);
-    } catch (error) {
-      toast.error("Failed to save stock alert threshold");
-    }
-  };
 
   useEffect(() => {
     setCurrentPage(1);
@@ -271,18 +247,7 @@ export default function ProductManagement() {
   };
 
   const rowOptions = [5, 10, 20, 50];
-
-  const SortIcon = ({ colKey }) => {
-    const isActive = sortConfig.key === colKey;
-    const isDesc = isActive && sortConfig.dir === 'desc';
-    return (
-      <ChevronDown
-        size={13}
-        strokeWidth={3}
-        className={`transition-all duration-200 ${isActive ? 'text-[#1BAFAF]' : 'text-gray-300'} ${isDesc ? 'rotate-180' : 'rotate-0'}`}
-      />
-    );
-  };
+  const direction = 0;
 
   const handleDelete = (product) => {
     setProductToDelete(product);
@@ -610,35 +575,35 @@ export default function ProductManagement() {
                 <th className="px-6 py-4 text-left text-[14px] font-bold text-[#1BAFAF] whitespace-nowrap">Product ID</th>
                 <th className="px-6 py-4 text-left text-[14px] font-bold text-[#1BAFAF]">
                   <button onClick={() => handleSort('name')} className="flex items-center gap-1 hover:opacity-75 transition-opacity">
-                    Product <SortIcon colKey="name" />
+                    Product <SortIcon sortConfig={sortConfig} colKey="name" />
                   </button>
                 </th>
                 <th className="px-6 py-4 text-left text-[14px] font-bold text-[#1BAFAF]">
                   <button onClick={() => handleSort('categoryId')} className="flex items-center gap-1 hover:opacity-75 transition-opacity">
-                    Category <SortIcon colKey="categoryId" />
+                    Category <SortIcon sortConfig={sortConfig} colKey="categoryId" />
                   </button>
                 </th>
                 <th className="px-6 py-4 text-left text-[14px] font-bold text-[#1BAFAF]">
                   <button onClick={() => handleSort('price')} className="flex items-center gap-1 hover:opacity-75 transition-opacity">
-                    Price <SortIcon colKey="price" />
+                    Price <SortIcon sortConfig={sortConfig} colKey="price" />
                   </button>
                 </th>
                 <th className="px-6 py-4 text-center text-[14px] font-bold text-[#1BAFAF]">
                   <button onClick={() => handleSort('stock')} className="flex items-center justify-center gap-1 hover:opacity-75 transition-opacity mx-auto">
-                    Stock <SortIcon colKey="stock" />
+                    Stock <SortIcon sortConfig={sortConfig} colKey="stock" />
                   </button>
                 </th>
                 <th className="px-6 py-4 text-left text-[14px] font-bold text-[#1BAFAF]">Status</th>
                 {isOnlinePanel && (
                   <th className="px-6 py-4 text-left text-[14px] font-bold text-[#1BAFAF]">
                     <button onClick={() => handleSort('isFeatured')} className="flex items-center gap-1 hover:opacity-75 transition-opacity">
-                      Featured <SortIcon colKey="isFeatured" />
+                      Featured <SortIcon sortConfig={sortConfig} colKey="isFeatured" />
                     </button>
                   </th>
                 )}
                 <th className="px-6 py-4 text-left text-[14px] font-bold text-[#1BAFAF]">
                   <button onClick={() => handleSort('updatedAt')} className="flex items-center gap-1 hover:opacity-75 transition-opacity">
-                    Modified <SortIcon colKey="updatedAt" />
+                    Modified <SortIcon sortConfig={sortConfig} colKey="updatedAt" />
                   </button>
                 </th>
                 <th className="px-6 py-4 text-right text-[14px] font-bold text-[#1BAFAF]">Actions</th>
@@ -1038,5 +1003,17 @@ function ProductViewModal({ isOpen, onClose, product, categoryMap, hierarchy, st
         </div>
       )}
     </AnimatePresence>
+  );
+}
+
+const SortIcon = ({ colKey, sortConfig }) => {
+  const isActive = sortConfig.key === colKey;
+  const isDesc = isActive && sortConfig.dir === 'desc';
+  return (
+    <ChevronDown
+      size={13}
+      strokeWidth={3}
+      className={`transition-all duration-200 ${isActive ? 'text-[#1BAFAF]' : 'text-gray-300'} ${isDesc ? 'rotate-180' : 'rotate-0'}`}
+    />
   );
 }

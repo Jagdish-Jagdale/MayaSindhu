@@ -9,7 +9,6 @@ import {
 import { PiUserSwitchLight } from 'react-icons/pi';
 import { Link, useLocation, useNavigate } from 'react-router-dom';
 import { auth } from '../../firebase';
-import { onAuthStateChanged } from 'firebase/auth';
 import { useState, useEffect } from 'react';
 import LogoutConfirmationModal from '../admin/LogoutConfirmationModal';
 import { useAuth } from '../../context/AuthContext';
@@ -26,8 +25,7 @@ const menuItems = [
 export default function Sidebar({ isCollapsed }) {
   const location = useLocation();
   const navigate = useNavigate();
-  const [userEmail, setUserEmail] = useState('');
-  const [openMenus, setOpenMenus] = useState([]);
+
   const [isLogoutModalOpen, setIsLogoutModalOpen] = useState(false);
   const [isLoggingOut, setIsLoggingOut] = useState(false);
   const [isSwitchOpen, setIsSwitchOpen] = useState(false);
@@ -44,12 +42,6 @@ export default function Sidebar({ isCollapsed }) {
     { name: 'Offline Admin', path: '/admin-offline/dashboard', color: 'from-orange-500 to-red-600' },
   ];
 
-  useEffect(() => {
-    const unsub = onAuthStateChanged(auth, (u) => {
-      if (u) setUserEmail(u.email || '');
-    });
-    return () => unsub();
-  }, []);
 
   const { logout } = useAuth();
 
@@ -67,11 +59,7 @@ export default function Sidebar({ isCollapsed }) {
 
   const isActive = (path) => location.pathname === path || (path !== '/superadmin/dashboard' && location.pathname.startsWith(path));
 
-  const toggleMenu = (title) => {
-    setOpenMenus(prev =>
-      prev.includes(title) ? prev.filter(t => t !== title) : [...prev, title]
-    );
-  };
+
 
   return (
     <div className="flex flex-col flex-1 min-h-0 overflow-hidden">

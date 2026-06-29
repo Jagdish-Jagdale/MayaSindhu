@@ -17,7 +17,15 @@ service cloud.firestore {
     // Checks if the user has an admin role.
     function isAdmin() {
       return isSignedIn() && 
-        (get(/databases/$(database)/documents/users/$(request.auth.uid)).data.role in ['admin', 'Admin', 'superadmin', 'Super Admin']);
+        exists(/databases/$(database)/documents/admins/$(request.auth.uid)) &&
+        (get(/databases/$(database)/documents/admins/$(request.auth.uid)).data.role in ['admin', 'Admin', 'superadmin', 'Super Admin']);
+    }
+
+    // Checks if the user has a superadmin role.
+    function isSuperAdmin() {
+      return isSignedIn() && 
+        exists(/databases/$(database)/documents/admins/$(request.auth.uid)) &&
+        (get(/databases/$(database)/documents/admins/$(request.auth.uid)).data.role in ['superadmin', 'Super Admin']);
     }
 
     /**
@@ -85,7 +93,7 @@ service cloud.firestore {
     }
     // 6. Super Admin Sessions
     match /superadmin_sessions/{sessionId} {
-      allow read, write: if isSignedIn();
+      allow read, write: if isSuperAdmin();
     }
     
     // Default Deny

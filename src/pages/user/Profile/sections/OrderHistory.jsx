@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { db } from '../../../../firebase';
-import { collection, query, where, orderBy, onSnapshot, doc, updateDoc, serverTimestamp, addDoc, getDocs } from 'firebase/firestore';
+import { collection, query, where, onSnapshot, doc, updateDoc, serverTimestamp, addDoc, getDocs } from 'firebase/firestore';
 import { Package, Clock, Truck, CheckCircle2, ChevronRight, XCircle, RotateCcw, Loader2, Search, Star, X, Download, MapPin, CreditCard, FileText } from 'lucide-react';
 import toast from 'react-hot-toast';
 
@@ -22,7 +22,6 @@ export default function OrderHistory({ user }) {
   const [orders, setOrders] = useState([]);
   const [loading, setLoading] = useState(true);
   const [products, setProducts] = useState([]);
-  const [searchQuery, setSearchQuery] = useState('');
   const [selectedOrderDetail, setSelectedOrderDetail] = useState(null);
 
   // Review states
@@ -379,15 +378,7 @@ export default function OrderHistory({ user }) {
     }
   });
 
-  const filteredItems = flatItems.filter(({ order, item }) => {
-    const q = searchQuery.toLowerCase().trim();
-    if (!q) return true;
-    return (
-      item.name.toLowerCase().includes(q) ||
-      (order.orderId && order.orderId.toLowerCase().includes(q)) ||
-      order.id.toLowerCase().includes(q)
-    );
-  });
+
 
   if (loading) return <div className="flex justify-center p-20"><Loader2 className="animate-spin text-[#f5aa00]" size={40} /></div>;
 

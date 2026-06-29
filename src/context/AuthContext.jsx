@@ -1,4 +1,5 @@
-import React, { createContext, useContext, useEffect, useState } from 'react';
+/* eslint-disable react-refresh/only-export-components */
+import React, { createContext, useContext, useEffect, useState, useRef } from 'react';
 import { 
   onAuthStateChanged, 
   signInWithEmailAndPassword, 
@@ -39,22 +40,44 @@ export const AuthProvider = ({ children }) => {
   const [loading, setLoading] = useState(true);
   const [sessionError, setSessionError] = useState(null);
 
+  const authStateRef = useRef({ user: null, adminRole: null });
+  const sessionUnsubscribeRef = useRef(null);
   useEffect(() => {
-    let sessionUnsubscribe = null;
+    authStateRef.current = { user, adminRole };
+  }, [user, adminRole]);
 
+  useEffect(() => {
     const unsubscribe = onAuthStateChanged(auth, async (currentUser) => {
-      if (sessionUnsubscribe) {
-        sessionUnsubscribe();
-        sessionUnsubscribe = null;
+      if (sessionUnsubscribeRef.current) {
+        sessionUnsubscribeRef.current();
+        sessionUnsubscribeRef.current = null;
       }
 
       if (currentUser) {
+        const cached = authStateRef.current;
+        if (cached.user && cached.user.uid === currentUser.uid && cached.adminRole !== null) {
+          setUser(currentUser);
+          setLoading(false);
+          return;
+        }
+
         try {
-          const q = query(collection(db, 'admins'), where('email', '==', currentUser.email.toLowerCase()));
-          const snapshot = await getDocs(q);
+          const docRef = doc(db, 'admins', currentUser.uid);
+          const docSnap = await getDoc(docRef);
+          let adminData = null;
           
-          if (!snapshot.empty) {
-            const adminData = snapshot.docs[0].data();
+          if (docSnap.exists()) {
+            adminData = docSnap.data();
+          } else {
+            // Fallback for existing admins whose document ID is not their auth UID
+            const q = query(collection(db, 'admins'), where('email', '==', currentUser.email.toLowerCase()));
+            const snapshot = await getDocs(q);
+            if (!snapshot.empty) {
+              adminData = snapshot.docs[0].data();
+            }
+          }
+          
+          if (adminData) {
             if (adminData.status === 'Active') {
               if (adminData.role === 'Super Admin') {
                 const deviceId = getOrCreateDeviceId();
@@ -129,7 +152,7 @@ export const AuthProvider = ({ children }) => {
                 }
 
                 // Subscribe to real-time session changes for force-logout capability
-                sessionUnsubscribe = onSnapshot(sessionRef, async (docSnap) => {
+                sessionUnsubscribeRef.current = onSnapshot(sessionRef, async (docSnap) => {
                   if (docSnap.exists()) {
                     const data = docSnap.data();
                     if (!data.is_active) {
@@ -171,7 +194,10 @@ export const AuthProvider = ({ children }) => {
     });
     return () => {
       unsubscribe();
-      if (sessionUnsubscribe) sessionUnsubscribe();
+      if (sessionUnsubscribeRef.current) {
+        sessionUnsubscribeRef.current();
+        sessionUnsubscribeRef.current = null;
+      }
     };
   }, []);
 
@@ -272,7 +298,6 @@ export const AuthProvider = ({ children }) => {
         fullName: displayName,
         email: email.includes('@mayasindhu.user') ? '' : email,
         mobile: mobile || '',
-        password: password, // Included per user request (Note: Plain text storage)
         role: "user",
         createdAt: serverTimestamp(),
         updatedAt: serverTimestamp(),
@@ -293,6 +318,10 @@ export const AuthProvider = ({ children }) => {
   };
 
   const logout = async () => {
+    if (sessionUnsubscribeRef.current) {
+      sessionUnsubscribeRef.current();
+      sessionUnsubscribeRef.current = null;
+    }
     if (user && adminRole === 'Super Admin') {
       try {
         const deviceId = getOrCreateDeviceId();
@@ -301,7 +330,8 @@ export const AuthProvider = ({ children }) => {
       } catch (error) {
       }
     }
-    return signOut(auth);
+    await signOut(auth);
+    toast.success("Logged out successfully.");
   };
 
   const value = {

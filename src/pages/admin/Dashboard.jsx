@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useMemo } from 'react';
 import { 
   TrendingUp, 
   ShoppingBag, 
@@ -76,19 +76,14 @@ export default function Dashboard() {
     revenue: 0,
     orders: 0,
     clients: 0,
-    inventory: 0,
     revenueChange: '+0%',
     ordersChange: '+0%',
-    clientsChange: '+0%',
-    inventoryChange: '+0%'
+    clientsChange: '+0%'
   });
   
   const [recentOrders, setRecentOrders] = useState([]);
   const [recentUsers, setRecentUsers] = useState([]);
   const [salesData, setSalesData] = useState([]);
-  const [categoryData, setCategoryData] = useState([]);
-  const [loading, setLoading] = useState(true);
-
   const [rawProducts, setRawProducts] = useState([]);
   const [rawCategories, setRawCategories] = useState([]);
   const [productsLoaded, setProductsLoaded] = useState(false);
@@ -176,12 +171,10 @@ export default function Dashboard() {
     };
   }, []);
 
-  useEffect(() => {
-    if (!productsLoaded || !categoriesLoaded) return;
+  const loading = !productsLoaded || !categoriesLoaded;
 
-    // Count of unique products (actual items count)
-    const totalProductsCount = rawProducts.length;
-    setStats(prev => ({ ...prev, inventory: totalProductsCount }));
+  const categoryData = useMemo(() => {
+    if (!productsLoaded || !categoriesLoaded) return [];
 
     // Helper to find the main category (level = 0) for a given categoryId
     const getMainCategory = (catId) => {
@@ -211,8 +204,7 @@ export default function Dashboard() {
     const catArray = Object.entries(categoriesMap)
       .map(([name, value]) => ({ name, value }))
       .filter(item => item.value > 0);
-    setCategoryData(catArray.sort((a, b) => b.value - a.value));
-    setLoading(false);
+    return catArray.sort((a, b) => b.value - a.value);
   }, [rawProducts, rawCategories, productsLoaded, categoriesLoaded]);
 
   if (loading) {
@@ -228,7 +220,7 @@ export default function Dashboard() {
     { name: 'Total Revenue', value: formatIndianCurrency(stats.revenue), icon: TrendingUp, color: 'text-[#1BAFAF]', bg: 'bg-[#E8F7F7]' },
     { name: 'Total Orders', value: stats.orders, icon: ShoppingBag, color: 'text-amber-500', bg: 'bg-amber-50' },
     { name: 'Total Customers', value: stats.clients, icon: Users, color: 'text-blue-500', bg: 'bg-blue-50' },
-    { name: 'Total Products', value: stats.inventory, icon: Layers, color: 'text-purple-500', bg: 'bg-purple-50' },
+    { name: 'Total Products', value: rawProducts.length, icon: Layers, color: 'text-purple-500', bg: 'bg-purple-50' },
   ];
 
   return (

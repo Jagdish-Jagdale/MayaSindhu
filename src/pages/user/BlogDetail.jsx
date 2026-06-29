@@ -14,9 +14,8 @@ import {
   ArrowRight
 } from 'lucide-react';
 import { db } from '../../firebase';
-import { collection, doc, getDoc, getDocs, query, orderBy, limit, onSnapshot, addDoc, serverTimestamp } from 'firebase/firestore';
+import { collection, doc, getDoc, getDocs, query, orderBy, limit } from 'firebase/firestore';
 import { formatDate } from '../../utils/dateHelper';
-import { useGoBack } from '../../hooks/useGoBack';
 import toast from 'react-hot-toast';
 
 export default function BlogDetail() {

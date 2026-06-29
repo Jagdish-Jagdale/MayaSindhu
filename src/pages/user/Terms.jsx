@@ -1,5 +1,4 @@
 import React from 'react';
-import { motion } from 'framer-motion';
 import { Shield, Scale, FileText } from 'lucide-react';
 
 export default function Terms() {

@@ -27,9 +27,10 @@ import { Link, useLocation, useNavigate } from 'react-router-dom';
 import { PiUserSwitchLight } from 'react-icons/pi';
 import { useAuth } from '../../context/AuthContext';
 import { auth } from '../../firebase';
-import { signOut, onAuthStateChanged } from 'firebase/auth';
+import { signOut } from 'firebase/auth';
 import { useState, useEffect } from 'react';
 import LogoutConfirmationModal from './LogoutConfirmationModal';
+import toast from 'react-hot-toast';
 
 function getMenuItems(pathname) {
   const isOffline = pathname.startsWith('/admin-offline');
@@ -81,7 +82,6 @@ export default function Sidebar({ isCollapsed }) {
   const location = useLocation();
   const navigate = useNavigate();
   const { adminRole } = useAuth();
-  const [userEmail, setUserEmail] = useState('');
   const [openMenus, setOpenMenus] = useState([]); // Closed by default
   const [isLogoutModalOpen, setIsLogoutModalOpen] = useState(false);
   const [isLoggingOut, setIsLoggingOut] = useState(false);
@@ -99,19 +99,15 @@ export default function Sidebar({ isCollapsed }) {
     { name: 'Offline Admin', path: '/admin-offline/dashboard', color: 'from-orange-500 to-red-600' },
   ];
 
-  useEffect(() => {
-    const unsub = onAuthStateChanged(auth, (u) => {
-      if (u) setUserEmail(u.email || '');
-    });
-    return () => unsub();
-  }, []);
-
   const handleLogout = async () => {
     setIsLoggingOut(true);
     try {
       await signOut(auth);
+      toast.success("Logged out successfully.");
       navigate('/admin/login');
     } catch (err) {
+      console.error("Logout failed:", err);
+      toast.error("Failed to log out. Please try again.");
     } finally {
       setIsLoggingOut(false);
       setIsLogoutModalOpen(false);

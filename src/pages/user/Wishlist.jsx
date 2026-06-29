@@ -1,8 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { Heart, ShoppingBag, X, Trash2, ArrowLeft } from 'lucide-react';
-import { Link, useNavigate } from 'react-router-dom';
-import { useGoBack } from '../../hooks/useGoBack';
+import { Link } from 'react-router-dom';
 import ProductCard from '../../components/user/ProductCard';
 import { db } from '../../firebase';
 import { collection, query, orderBy, onSnapshot, doc, deleteDoc, getDoc } from 'firebase/firestore';
@@ -11,16 +10,23 @@ import { Loader2 } from 'lucide-react';
 
 export default function Wishlist() {
   const { user } = useAuth();
-  const navigate = useNavigate();
-  const goBack = useGoBack();
   const [items, setItems] = useState([]);
   const [fullProducts, setFullProducts] = useState([]);
   const [loading, setLoading] = useState(true);
 
-  useEffect(() => {
+  const [prevUser, setPrevUser] = useState(user);
+  if (user !== prevUser) {
+    setPrevUser(user);
     if (!user) {
       setItems([]);
       setLoading(false);
+    } else {
+      setLoading(true);
+    }
+  }
+
+  useEffect(() => {
+    if (!user) {
       return;
     }
 

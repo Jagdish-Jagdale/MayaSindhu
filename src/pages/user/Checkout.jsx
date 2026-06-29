@@ -3,8 +3,9 @@ import { motion, AnimatePresence } from 'framer-motion';
 import { Check, Shield, Plus, Minus, Trash2, Edit2, Loader2, AlertTriangle } from 'lucide-react';
 import { Link, useNavigate, useLocation } from 'react-router-dom';
 import { db } from '../../firebase';
-import { collection, addDoc, serverTimestamp, query, onSnapshot, getDocs, deleteDoc, doc, updateDoc, getDoc } from 'firebase/firestore';
+import { collection, addDoc, serverTimestamp, query, onSnapshot, getDocs, deleteDoc, doc, updateDoc, getDoc, where } from 'firebase/firestore';
 import { useAuth } from '../../context/AuthContext';
+import toast from 'react-hot-toast';
 
 export default function Checkout() {
   const { user, login, logout } = useAuth();
@@ -27,6 +28,9 @@ export default function Checkout() {
   const [isDeletingAddress, setIsDeletingAddress] = useState(false);
   const [showLogoutConfirm, setShowLogoutConfirm] = useState(false);
   const [consentChecked, setConsentChecked] = useState(false);
+
+  const [checkoutEmail, setCheckoutEmail] = useState('');
+  const [checkoutPassword, setCheckoutPassword] = useState('');
 
   // Form states
   const [formData, setFormData] = useState({
@@ -70,8 +74,16 @@ export default function Checkout() {
 
     const fetchLocation = async () => {
       setIsFetchingLocation(true);
+      const controller = new AbortController();
+      const timeoutId = setTimeout(() => controller.abort(), 8000);
       try {
-        const res = await fetch(`https://api.postalpincode.in/pincode/${newAddress.zip}`);
+        const res = await fetch(`https://api.postalpincode.in/pincode/${newAddress.zip}`, {
+          signal: controller.signal
+        });
+        clearTimeout(timeoutId);
+        if (!res.ok) {
+          throw new Error(`HTTP error! status: ${res.status}`);
+        }
         const data = await res.json();
         if (data && data[0]) {
           if (data[0].Status === 'Success' && data[0].PostOffice && data[0].PostOffice[0]) {
@@ -104,6 +116,13 @@ export default function Checkout() {
           }
         }
       } catch (error) {
+        clearTimeout(timeoutId);
+        toast.error("Failed to fetch location details for pincode.");
+        setNewAddress(prev => ({
+          ...prev,
+          city: '',
+          state: ''
+        }));
       } finally {
         setIsFetchingLocation(false);
       }
@@ -526,7 +545,19 @@ export default function Checkout() {
         suffix = suffix.split('').sort(() => Math.random() - 0.5).join('');
         return 'ORD' + suffix;
       };
-      const orderId = generateOrderId();
+      let orderId = generateOrderId();
+      let isUnique = false;
+      let attempts = 0;
+      while (!isUnique && attempts < 10) {
+        attempts++;
+        const q = query(collection(db, "orders"), where("orderId", "==", orderId));
+        const snap = await getDocs(q);
+        if (snap.empty) {
+          isUnique = true;
+        } else {
+          orderId = generateOrderId();
+        }
+      }
 
       const isStockAvailable = await validateStock();
       if (!isStockAvailable) return;
@@ -680,36 +711,6 @@ export default function Checkout() {
     }
   };
 
-  const StepHeader = ({ stepNum, title, isCompleted, onEdit, summary, isActive }) => {
-    if (isCompleted && !isActive) {
-      return (
-        <div onClick={onEdit} className={`bg-brand-orange px-3 py-2 md:px-4 md:py-3 flex justify-between items-center text-white ${onEdit ? 'cursor-pointer hover:bg-brand-orange-dark transition' : ''}`}>
-          <div className="flex items-start">
-            <div className="bg-white/20 text-white font-bold text-[10px] md:text-xs w-5 h-5 md:w-6 md:h-6 flex items-center justify-center mr-2 md:mr-4 rounded-[2px] mt-0.5">
-              ✓
-            </div>
-            <div>
-              <div className="font-semibold text-xs md:text-[15px]">{title}</div>
-              {summary && <div className="text-xs md:text-sm font-medium mt-0.5 md:mt-1">{summary}</div>}
-            </div>
-          </div>
-          {onEdit && (
-            <button className="bg-white text-brand-orange font-semibold text-xs md:text-sm px-4 py-1.5 md:px-6 md:py-2 rounded shadow-sm hover:shadow transition">
-              CHANGE
-            </button>
-          )}
-        </div>
-      );
-    }
-    return (
-      <div onClick={onEdit} className={`bg-brand-orange px-3 py-2 md:px-4 md:py-3 flex items-center text-white ${onEdit ? 'cursor-pointer hover:bg-brand-orange-dark transition' : ''}`}>
-        <div className="bg-white text-brand-orange text-xs md:text-sm font-bold w-5 h-5 md:w-6 md:h-6 flex items-center justify-center mr-2 md:mr-4 rounded-[2px]">
-          {stepNum}
-        </div>
-        <span className="font-semibold text-xs md:text-[15px]">{title}</span>
-      </div>
-    );
-  };
 
   if (activeStep === 'confirm') {
     return (
@@ -752,19 +753,34 @@ export default function Checkout() {
                 {!user ? (
                   <div className="max-w-sm bg-white p-6 border border-gray-200 rounded-[2px]">
                     <p className="text-sm text-gray-600 mb-4">Please log in to continue your checkout.</p>
-                    <input type="email" placeholder="Email" className="w-full border border-gray-300 px-4 py-3 rounded-[2px] mb-3 text-sm focus:outline-none focus:border-brand-orange" id="checkout-email" />
-                    <input type="password" placeholder="Password" className="w-full border border-gray-300 px-4 py-3 rounded-[2px] mb-4 text-sm focus:outline-none focus:border-brand-orange" id="checkout-password" />
+                    <label htmlFor="checkout-email" className="sr-only">Email Address</label>
+                    <input 
+                      type="email" 
+                      placeholder="Email" 
+                      className="w-full border border-gray-300 px-4 py-3 rounded-[2px] mb-3 text-sm focus:outline-none focus:border-brand-orange" 
+                      id="checkout-email" 
+                      value={checkoutEmail}
+                      onChange={(e) => setCheckoutEmail(e.target.value)}
+                    />
+                    <label htmlFor="checkout-password" className="sr-only">Password</label>
+                    <input 
+                      type="password" 
+                      placeholder="Password" 
+                      className="w-full border border-gray-300 px-4 py-3 rounded-[2px] mb-4 text-sm focus:outline-none focus:border-brand-orange" 
+                      id="checkout-password" 
+                      value={checkoutPassword}
+                      onChange={(e) => setCheckoutPassword(e.target.value)}
+                    />
                     <div className="flex gap-4 items-center">
                       <button
                         onClick={async () => {
-                          const email = document.getElementById('checkout-email').value;
-                          const password = document.getElementById('checkout-password').value;
-                          if (email && password) {
+                          if (checkoutEmail && checkoutPassword) {
                             try {
-                              await login(email, password);
+                              await login(checkoutEmail, checkoutPassword);
+                              toast.success("Logged in successfully. Welcome back!");
                               setActiveStep('address');
                             } catch (e) {
-                              alert("Login failed. Please check your credentials.");
+                              toast.error("Login failed. Please check your credentials.");
                             }
                           }
                         }}
@@ -1328,3 +1344,34 @@ export default function Checkout() {
     </div>
   );
 }
+
+const StepHeader = ({ stepNum, title, isCompleted, onEdit, summary, isActive }) => {
+  if (isCompleted && !isActive) {
+    return (
+      <div onClick={onEdit} className={`bg-brand-orange px-3 py-2 md:px-4 md:py-3 flex justify-between items-center text-white ${onEdit ? 'cursor-pointer hover:bg-brand-orange-dark transition' : ''}`}>
+        <div className="flex items-start">
+          <div className="bg-white/20 text-white font-bold text-[10px] md:text-xs w-5 h-5 md:w-6 md:h-6 flex items-center justify-center mr-2 md:mr-4 rounded-[2px] mt-0.5">
+            ✓
+          </div>
+          <div>
+            <div className="font-semibold text-xs md:text-[15px]">{title}</div>
+            {summary && <div className="text-xs md:text-sm font-medium mt-0.5 md:mt-1">{summary}</div>}
+          </div>
+        </div>
+        {onEdit && (
+          <button className="bg-white text-brand-orange font-semibold text-xs md:text-sm px-4 py-1.5 md:px-6 md:py-2 rounded shadow-sm hover:shadow transition">
+            CHANGE
+          </button>
+        )}
+      </div>
+    );
+  }
+  return (
+    <div onClick={onEdit} className={`bg-brand-orange px-3 py-2 md:px-4 md:py-3 flex items-center text-white ${onEdit ? 'cursor-pointer hover:bg-brand-orange-dark transition' : ''}`}>
+      <div className="bg-white text-brand-orange text-xs md:text-sm font-bold w-5 h-5 md:w-6 md:h-6 flex items-center justify-center mr-2 md:mr-4 rounded-[2px]">
+        {stepNum}
+      </div>
+      <span className="font-semibold text-xs md:text-[15px]">{title}</span>
+    </div>
+  );
+};

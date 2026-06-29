@@ -13,7 +13,6 @@ import { db } from '../../firebase';
 import { collection, onSnapshot, query, orderBy, doc } from 'firebase/firestore';
 import useCategories from '../../hooks/useCategories';
 import mstitle from '../../assets/mstitle.png';
-import workshopImg from '../../assets/workshop.png';
 
 const SplashScreen = () => (
   <motion.div

@@ -1,5 +1,4 @@
-import React, { useState, useEffect, useRef } from 'react';
-import { motion, AnimatePresence } from 'framer-motion';
+import React, { useState, useEffect } from 'react';
 import { 
   Plus, 
   Search, 
@@ -27,8 +26,7 @@ import {
   addDoc, 
   updateDoc, 
   serverTimestamp,
-  getDocs,
-  where
+  getDocs
 } from 'firebase/firestore';
 import toast from 'react-hot-toast';
 import CustomSelect from '../../components/common/CustomSelect';
