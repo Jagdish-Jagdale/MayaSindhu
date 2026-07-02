@@ -2,6 +2,7 @@ import React from 'react';
 import { createPortal } from 'react-dom';
 import { LogOut, X, Loader2 } from 'lucide-react';
 import { motion, AnimatePresence } from 'framer-motion';
+import useEscapeKey from '../../hooks/useEscapeKey';
 
 const LogoutConfirmationModal = ({ 
   isOpen, 
@@ -9,10 +10,12 @@ const LogoutConfirmationModal = ({
   onConfirm, 
   loading = false 
 }) => {
+  useEscapeKey(onClose, isOpen);
+
   const modalContent = (
     <AnimatePresence>
       {isOpen && (
-        <div className="fixed inset-0 z-[9999] flex items-center justify-center p-4 antialiased">
+        <div className="fixed inset-0 z-[9999] flex items-center justify-center p-4 antialiased" onClick={(e) => { if (e.target === e.currentTarget) { const closeFn = onClose; closeFn(); } }}>
           {/* Backdrop */}
           <motion.div 
             initial={{ opacity: 0 }}

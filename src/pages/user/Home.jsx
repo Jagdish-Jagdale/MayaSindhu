@@ -297,6 +297,13 @@ export default function Home() {
     }).toUpperCase();
   };
 
+  const isWorkshopExpired = (dateStr) => {
+    if (!dateStr) return false;
+    const [year, month, day] = dateStr.split('-');
+    const localDeadline = new Date(year, month - 1, day, 23, 59, 59, 999);
+    return new Date() > localDeadline;
+  };
+
   const scroll = (ref, direction) => {
     if (ref.current) {
       const { scrollLeft, clientWidth } = ref.current;
@@ -867,15 +874,21 @@ export default function Home() {
                 </div>
                 <h3 className="text-lg md:text-xl font-sans font-medium text-text-main mb-2 md:mb-3 group-hover:text-brand-orange transition-colors">{ws.name}</h3>
                 <p className="text-gray-500 text-sm leading-relaxed mb-4 md:mb-6 line-clamp-2">{ws.summary}</p>
-                <button
-                  onClick={() => {
-                    setSelectedWorkshop(ws);
-                    setWorkshopModalOpen(true);
-                  }}
-                  className="flex items-center gap-2 text-[10px] font-bold uppercase tracking-[0.2em] text-text-main hover:gap-4 transition-all"
-                >
-                  Book Slot <ChevronRight size={14} />
-                </button>
+                {isWorkshopExpired(ws.date) ? (
+                  <button disabled className="flex items-center gap-2 text-[10px] font-bold uppercase tracking-[0.2em] text-red-500 opacity-60 cursor-not-allowed">
+                    Registration Closed
+                  </button>
+                ) : (
+                  <button
+                    onClick={() => {
+                      setSelectedWorkshop(ws);
+                      setWorkshopModalOpen(true);
+                    }}
+                    className="flex items-center gap-2 text-[10px] font-bold uppercase tracking-[0.2em] text-text-main hover:gap-4 transition-all"
+                  >
+                    Book Slot <ChevronRight size={14} />
+                  </button>
+                )}
               </motion.div>
             ))}
           </div>

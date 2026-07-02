@@ -9,6 +9,8 @@ import { doc, getDoc, setDoc, updateDoc, deleteDoc, serverTimestamp, onSnapshot 
 import { addToCart } from '../../utils/cartUtils';
 import { getProductPath } from '../../utils/productUtils';
 import toast from 'react-hot-toast';
+import { getFriendlyErrorMessage } from '../../utils/firebaseErrors';
+
 
 export default function ProductCard({ id, productId, slug, name, price, discountedPrice, image, imageUrl, images, rating, showWishlist = true, stock, isUniquePiece, productType, reviewCount }) {
   const displayPrice = discountedPrice || price || 0;
@@ -77,7 +79,7 @@ export default function ProductCard({ id, productId, slug, name, price, discount
       setIsAdded(true);
       setTimeout(() => setIsAdded(false), 2000);
     } catch (error) {
-      alert(`Database Vault Error: ${error.code || error.message}. Please check your Firebase permissions.`);
+      alert(`Database Vault Error: ${getFriendlyErrorMessage(error)}. Please check your Firebase permissions.`);
     }
   };
 

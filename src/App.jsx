@@ -70,9 +70,32 @@ import { AuthProvider, useAuth } from './context/AuthContext';
 import { CartUIProvider, useCartUI } from './context/CartUIContext';
 import Login from './pages/user/Login';
 
+import React, { useEffect } from 'react';
+
 function AppContent() {
   const { isLoginModalOpen } = useAuth();
   const { isCartOpen } = useCartUI();
+
+  // Global Escape key listener for Modals
+  useEffect(() => {
+    const handleEscape = (e) => {
+      if (e.key === 'Escape') {
+        const backdrops = Array.from(document.querySelectorAll('.fixed.inset-0'));
+        if (backdrops.length > 0) {
+          // Fire click on the last active backdrop
+          const topBackdrop = backdrops[backdrops.length - 1];
+          const clickEvent = new MouseEvent('click', {
+            view: window,
+            bubbles: true,
+            cancelable: true
+          });
+          topBackdrop.dispatchEvent(clickEvent);
+        }
+      }
+    };
+    window.addEventListener('keydown', handleEscape);
+    return () => window.removeEventListener('keydown', handleEscape);
+  }, []);
 
   return (
     <>

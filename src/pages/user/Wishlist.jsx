@@ -9,26 +9,20 @@ import { useAuth } from '../../context/AuthContext';
 import { Loader2 } from 'lucide-react';
 
 export default function Wishlist() {
-  const { user } = useAuth();
+  const { user, setLoginModalOpen, loading: authLoading } = useAuth();
   const [items, setItems] = useState([]);
   const [fullProducts, setFullProducts] = useState([]);
   const [loading, setLoading] = useState(true);
 
-  const [prevUser, setPrevUser] = useState(user);
-  if (user !== prevUser) {
-    setPrevUser(user);
-    if (!user) {
-      setItems([]);
-      setLoading(false);
-    } else {
-      setLoading(true);
-    }
-  }
-
   useEffect(() => {
     if (!user) {
+      setItems([]);
+      setFullProducts([]);
+      setLoading(false);
       return;
     }
+
+    setLoading(true);
 
     const q = query(
       collection(db, 'users', user.uid, 'wishlist'),
@@ -56,7 +50,7 @@ export default function Wishlist() {
       } catch (error) {
         setFullProducts(wishlistItems);
       }
-      
+
       setLoading(false);
     }, (error) => {
       setLoading(false);
@@ -73,10 +67,23 @@ export default function Wishlist() {
     }
   };
 
-  if (loading) {
+  if (loading || authLoading) {
     return (
       <div className="min-h-screen flex items-center justify-center bg-white">
         <Loader2 className="w-12 h-12 animate-spin text-brand-orange" />
+      </div>
+    );
+  }
+
+  if (!user) {
+    return (
+      <div className="min-h-[70vh] flex flex-col items-center justify-center p-6 text-center">
+        <div className="w-24 h-24 bg-red-50 rounded-full flex items-center justify-center mb-8">
+          <Heart size={40} className="text-red-200" fill="currentColor" />
+        </div>
+        <h2 className="text-3xl font-sans font-bold text-[#1A1A1A] mb-4">Please log in to view your wishlist</h2>
+        <p className="text-gray-500 mb-10 max-w-md">Save your favorite handcrafted pieces for later.</p>
+        <button onClick={() => setLoginModalOpen(true)} className="btn btn-primary px-12">Login</button>
       </div>
     );
   }

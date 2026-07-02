@@ -4,6 +4,8 @@ import { useAuth } from '../../context/AuthContext';
 import { Loader2, AlertCircle, Eye, EyeOff, X } from 'lucide-react';
 import navLogo from '../../assets/navbar logo.png';
 import toast from 'react-hot-toast';
+import { Link } from 'react-router-dom';
+import useEscapeKey from '../../hooks/useEscapeKey';
 
 export default function Login() {
   const [isLogin, setIsLogin] = useState(true);
@@ -107,6 +109,8 @@ export default function Login() {
       setIsLogin(true);
     }, 200);
   };
+
+  useEscapeKey(handleCloseModal, isLoginModalOpen);
 
   return (
     <AnimatePresence>

@@ -3,9 +3,12 @@ import { motion, AnimatePresence } from 'framer-motion';
 import { Check, Shield, Plus, Minus, Trash2, Edit2, Loader2, AlertTriangle } from 'lucide-react';
 import { Link, useNavigate, useLocation } from 'react-router-dom';
 import { db } from '../../firebase';
-import { collection, addDoc, serverTimestamp, query, onSnapshot, getDocs, deleteDoc, doc, updateDoc, getDoc, where } from 'firebase/firestore';
+import { collection, addDoc, serverTimestamp, query, onSnapshot, getDocs, deleteDoc, doc, updateDoc, getDoc, where, setDoc } from 'firebase/firestore';
 import { useAuth } from '../../context/AuthContext';
+import useCategories from '../../hooks/useCategories';
 import toast from 'react-hot-toast';
+import { getFriendlyErrorMessage } from '../../utils/firebaseErrors';
+import useEscapeKey from '../../hooks/useEscapeKey';
 
 export default function Checkout() {
   const { user, login, logout } = useAuth();
@@ -28,6 +31,12 @@ export default function Checkout() {
   const [isDeletingAddress, setIsDeletingAddress] = useState(false);
   const [showLogoutConfirm, setShowLogoutConfirm] = useState(false);
   const [consentChecked, setConsentChecked] = useState(false);
+  const [loadingPayment, setLoadingPayment] = useState(false);
+
+  // Modals for escape key
+  useEscapeKey(() => setAddressToDelete(null), !!addressToDelete);
+  useEscapeKey(() => setShowLogoutConfirm(false), showLogoutConfirm);
+  useEscapeKey(() => setErrorModal({ isOpen: false, title: 'Alert', message: '' }), errorModal.isOpen);
 
   const [checkoutEmail, setCheckoutEmail] = useState('');
   const [checkoutPassword, setCheckoutPassword] = useState('');
@@ -532,32 +541,10 @@ export default function Checkout() {
 
   const processOrder = async (razorpayPaymentId = null, overrideMethod = null) => {
     try {
-      const generateOrderId = () => {
-        const chars = 'ABCDEFGHIJKLMNOPQRSTUVWXYZ';
-        const digits = '0123456789';
-        const all = chars + digits;
-        let suffix = '';
-        suffix += chars[Math.floor(Math.random() * chars.length)];
-        suffix += digits[Math.floor(Math.random() * digits.length)];
-        for (let i = 2; i < 7; i++) {
-          suffix += all[Math.floor(Math.random() * all.length)];
-        }
-        suffix = suffix.split('').sort(() => Math.random() - 0.5).join('');
-        return 'ORD' + suffix;
-      };
-      let orderId = generateOrderId();
-      let isUnique = false;
-      let attempts = 0;
-      while (!isUnique && attempts < 10) {
-        attempts++;
-        const q = query(collection(db, "orders"), where("orderId", "==", orderId));
-        const snap = await getDocs(q);
-        if (snap.empty) {
-          isUnique = true;
-        } else {
-          orderId = generateOrderId();
-        }
-      }
+      // Generate a globally unique Order ID using Firestore's native document ID generator
+      const newOrderRef = doc(collection(db, "orders"));
+      // Prefix with ORD- for readability, ensuring 100% uniqueness without concurrent conflicts
+      const orderId = `ORD-${newOrderRef.id.toUpperCase()}`;
 
       const isStockAvailable = await validateStock();
       if (!isStockAvailable) return;
@@ -615,7 +602,7 @@ export default function Checkout() {
 
       const finalMethod = (typeof overrideMethod === 'string') ? overrideMethod : paymentMethod;
       const totalQty = items.reduce((sum, item) => sum + (item.qty || 1), 0);
-      await addDoc(collection(db, "orders"), {
+      await setDoc(newOrderRef, {
         orderId: orderId,
         customerUid: user.uid,
         customerName: `${formData.firstName} ${formData.lastName}`,
@@ -692,6 +679,15 @@ export default function Checkout() {
 
     if (!formData.firstName || !formData.address || !formData.phone) {
       showError("Please select or add a delivery address.");
+      return;
+    }
+
+    if (deliveryCharges === null) {
+      setErrorModal({
+        isOpen: true,
+        title: 'Delivery Not Available',
+        message: 'Delivery is currently not available for your pincode. Please try a different address.'
+      });
       return;
     }
 

@@ -17,6 +17,7 @@ import { collection, onSnapshot, query, orderBy, doc, deleteDoc, addDoc, setDoc,
 import { initializeApp } from 'firebase/app';
 import { getAuth, createUserWithEmailAndPassword } from 'firebase/auth';
 import toast from 'react-hot-toast';
+import { getFriendlyErrorMessage } from '../../utils/firebaseErrors';
 import DeleteConfirmationModal from '../../components/admin/DeleteConfirmationModal';
 
 export default function Admins() {
@@ -163,7 +164,7 @@ export default function Admins() {
       }
       setIsModalOpen(false);
     } catch (error) {
-      toast.error(error.message || "Failed to save administrator");
+      toast.error(getFriendlyErrorMessage(error) || "Failed to save administrator");
     } finally {
       setIsSaving(false);
     }

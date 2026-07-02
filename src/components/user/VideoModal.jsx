@@ -8,6 +8,8 @@ import { db } from '../../firebase';
 import { doc, getDoc, onSnapshot } from 'firebase/firestore';
 import { X, ChevronLeft, ChevronRight, ShoppingBag, Volume2, VolumeX, Share2, Loader2 } from 'lucide-react';
 import toast from 'react-hot-toast';
+import { getFriendlyErrorMessage } from '../../utils/firebaseErrors';
+import useEscapeKey from '../../hooks/useEscapeKey';
 
 export default function VideoModal({ isOpen, onClose, look, onNext, onPrev }) {
   const { user, setLoginModalOpen } = useAuth();
@@ -18,6 +20,8 @@ export default function VideoModal({ isOpen, onClose, look, onNext, onPrev }) {
   const [isMuted, setIsMuted] = useState(true);
   const [addedToCartMap, setAddedToCartMap] = useState({});
   const [alreadyInBagMap, setAlreadyInBagMap] = useState({});
+
+  useEscapeKey(onClose, isOpen);
 
   // Reset states when look changes
   useEffect(() => {
@@ -229,7 +233,8 @@ export default function VideoModal({ isOpen, onClose, look, onNext, onPrev }) {
                                       setAddedToCartMap(prev => ({ ...prev, [product.id]: true }));
                                       toast.success(`${product.name} Added`);
                                     } catch (error) {
-                                      toast.error(error.message || 'Failed to add to bag');
+                                      console.error("Cart error:", error);
+                                      toast.error(getFriendlyErrorMessage(error) || 'Failed to add to bag');
                                     }
                                   }}
                                 >

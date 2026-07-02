@@ -24,6 +24,7 @@ import { addToCart } from '../../utils/cartUtils';
 import ProductCard from '../../components/user/ProductCard';
 import useCategories from '../../hooks/useCategories';
 import toast from 'react-hot-toast';
+import { getFriendlyErrorMessage } from '../../utils/firebaseErrors';
 
 const BOUTIQUE_WHATSAPP_NUMBER = "9172020494";
 
@@ -570,7 +571,7 @@ export default function ProductDetail() {
       // Auto-hide success message after 3 seconds
       setTimeout(() => setIsAdded(false), 3000);
     } catch (error) {
-      toast.error(error.message || "Failed to add to cart");
+      toast.error(getFriendlyErrorMessage(error) || "Failed to add to cart");
     } finally {
       setAdding(false);
     }

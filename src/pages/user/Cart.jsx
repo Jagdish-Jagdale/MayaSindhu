@@ -1,5 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
+import useEscapeKey from '../../hooks/useEscapeKey';
 import { Trash2, Plus, Minus, ShoppingBag, ArrowRight, Loader2, X } from 'lucide-react';
 import { useNavigate } from 'react-router-dom';
 import { db } from '../../firebase';
@@ -14,6 +15,8 @@ export default function Cart() {
   const navigate = useNavigate();
   const [items, setItems] = useState([]);
   const [loading, setLoading] = useState(true);
+
+  useEscapeKey(() => setCartOpen(false), isCartOpen);
 
   const [prevUser, setPrevUser] = useState(user);
   if (user !== prevUser) {
@@ -97,7 +100,7 @@ export default function Cart() {
             if (productSnap.exists()) {
               const productData = productSnap.data();
               isUnique = productData.isUniquePiece === true || productData.productType === 'Unique';
-              stockVal = typeof productData.stock === 'number' ? productData.stock : (isUnique ? 1 : 15);
+              stockVal = typeof productData.stock !== 'undefined' && productData.stock !== '' && !isNaN(Number(productData.stock)) ? Number(productData.stock) : (isUnique ? 1 : 15);
             }
           }
 
@@ -214,7 +217,12 @@ export default function Cart() {
                       </button>
 
                       <div className="w-20 h-24 flex-shrink-0 bg-gray-50 rounded-xl overflow-hidden border border-gray-100 p-1">
-                        <img src={item.image} alt={item.name} className="w-full h-full object-contain" />
+                        <img 
+                          src={item.imageUrl || item.image || (item.images && item.images[0]) || 'https://placehold.co/150x200/F9F8F6/1A1A1A?text=No+Image'} 
+                          alt={item.name} 
+                          className="w-full h-full object-contain" 
+                          onError={(e) => { e.target.onerror = null; e.target.src = 'https://placehold.co/150x200/F9F8F6/1A1A1A?text=No+Image'; }}
+                        />
                       </div>
 
                       <div className="flex-1 flex flex-col justify-between py-1">

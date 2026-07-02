@@ -1,6 +1,7 @@
 import React from 'react';
 import { AlertTriangle, Loader2, X } from 'lucide-react';
 import { motion, AnimatePresence } from 'framer-motion';
+import useEscapeKey from '../../hooks/useEscapeKey';
 
 const DeleteConfirmationModal = ({ 
   isOpen, 
@@ -12,6 +13,8 @@ const DeleteConfirmationModal = ({
   loading = false,
   dangerText = "Delete"
 }) => {
+  useEscapeKey(onClose, isOpen);
+
   return (
     <AnimatePresence>
       {isOpen && (

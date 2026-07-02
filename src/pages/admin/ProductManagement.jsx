@@ -28,6 +28,8 @@ import {
   TrendingUp
 } from 'lucide-react';
 import { useAdminUI } from '../../context/AdminUIContext';
+import useEscapeKey from '../../hooks/useEscapeKey';
+import { getFriendlyErrorMessage } from '../../utils/firebaseErrors';
 import { formatDate } from '../../utils/dateHelper';
 import { db } from '../../firebase';
 import { 
@@ -806,6 +808,8 @@ export default function ProductManagement() {
 
 // Product View Modal Component
 function ProductViewModal({ isOpen, onClose, product, categoryMap, hierarchy, stockAlertThreshold }) {
+  useEscapeKey(onClose, isOpen);
+
   if (!product) return null;
 
   const [activeImg, setActiveImg] = useState(product.images?.[0] || '');
@@ -845,7 +849,7 @@ function ProductViewModal({ isOpen, onClose, product, categoryMap, hierarchy, st
   return (
     <AnimatePresence>
       {isOpen && (
-        <div className="fixed inset-0 z-[60] flex items-center justify-center p-4">
+        <div className="fixed inset-0 z-[60] flex items-center justify-center p-4" onClick={(e) => { if (e.target === e.currentTarget) { const closeFn = () => setIsOpen(false); closeFn(); } }}>
           <motion.div
             initial={{ opacity: 0 }}
             animate={{ opacity: 1 }}

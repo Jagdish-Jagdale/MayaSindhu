@@ -4,6 +4,7 @@ import { X, User, Phone, Mail, MapPin, Users, Calendar, Loader2, CheckCircle2, A
 import { db } from '../../firebase';
 import { collection, addDoc, serverTimestamp } from 'firebase/firestore';
 import toast from 'react-hot-toast';
+import useEscapeKey from '../../hooks/useEscapeKey';
 
 export default function WorkshopModal({ isOpen, onClose, workshop }) {
   const [loading, setLoading] = useState(false);
@@ -16,6 +17,9 @@ export default function WorkshopModal({ isOpen, onClose, workshop }) {
     address: '',
     participants: '1'
   });
+
+  useEscapeKey(onClose, isOpen);
+  useEscapeKey(() => setShowConfirmModal(false), showConfirmModal);
 
   // Load Razorpay script dynamically
   useEffect(() => {
@@ -120,6 +124,10 @@ export default function WorkshopModal({ isOpen, onClose, workshop }) {
 
   const handleSubmit = (e) => {
     e.preventDefault();
+    if (isExpired) {
+      toast.error("Registration for this workshop has closed.");
+      return;
+    }
     if (workshop.fees && Number(workshop.fees) > 0) {
       setShowConfirmModal(true);
     } else {
@@ -137,10 +145,19 @@ export default function WorkshopModal({ isOpen, onClose, workshop }) {
     });
   };
 
+  const isWorkshopExpired = (dateStr) => {
+    if (!dateStr) return false;
+    const [year, month, day] = dateStr.split('-');
+    const localDeadline = new Date(year, month - 1, day, 23, 59, 59, 999);
+    return new Date() > localDeadline;
+  };
+
+  const isExpired = workshop ? isWorkshopExpired(workshop.date) : false;
+
   return (
     <AnimatePresence mode="wait">
       {isOpen && (
-        <div className="fixed inset-0 z-[10000] flex items-center justify-center p-4">
+        <div className="fixed inset-0 z-[10000] flex items-center justify-center p-4" onClick={(e) => { if (e.target === e.currentTarget) { const closeFn = onClose; closeFn(); } }}>
           <motion.div
             initial={{ opacity: 0 }}
             animate={{ opacity: 1 }}
@@ -199,6 +216,16 @@ export default function WorkshopModal({ isOpen, onClose, workshop }) {
                     <h3 className="text-2xl font-bold font-sans text-gray-900">Book Your Slot</h3>
                     <p className="text-xs text-gray-400 font-medium mt-1 uppercase tracking-widest">Workshop Registration</p>
                   </div>
+
+                  {isExpired ? (
+                    <div className="text-center py-10 bg-gray-50 rounded-2xl border border-gray-100">
+                      <div className="w-16 h-16 bg-red-50 text-red-400 rounded-full flex items-center justify-center mx-auto mb-4">
+                        <X size={24} />
+                      </div>
+                      <h4 className="text-lg font-bold text-gray-900 mb-2">Registration Closed</h4>
+                      <p className="text-sm text-gray-500 px-4">Registration for this workshop has closed. Please check out our upcoming workshops.</p>
+                    </div>
+                  ) : (
 
                   <form onSubmit={handleSubmit} className="space-y-5">
                     <div className="grid grid-cols-1 md:grid-cols-2 gap-5">
@@ -300,6 +327,7 @@ export default function WorkshopModal({ isOpen, onClose, workshop }) {
                       )}
                     </button>
                   </form>
+                  )}
                 </div>
               </div>
             )}
