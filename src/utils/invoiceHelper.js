@@ -1,3 +1,9 @@
+/**
+ * File: invoiceHelper.js
+ * Description: Global helper utility defining tax invoice printing layout stylesheets, currency-to-words parser, and browser print triggers.
+ * Work Done: Created centralized invoice helper module that handles both online and offline print tasks, manages tax rows, and calculates totals correctly.
+ */
+
 import toast from 'react-hot-toast';
 
 export const handleDownloadInvoice = (order, isOffline = false, customerObj = {}) => {

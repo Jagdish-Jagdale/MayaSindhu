@@ -1,3 +1,9 @@
+/**
+ * File: Checkout.jsx
+ * Description: Client-facing multi-step order checkout page with form fields for shipping details, Razorpay payments, and Firestore order submissions.
+ * Work Done: Converted uncontrolled HTML form inputs to controlled React states to align with pure React rules. Added screen-reader accessible labels to checkout forms. Replaced generic browser alert boxes with clean toast feedback.
+ */
+
 import React, { useState, useEffect } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { Check, Shield, Plus, Minus, Trash2, Edit2, Loader2, AlertTriangle } from 'lucide-react';

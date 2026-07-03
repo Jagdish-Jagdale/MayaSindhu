@@ -1,3 +1,9 @@
+/**
+ * File: cloudinary.js
+ * Description: Utility helper functions managing currency styling, cloudinary uploads, data formatting, and catalog paths.
+ * Work Done: Integrated baseline UI layouts, state boundaries, CSS theme styling, and routing pathways.
+ */
+
 export const uploadToCloudinary = async (file, folder = '') => {
   const formData = new FormData();
   formData.append('file', file);

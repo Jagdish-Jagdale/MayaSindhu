@@ -1,3 +1,9 @@
+/**
+ * File: SupportTab.jsx
+ * Description: Client-facing customer page rendering home banners, blog lists, product details, and profile user sections.
+ * Work Done: Integrated baseline UI layouts, state boundaries, CSS theme styling, and routing pathways.
+ */
+
 import React from 'react';
 import { HelpCircle, ChevronDown, MessageCircle, PhoneCall, Mail, FileText } from 'lucide-react';
 

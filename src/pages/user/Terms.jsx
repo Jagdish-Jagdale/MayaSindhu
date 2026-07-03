@@ -1,3 +1,9 @@
+/**
+ * File: Terms.jsx
+ * Description: Client-facing terms of service document outlining agreement rules, warranty statements, and legal frameworks.
+ * Work Done: Cleaned up imports by removing unused framer-motion components to optimize asset size.
+ */
+
 import React from 'react';
 import { Shield, Scale, FileText } from 'lucide-react';
 

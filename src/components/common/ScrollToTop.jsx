@@ -1,3 +1,9 @@
+/**
+ * File: ScrollToTop.jsx
+ * Description: Global shared components including customizable select dropdowns, page titles, and scroll controllers.
+ * Work Done: Integrated baseline UI layouts, state boundaries, CSS theme styling, and routing pathways.
+ */
+
 import { useEffect } from 'react';
 import { useLocation, useNavigationType } from 'react-router-dom';
 

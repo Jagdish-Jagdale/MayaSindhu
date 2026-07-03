@@ -438,7 +438,8 @@ export default function Banner() {
       {/* Full Image Preview Modal */}
       {selectedBannerImage && (
         <div
-          className="fixed inset-0 z-[300] flex items-center justify-center p-4 bg-black/70 backdrop-blur-sm animate-in fade-in duration-300" onClick={(e) => { if (e.target === e.currentTarget) { const closeFn = () => setSelectedBannerImage(null); closeFn(); } }}
+          className="fixed inset-0 z-[300] flex items-center justify-center p-4 bg-black/70 backdrop-blur-sm animate-in fade-in duration-300"
+ onClick={(e) => { if (e.target === e.currentTarget) { const closeFn = () => setSelectedBannerImage(null); closeFn(); } }}
           onClick={() => setSelectedBannerImage(null)}
         >
           <div

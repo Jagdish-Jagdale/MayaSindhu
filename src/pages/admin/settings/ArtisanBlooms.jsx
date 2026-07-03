@@ -1,3 +1,9 @@
+/**
+ * File: ArtisanBlooms.jsx
+ * Description: Admin configuration manager page handling curated realms lists, banner uploads, workshops setup, and text disclaimers.
+ * Work Done: Integrated baseline UI layouts, state boundaries, CSS theme styling, and routing pathways.
+ */
+
 import React, { useState, useEffect, useRef } from 'react';
 import { useAdminUI } from '../../../context/AdminUIContext';
 import { db } from '../../../firebase';

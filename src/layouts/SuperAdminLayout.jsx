@@ -1,3 +1,9 @@
+/**
+ * File: SuperAdminLayout.jsx
+ * Description: Root layout template defining navigation routes, grid boundaries, and header wrappers.
+ * Work Done: Integrated baseline UI layouts, state boundaries, CSS theme styling, and routing pathways.
+ */
+
 import { useEffect } from 'react';
 import { Outlet, useLocation } from 'react-router-dom';
 import Sidebar from '../components/superadmin/Sidebar';

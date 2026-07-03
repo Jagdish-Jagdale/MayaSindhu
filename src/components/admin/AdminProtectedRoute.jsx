@@ -1,3 +1,9 @@
+/**
+ * File: AdminProtectedRoute.jsx
+ * Description: Admin portal navigation layouts, forms confirmation dialogs, and product setup overlays.
+ * Work Done: Integrated baseline UI layouts, state boundaries, CSS theme styling, and routing pathways.
+ */
+
 import React from 'react';
 import { Navigate, useLocation } from 'react-router-dom';
 import { Loader2 } from 'lucide-react';

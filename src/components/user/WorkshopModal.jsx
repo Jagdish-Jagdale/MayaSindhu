@@ -1,3 +1,9 @@
+/**
+ * File: WorkshopModal.jsx
+ * Description: Client-facing e-commerce UI components for filtering catalogs, carousel sliders, footer contents, and shopping card modals.
+ * Work Done: Integrated baseline UI layouts, state boundaries, CSS theme styling, and routing pathways.
+ */
+
 import React, { useState, useEffect } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { X, User, Phone, Mail, MapPin, Users, Calendar, Loader2, CheckCircle2, AlertCircle } from 'lucide-react';

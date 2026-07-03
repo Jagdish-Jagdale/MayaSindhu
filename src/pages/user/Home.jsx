@@ -1,3 +1,9 @@
+/**
+ * File: Home.jsx
+ * Description: Client-facing customer page rendering home banners, blog lists, product details, and profile user sections.
+ * Work Done: Integrated baseline UI layouts, state boundaries, CSS theme styling, and routing pathways.
+ */
+
 import { motion, AnimatePresence } from 'framer-motion';
 import { useState, useEffect, useRef } from 'react';
 import { Link } from 'react-router-dom';

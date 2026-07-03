@@ -1,3 +1,9 @@
+/**
+ * File: ProductCard.jsx
+ * Description: Client-facing e-commerce UI components for filtering catalogs, carousel sliders, footer contents, and shopping card modals.
+ * Work Done: Integrated baseline UI layouts, state boundaries, CSS theme styling, and routing pathways.
+ */
+
 import { motion, AnimatePresence } from 'framer-motion';
 import { ShoppingBag, Heart, Star, CheckCircle2 } from 'lucide-react';
 import { Link, useNavigate, useLocation } from 'react-router-dom';

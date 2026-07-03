@@ -1,3 +1,9 @@
+/**
+ * File: Disclaimer.jsx
+ * Description: Admin configuration manager page handling curated realms lists, banner uploads, workshops setup, and text disclaimers.
+ * Work Done: Integrated baseline UI layouts, state boundaries, CSS theme styling, and routing pathways.
+ */
+
 import React, { useState, useEffect } from 'react';
 import { Shield, Save } from 'lucide-react';
 import { useAdminUI } from '../../../context/AdminUIContext';

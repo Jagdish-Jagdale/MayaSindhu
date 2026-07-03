@@ -1,3 +1,9 @@
+/**
+ * File: DeliveryCharges.jsx
+ * Description: Admin online manager page rendering e-commerce customer lists, returns tables, review grids, and system config settings.
+ * Work Done: Integrated baseline UI layouts, state boundaries, CSS theme styling, and routing pathways.
+ */
+
 import React, { useState, useEffect } from 'react';
 import { 
   Plus, 
