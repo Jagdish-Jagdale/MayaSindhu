@@ -469,7 +469,7 @@ export default function OrderHistory({ user }) {
                   {/* Left: Product Image */}
                   <div className="w-20 h-24 bg-white border border-gray-100 rounded-lg p-1 flex-shrink-0 flex items-center justify-center overflow-hidden">
                     {itemImage ? (
-                      <img src={itemImage} alt={item.name} className="w-full h-full object-contain rounded-md" />
+                      <img src={itemImage || null} alt={item.name} className="w-full h-full object-contain rounded-md" />
                     ) : (
                       <Package className="text-gray-300" size={24} />
                     )}
@@ -581,7 +581,7 @@ export default function OrderHistory({ user }) {
                   <div className="flex gap-4 p-4 border border-gray-100 rounded-xl bg-gray-50/50">
                     <div className="w-20 h-24 bg-white border border-gray-100 rounded-lg p-1 flex-shrink-0 flex items-center justify-center overflow-hidden">
                       {selectedOrderDetail.itemImage ? (
-                        <img src={selectedOrderDetail.itemImage} alt={selectedOrderDetail.item.name} className="w-full h-full object-contain rounded-md" />
+                        <img src={selectedOrderDetail.itemImage || null} alt={selectedOrderDetail.item.name} className="w-full h-full object-contain rounded-md" />
                       ) : (
                         <Package className="text-gray-300" size={24} />
                       )}
@@ -862,7 +862,7 @@ export default function OrderHistory({ user }) {
                 <div className="flex flex-col items-center justify-center border-2 border-dashed border-gray-200 rounded-2xl p-4 bg-gray-50 hover:bg-gray-100/50 transition-all relative">
                   {exchangeImage ? (
                     <div className="relative w-full h-40 rounded-xl overflow-hidden group">
-                      <img src={exchangeImage} alt="Exchange product preview" className="w-full h-full object-cover" />
+                      <img src={exchangeImage || null} alt="Exchange product preview" className="w-full h-full object-cover" />
                       <button
                         type="button"
                         onClick={() => setExchangeImage('')}

@@ -140,7 +140,7 @@ export default function ProductCard({ id, productId, slug, name, price, discount
       <div className="relative aspect-[3/4] overflow-hidden bg-[#F9F8F6] rounded-2xl shadow-sm hover:shadow-xl transition-shadow duration-500 flex items-center justify-center p-2">
         <Link to={getProductPath(productId || id, name, slug)} className="w-full h-full">
           <img
-            src={displayImage}
+            src={displayImage || null}
             alt={name}
             className="w-full h-full object-contain transition-transform duration-[2000ms] ease-out group-hover:scale-105"
           />

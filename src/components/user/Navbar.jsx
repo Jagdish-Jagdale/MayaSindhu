@@ -240,7 +240,7 @@ export default function Navbar() {
                           className="flex items-center gap-3 p-3 hover:bg-gray-50 rounded-lg transition-colors group/item"
                         >
                           <div className="w-12 h-12 rounded-lg bg-gray-50 overflow-hidden flex-shrink-0 border border-gray-100 p-1">
-                            <img src={p.image || (p.images && p.images[0])} alt="" className="w-full h-full object-contain" />
+                            <img src={p.image || (p.images && p.images[0]) || null} alt="" className="w-full h-full object-contain" />
                           </div>
                           <div className="flex-1 min-w-0">
                             <h4 className="text-xs font-bold text-[#1A1A1A] truncate group-hover/item:text-brand-orange transition-colors">{p.name}</h4>
@@ -388,7 +388,7 @@ export default function Navbar() {
                           className="flex items-center gap-3 p-3 hover:bg-gray-50 rounded-lg transition-colors group/item"
                         >
                           <div className="w-10 h-10 rounded-lg bg-gray-50 overflow-hidden flex-shrink-0 border border-gray-100 p-1">
-                            <img src={p.image || (p.images && p.images[0])} alt="" className="w-full h-full object-contain" />
+                            <img src={p.image || (p.images && p.images[0]) || null} alt="" className="w-full h-full object-contain" />
                           </div>
                           <div className="flex-1 min-w-0">
                             <h4 className="text-xs font-bold text-[#1A1A1A] truncate group-hover/item:text-brand-orange transition-colors">{p.name}</h4>

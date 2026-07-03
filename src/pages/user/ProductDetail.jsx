@@ -729,7 +729,7 @@ export default function ProductDetail() {
                     : 'border-transparent opacity-70 hover:opacity-100'
                     }`}
                 >
-                  <img src={img} alt="" className="w-full h-full object-cover rounded-lg" />
+                  <img src={img || null} alt="" className="w-full h-full object-cover rounded-lg" />
                 </button>
               ))}
             </div>
@@ -866,7 +866,7 @@ export default function ProductDetail() {
                                   }`}
                               >
                                 {thumbnail && (
-                                  <img src={thumbnail} alt="" className="w-16 h-22 object-cover rounded-md" />
+                                  <img src={thumbnail || null} alt="" className="w-16 h-22 object-cover rounded-md" />
                                 )}
                               </button>
                             );
