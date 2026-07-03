@@ -28,18 +28,20 @@ export default function Login() {
     setError('');
 
     if (isLogin) {
-      const isEmailLogin = /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email);
-      if (!isEmailLogin) {
+      const emailRegex = /^[a-zA-Z0-9._%+-]+@[a-zA-Z0-9.-]+\.[a-zA-Z]{2,}$/;
+      if (!emailRegex.test(email)) {
         setError('Please enter a valid email address.');
+        return;
+      }
+      const emailBeforeAt = email.split('@')[0];
+      const hasLetter = /[a-zA-Z]/.test(emailBeforeAt);
+      if (!hasLetter) {
+        setError('Please Enter Valid Email Address.');
         return;
       }
     } else {
       if (!name || !name.trim()) {
         setError('Name is a required field.');
-        return;
-      }
-      if (!/^[a-zA-Z\s]+$/.test(name)) {
-        setError('Name can only contain letters and spaces.');
         return;
       }
       if (name.trim().length < 2) {
@@ -50,9 +52,17 @@ export default function Login() {
         setError('Name cannot exceed 50 characters.');
         return;
       }
-      if (email && !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email)) {
+      if (email && !/^[a-zA-Z0-9._%+-]+@[a-zA-Z0-9.-]+\.[a-zA-Z]{2,}$/.test(email)) {
         setError('Please enter a valid email address.');
         return;
+      }
+      if (email) {
+        const emailBeforeAt = email.split('@')[0];
+        const hasLetter = /[a-zA-Z]/.test(emailBeforeAt);
+        if (!hasLetter) {
+          setError('Email must contain at least one letter before the @ symbol.');
+          return;
+        }
       }
       if (!/^[6-9]\d{9}$/.test(mobile)) {
         setError('Please enter a valid mobile number.');
@@ -193,7 +203,11 @@ export default function Login() {
                         type="text"
                         required={!isLogin}
                         value={name}
-                        onChange={(e) => setName(e.target.value)}
+                        onChange={(e) => {
+                          const value = e.target.value;
+                          const cleanedValue = value.replace(/[^a-zA-Z]/g, '');
+                          setName(cleanedValue);
+                        }}
                         placeholder="Full Name"
                         className="w-full bg-transparent border border-gray-300 rounded-md py-3.5 px-4 focus:outline-none focus:border-black focus:ring-1 focus:ring-black transition-all text-sm placeholder:text-gray-400"
                       />
@@ -213,10 +227,20 @@ export default function Login() {
                 </AnimatePresence>
 
                 <input
-                  type="email"
+                  type="text"
                   required
                   value={email}
-                  onChange={(e) => setEmail(e.target.value)}
+                  onChange={(e) => {
+                    const value = e.target.value;
+                    const atIndex = value.indexOf('@');
+                    if (atIndex === -1) {
+                      setEmail(value);
+                    } else {
+                      const beforeAt = value.substring(0, atIndex);
+                      const afterAt = value.substring(atIndex);
+                      setEmail(beforeAt + afterAt);
+                    }
+                  }}
                   placeholder="Email"
                   className="w-full bg-transparent border border-gray-300 rounded-md py-3.5 px-4 focus:outline-none focus:border-black focus:ring-1 focus:ring-black transition-all text-sm placeholder:text-gray-400"
                 />
@@ -260,11 +284,7 @@ export default function Login() {
                 </button>
               </form>
 
-              <div className="w-full text-center mt-12">
-                <a href="#" className="text-gray-500 text-[13px] hover:text-black hover:underline transition-all">
-                  Privacy policy
-                </a>
-              </div>
+             
             </div>
           </motion.div>
         </>
