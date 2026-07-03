@@ -16,7 +16,7 @@ export default function ProfileInfo({ user }) {
   const [formData, setFormData] = useState({
     fullName: '',
     email: '',
-    phone: '',
+    mobile: '',
     dob: '',
     gender: ''
   });
@@ -32,7 +32,7 @@ export default function ProfileInfo({ user }) {
           setFormData({
             fullName: data.fullName || user.displayName || '',
             email: data.email || user.email || '',
-            phone: data.phone || '',
+            mobile: data.mobile || data.phone || data.phoneNumber || user.phoneNumber || '',
             dob: data.dob || '',
             gender: data.gender || ''
           });
@@ -96,10 +96,10 @@ export default function ProfileInfo({ user }) {
                 isEditing={false}
               />
               <InfoField
-                label="Phone Number"
-                value={formData.phone}
+                label="Mobile Number"
+                value={formData.mobile}
                 isEditing={isEditing}
-                onChange={(v) => setFormData({ ...formData, phone: v })}
+                onChange={(v) => setFormData({ ...formData, mobile: v })}
                 type="tel"
               />
               <InfoField

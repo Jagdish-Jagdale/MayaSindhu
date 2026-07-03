@@ -12,6 +12,8 @@ import useCategories from '../../hooks/useCategories';
 import toast from 'react-hot-toast';
 import { uploadToCloudinary, deleteMultipleFromCloudinary } from '../../utils/cloudinary';
 import CustomSelect from '../common/CustomSelect';
+import { getFriendlyErrorMessage } from '../../utils/firebaseErrors';
+import useEscapeKey from '../../hooks/useEscapeKey';
 
 // Helper to find the full path of category IDs for a given leaf category ID
 const findPathToCategory = (id, items, currentPath = []) => {
@@ -27,6 +29,7 @@ const findPathToCategory = (id, items, currentPath = []) => {
 
 export default function ProductFormModal({ isOpen, onClose, product = null, initialCategoryId = null }) {
   const { categories: heirarchy } = useCategories();
+  useEscapeKey(onClose, isOpen);
   const [loading, setLoading] = useState(false);
   const [isDirty, setIsDirty] = useState(false);
 
@@ -560,7 +563,8 @@ export default function ProductFormModal({ isOpen, onClose, product = null, init
 
       onClose();
     } catch (error) {
-      toast.error(error.message || 'Failed to save product');
+      console.error('Error saving product:', error);
+      toast.error(getFriendlyErrorMessage(error) || 'Failed to save product');
     } finally {
       setLoading(false);
     }

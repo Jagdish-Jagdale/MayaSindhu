@@ -15,6 +15,8 @@ import { doc, getDoc, setDoc, updateDoc, deleteDoc, serverTimestamp, onSnapshot 
 import { addToCart } from '../../utils/cartUtils';
 import { getProductPath } from '../../utils/productUtils';
 import toast from 'react-hot-toast';
+import { getFriendlyErrorMessage } from '../../utils/firebaseErrors';
+
 
 export default function ProductCard({ id, productId, slug, name, price, discountedPrice, image, imageUrl, images, rating, showWishlist = true, stock, isUniquePiece, productType, reviewCount }) {
   const displayPrice = discountedPrice || price || 0;
@@ -83,7 +85,7 @@ export default function ProductCard({ id, productId, slug, name, price, discount
       setIsAdded(true);
       setTimeout(() => setIsAdded(false), 2000);
     } catch (error) {
-      alert(`Database Vault Error: ${error.code || error.message}. Please check your Firebase permissions.`);
+      alert(`Database Vault Error: ${getFriendlyErrorMessage(error)}. Please check your Firebase permissions.`);
     }
   };
 
@@ -144,7 +146,7 @@ export default function ProductCard({ id, productId, slug, name, price, discount
       <div className="relative aspect-[3/4] overflow-hidden bg-[#F9F8F6] rounded-2xl shadow-sm hover:shadow-xl transition-shadow duration-500 flex items-center justify-center p-2">
         <Link to={getProductPath(productId || id, name, slug)} className="w-full h-full">
           <img
-            src={displayImage}
+            src={displayImage || null}
             alt={name}
             className="w-full h-full object-contain transition-transform duration-[2000ms] ease-out group-hover:scale-105"
           />

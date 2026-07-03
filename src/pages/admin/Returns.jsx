@@ -418,7 +418,7 @@ export default function Returns() {
 
       {/* Details Preview Modal */}
       {isPreviewOpen && selectedTicket && (
-        <div className="fixed inset-0 z-[150] flex items-center justify-center p-4 animate-in fade-in duration-200">
+        <div className="fixed inset-0 z-[150] flex items-center justify-center p-4 animate-in fade-in duration-200" onClick={(e) => { if (e.target === e.currentTarget) { const closeFn = () => setIsPreviewOpen(false); closeFn(); } }}>
           <div
             className="absolute inset-0 bg-black/40 backdrop-blur-sm"
             onClick={() => setIsPreviewOpen(false)}

@@ -175,7 +175,7 @@ export default function ReturnsRefunds({ user }) {
 
       {/* Ticket Details Lightbox/Modal */}
       {isPreviewOpen && selectedTicket && (
-        <div className="fixed inset-0 z-[10000] flex items-center justify-center p-4 bg-black/40 backdrop-blur-sm animate-in fade-in duration-300">
+        <div className="fixed inset-0 z-[10000] flex items-center justify-center p-4 bg-black/40 backdrop-blur-sm animate-in fade-in duration-300" onClick={(e) => { if (e.target === e.currentTarget) { const closeFn = () => setIsPreviewOpen(false); closeFn(); } }}>
           <div className="bg-white rounded-2xl w-full max-w-md overflow-hidden shadow-2xl animate-in zoom-in-95 duration-300 flex flex-col">
             {/* Header */}
             <div className="p-6 border-b border-gray-100 flex items-center justify-between shrink-0">

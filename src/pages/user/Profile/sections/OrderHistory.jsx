@@ -29,6 +29,7 @@ export default function OrderHistory({ user }) {
   const [loading, setLoading] = useState(true);
   const [products, setProducts] = useState([]);
   const [selectedOrderDetail, setSelectedOrderDetail] = useState(null);
+  const [searchTerm, setSearchTerm] = useState('');
 
   // Review states
   const [userReviews, setUserReviews] = useState({});
@@ -384,24 +385,41 @@ export default function OrderHistory({ user }) {
     }
   });
 
-
+  const filteredItems = flatItems.filter(({ order, item }) => {
+    if (!searchTerm) return true;
+    const term = searchTerm.toLowerCase();
+    const orderIdStr = (order.orderId || order.id || '').toLowerCase();
+    const itemNameStr = (item.name || '').toLowerCase();
+    const statusStr = (order.status || '').toLowerCase();
+    return orderIdStr.includes(term) || itemNameStr.includes(term) || statusStr.includes(term);
+  });
 
   if (loading) return <div className="flex justify-center p-20"><Loader2 className="animate-spin text-[#f5aa00]" size={40} /></div>;
 
   return (
     <>
+      <div className="mb-6 relative">
+        <input 
+          type="text"
+          placeholder="Search by Order ID, Product Name, or Status..."
+          value={searchTerm}
+          onChange={(e) => setSearchTerm(e.target.value)}
+          className="w-full bg-white border border-gray-200 rounded-xl py-3 pl-10 pr-4 text-sm font-medium focus:outline-none focus:border-[#f5aa00] focus:ring-1 focus:ring-[#f5aa00]"
+        />
+        <Search className="absolute left-3 top-3.5 text-gray-400" size={18} />
+      </div>
       <div className="space-y-6">
         {/* Flat List of Order Items */}
-        {flatItems.length === 0 ? (
+        {filteredItems.length === 0 ? (
           <div className="text-center py-20 bg-white rounded-xl border border-gray-100 shadow-sm">
             <div className="w-16 h-16 bg-gray-50 rounded-full flex items-center justify-center mx-auto mb-4 shadow-sm">
               <Package className="text-gray-300" size={28} />
             </div>
-            <p className="text-gray-400 font-bold text-sm uppercase tracking-widest">No orders found</p>
+            <p className="text-gray-400 font-bold text-sm uppercase tracking-widest">{searchTerm ? 'No orders found matching your search' : 'No orders found'}</p>
           </div>
         ) : (
           <div className="space-y-4">
-            {flatItems.map(({ order, item }, idx) => {
+            {filteredItems.map(({ order, item }, idx) => {
               const productDoc = products.find(p => p.id === item.id || p.name === item.name);
               const itemImage = item.image || (productDoc?.images && productDoc.images[0]) || (productDoc?.image) || '';
               
@@ -457,7 +475,7 @@ export default function OrderHistory({ user }) {
                   {/* Left: Product Image */}
                   <div className="w-20 h-24 bg-white border border-gray-100 rounded-lg p-1 flex-shrink-0 flex items-center justify-center overflow-hidden">
                     {itemImage ? (
-                      <img src={itemImage} alt={item.name} className="w-full h-full object-contain rounded-md" />
+                      <img src={itemImage || null} alt={item.name} className="w-full h-full object-contain rounded-md" />
                     ) : (
                       <Package className="text-gray-300" size={24} />
                     )}
@@ -544,7 +562,7 @@ export default function OrderHistory({ user }) {
 
       {/* Order Details Modal */}
       {selectedOrderDetail && (
-        <div className="fixed inset-0 z-[10000] flex items-center justify-center p-4 bg-black/40 backdrop-blur-sm animate-in fade-in duration-300">
+        <div className="fixed inset-0 z-[10000] flex items-center justify-center p-4 bg-black/40 backdrop-blur-sm animate-in fade-in duration-300" onClick={(e) => { if (e.target === e.currentTarget) setSelectedOrderDetail(null); }}>
           <div className="bg-white rounded-2xl w-full max-w-4xl overflow-hidden shadow-2xl animate-in zoom-in-95 duration-300 flex flex-col max-h-[90vh]">
             {/* Modal Header */}
             <div className="p-6 border-b border-gray-100 flex items-center justify-between shrink-0">
@@ -569,7 +587,7 @@ export default function OrderHistory({ user }) {
                   <div className="flex gap-4 p-4 border border-gray-100 rounded-xl bg-gray-50/50">
                     <div className="w-20 h-24 bg-white border border-gray-100 rounded-lg p-1 flex-shrink-0 flex items-center justify-center overflow-hidden">
                       {selectedOrderDetail.itemImage ? (
-                        <img src={selectedOrderDetail.itemImage} alt={selectedOrderDetail.item.name} className="w-full h-full object-contain rounded-md" />
+                        <img src={selectedOrderDetail.itemImage || null} alt={selectedOrderDetail.item.name} className="w-full h-full object-contain rounded-md" />
                       ) : (
                         <Package className="text-gray-300" size={24} />
                       )}
@@ -727,7 +745,7 @@ export default function OrderHistory({ user }) {
 
       {/* Write Review Modal */}
       {isReviewModalOpen && (
-        <div className="fixed inset-0 z-[10000] flex items-center justify-center p-4 bg-black/40 backdrop-blur-sm animate-in fade-in duration-300">
+        <div className="fixed inset-0 z-[10000] flex items-center justify-center p-4 bg-black/40 backdrop-blur-sm animate-in fade-in duration-300" onClick={(e) => { if (e.target === e.currentTarget) setIsReviewModalOpen(false); }}>
           <div className="bg-white rounded-2xl w-full max-w-md overflow-hidden shadow-2xl animate-in zoom-in-95 duration-300 flex flex-col">
             {/* Modal Header */}
             <div className="p-6 border-b border-gray-100 flex items-center justify-between shrink-0">
@@ -813,7 +831,7 @@ export default function OrderHistory({ user }) {
 
       {/* Request Exchange Modal */}
       {isExchangeModalOpen && (
-        <div className="fixed inset-0 z-[10000] flex items-center justify-center p-4 bg-black/40 backdrop-blur-sm animate-in fade-in duration-300">
+        <div className="fixed inset-0 z-[10000] flex items-center justify-center p-4 bg-black/40 backdrop-blur-sm animate-in fade-in duration-300" onClick={(e) => { if (e.target === e.currentTarget) setIsExchangeModalOpen(false); }}>
           <div className="bg-white rounded-2xl w-full max-w-md overflow-hidden shadow-2xl animate-in zoom-in-95 duration-300 flex flex-col">
             {/* Modal Header */}
             <div className="p-6 border-b border-gray-100 flex items-center justify-between shrink-0">
@@ -850,7 +868,7 @@ export default function OrderHistory({ user }) {
                 <div className="flex flex-col items-center justify-center border-2 border-dashed border-gray-200 rounded-2xl p-4 bg-gray-50 hover:bg-gray-100/50 transition-all relative">
                   {exchangeImage ? (
                     <div className="relative w-full h-40 rounded-xl overflow-hidden group">
-                      <img src={exchangeImage} alt="Exchange product preview" className="w-full h-full object-cover" />
+                      <img src={exchangeImage || null} alt="Exchange product preview" className="w-full h-full object-cover" />
                       <button
                         type="button"
                         onClick={() => setExchangeImage('')}

@@ -133,10 +133,10 @@ export default function ArtisanBlooms() {
   // Open modal for Editing
   const handleOpenEdit = (trend) => {
     setModalTrend(trend);
-    setModalTitle(trend.title || '');
-    setModalDescription(trend.description || '');
+    setModalTitle(trend.title || null);
+    setModalDescription(trend.description || null);
     setModalFile(null);
-    setModalPreviewUrl(trend.imageUrl || '');
+    setModalPreviewUrl(trend.imageUrl || null);
     setModalProductIds(trend.productIds || []);
     setModalSearchQuery('');
     setModalSearchActive(false);
@@ -249,8 +249,8 @@ export default function ArtisanBlooms() {
   // Filtered and Paginated Trends
   const filteredTrends = trends.filter(trend => {
     const matchesSearch = 
-      (trend.title || '').toLowerCase().includes(searchTerm.toLowerCase()) ||
-      (trend.description || '').toLowerCase().includes(searchTerm.toLowerCase());
+      (trend.title || null).toLowerCase().includes(searchTerm.toLowerCase()) ||
+      (trend.description || null).toLowerCase().includes(searchTerm.toLowerCase());
       
     const hasProducts = trend.productIds && trend.productIds.length > 0;
     const matchesFilter = 
@@ -384,7 +384,7 @@ export default function ArtisanBlooms() {
                                 title={product.name}
                               >
                                 <img 
-                                  src={product.image || product.imageUrl || product.images?.[0] || ''} 
+                                  src={product.image || product.imageUrl || product.images?.[0] || null} 
                                   className="w-5 h-5 rounded object-cover flex-shrink-0" 
                                   alt="" 
                                 />
@@ -460,7 +460,7 @@ export default function ArtisanBlooms() {
 
       {/* Trend Form Modal (Add / Edit) */}
       {isFormModalOpen && (
-        <div className="fixed inset-0 z-[10000] flex items-center justify-center p-4 bg-black/40 backdrop-blur-sm animate-in fade-in duration-300">
+        <div className="fixed inset-0 z-[10000] flex items-center justify-center p-4 bg-black/40 backdrop-blur-sm animate-in fade-in duration-300" onClick={(e) => { if (e.target === e.currentTarget) { const closeFn = () => setIsFormModalOpen(false); closeFn(); } }}>
           <div className="bg-white rounded-2xl w-full max-w-lg overflow-hidden shadow-2xl animate-in zoom-in-95 duration-300 max-h-[90vh] flex flex-col">
             {/* Modal Header */}
             <div className="p-6 border-b border-gray-100 flex items-center justify-between shrink-0">
@@ -554,7 +554,7 @@ export default function ArtisanBlooms() {
                     return (
                       <div key={prodId} className="flex items-center gap-1.5 bg-gray-50 border border-gray-100 rounded-lg pl-1.5 pr-2 py-1 text-[11px] font-semibold text-gray-800">
                         <img 
-                          src={product.image || product.imageUrl || product.images?.[0] || ''} 
+                          src={product.image || product.imageUrl || product.images?.[0] || null} 
                           className="w-4 h-4 rounded object-cover" 
                           alt="" 
                         />
@@ -630,7 +630,7 @@ export default function ArtisanBlooms() {
                               className="w-full flex items-center gap-2 px-3 py-1.5 hover:bg-gray-50 transition-all text-left group"
                             >
                               <div className="w-6 h-6 rounded bg-gray-50 overflow-hidden flex-shrink-0">
-                                <img src={product.image || product.imageUrl || product.images?.[0] || ''} className="w-full h-full object-cover" alt="" />
+                                <img src={product.image || product.imageUrl || product.images?.[0] || null} className="w-full h-full object-cover" alt="" />
                               </div>
                               <div className="flex-1 min-w-0">
                                 <p className="text-[11px] font-bold text-gray-900 truncate group-hover:text-[#1BAFAF] transition-colors">{product.name}</p>

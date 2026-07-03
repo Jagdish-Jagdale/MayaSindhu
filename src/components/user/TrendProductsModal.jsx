@@ -8,8 +8,11 @@ import React from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { X, Sparkles } from 'lucide-react';
 import ProductCard from './ProductCard';
+import useEscapeKey from '../../hooks/useEscapeKey';
 
 export default function TrendProductsModal({ isOpen, onClose, trend, products }) {
+  useEscapeKey(onClose, isOpen);
+
   if (!isOpen || !trend) return null;
 
   // Hydrate trend products
@@ -18,7 +21,7 @@ export default function TrendProductsModal({ isOpen, onClose, trend, products })
   return (
     <AnimatePresence>
       {isOpen && (
-        <div className="fixed inset-0 z-[10000] flex items-center justify-center p-4">
+        <div className="fixed inset-0 z-[10000] flex items-center justify-center p-4" onClick={(e) => { if (e.target === e.currentTarget) { const closeFn = onClose; closeFn(); } }}>
           {/* Backdrop Overlay */}
           <motion.div
             initial={{ opacity: 0 }}
