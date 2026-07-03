@@ -5,7 +5,7 @@
  */
 
 import { db } from '../firebase';
-import { doc, getDoc, setDoc, updateDoc, serverTimestamp } from 'firebase/firestore';
+import { doc, getDoc, setDoc, updateDoc, serverTimestamp, collection, getDocs, limit, query } from 'firebase/firestore';
 
 export const addToCart = async (user, product, quantity = 1, selectedVariant = null) => {
   if (!user || !product) throw new Error("User or Product missing");
@@ -13,9 +13,29 @@ export const addToCart = async (user, product, quantity = 1, selectedVariant = n
   const productId = product.id?.toString();
   if (!productId) throw new Error("Product ID missing");
 
-  const variantId = selectedVariant?.id;
-  const cartItemId = variantId ? `${productId}_${variantId}` : productId;
+  let activeVariant = selectedVariant;
 
+  // If no variant was explicitly provided, try to find the default one in Firestore
+  if (!activeVariant) {
+    try {
+      const variantsRef = collection(db, 'products', productId, 'variants');
+      const variantsSnap = await getDocs(query(variantsRef, limit(1)));
+      if (!variantsSnap.empty) {
+        const varData = variantsSnap.docs[0].data();
+        activeVariant = { 
+          id: variantsSnap.docs[0].id, 
+          ...varData,
+          size: varData.sizes?.[0] || varData.size || ''
+        };
+      }
+    } catch (e) {
+      // fallback to null
+    }
+  }
+
+  const variantId = activeVariant?.id;
+  const sizeSuffix = activeVariant?.size ? `_${activeVariant.size}` : '';
+  const cartItemId = variantId ? `${productId}_${variantId}${sizeSuffix}` : productId;
   
   const cartItemRef = doc(db, 'users', user.uid, 'cart', cartItemId);
   const cartItemSnap = await getDoc(cartItemRef);
@@ -27,27 +47,27 @@ export const addToCart = async (user, product, quantity = 1, selectedVariant = n
   let itemImage = product.image || product.imageUrl || (product.images && product.images[0]) || '';
   let itemSku = product.sku || '';
 
-  if (selectedVariant) {
+  if (activeVariant) {
     // If a variant is selected, fetch the latest variant data from Firestore
     try {
       const varSnap = await getDoc(doc(db, 'products', productId, 'variants', variantId));
       if (varSnap.exists()) {
         const varData = varSnap.data();
-        stockVal = typeof varData.stock === 'number' ? varData.stock : 0;
+        stockVal = Number(varData.stock) || 0;
         itemPrice = varData.price || varData.actualPrice || 0;
         itemImage = (varData.images && varData.images[0]) || itemImage;
         itemSku = varData.sku || '';
         isUnique = varData.productType === 'Unique';
       } else {
-        stockVal = typeof selectedVariant.stock === 'number' ? selectedVariant.stock : 0;
-        itemPrice = selectedVariant.price || selectedVariant.actualPrice || 0;
-        itemImage = (selectedVariant.images && selectedVariant.images[0]) || itemImage;
-        itemSku = selectedVariant.sku || '';
-        isUnique = selectedVariant.productType === 'Unique';
+        stockVal = Number(activeVariant.stock) || 0;
+        itemPrice = activeVariant.price || activeVariant.actualPrice || 0;
+        itemImage = (activeVariant.images && activeVariant.images[0]) || itemImage;
+        itemSku = activeVariant.sku || '';
+        isUnique = activeVariant.productType === 'Unique';
       }
     } catch (err) {
-      stockVal = typeof selectedVariant.stock === 'number' ? selectedVariant.stock : 0;
-      isUnique = selectedVariant.productType === 'Unique';
+      stockVal = Number(activeVariant.stock) || 0;
+      isUnique = activeVariant.productType === 'Unique';
     }
   } else {
     // Fetch parent product document
@@ -55,15 +75,15 @@ export const addToCart = async (user, product, quantity = 1, selectedVariant = n
     const productSnap = await getDoc(productRef);
     const productData = productSnap.exists() ? productSnap.data() : product;
     isUnique = productData.isUniquePiece === true || productData.productType === 'Unique';
-    stockVal = typeof productData.stock === 'number' ? productData.stock : (isUnique ? 1 : 15);
+    stockVal = typeof productData.stock !== 'undefined' && productData.stock !== '' && !isNaN(Number(productData.stock)) ? Number(productData.stock) : (isUnique ? 1 : 15);
   }
 
   if (stockVal === 0) {
     throw new Error("This product/variant is currently out of stock.");
   }
 
-  const itemName = selectedVariant
-    ? `${product.name || 'Handcrafted Treasure'} (${selectedVariant.color}${selectedVariant.size ? ` - ${selectedVariant.size}` : (selectedVariant.design ? ` - ${selectedVariant.design}` : '')})`
+  const itemName = activeVariant
+    ? `${product.name || 'Handcrafted Treasure'} (${activeVariant.color}${activeVariant.size ? ` - ${activeVariant.size}` : (activeVariant.design ? ` - ${activeVariant.design}` : '')})`
     : (product.name || 'Handcrafted Treasure');
 
   if (cartItemSnap.exists()) {
@@ -95,9 +115,9 @@ export const addToCart = async (user, product, quantity = 1, selectedVariant = n
       image: itemImage,
       qty: targetQty,
       productType: isUnique ? 'Unique' : (product.productType || 'Standard'),
-      color: selectedVariant?.color || '',
-      design: selectedVariant?.design || '',
-      size: selectedVariant?.size || '',
+      color: activeVariant?.color || '',
+      design: activeVariant?.design || '',
+      size: activeVariant?.size || '',
       sku: itemSku,
       addedAt: serverTimestamp()
     });

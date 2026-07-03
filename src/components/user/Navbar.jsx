@@ -58,36 +58,45 @@ export default function Navbar() {
   const [isSearching, setIsSearching] = useState(false);
   const suggestionRef = useRef(null);
 
+  // Client-side cache for all products to keep search ultra-fast
+  const [allProductsCache, setAllProductsCache] = useState([]);
+
+  useEffect(() => {
+    // Fetch all products once on mount
+    const fetchAllProducts = async () => {
+      try {
+        const q = query(collection(db, 'products'));
+        const snapshot = await getDocs(q);
+        const data = snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() }));
+        setAllProductsCache(data);
+      } catch (error) {
+        console.error("Failed to cache products for search", error);
+      }
+    };
+    fetchAllProducts();
+  }, []);
+
   useEffect(() => {
     if (!searchQuery.trim() || searchQuery.length < 1) {
       setSuggestions([]);
       return;
     }
 
-    const fetchSuggestions = async () => {
+    const timer = setTimeout(() => {
       setIsSearching(true);
-      try {
-        const q = query(
-          collection(db, 'products'),
-          limit(20)
-        );
-        const snapshot = await getDocs(q);
-        const allProducts = snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() }));
-        const filtered = allProducts.filter(p => 
-          p.name.toLowerCase().includes(searchQuery.toLowerCase()) ||
-          p.category?.toLowerCase().includes(searchQuery.toLowerCase()) ||
-          p.collection?.toLowerCase().includes(searchQuery.toLowerCase())
-        ).slice(0, 6);
-        setSuggestions(filtered);
-      } catch (err) {
-      } finally {
-        setIsSearching(false);
-      }
-    };
+      const queryLower = searchQuery.toLowerCase();
+      const filtered = allProductsCache.filter(p => 
+        (p.name && p.name.toLowerCase().includes(queryLower)) ||
+        (p.category && p.category.toLowerCase().includes(queryLower)) ||
+        (p.collection && p.collection.toLowerCase().includes(queryLower))
+      );
+      
+      setSuggestions(filtered);
+      setIsSearching(false);
+    }, 150);
 
-    const timer = setTimeout(fetchSuggestions, 300);
     return () => clearTimeout(timer);
-  }, [searchQuery]);
+  }, [searchQuery, allProductsCache]);
 
   useEffect(() => {
     const handleClickOutside = (e) => {
@@ -228,7 +237,7 @@ export default function Navbar() {
                     exit={{ opacity: 0, y: 10 }}
                     className="absolute top-full left-0 right-0 mt-2 bg-white rounded-2xl shadow-2xl border border-gray-100 overflow-hidden z-[1100]"
                   >
-                    <div className="p-2">
+                    <div className="p-2 max-h-[60vh] overflow-y-auto custom-scrollbar">
                       {suggestions.map((p) => (
                         <Link
                           key={p.id}
@@ -237,7 +246,7 @@ export default function Navbar() {
                           className="flex items-center gap-3 p-3 hover:bg-gray-50 rounded-lg transition-colors group/item"
                         >
                           <div className="w-12 h-12 rounded-lg bg-gray-50 overflow-hidden flex-shrink-0 border border-gray-100 p-1">
-                            <img src={p.image || (p.images && p.images[0])} alt="" className="w-full h-full object-contain" />
+                            <img src={p.image || (p.images && p.images[0]) || null} alt="" className="w-full h-full object-contain" />
                           </div>
                           <div className="flex-1 min-w-0">
                             <h4 className="text-xs font-bold text-[#1A1A1A] truncate group-hover/item:text-brand-orange transition-colors">{p.name}</h4>
@@ -376,7 +385,7 @@ export default function Navbar() {
                     exit={{ opacity: 0, y: 8 }}
                     className="mt-2 bg-white rounded-2xl shadow-2xl border border-gray-100 overflow-hidden z-[1100]"
                   >
-                    <div className="p-2">
+                    <div className="p-2 max-h-[60vh] overflow-y-auto custom-scrollbar">
                       {suggestions.map((p) => (
                         <Link
                           key={p.id}
@@ -385,7 +394,7 @@ export default function Navbar() {
                           className="flex items-center gap-3 p-3 hover:bg-gray-50 rounded-lg transition-colors group/item"
                         >
                           <div className="w-10 h-10 rounded-lg bg-gray-50 overflow-hidden flex-shrink-0 border border-gray-100 p-1">
-                            <img src={p.image || (p.images && p.images[0])} alt="" className="w-full h-full object-contain" />
+                            <img src={p.image || (p.images && p.images[0]) || null} alt="" className="w-full h-full object-contain" />
                           </div>
                           <div className="flex-1 min-w-0">
                             <h4 className="text-xs font-bold text-[#1A1A1A] truncate group-hover/item:text-brand-orange transition-colors">{p.name}</h4>

@@ -109,7 +109,7 @@ const UserViewModal = ({ isOpen, onClose, user }) => {
   return (
     <AnimatePresence>
       {isOpen && (
-        <div className="fixed inset-0 z-[100] flex items-center justify-center p-4">
+        <div className="fixed inset-0 z-[100] flex items-center justify-center p-4" onClick={(e) => { if (e.target === e.currentTarget) { const closeFn = onClose; closeFn(); } }}>
           <motion.div
             initial={{ opacity: 0 }}
             animate={{ opacity: 1 }}

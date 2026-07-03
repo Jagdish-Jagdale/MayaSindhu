@@ -1,9 +1,3 @@
-/**
- * File: Banner.jsx
- * Description: Admin configuration manager page handling curated realms lists, banner uploads, workshops setup, and text disclaimers.
- * Work Done: Integrated baseline UI layouts, state boundaries, CSS theme styling, and routing pathways.
- */
-
 import React, { useState, useEffect, useRef } from 'react';
 import { useAdminUI } from '../../../context/AdminUIContext';
 import { db } from '../../../firebase';
@@ -445,6 +439,7 @@ export default function Banner() {
       {selectedBannerImage && (
         <div
           className="fixed inset-0 z-[300] flex items-center justify-center p-4 bg-black/70 backdrop-blur-sm animate-in fade-in duration-300"
+ onClick={(e) => { if (e.target === e.currentTarget) { const closeFn = () => setSelectedBannerImage(null); closeFn(); } }}
           onClick={() => setSelectedBannerImage(null)}
         >
           <div

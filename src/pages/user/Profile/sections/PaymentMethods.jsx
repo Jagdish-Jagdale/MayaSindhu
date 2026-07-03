@@ -204,7 +204,7 @@ export default function PaymentMethods({ user }) {
 
       {/* Add Card Modal */}
       {isModalOpen && (
-        <div className="fixed inset-0 z-[2000] flex items-center justify-center p-4 bg-[#1A1A1A]/10 backdrop-blur-md overflow-y-auto py-10 md:py-20">
+        <div className="fixed inset-0 z-[2000] flex items-center justify-center p-4 bg-[#1A1A1A]/10 backdrop-blur-md overflow-y-auto py-10 md:py-20" onClick={(e) => { if (e.target === e.currentTarget) { const closeFn = () => setIsModalOpen(false); closeFn(); } }}>
           <div className="bg-white w-full max-w-lg rounded-xl shadow-2xl overflow-hidden animate-in fade-in zoom-in duration-300 border border-[#f0dda0]/20 my-auto">
             <div className="p-8 md:p-10 max-h-[90vh] overflow-y-auto no-scrollbar">
               <div className="flex items-center justify-between mb-8 sticky top-0 bg-white z-10 pb-2">
@@ -254,7 +254,7 @@ export default function PaymentMethods({ user }) {
 
       {/* Link Bank Modal */}
       {isBankModalOpen && (
-        <div className="fixed inset-0 z-[2000] flex items-center justify-center p-4 bg-[#1A1A1A]/10 backdrop-blur-md overflow-y-auto py-10 md:py-20">
+        <div className="fixed inset-0 z-[2000] flex items-center justify-center p-4 bg-[#1A1A1A]/10 backdrop-blur-md overflow-y-auto py-10 md:py-20" onClick={(e) => { if (e.target === e.currentTarget) { const closeFn = () => setIsBankModalOpen(false); closeFn(); } }}>
           <div className="bg-white w-full max-w-lg rounded-xl shadow-2xl overflow-hidden animate-in fade-in zoom-in duration-300 border border-[#f0dda0]/20 my-auto">
             <div className="p-8 md:p-10 max-h-[90vh] overflow-y-auto no-scrollbar">
               <div className="flex items-center justify-between mb-8 sticky top-0 bg-white z-10 pb-2">

@@ -22,6 +22,7 @@ import { collection, onSnapshot, query, orderBy, doc, deleteDoc, addDoc, updateD
 import { initializeApp } from 'firebase/app';
 import { getAuth, createUserWithEmailAndPassword } from 'firebase/auth';
 import toast from 'react-hot-toast';
+import { getFriendlyErrorMessage } from '../../utils/firebaseErrors';
 import DeleteConfirmationModal from '../../components/admin/DeleteConfirmationModal';
 
 export default function SuperAdmins() {
@@ -155,7 +156,7 @@ export default function SuperAdmins() {
       }
       setIsModalOpen(false);
     } catch (error) {
-      toast.error(error.message || "Failed to save super administrator");
+      toast.error(getFriendlyErrorMessage(error) || "Failed to save super administrator");
     } finally {
       setIsSaving(false);
     }

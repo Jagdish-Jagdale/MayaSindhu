@@ -25,6 +25,8 @@ import { collection, addDoc, serverTimestamp, query, onSnapshot, getDocs, delete
 import { useAuth } from '../../context/AuthContext';
 
 import toast from 'react-hot-toast';
+import { getFriendlyErrorMessage } from '../../utils/firebaseErrors';
+import useEscapeKey from '../../hooks/useEscapeKey';
 
 
 
@@ -69,6 +71,12 @@ export default function Checkout() {
   const [showLogoutConfirm, setShowLogoutConfirm] = useState(false);
 
   const [consentChecked, setConsentChecked] = useState(false);
+  const [loadingPayment, setLoadingPayment] = useState(false);
+
+  // Modals for escape key
+  useEscapeKey(() => setAddressToDelete(null), !!addressToDelete);
+  useEscapeKey(() => setShowLogoutConfirm(false), showLogoutConfirm);
+  useEscapeKey(() => setErrorModal({ isOpen: false, title: 'Alert', message: '' }), errorModal.isOpen);
 
 
 

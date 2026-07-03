@@ -43,6 +43,9 @@ import {
   ChevronLeft,
   ChevronRight
 } from 'lucide-react';
+import ReactQuill from 'react-quill';
+import 'react-quill/dist/quill.snow.css';
+import { getFriendlyErrorMessage } from '../../../utils/firebaseErrors';
 import toast from 'react-hot-toast';
 import { uploadToCloudinary, deleteFromCloudinary } from '../../../utils/cloudinary';
 import { formatDate } from '../../../utils/dateHelper';
@@ -211,7 +214,7 @@ export default function Blogs() {
       });
       setSelectedFile(null);
     } catch (err) {
-      toast.error(err.message || "Failed to save blog");
+      toast.error(getFriendlyErrorMessage(err) || "Failed to save blog");
     } finally {
       setIsSavingBlog(false);
     }
@@ -237,7 +240,7 @@ export default function Blogs() {
       toast.success("Blog removed from system");
       setIsDeleteModalOpen(false);
     } catch (err) {
-      toast.error("Permission denied or system error");
+      toast.error(getFriendlyErrorMessage(err));
     } finally {
       setIsDeleting(false);
       setBlogToDelete(null);

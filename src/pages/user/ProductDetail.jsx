@@ -30,6 +30,7 @@ import { addToCart } from '../../utils/cartUtils';
 import ProductCard from '../../components/user/ProductCard';
 import useCategories from '../../hooks/useCategories';
 import toast from 'react-hot-toast';
+import { getFriendlyErrorMessage } from '../../utils/firebaseErrors';
 
 const BOUTIQUE_WHATSAPP_NUMBER = "9172020494";
 
@@ -576,7 +577,7 @@ export default function ProductDetail() {
       // Auto-hide success message after 3 seconds
       setTimeout(() => setIsAdded(false), 3000);
     } catch (error) {
-      toast.error(error.message || "Failed to add to cart");
+      toast.error(getFriendlyErrorMessage(error) || "Failed to add to cart");
     } finally {
       setAdding(false);
     }
@@ -734,7 +735,7 @@ export default function ProductDetail() {
                     : 'border-transparent opacity-70 hover:opacity-100'
                     }`}
                 >
-                  <img src={img} alt="" className="w-full h-full object-cover rounded-lg" />
+                  <img src={img || null} alt="" className="w-full h-full object-cover rounded-lg" />
                 </button>
               ))}
             </div>
@@ -871,7 +872,7 @@ export default function ProductDetail() {
                                   }`}
                               >
                                 {thumbnail && (
-                                  <img src={thumbnail} alt="" className="w-16 h-22 object-cover rounded-md" />
+                                  <img src={thumbnail || null} alt="" className="w-16 h-22 object-cover rounded-md" />
                                 )}
                               </button>
                             );

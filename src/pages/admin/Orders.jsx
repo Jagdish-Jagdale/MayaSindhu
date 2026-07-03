@@ -38,6 +38,7 @@ import { createPortal } from 'react-dom';
 import toast from 'react-hot-toast';
 import CustomSelect from '../../components/common/CustomSelect';
 import { handleDownloadInvoice } from '../../utils/invoiceHelper';
+import useEscapeKey from '../../hooks/useEscapeKey';
 
 const parseCurrency = (val) => {
   if (typeof val === 'number') return val;
@@ -650,13 +651,15 @@ export default function Orders() {
 }
 
 const OrderViewModal = ({ order, isOpen, onClose, formatDate }) => {
+  useEscapeKey(onClose, isOpen);
+
   if (!order) return null;
   const config = STATUS_CONFIG[order.status] || STATUS_CONFIG['Pending'];
 
   return (
     <AnimatePresence>
       {isOpen && (
-        <div className="fixed inset-0 z-[100] flex items-center justify-center p-4">
+        <div className="fixed inset-0 z-[100] flex items-center justify-center p-4" onClick={(e) => { if (e.target === e.currentTarget) { const closeFn = () => setIsOpen(false); closeFn(); } }}>
           <motion.div
             initial={{ opacity: 0 }}
             animate={{ opacity: 1 }}

@@ -179,7 +179,7 @@ export default function AddressBook({ user }) {
 
       {/* Address Modal */}
       {isModalOpen && (
-        <div className="fixed inset-0 z-[2000] flex items-center justify-center p-4 bg-black/10 backdrop-blur-md overflow-y-auto py-10 md:py-20">
+        <div className="fixed inset-0 z-[2000] flex items-center justify-center p-4 bg-black/10 backdrop-blur-md overflow-y-auto py-10 md:py-20" onClick={(e) => { if (e.target === e.currentTarget) { const closeFn = () => setIsModalOpen(false); closeFn(); } }}>
           <div className="bg-white w-full max-w-xl rounded-xl shadow-2xl overflow-hidden border border-gray-100 my-auto">
             <div className="p-8 md:p-10 max-h-[90vh] overflow-y-auto no-scrollbar">
               <div className="flex items-center justify-between mb-8 sticky top-0 bg-white z-10 pb-2">

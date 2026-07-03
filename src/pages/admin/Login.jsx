@@ -12,6 +12,7 @@ import { Mail, Lock, AlertCircle, Loader2, ArrowRight, ShoppingCart, Store, Chev
 import toast from 'react-hot-toast';
 import { motion, AnimatePresence } from 'framer-motion';
 import { useAuth } from '../../context/AuthContext';
+import { getFriendlyErrorMessage } from '../../utils/firebaseErrors';
 
 import mstitle from '../../assets/mstitle.png';
 
@@ -82,7 +83,7 @@ const AdminLogin = () => {
       if (err.code === "auth/max-devices-exceeded" || err.message?.includes("Maximum 3 devices")) {
         // Handled by sessionError useEffect to prevent double toast notifications
       } else {
-        triggerError('Invalid email or password.');
+        triggerError(getFriendlyErrorMessage(err));
       }
     } finally {
       setLoginLoading(false);
