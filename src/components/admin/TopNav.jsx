@@ -41,7 +41,7 @@ const PAGE_TITLES = {
   '/admin/settings/purpose': { title: 'Our Manifesto' },
   '/admin/settings/testimonial': { title: 'Testimonials' },
   '/admin/settings/about-us': { title: 'About Us' },
-  '/admin/settings/artician-workshop': { title: 'Artician Workshop' },
+  '/admin/settings/workshops': { title: 'Artician Workshop' },
   '/admin/settings/blogs': { title: 'Blog Management' },
   '/admin-offline/dashboard': { title: 'Shop Dashboard' },
   '/admin-offline/orders': { title: 'Sales Orders' },
