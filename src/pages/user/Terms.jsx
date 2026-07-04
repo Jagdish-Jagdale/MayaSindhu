@@ -6,6 +6,7 @@
 
 import React from 'react';
 import { Shield, Scale, FileText } from 'lucide-react';
+import { motion } from 'framer-motion';
 
 export default function Terms() {
   return (
@@ -53,63 +54,56 @@ export default function Terms() {
       <section className="max-w-6xl mx-auto px-6 py-24">
         <div className="bg-white p-8 md:p-20 rounded-3xl shadow-[0_4px_40px_rgba(0,0,0,0.03)] border border-gray-100">
           <div className="prose prose-brand max-w-none">
-            <h2 className="text-2xl font-bold mb-6">1. Introduction</h2>
             <p className="text-gray-600 leading-relaxed mb-8">
-              Welcome to MayaSindhu. These Terms and Conditions govern your use of our website and the purchase of our handcrafted products. By accessing our site, you agree to follow these terms in full.
+              Welcome to Maya Sindhu. These Terms and Conditions govern your use of our website and the purchase of products from us. By browsing or shopping with us, you agree to abide by the terms listed below.
             </p>
 
-            <h2 className="text-2xl font-bold mb-6">2. Use of the Website</h2>
-            <p className="text-gray-600 leading-relaxed mb-4">
-              You must be at least 18 years of age to use this website. By using this website and by agreeing to these terms and conditions, you warrant and represent that you are at least 18 years of age.
-            </p>
+            <h2 className="text-2xl font-bold mb-6">1. Products & Descriptions</h2>
             <ul className="list-disc pl-6 text-gray-600 space-y-3 mb-8">
-              <li>You may not use our products for any illegal or unauthorized purpose.</li>
-              <li>You must not transmit any worms or viruses or any code of a destructive nature.</li>
-              <li>A breach or violation of any of the Terms will result in an immediate termination of your Services.</li>
+              <li>All items are handcrafted and may vary slightly in design and color.</li>
+              <li>We strive to ensure that product images and descriptions are accurate, but slight variations may occur due to screen settings or handmade nature.</li>
             </ul>
 
-            <h2 className="text-2xl font-bold mb-6">3. Intellectual Property</h2>
-            <p className="text-gray-600 leading-relaxed mb-8">
-              All content included on this site, such as text, graphics, logos, images, and software, is the property of MayaSindhu or its content suppliers and is protected by international copyright laws.
-            </p>
+            <h2 className="text-2xl font-bold mb-6">2. Orders & Payments</h2>
+            <ul className="list-disc pl-6 text-gray-600 space-y-3 mb-8">
+              <li>Orders can be placed through our website or in-store.</li>
+              <li>We accept secure payment methods including UPI, debit/credit cards, and net banking.</li>
+              <li>Prices are listed in INR and are inclusive/exclusive of taxes as specified.</li>
+            </ul>
 
-            <h2 className="text-2xl font-bold mb-6">4. Product Accuracy</h2>
-            <p className="text-gray-600 leading-relaxed mb-8">
-              We attempt to be as accurate as possible with product descriptions and images. However, because our products are handcrafted, slight variations in color, texture, and finish are expected and celebrate the uniqueness of each piece.
-            </p>
+            <h2 className="text-2xl font-bold mb-6">3. Shipping & Delivery</h2>
+            <ul className="list-disc pl-6 text-gray-600 space-y-3 mb-8">
+              <li>Standard delivery timelines range from 5-10 working days depending on location.</li>
+              <li>We are not responsible for delays caused by third-party logistics providers.</li>
+              <li>Tracking details will be shared once your order is dispatched.</li>
+            </ul>
 
-            <h2 className="text-2xl font-bold mb-6">5. Pricing and Availability</h2>
+            <h2 className="text-2xl font-bold mb-6">4. Returns & Exchanges</h2>
+            <ul className="list-disc pl-6 text-gray-600 space-y-3 mb-8">
+              <li>Returns are accepted only for damaged or incorrect items, within 7 days of delivery.</li>
+              <li>To initiate a return, please contact our support team with images and order details.</li>
+              <li>Items must be unused and returned in original packaging.</li>
+              <li>Custom-made or personalized items are not eligible for return or exchange.</li>
+            </ul>
+
+            <h2 className="text-2xl font-bold mb-6">5. Intellectual Property</h2>
             <p className="text-gray-600 leading-relaxed mb-8">
-              Prices for our products are subject to change without notice. We reserve the right at any time to modify or discontinue the Service (or any part or content thereof) without notice at any time.
+              All content on our website, including images, text, and designs, is the property of Maya Sindhu and may not be reused or copied without written permission.
             </p>
 
             <h2 className="text-2xl font-bold mb-6">6. Limitation of Liability</h2>
             <p className="text-gray-600 leading-relaxed mb-8">
-              MayaSindhu shall not be liable for any direct, indirect, incidental, special, or consequential damages that result from the use of, or the inability to use, the materials on this site or the performance of the products.
+              Maya Sindhu is not liable for any indirect, incidental, or consequential damages arising from the use or inability to use our products or website.
             </p>
 
-            <h2 className="text-2xl font-bold mb-6">7. User Accounts</h2>
+            <h2 className="text-2xl font-bold mb-6">7. Changes to Terms</h2>
             <p className="text-gray-600 leading-relaxed mb-8">
-              If you create an account on our website, you are responsible for maintaining the security of your account and you are fully responsible for all activities that occur under the account. You must immediately notify MayaSindhu of any unauthorized uses of your account or any other breaches of security.
+              We reserve the right to modify these Terms & Conditions at any time. Changes will be effective immediately upon posting.
             </p>
 
-            <h2 className="text-2xl font-bold mb-6">8. Governing Law</h2>
-            <p className="text-gray-600 leading-relaxed mb-8">
-              These Terms shall be governed and construed in accordance with the laws of India, without regard to its conflict of law provisions. Our failure to enforce any right or provision of these Terms will not be considered a waiver of those rights.
-            </p>
-
-            <h2 className="text-2xl font-bold mb-6">9. Changes to Terms</h2>
-            <p className="text-gray-600 leading-relaxed mb-8">
-              We reserve the right, at our sole discretion, to modify or replace these Terms at any time. If a revision is material, we will try to provide at least 30 days' notice prior to any new terms taking effect. What constitutes a material change will be determined at our sole discretion.
-            </p>
-
-            <h2 className="text-2xl font-bold mb-6">10. Termination</h2>
-            <p className="text-gray-600 leading-relaxed mb-8">
-              We may terminate or suspend access to our Service immediately, without prior notice or liability, for any reason whatsoever, including without limitation if you breach the Terms.
-            </p>
-
-            <div className="mt-16 p-8 bg-[#FAF9F6] rounded-3xl border border-dashed border-gray-200 text-center">
-              <p className="text-sm text-gray-500 mb-2 italic">Questions about the Terms of Service should be sent to us at</p>
+            <h2 className="text-2xl font-bold mb-6">8. Contact</h2>
+            <div className="mt-8 p-8 bg-[#FAF9F6] rounded-3xl border border-dashed border-gray-200 text-center">
+              <p className="text-sm text-gray-500 mb-2 italic">For queries or support, reach out to us at:</p>
               <a href="mailto:mayasindhuofficial@gmail.com" className="text-brand-orange font-bold hover:underline">mayasindhuofficial@gmail.com</a>
             </div>
           </div>
