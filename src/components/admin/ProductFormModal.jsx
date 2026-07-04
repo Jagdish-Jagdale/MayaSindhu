@@ -7,7 +7,7 @@
 import React, { useState, useEffect } from 'react';
 import { X, Upload, Plus, Trash2, Loader2, Image as ImageIcon, Settings, Info } from 'lucide-react';
 import { db } from '../../firebase';
-import { collection, addDoc, updateDoc, doc, deleteDoc, serverTimestamp, getDocs } from 'firebase/firestore';
+import { collection, addDoc, updateDoc, doc, deleteDoc, serverTimestamp, getDocs, query, orderBy, limit, where } from 'firebase/firestore';
 import useCategories from '../../hooks/useCategories';
 import toast from 'react-hot-toast';
 import { uploadToCloudinary, deleteMultipleFromCloudinary } from '../../utils/cloudinary';
@@ -52,9 +52,30 @@ export default function ProductFormModal({ isOpen, onClose, product = null, init
   const [selectedPathIds, setSelectedPathIds] = useState([]);
   const [removedImageUrls, setRemovedImageUrls] = useState([]);
 
-  const generateProductId = () => {
-    const random10Digits = Math.floor(1000000000 + Math.random() * 9000000000);
-    return `PRD${random10Digits}`;
+  const generateProductId = async () => {
+    try {
+      const q = query(
+        collection(db, 'products'),
+        where('productId', '>=', 'MS-PRD-'),
+        where('productId', '<', 'MS-PRD-\uf8ff'),
+        orderBy('productId', 'desc'),
+        limit(1)
+      );
+      const snap = await getDocs(q);
+      if (!snap.empty) {
+        const lastId = snap.docs[0].data().productId;
+        const match = lastId.match(/MS-PRD-(\d+)/);
+        if (match) {
+          const nextNum = parseInt(match[1], 10) + 1;
+          return `MS-PRD-${String(nextNum).padStart(6, '0')}`;
+        }
+      }
+      return 'MS-PRD-000001';
+    } catch (error) {
+      console.error("Error generating product ID:", error);
+      const randomNum = Math.floor(100000 + Math.random() * 900000);
+      return `MS-PRD-${randomNum}`;
+    }
   };
 
   const generateSKU = (color = '', design = '') => {
@@ -164,8 +185,12 @@ export default function ProductFormModal({ isOpen, onClose, product = null, init
           productDetails: '',
           disclaimer: '',
           brand: '',
-          productId: generateProductId(),
+          productId: 'Generating...',
           faqs: [{ question: '', answer: '' }]
+        });
+
+        generateProductId().then(id => {
+          setFormData(prev => ({ ...prev, productId: id }));
         });
 
         if (initialCategoryId) {

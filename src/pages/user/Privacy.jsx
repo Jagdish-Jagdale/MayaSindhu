@@ -14,8 +14,8 @@ export default function Privacy() {
       {/* Hero Section */}
       <section className="relative h-[60vh] flex items-center justify-center overflow-hidden bg-white border-b border-gray-100">
         <div className="absolute inset-0 z-0">
-          <img 
-            src="https://images.unsplash.com/photo-1557683316-973673baf926?auto=format&fit=crop&q=80&w=2000" 
+          <img
+            src="https://images.unsplash.com/photo-1557683316-973673baf926?auto=format&fit=crop&q=80&w=2000"
             className="w-full h-full object-cover opacity-10"
             alt="Privacy Background"
           />
@@ -31,7 +31,7 @@ export default function Privacy() {
               <ShieldCheck className="text-brand-orange" size={32} />
             </div>
           </motion.div>
-          <motion.h1 
+          <motion.h1
             initial={{ opacity: 0, y: 20 }}
             animate={{ opacity: 1, y: 0 }}
             transition={{ delay: 0.1 }}
