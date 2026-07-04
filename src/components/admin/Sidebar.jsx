@@ -76,7 +76,7 @@ function getMenuItems(pathname) {
         { title: 'Our Manifesto', icon: Heart, path: `${base}/settings/purpose` },
         { title: 'Testimonial', icon: MessageSquareQuote, path: `${base}/settings/testimonial` },
         { title: 'About Us', icon: Users, path: `${base}/settings/about-us` },
-        { title: 'Artician Workshop', icon: Users2, path: `${base}/settings/artician-workshop` },
+        { title: 'Artician Workshop', icon: Users2, path: `${base}/settings/workshops` },
         { title: 'Blogs', icon: FileText, path: `${base}/settings/blogs` },
         { title: 'Disclaimer', icon: FileText, path: `${base}/settings/disclaimer` },
       ]

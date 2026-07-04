@@ -18,6 +18,8 @@ import TrendProductsModal from '../../components/user/TrendProductsModal';
 import { db } from '../../firebase';
 import { collection, onSnapshot, query, orderBy, doc } from 'firebase/firestore';
 import useCategories from '../../hooks/useCategories';
+import { useAuth } from '../../context/AuthContext';
+import toast from 'react-hot-toast';
 import mstitle from '../../assets/mstitle.png';
 
 const SplashScreen = () => (
@@ -93,6 +95,7 @@ const SplashScreen = () => (
 );
 
 export default function Home() {
+  const { user, setLoginModalOpen } = useAuth();
   const [showSplash, setShowSplash] = useState(() => {
     // Only show if the user hasn't seen it in this session
     return !sessionStorage.getItem('mayasindhu_splash_seen');
@@ -122,6 +125,7 @@ export default function Home() {
   const [testimonialsLoading, setTestimonialsLoading] = useState(true);
   const [workshopModalOpen, setWorkshopModalOpen] = useState(false);
   const [selectedWorkshop, setSelectedWorkshop] = useState(null);
+  const [workshopModalInitialTab, setWorkshopModalInitialTab] = useState('details');
   const [selectedTrend, setSelectedTrend] = useState(null);
   const [isTrendModalOpen, setIsTrendModalOpen] = useState(false);
 
@@ -301,13 +305,6 @@ export default function Home() {
       day: 'numeric',
       year: 'numeric'
     }).toUpperCase();
-  };
-
-  const isWorkshopExpired = (dateStr) => {
-    if (!dateStr) return false;
-    const [year, month, day] = dateStr.split('-');
-    const localDeadline = new Date(year, month - 1, day, 23, 59, 59, 999);
-    return new Date() > localDeadline;
   };
 
   const scroll = (ref, direction) => {
@@ -864,7 +861,12 @@ export default function Home() {
                 whileInView={{ opacity: 1, y: 0 }}
                 viewport={{ once: true }}
                 transition={{ delay: idx * 0.1, duration: 0.8 }}
-                className="group"
+                className="group cursor-pointer"
+                onClick={() => {
+                  setSelectedWorkshop(ws);
+                  setWorkshopModalInitialTab('details');
+                  setWorkshopModalOpen(true);
+                }}
               >
                 <div className="relative aspect-video md:aspect-square rounded-2xl overflow-hidden mb-4 md:mb-6 shadow-md md:shadow-lg bg-[#FAF9F6] flex items-center justify-center">
                   {ws.image ? (
@@ -878,23 +880,24 @@ export default function Home() {
                     <p className="text-[9px] font-bold uppercase tracking-widest text-brand-orange">{formatWorkshopDate(ws.date)}</p>
                   </div>
                 </div>
-                <h3 className="text-lg md:text-xl font-sans font-medium text-text-main mb-2 md:mb-3 group-hover:text-brand-orange transition-colors">{ws.name}</h3>
+                <h3 className="text-lg md:text-xl font-sans font-medium text-text-main mb-2 md:mb-3 group-hover:text-brand-orange transition-colors line-clamp-2">{ws.name}</h3>
                 <p className="text-gray-500 text-sm leading-relaxed mb-4 md:mb-6 line-clamp-2">{ws.summary}</p>
-                {isWorkshopExpired(ws.date) ? (
-                  <button disabled className="flex items-center gap-2 text-[10px] font-bold uppercase tracking-[0.2em] text-red-500 opacity-60 cursor-not-allowed">
-                    Registration Closed
-                  </button>
-                ) : (
-                  <button
-                    onClick={() => {
-                      setSelectedWorkshop(ws);
-                      setWorkshopModalOpen(true);
-                    }}
-                    className="flex items-center gap-2 text-[10px] font-bold uppercase tracking-[0.2em] text-text-main hover:gap-4 transition-all"
-                  >
-                    Book Slot <ChevronRight size={14} />
-                  </button>
-                )}
+                <button
+                  onClick={(e) => {
+                    e.stopPropagation();
+                    if (!user) {
+                      toast.error("Please login or sign up first to book a workshop slot.");
+                      setLoginModalOpen(true);
+                      return;
+                    }
+                    setSelectedWorkshop(ws);
+                    setWorkshopModalInitialTab('form');
+                    setWorkshopModalOpen(true);
+                  }}
+                  className="flex items-center gap-2 text-[10px] font-bold uppercase tracking-[0.2em] text-text-main hover:gap-4 transition-all cursor-pointer"
+                >
+                  Book Slot <ChevronRight size={14} />
+                </button>
               </motion.div>
             ))}
           </div>
@@ -913,6 +916,7 @@ export default function Home() {
         isOpen={workshopModalOpen}
         onClose={() => setWorkshopModalOpen(false)}
         workshop={selectedWorkshop}
+        initialTab={workshopModalInitialTab}
       />
 
       {/* Trend Products Modal */}

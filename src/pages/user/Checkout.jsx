@@ -72,6 +72,7 @@ export default function Checkout() {
 
   const [consentChecked, setConsentChecked] = useState(false);
   const [loadingPayment, setLoadingPayment] = useState(false);
+  const [errorModal, setErrorModal] = useState({ isOpen: false, title: 'Alert', message: '' });
 
   // Modals for escape key
   useEscapeKey(() => setAddressToDelete(null), !!addressToDelete);
@@ -133,8 +134,6 @@ export default function Checkout() {
 
 
   const [isFetchingLocation, setIsFetchingLocation] = useState(false);
-
-  const [errorModal, setErrorModal] = useState({ isOpen: false, title: 'Alert', message: '' });
 
   const [isLocationEditable, setIsLocationEditable] = useState(false);
 
@@ -1438,6 +1437,8 @@ export default function Checkout() {
 
     } catch (error) {
 
+      setLoadingPayment(false);
+
       showError("Failed to place order: " + (error.message || error));
 
     }
@@ -1451,6 +1452,8 @@ export default function Checkout() {
     if (!window.Razorpay) {
 
       showError("Razorpay SDK failed to load. Please check your internet connection.");
+
+      setLoadingPayment(false);
 
       return;
 
@@ -1480,8 +1483,6 @@ export default function Checkout() {
 
         description: "Heritage Purchase",
 
-        image: "/src/assets/mstitle.png",
-
         handler: async function (response) {
 
           try {
@@ -1506,11 +1507,15 @@ export default function Checkout() {
 
             } else {
 
+              setLoadingPayment(false);
+
               showError("Payment verification failed. Please contact support.");
 
             }
 
           } catch (error) {
+
+            setLoadingPayment(false);
 
             showError("Payment verification failed: " + error.message);
 
@@ -1524,19 +1529,21 @@ export default function Checkout() {
 
           email: user.email,
 
-          contact: formData.phone
+          contact: formData.phone ? (formData.phone.length === 10 ? '+91' + formData.phone : formData.phone) : ''
 
         },
 
         theme: {
 
-          color: "brand-orange"
+          color: "#EA580C"
 
         },
 
         modal: {
 
           ondismiss: function () {
+
+            setLoadingPayment(false);
 
             showError("Payment was cancelled. Please try again when you're ready to complete the purchase.", "Payment Cancelled");
 
@@ -1554,6 +1561,8 @@ export default function Checkout() {
 
     } catch (error) {
 
+      setLoadingPayment(false);
+
       showError("Failed to initiate payment: " + error.message);
 
     }
@@ -1565,6 +1574,10 @@ export default function Checkout() {
   const handlePlaceOrder = async (overrideMethod = null) => {
 
     if (items.length === 0) return;
+
+
+
+    if (loadingPayment) return;
 
 
 
@@ -1588,9 +1601,19 @@ export default function Checkout() {
 
 
 
+    setLoadingPayment(true);
+
+
+
     const isStockAvailable = await validateStock();
 
-    if (!isStockAvailable) return;
+    if (!isStockAvailable) {
+
+      setLoadingPayment(false);
+
+      return;
+
+    }
 
 
 
@@ -2616,11 +2639,22 @@ export default function Checkout() {
 
                     onClick={() => handlePlaceOrder()}
 
-                    className="bg-brand-orange text-white px-5 py-2 md:px-10 md:py-3.5 font-bold text-xs md:text-[15px] rounded-[2px] shadow-sm hover:shadow transition uppercase"
+                    disabled={loadingPayment}
+
+                    className={`bg-brand-orange text-white px-5 py-2 md:px-10 md:py-3.5 font-bold text-xs md:text-[15px] rounded-[2px] shadow-sm hover:shadow transition uppercase ${
+                      loadingPayment ? 'opacity-50 cursor-not-allowed' : ''
+                    }`}
 
                   >
 
-                    Place Order
+                    {loadingPayment ? (
+                      <span className="flex items-center gap-2 justify-center">
+                        <Loader2 className="animate-spin" size={16} />
+                        Processing...
+                      </span>
+                    ) : (
+                      "Place Order"
+                    )}
 
                   </button>
 

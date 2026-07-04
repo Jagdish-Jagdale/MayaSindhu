@@ -1,6 +1,6 @@
 <?php
-require_once 'config.php';
-require_once 'vendor/autoload.php';
+require_once __DIR__ . '/config.php';
+require_once __DIR__ . '/vendor/autoload.php';
 
 use Razorpay\Api\Api;
 
@@ -38,7 +38,7 @@ try {
         'razorpay_payment_id' => $razorpayPaymentId
     ]);
     
-} catch (Exception $e) {
+} catch (\Throwable $e) {
     http_response_code(400);
     echo json_encode([
         'success' => false,
