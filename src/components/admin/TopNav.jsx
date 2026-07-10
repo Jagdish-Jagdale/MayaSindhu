@@ -60,7 +60,14 @@ const PLACEHOLDERS = ["Products", "Categories", "Users"];
 export default function TopNav({ sidebarOpen, onToggleSidebar, isMobile }) {
   const location = useLocation();
   const navigate = useNavigate();
-  const page = PAGE_TITLES[location.pathname] || { title: 'Admin' };
+  const getPageTitle = (pathname) => {
+    if (PAGE_TITLES[pathname]) return PAGE_TITLES[pathname];
+    if (/\/admin\/settings\/workshops\/[^/]+\/bookings/.test(pathname)) {
+      return { title: 'Workshop Bookings' };
+    }
+    return { title: 'Admin' };
+  };
+  const page = getPageTitle(location.pathname);
   
   const [searchValue, setSearchValue] = useState("");
   const [placeholderIndex, setPlaceholderIndex] = useState(0);

@@ -1514,11 +1514,9 @@ export default function Checkout() {
             }
 
           } catch (error) {
-
+            console.error("Payment verification error:", error);
             setLoadingPayment(false);
-
-            showError("Payment verification failed: " + error.message);
-
+            showError("Payment verification failed. Please try again or contact support if the amount was debited.");
           }
 
         },
@@ -1560,11 +1558,9 @@ export default function Checkout() {
       rzp.open();
 
     } catch (error) {
-
+      console.error("Payment initiation error:", error);
       setLoadingPayment(false);
-
-      showError("Failed to initiate payment: " + error.message);
-
+      showError("Payment gateway is temporarily unavailable. Please try again later or contact support.");
     }
 
   };
