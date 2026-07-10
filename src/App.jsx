@@ -68,6 +68,7 @@ import Testimonial from './pages/admin/settings/Testimonial';
 import AboutUs from './pages/admin/settings/AboutUs';
 import Blogs from './pages/admin/settings/Blogs';
 import Workshops from './pages/admin/settings/Workshops';
+import WorkshopBookings from './pages/admin/settings/WorkshopBookings';
 import AdminDisclaimer from './pages/admin/settings/Disclaimer';
 
 import './App.css';
@@ -109,6 +110,7 @@ function AppContent() {
       <Toaster
         position="top-right"
         reverseOrder={false}
+        containerStyle={{ zIndex: 99999 }}
         toastOptions={{
           style: {
             background: '#fff',
@@ -189,6 +191,7 @@ function AppContent() {
           <Route path="settings/about-us" element={<AboutUs />} />
           <Route path="settings/blogs" element={<Blogs />} />
           <Route path="settings/workshops" element={<Workshops />} />
+          <Route path="settings/workshops/:workshopId/bookings" element={<WorkshopBookings />} />
           <Route path="settings/disclaimer" element={<AdminDisclaimer />} />
         </Route>
 

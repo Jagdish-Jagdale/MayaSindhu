@@ -115,7 +115,59 @@ export default function WorkshopModal({ isOpen, onClose, workshop, initialTab = 
     }
   };
 
-  const handleRazorpayPayment = () => {
+  // Create Razorpay order via backend
+  const createRazorpayOrder = async (amount) => {
+    try {
+      const response = await fetch('/backend/create_order.php', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({
+          amount: amount,
+          currency: 'INR',
+          receipt: 'workshop_' + Date.now()
+        })
+      });
+      const data = await response.json();
+      if (data.success) {
+        return data.order_id;
+      } else {
+        throw new Error(data.error || 'Failed to create order');
+      }
+    } catch (error) {
+      console.error('Error creating Razorpay order:', error);
+      throw error;
+    }
+  };
+
+  // Verify Razorpay payment via backend
+  const verifyRazorpayPayment = async (razorpayOrderId, razorpayPaymentId, razorpaySignature) => {
+    try {
+      const response = await fetch('/backend/verify_payment.php', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({
+          razorpay_order_id: razorpayOrderId,
+          razorpay_payment_id: razorpayPaymentId,
+          razorpay_signature: razorpaySignature
+        })
+      });
+      const data = await response.json();
+      if (data.success) {
+        return true;
+      } else {
+        throw new Error(data.error || 'Payment verification failed');
+      }
+    } catch (error) {
+      console.error('Error verifying payment:', error);
+      throw error;
+    }
+  };
+
+  const handleRazorpayPayment = async () => {
     if (loading) return;
     if (!window.Razorpay) {
       toast.error("Razorpay payment gateway failed to load. Please check your internet connection.");
@@ -125,56 +177,83 @@ export default function WorkshopModal({ isOpen, onClose, workshop, initialTab = 
     setShowConfirmModal(false);
     setLoading(true);
 
-    const options = {
-      key: import.meta.env.VITE_RAZORPAY_KEY_ID || "",
-      amount: totalAmount * 100, // in paise
-      currency: "INR",
-      name: "MayaSindhu Workshops",
-      description: `Workshop Booking: ${workshop.name}`,
-      handler: async function (response) {
-        try {
-          await addDoc(collection(db, 'workshopBookings'), {
-            ...formData,
-            userId: user?.uid || null,
-            workshopName: workshop.name,
-            workshopDate: workshop.date,
-            fees: Number(workshop.fees) || 0,
-            totalAmountPaid: totalAmount,
-            razorpayPaymentId: response.razorpay_payment_id,
-            status: 'paid',
-            createdAt: serverTimestamp()
-          });
-          setSuccess(true);
-          toast.success('Slot booked and payment received!');
-          setTimeout(() => {
-            onClose();
-            setSuccess(false);
-            setFormData({ fullName: '', phone: '', email: '', address: '', participants: '1' });
-          }, 3000);
-        } catch (error) {
-          toast.error("Failed to save booking. Please contact support with payment ID: " + response.razorpay_payment_id);
-        } finally {
-          setLoading(false);
-        }
-      },
-      prefill: {
-        name: formData.fullName,
-        email: formData.email,
-        contact: formData.phone ? (formData.phone.length === 10 ? '+91' + formData.phone : formData.phone) : ''
-      },
-      theme: {
-        color: "#1BAFAF"
-      },
-      modal: {
-        ondismiss: function () {
-          toast.error("Payment cancelled.");
-          setLoading(false);
-        }
-      }
-    };
+    try {
+      // Step 1: Create Razorpay Order via backend
+      const orderId = await createRazorpayOrder(totalAmount * 100);
 
-    const rzp = new window.Razorpay(options);
-    rzp.open();
+      const options = {
+        key: import.meta.env.VITE_RAZORPAY_KEY_ID || "",
+        amount: totalAmount * 100, // in paise
+        currency: "INR",
+        name: "MayaSindhu Workshops",
+        description: `Workshop Booking: ${workshop.name}`,
+        order_id: orderId,
+        handler: async function (response) {
+          try {
+            setLoading(true);
+            // Step 2: Verify payment via backend signature verification
+            const isValid = await verifyRazorpayPayment(
+              response.razorpay_order_id,
+              response.razorpay_payment_id,
+              response.razorpay_signature
+            );
+
+            if (!isValid) {
+              throw new Error("Payment signature verification failed.");
+            }
+
+            // Step 3: Write booking to Firestore only after verification succeeds
+            await addDoc(collection(db, 'workshopBookings'), {
+              ...formData,
+              userId: user?.uid || null,
+              workshopName: workshop.name,
+              workshopDate: workshop.date,
+              fees: Number(workshop.fees) || 0,
+              totalAmountPaid: totalAmount,
+              razorpayOrderId: response.razorpay_order_id,
+              razorpayPaymentId: response.razorpay_payment_id,
+              razorpaySignature: response.razorpay_signature,
+              status: 'paid',
+              createdAt: serverTimestamp()
+            });
+
+            setSuccess(true);
+            toast.success('Slot booked and payment received!');
+            setTimeout(() => {
+              onClose();
+              setSuccess(false);
+              setFormData({ fullName: '', phone: '', email: '', address: '', participants: '1' });
+            }, 3000);
+          } catch (error) {
+            console.error("Payment verification error:", error);
+            toast.error("Payment verification failed. Please contact support if your account was charged.");
+          } finally {
+            setLoading(false);
+          }
+        },
+        prefill: {
+          name: formData.fullName,
+          email: formData.email,
+          contact: formData.phone ? (formData.phone.length === 10 ? '+91' + formData.phone : formData.phone) : ''
+        },
+        theme: {
+          color: "#1BAFAF"
+        },
+        modal: {
+          ondismiss: function () {
+            toast.error("Payment cancelled.");
+            setLoading(false);
+          }
+        }
+      };
+
+      const rzp = new window.Razorpay(options);
+      rzp.open();
+    } catch (error) {
+      console.error("Payment initiation error:", error);
+      toast.error("Payment gateway is temporarily unavailable. Please try again later or contact support.");
+      setLoading(false);
+    }
   };
 
   const handleSubmit = (e) => {
@@ -250,6 +329,20 @@ export default function WorkshopModal({ isOpen, onClose, workshop, initialTab = 
                 <div className="hidden md:block md:w-[45%] md:flex-shrink-0 relative bg-gray-100 md:h-full">
                   <img src={workshop.image} alt={workshop.name} className="w-full h-full object-cover" />
                   <div className="absolute inset-0 bg-gradient-to-t from-black/60 via-transparent to-transparent" />
+                  
+                  {/* Badge at Top Right */}
+                  {isExpired ? (
+                    <div className="absolute top-6 right-6 bg-red-500 text-white px-3.5 py-1.5 rounded-full shadow-md z-10 text-[9px] font-bold uppercase tracking-widest">
+                      Closed
+                    </div>
+                  ) : (
+                    <div className="absolute top-6 right-6 bg-white/90 backdrop-blur-sm px-3.5 py-1.5 rounded-full shadow-sm z-10">
+                      <p className="text-[9px] font-bold uppercase tracking-widest text-brand-orange">
+                        {formatWorkshopDate(workshop.date)}
+                      </p>
+                    </div>
+                  )}
+
                   <div className="absolute bottom-8 left-8 text-white text-left">
                     <p className="text-[10px] font-bold uppercase tracking-widest opacity-80 mb-1">Selected Workshop</p>
                     <h4 className="text-xl font-bold font-outfit leading-tight text-white line-clamp-2">{workshop.name}</h4>
@@ -518,33 +611,33 @@ export default function WorkshopModal({ isOpen, onClose, workshop, initialTab = 
                     initial={{ opacity: 0, scale: 0.95 }}
                     animate={{ opacity: 1, scale: 1 }}
                     exit={{ opacity: 0, scale: 0.95 }}
-                    className="bg-white rounded-3xl p-8 max-w-sm w-full text-center shadow-2xl relative"
+                    className="bg-white rounded-3xl p-8 max-w-sm w-full text-center shadow-2xl relative border border-gray-50"
                   >
-                    <button onClick={() => setShowConfirmModal(false)} className="absolute top-4 right-4 text-gray-400 hover:text-gray-600">
+                    <button onClick={() => setShowConfirmModal(false)} className="absolute top-5 right-5 text-gray-400 hover:text-gray-600 transition-colors cursor-pointer">
                       <X size={18} />
                     </button>
-                    <div className="w-14 h-14 bg-amber-50 text-amber-500 rounded-full flex items-center justify-center mx-auto mb-4 border border-amber-100">
+                    <div className="w-14 h-14 bg-orange-50 text-brand-orange rounded-full flex items-center justify-center mx-auto mb-4 border border-orange-100">
                       <AlertCircle size={28} />
                     </div>
-                    <h4 className="text-lg font-bold text-gray-900 mb-2">Confirm Booking & Pay</h4>
-                    <p className="text-xs text-gray-500 mb-6 leading-relaxed">
-                      You are booking a slot for **{formData.fullName}** ({formData.participants} {formData.participants === '1' ? 'person' : 'people'}) to attend **{workshop.name}**.
+                    <h4 className="text-lg font-bold text-gray-900 mb-2 font-outfit">Confirm Booking & Pay</h4>
+                    <p className="text-xs text-gray-500 mb-6 leading-relaxed font-outfit">
+                      You are booking a slot for <strong className="font-bold text-gray-800">{formData.fullName}</strong> ({formData.participants} {formData.participants === '1' ? 'person' : 'people'}) to attend <strong className="font-bold text-gray-800">{workshop.name}</strong>.
                     </p>
-                    <div className="border-t border-b border-gray-50 py-4 mb-6 flex justify-between items-center px-2">
+                    <div className="border-t border-b border-gray-100 py-4 mb-6 flex justify-between items-center px-2 font-outfit">
                       <span className="text-xs font-bold text-gray-400 uppercase">Total Amount:</span>
-                      <span className="text-xl font-black text-[#1BAFAF]">₹{totalAmount}</span>
+                      <span className="text-xl font-black text-brand-orange">₹{totalAmount}</span>
                     </div>
-                    <div className="flex gap-3">
+                    <div className="flex gap-3 font-outfit">
                       <button
                         onClick={() => setShowConfirmModal(false)}
-                        className="flex-1 py-3 text-xs font-bold text-gray-400 hover:text-gray-600 rounded-xl transition-colors"
+                        className="flex-1 py-3 text-xs font-bold text-gray-400 hover:text-gray-600 rounded-xl transition-colors cursor-pointer"
                       >
                         Cancel
                       </button>
                       <button
                         onClick={handleRazorpayPayment}
                         disabled={loading}
-                        className={`flex-1 bg-[#1BAFAF] hover:bg-[#17a0a0] text-white py-3 rounded-xl text-xs font-bold shadow-lg shadow-[#1BAFAF]/10 transition-all ${loading ? 'opacity-50 cursor-not-allowed' : 'active:scale-95'
+                        className={`flex-1 bg-brand-orange hover:bg-brand-orange/95 text-white py-3 rounded-xl text-xs font-bold shadow-lg shadow-brand-orange/10 transition-all cursor-pointer ${loading ? 'opacity-50 cursor-not-allowed' : 'active:scale-95'
                           }`}
                       >
                         {loading ? 'Processing...' : 'Pay Now'}

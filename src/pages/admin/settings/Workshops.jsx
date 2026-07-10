@@ -5,6 +5,7 @@
  */
 
 import React, { useState, useEffect, useRef } from 'react';
+import { useNavigate } from 'react-router-dom';
 import { useAdminUI } from '../../../context/AdminUIContext';
 import { db } from '../../../firebase';
 import {
@@ -35,7 +36,8 @@ import {
   Image as ImageIcon,
   Link as LinkIcon,
   ChevronLeft,
-  ChevronRight
+  ChevronRight,
+  Eye
 } from 'lucide-react';
 import toast from 'react-hot-toast';
 import { formatDate } from '../../../utils/dateHelper';
@@ -44,6 +46,7 @@ import { uploadToCloudinary, deleteFromCloudinary } from '../../../utils/cloudin
 import DeleteConfirmationModal from '../../../components/admin/DeleteConfirmationModal';
 
 export default function Workshops() {
+  const navigate = useNavigate();
   const { isCollapsed } = useAdminUI();
   const [workshops, setWorkshops] = useState([]);
   const [loading, setLoading] = useState(true);
@@ -303,6 +306,7 @@ export default function Workshops() {
                 <th className="px-4 py-6 text-[14px] font-bold text-[#1BAFAF]">Date</th>
                 <th className="px-4 py-6 text-[14px] font-bold text-[#1BAFAF] max-w-[300px]">Summary</th>
                 <th className="px-4 py-6 text-[14px] font-bold text-[#1BAFAF]">Fees</th>
+                <th className="px-4 py-6 text-[14px] font-bold text-[#1BAFAF] text-center">Bookings</th>
                 <th className="px-10 py-6 text-[14px] font-bold text-[#1BAFAF] text-right">Action</th>
               </tr>
             </thead>
@@ -332,14 +336,26 @@ export default function Workshops() {
                     </span>
                   </td>
                   <td className="px-4 py-6 max-w-[300px]">
-                    <span className="text-[13px] text-gray-500 font-medium" title={workshop.summary}>
-                      {workshop.summary?.length > 50 ? `${workshop.summary.substring(0, 50)}...` : workshop.summary}
+                    <span className="text-[13px] text-gray-500 font-medium truncate block" title={workshop.summary}>
+                      {workshop.summary}
                     </span>
                   </td>
                   <td className="px-4 py-6">
                     <span className="text-[13px] text-gray-900 font-bold whitespace-nowrap">
                       {workshop.fees && Number(workshop.fees) > 0 ? `₹${workshop.fees}` : 'Free'}
                     </span>
+                  </td>
+                  <td className="px-4 py-6 text-center">
+                    <button
+                      onClick={(e) => {
+                        e.stopPropagation();
+                        navigate(`/admin/settings/workshops/${workshop.id}/bookings`);
+                      }}
+                      className="w-9 h-9 inline-flex items-center justify-center bg-[#1BAFAF]/10 text-[#1BAFAF] hover:bg-[#1BAFAF]/20 rounded-xl transition-all active:scale-90"
+                      title="View Booked Users"
+                    >
+                      <Eye size={16} strokeWidth={2.5} />
+                    </button>
                   </td>
                   <td className="px-10 py-6 text-right">
                     <div className="flex items-center justify-end gap-2">
@@ -362,7 +378,7 @@ export default function Workshops() {
                 </tr>
               )) : (
                 <tr>
-                  <td colSpan={6} className="px-10 py-24 text-center">
+                  <td colSpan={8} className="px-10 py-24 text-center">
                     <div className="flex flex-col items-center gap-3">
                       <FileText size={40} className="text-gray-100" />
                       <p className="text-[14px] font-medium text-gray-400 tracking-wide">No workshops found.</p>
