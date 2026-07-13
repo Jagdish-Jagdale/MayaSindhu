@@ -491,7 +491,7 @@ export default function Checkout() {
 
     try {
 
-      const response = await fetch('/backend/create_order.php', {
+      const response = await fetch(`${import.meta.env.VITE_BACKEND_URL}/create_order.php`, {
 
         method: 'POST',
 
@@ -545,7 +545,7 @@ export default function Checkout() {
 
     try {
 
-      const response = await fetch('/backend/verify_payment.php', {
+      const response = await fetch(`${import.meta.env.VITE_BACKEND_URL}/verify_payment.php`, {
 
         method: 'POST',
 
