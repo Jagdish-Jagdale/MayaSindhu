@@ -614,7 +614,7 @@ export default function Categories() {
               <thead>
                 <tr className="border-b border-gray-50 bg-white text-[#1BAFAF]">
                   <th className="px-6 py-4 text-left text-[14px] font-bold w-12 whitespace-nowrap"></th>
-                  <th className="px-6 py-4 text-left text-[14px] font-bold w-20 whitespace-nowrap">Pos.</th>
+                  <th className="px-6 py-4 text-left text-[14px] font-bold w-20 whitespace-nowrap">Sr No</th>
                   <th className="px-6 py-4 text-left text-[14px] font-bold cursor-pointer select-none" onClick={() => handleSort('name')}>
                     <div className="flex items-center gap-1">
                       Category
@@ -684,7 +684,7 @@ export default function Categories() {
                            <GripVertical size={18} className={`transition-colors outline-none focus:outline-none ${canReorder ? 'text-gray-400 cursor-grab hover:text-gray-600 active:cursor-grabbing active:text-gray-800' : 'text-gray-300 opacity-50 cursor-not-allowed'}`} />
                         </td>
                         <td className="px-6 py-4 whitespace-nowrap text-[14px] text-gray-400 font-medium">
-                          {cat.position !== undefined ? cat.position : '---'}
+                          {((currentPage - 1) * rowsPerPage + index + 1).toString().padStart(2, '0')}
                         </td>
                       <td className="px-6 py-4">
                         <div className="flex items-center gap-3">

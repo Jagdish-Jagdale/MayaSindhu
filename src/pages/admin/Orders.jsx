@@ -370,7 +370,7 @@ export default function Orders() {
       {/* Stat Cards Section */}
       <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-6">
         {[
-          { name: 'Total Revenue', value: formatIndianCurrency(orders.reduce((sum, o) => sum + parseCurrency(o.total), 0)), icon: TrendingUp, color: 'text-[#1BAFAF]', bg: 'bg-[#E8F7F7]' },
+          { name: 'Total Revenue', value: formatIndianCurrency(orders.reduce((sum, o) => o.status !== 'Cancelled' ? sum + parseCurrency(o.total) : sum, 0)), icon: TrendingUp, color: 'text-[#1BAFAF]', bg: 'bg-[#E8F7F7]' },
           { name: 'Total Orders', value: orders.length, icon: ShoppingBag, color: 'text-blue-500', bg: 'bg-blue-50' },
           { name: 'Pending Orders', value: orders.filter(o => o.status === 'Pending').length, icon: Clock, color: 'text-amber-500', bg: 'bg-amber-50' },
           { name: 'Delivered Orders', value: orders.filter(o => o.status === 'Delivered').length, icon: CheckCircle2, color: 'text-emerald-500', bg: 'bg-emerald-50' },
@@ -542,7 +542,7 @@ export default function Orders() {
                         className="hover:bg-gray-50/80 group transition-colors cursor-pointer"
                       >
                         <td className="px-6 py-5">
-                          <span className="text-[13px] font-bold text-gray-300">{(index + 1).toString().padStart(2, '0')}</span>
+                          <span className="text-[13px] font-bold text-gray-300">{((currentPage - 1) * rowsPerPage + index + 1).toString().padStart(2, '0')}</span>
                         </td>
                         <td className="px-6 py-5 whitespace-nowrap text-center">
                           <span className="px-3 py-1 bg-[#1BAFAF]/5 text-[#1BAFAF] text-[11px] font-bold rounded-full border border-[#1BAFAF]/10 uppercase tracking-wider group-hover:bg-[#1BAFAF]/10 transition-colors">

@@ -721,10 +721,10 @@ export default function ProductDetail() {
         </div>
 
         {/* Responsive Layout Section */}
-        <div className="flex flex-col lg:flex-row gap-6 lg:gap-8 bg-white p-4 sm:p-6 lg:p-8 rounded-none shadow-sm border border-gray-100/50 mb-8 lg:mb-12">
+        <div className="flex flex-col lg:flex-row items-start gap-6 lg:gap-8 bg-white p-4 sm:p-6 lg:p-8 rounded-none shadow-sm border border-gray-100/50 mb-8 lg:mb-12">
 
           {/* Section 1: Gallery */}
-          <div className="flex flex-col-reverse lg:flex-row gap-4 lg:gap-6 lg:w-[48%] flex-shrink-0">
+          <div className="flex flex-col-reverse lg:flex-row items-start gap-4 lg:gap-6 lg:w-[48%] w-full flex-shrink-0">
             <div className="flex lg:flex-col gap-3 overflow-x-auto lg:overflow-y-auto custom-scrollbar lg:w-24 lg:max-h-[500px] flex-shrink-0 py-1 scroll-smooth">
               {images.map((img, idx) => (
                 <button
@@ -740,33 +740,129 @@ export default function ProductDetail() {
               ))}
             </div>
 
-            <div className="relative flex-1 aspect-square rounded-2xl lg:rounded-3xl overflow-hidden bg-[#F9F8F6] border border-gray-100 group shadow-md flex items-center justify-center p-3 sm:p-4">
-              <div className="w-full h-full relative">
-                <motion.img
-                  key={images[activeImage] || activeImage}
-                  initial={{ opacity: 0 }}
-                  animate={{ opacity: 1 }}
-                  src={images[activeImage]}
-                  alt={product.name}
-                  className="w-full h-full object-contain"
-                />
+            <div className="flex flex-col flex-1 w-full gap-4 sm:gap-6">
+              <div className="relative rounded-2xl lg:rounded-3xl overflow-hidden bg-[#F9F8F6] border border-gray-100 group shadow-md flex p-3 sm:p-4 w-full">
+                <div className="w-full relative">
+                  <motion.img
+                    key={images[activeImage] || activeImage}
+                    initial={{ opacity: 0 }}
+                    animate={{ opacity: 1 }}
+                    src={images[activeImage]}
+                    alt={product.name}
+                    className="w-full h-auto object-contain block"
+                  />
+                </div>
+
+                {stockVal === 0 && (
+                  <div className="absolute inset-0 bg-white/20 backdrop-blur-[1px] flex items-center justify-center pointer-events-none z-10">
+                    <span className="text-[#DC2626] font-black text-xl sm:text-2xl tracking-widest uppercase text-center px-4">
+                      {isUnique ? "SOLD OUT" : "OUT OF STOCK"}
+                    </span>
+                  </div>
+                )}
+
+                <button
+                  onClick={handleWishlist}
+                  className={`absolute top-4 right-4 p-2.5 rounded-full shadow-xl transition-all active:scale-90 ${isWishlisted ? 'bg-white text-red-500' : 'bg-white/80 backdrop-blur-sm text-gray-400 hover:text-red-500'
+                    }`}
+                >
+                  <Heart size={18} fill={isWishlisted ? "currentColor" : "none"} />
+                </button>
               </div>
 
-              {stockVal === 0 && (
-                <div className="absolute inset-0 bg-white/20 backdrop-blur-[1px] flex items-center justify-center pointer-events-none z-10">
-                  <span className="text-[#DC2626] font-black text-xl sm:text-2xl tracking-widest uppercase text-center px-4">
-                    {isUnique ? "SOLD OUT" : "OUT OF STOCK"}
-                  </span>
-                </div>
-              )}
+              <div>
+                <p className="text-[10px] sm:text-xs font-black uppercase tracking-wider text-gray-400 mb-1">Disclaimer</p>
+                <p className="text-gray-500 text-[11px] sm:text-xs font-medium leading-relaxed italic">
+                  {product.disclaimer || globalDisclaimer}
+                </p>
+              </div>
 
-              <button
-                onClick={handleWishlist}
-                className={`absolute top-4 right-4 p-2.5 rounded-full shadow-xl transition-all active:scale-90 ${isWishlisted ? 'bg-white text-red-500' : 'bg-white/80 backdrop-blur-sm text-gray-400 hover:text-red-500'
-                  }`}
-              >
-                <Heart size={18} fill={isWishlisted ? "currentColor" : "none"} />
-              </button>
+              {/* Actions */}
+              <div className="space-y-4 sm:space-y-6">
+                <div className="flex items-center justify-between bg-[#FDFBF7] p-3 sm:p-4 rounded-2xl border border-orange-50">
+                  <span className="text-[9px] sm:text-[10px] font-black uppercase tracking-[0.2em] text-[#1A1A1A]">Quantity</span>
+                  <div className="flex items-center bg-white rounded-xl shadow-sm p-1 border border-gray-100">
+                    <button
+                      onClick={() => setQuantity(Math.max(1, quantity - 1))}
+                      disabled={isUnique || stockVal === 0}
+                      className={`p-1.5 transition-colors ${(isUnique || stockVal === 0) ? 'text-gray-200 cursor-not-allowed' : 'text-gray-400 hover:text-black'}`}
+                    >
+                      <Minus size={14} />
+                    </button>
+                    <span className="w-8 sm:w-12 text-center font-bold text-sm sm:text-base">{stockVal === 0 ? 0 : quantity}</span>
+                    <button
+                      onClick={() => {
+                        if (isUnique) return;
+                        if (quantity < stockVal) {
+                          setQuantity(quantity + 1);
+                        } else {
+                          toast.error(`Only ${stockVal} items available in stock.`);
+                        }
+                      }}
+                      disabled={isUnique || quantity >= stockVal || stockVal === 0}
+                      className={`p-1.5 transition-colors ${(isUnique || quantity >= stockVal || stockVal === 0) ? 'text-gray-200 cursor-not-allowed' : 'text-gray-400 hover:text-black'}`}
+                    >
+                      <Plus size={14} />
+                    </button>
+                  </div>
+                </div>
+
+                {stockVal === 0 ? (
+                  <div className="space-y-3">
+                    <button
+                      onClick={handleNotifyMe}
+                      className="w-full py-3.5 sm:py-4 rounded-2xl font-sans font-black text-[10px] uppercase tracking-[0.2em] transition-all active:scale-95 bg-[#F1F5F9] hover:bg-[#E2E8F0] text-[#1E293B] flex items-center justify-center cursor-pointer shadow-sm hover:shadow"
+                    >
+                      Notify Me
+                    </button>
+                    <a
+                      href={`https://wa.me/${BOUTIQUE_WHATSAPP_NUMBER}?text=Hello,%20I'm%20interested%20in%20inquiring%20about%20the%20out-of-stock%20product%20"${encodeURIComponent(product.name)}".%20Please%20let%20me%20know%20when%20it's%20back%20in%20stock.%20Link:%20${encodeURIComponent(window.location.href)}`}
+                      target="_blank"
+                      rel="noopener noreferrer"
+                      className="w-full py-3.5 sm:py-4 rounded-2xl font-sans font-black text-[9px] sm:text-[10px] uppercase tracking-[0.2em] transition-all active:scale-95 shadow-md flex items-center justify-center gap-2 bg-[#25D366] hover:bg-[#128C7E] text-white shadow-emerald-500/10 cursor-pointer"
+                    >
+                      <svg viewBox="0 0 24 24" width="16" height="16" fill="currentColor" className="flex-shrink-0">
+                        <path d="M12.012 2c-5.506 0-9.97 4.463-9.97 9.97 0 1.76.459 3.477 1.332 4.995L2 22l5.176-1.357c1.477.807 3.137 1.233 4.832 1.233 5.506 0 9.97-4.463 9.97-9.97 0-2.657-1.034-5.155-2.91-7.033A9.907 9.907 0 0012.012 2zm5.79 14.195c-.24.675-1.18 1.312-1.63 1.4-1.035.2-2.385.2-3.87-.417-2.18-.9-4.08-3.08-4.78-4.017-.15-.2-.84-1.117-.84-2.133 0-1.017.53-.19.72-.39.19-.2.39-.49.49-.69.1-.2.05-.39-.025-.54-.075-.15-.675-1.625-.925-2.225-.24-.58-.49-.5-.675-.51-.175-.01-.375-.01-.58-.01-.2 0-.53.075-.81.38-.28.3-.1.1.1 1.07.1 1.07 1.04 2.1 1.5 2.76 1.46 2.05 3.19 3.525 5.52 4.39 1.13.42 2.02.48 2.72.38.78-.12 2.385-.975 2.725-1.925.34-.95.34-1.76.24-1.925-.1-.175-.38-.275-.8-.475z" />
+                      </svg>
+                      Inquire on WhatsApp
+                    </a>
+                  </div>
+                ) : (
+                  <div className="space-y-3">
+                    <div className="grid grid-cols-2 gap-3 sm:gap-4">
+                      <button
+                        onClick={alreadyInBag ? () => setCartOpen(true) : handleAddToCart}
+                        disabled={adding}
+                        className={`flex items-center justify-center gap-2 py-3.5 sm:py-4 rounded-2xl font-sans font-black text-[9px] sm:text-[10px] uppercase tracking-[0.2em] transition-all active:scale-95 ${alreadyInBag
+                          ? 'bg-[#1A1A1A] text-white hover:bg-black shadow-lg shadow-black/10'
+                          : 'bg-white border-2 border-brand-orange text-brand-orange hover:bg-brand-orange-light'
+                          }`}
+                      >
+                        {adding ? <Loader2 className="animate-spin" size={14} /> : alreadyInBag ? <CheckCircle2 size={16} /> : <ShoppingBag size={16} />}
+                        {alreadyInBag ? 'Go to Bag' : 'Add to Bag'}
+                      </button>
+                      <button
+                        onClick={handleBuyNow}
+                        disabled={adding}
+                        className="py-3.5 sm:py-4 rounded-2xl font-sans font-black text-[9px] sm:text-[10px] uppercase tracking-[0.2em] transition-all active:scale-95 shadow-md flex items-center justify-center gap-2 bg-brand-orange text-white hover:bg-brand-orange-dark shadow-brand-orange/10"
+                      >
+                        {adding ? <Loader2 className="animate-spin" size={14} /> : 'Buy Now'}
+                      </button>
+                    </div>
+                    <a
+                      href={`https://wa.me/${BOUTIQUE_WHATSAPP_NUMBER}?text=Hello,%20I'm%20interested%20in%20purchasing%20the%20product%20"${encodeURIComponent(product.name)}".%20Please%20provide%20more%20details.%20Link:%20${encodeURIComponent(window.location.href)}`}
+                      target="_blank"
+                      rel="noopener noreferrer"
+                      className="w-full py-3.5 sm:py-4 rounded-2xl font-sans font-black text-[9px] sm:text-[10px] uppercase tracking-[0.2em] transition-all active:scale-95 shadow-md flex items-center justify-center gap-2 bg-[#25D366] hover:bg-[#128C7E] text-white shadow-emerald-500/10 cursor-pointer"
+                    >
+                      <svg viewBox="0 0 24 24" width="16" height="16" fill="currentColor" className="flex-shrink-0">
+                        <path d="M12.012 2c-5.506 0-9.97 4.463-9.97 9.97 0 1.76.459 3.477 1.332 4.995L2 22l5.176-1.357c1.477.807 3.137 1.233 4.832 1.233 5.506 0 9.97-4.463 9.97-9.97 0-2.657-1.034-5.155-2.91-7.033A9.907 9.907 0 0012.012 2zm5.79 14.195c-.24.675-1.18 1.312-1.63 1.4-1.035.2-2.385.2-3.87-.417-2.18-.9-4.08-3.08-4.78-4.017-.15-.2-.84-1.117-.84-2.133 0-1.017.53-.19.72-.39.19-.2.39-.49.49-.69.1-.2.05-.39-.025-.54-.075-.15-.675-1.625-.925-2.225-.24-.58-.49-.5-.675-.51-.175-.01-.375-.01-.58-.01-.2 0-.53.075-.81.38-.28.3-.1.1.1 1.07.1 1.07 1.04 2.1 1.5 2.76 1.46 2.05 3.19 3.525 5.52 4.39 1.13.42 2.02.48 2.72.38.78-.12 2.385-.975 2.725-1.925.34-.95.34-1.76.24-1.925-.1-.175-.38-.275-.8-.475z" />
+                      </svg>
+                      Order on WhatsApp
+                    </a>
+                  </div>
+                )}
+              </div>
             </div>
           </div>
 
@@ -967,100 +1063,10 @@ export default function ProductDetail() {
                 </div>
               )}
 
-              <div className="mb-6 lg:mb-8 py-4 border-t border-gray-100">
-                <p className="text-[10px] sm:text-xs font-black uppercase tracking-wider text-gray-400 mb-1.5">Disclaimer</p>
-                <p className="text-gray-500 text-xs sm:text-sm font-medium leading-relaxed italic">
-                  {product.disclaimer || globalDisclaimer}
-                </p>
-              </div>
+
             </div>
 
-            {/* Actions */}
-            <div className="space-y-4 sm:space-y-6 mt-auto">
-              <div className="flex items-center justify-between bg-[#FDFBF7] p-3 sm:p-4 rounded-2xl border border-orange-50">
-                <span className="text-[9px] sm:text-[10px] font-black uppercase tracking-[0.2em] text-[#1A1A1A]">Quantity</span>
-                <div className="flex items-center bg-white rounded-xl shadow-sm p-1 border border-gray-100">
-                  <button
-                    onClick={() => setQuantity(Math.max(1, quantity - 1))}
-                    disabled={isUnique || stockVal === 0}
-                    className={`p-1.5 transition-colors ${(isUnique || stockVal === 0) ? 'text-gray-200 cursor-not-allowed' : 'text-gray-400 hover:text-black'}`}
-                  >
-                    <Minus size={14} />
-                  </button>
-                  <span className="w-8 sm:w-12 text-center font-bold text-sm sm:text-base">{stockVal === 0 ? 0 : quantity}</span>
-                  <button
-                    onClick={() => {
-                      if (isUnique) return;
-                      if (quantity < stockVal) {
-                        setQuantity(quantity + 1);
-                      } else {
-                        toast.error(`Only ${stockVal} items available in stock.`);
-                      }
-                    }}
-                    disabled={isUnique || quantity >= stockVal || stockVal === 0}
-                    className={`p-1.5 transition-colors ${(isUnique || quantity >= stockVal || stockVal === 0) ? 'text-gray-200 cursor-not-allowed' : 'text-gray-400 hover:text-black'}`}
-                  >
-                    <Plus size={14} />
-                  </button>
-                </div>
-              </div>
 
-              {stockVal === 0 ? (
-                <div className="space-y-3">
-                  <button
-                    onClick={handleNotifyMe}
-                    className="w-full py-3.5 sm:py-4 rounded-2xl font-sans font-black text-[10px] uppercase tracking-[0.2em] transition-all active:scale-95 bg-[#F1F5F9] hover:bg-[#E2E8F0] text-[#1E293B] flex items-center justify-center cursor-pointer shadow-sm hover:shadow"
-                  >
-                    Notify Me
-                  </button>
-                  <a
-                    href={`https://wa.me/${BOUTIQUE_WHATSAPP_NUMBER}?text=Hello,%20I'm%20interested%20in%20inquiring%20about%20the%20out-of-stock%20product%20"${encodeURIComponent(product.name)}".%20Please%20let%20me%20know%20when%20it's%20back%20in%20stock.%20Link:%20${encodeURIComponent(window.location.href)}`}
-                    target="_blank"
-                    rel="noopener noreferrer"
-                    className="w-full py-3.5 sm:py-4 rounded-2xl font-sans font-black text-[9px] sm:text-[10px] uppercase tracking-[0.2em] transition-all active:scale-95 shadow-md flex items-center justify-center gap-2 bg-[#25D366] hover:bg-[#128C7E] text-white shadow-emerald-500/10 cursor-pointer"
-                  >
-                    <svg viewBox="0 0 24 24" width="16" height="16" fill="currentColor" className="flex-shrink-0">
-                      <path d="M12.012 2c-5.506 0-9.97 4.463-9.97 9.97 0 1.76.459 3.477 1.332 4.995L2 22l5.176-1.357c1.477.807 3.137 1.233 4.832 1.233 5.506 0 9.97-4.463 9.97-9.97 0-2.657-1.034-5.155-2.91-7.033A9.907 9.907 0 0012.012 2zm5.79 14.195c-.24.675-1.18 1.312-1.63 1.4-1.035.2-2.385.2-3.87-.417-2.18-.9-4.08-3.08-4.78-4.017-.15-.2-.84-1.117-.84-2.133 0-1.017.53-.19.72-.39.19-.2.39-.49.49-.69.1-.2.05-.39-.025-.54-.075-.15-.675-1.625-.925-2.225-.24-.58-.49-.5-.675-.51-.175-.01-.375-.01-.58-.01-.2 0-.53.075-.81.38-.28.3-.1.1.1 1.07.1 1.07 1.04 2.1 1.5 2.76 1.46 2.05 3.19 3.525 5.52 4.39 1.13.42 2.02.48 2.72.38.78-.12 2.385-.975 2.725-1.925.34-.95.34-1.76.24-1.925-.1-.175-.38-.275-.8-.475z" />
-                    </svg>
-                    Inquire on WhatsApp
-                  </a>
-                </div>
-              ) : (
-                <div className="space-y-3">
-                  <div className="grid grid-cols-2 gap-3 sm:gap-4">
-                    <button
-                      onClick={alreadyInBag ? () => setCartOpen(true) : handleAddToCart}
-                      disabled={adding}
-                      className={`flex items-center justify-center gap-2 py-3.5 sm:py-4 rounded-2xl font-sans font-black text-[9px] sm:text-[10px] uppercase tracking-[0.2em] transition-all active:scale-95 ${alreadyInBag
-                        ? 'bg-[#1A1A1A] text-white hover:bg-black shadow-lg shadow-black/10'
-                        : 'bg-white border-2 border-brand-orange text-brand-orange hover:bg-brand-orange-light'
-                        }`}
-                    >
-                      {adding ? <Loader2 className="animate-spin" size={14} /> : alreadyInBag ? <CheckCircle2 size={16} /> : <ShoppingBag size={16} />}
-                      {alreadyInBag ? 'Go to Bag' : 'Add to Bag'}
-                    </button>
-                    <button
-                      onClick={handleBuyNow}
-                      disabled={adding}
-                      className="py-3.5 sm:py-4 rounded-2xl font-sans font-black text-[9px] sm:text-[10px] uppercase tracking-[0.2em] transition-all active:scale-95 shadow-md flex items-center justify-center gap-2 bg-brand-orange text-white hover:bg-brand-orange-dark shadow-brand-orange/10"
-                    >
-                      {adding ? <Loader2 className="animate-spin" size={14} /> : 'Buy Now'}
-                    </button>
-                  </div>
-                  <a
-                    href={`https://wa.me/${BOUTIQUE_WHATSAPP_NUMBER}?text=Hello,%20I'm%20interested%20in%20purchasing%20the%20product%20"${encodeURIComponent(product.name)}".%20Please%20provide%20more%20details.%20Link:%20${encodeURIComponent(window.location.href)}`}
-                    target="_blank"
-                    rel="noopener noreferrer"
-                    className="w-full py-3.5 sm:py-4 rounded-2xl font-sans font-black text-[9px] sm:text-[10px] uppercase tracking-[0.2em] transition-all active:scale-95 shadow-md flex items-center justify-center gap-2 bg-[#25D366] hover:bg-[#128C7E] text-white shadow-emerald-500/10 cursor-pointer"
-                  >
-                    <svg viewBox="0 0 24 24" width="16" height="16" fill="currentColor" className="flex-shrink-0">
-                      <path d="M12.012 2c-5.506 0-9.97 4.463-9.97 9.97 0 1.76.459 3.477 1.332 4.995L2 22l5.176-1.357c1.477.807 3.137 1.233 4.832 1.233 5.506 0 9.97-4.463 9.97-9.97 0-2.657-1.034-5.155-2.91-7.033A9.907 9.907 0 0012.012 2zm5.79 14.195c-.24.675-1.18 1.312-1.63 1.4-1.035.2-2.385.2-3.87-.417-2.18-.9-4.08-3.08-4.78-4.017-.15-.2-.84-1.117-.84-2.133 0-1.017.53-.19.72-.39.19-.2.39-.49.49-.69.1-.2.05-.39-.025-.54-.075-.15-.675-1.625-.925-2.225-.24-.58-.49-.5-.675-.51-.175-.01-.375-.01-.58-.01-.2 0-.53.075-.81.38-.28.3-.1.1.1 1.07.1 1.07 1.04 2.1 1.5 2.76 1.46 2.05 3.19 3.525 5.52 4.39 1.13.42 2.02.48 2.72.38.78-.12 2.385-.975 2.725-1.925.34-.95.34-1.76.24-1.925-.1-.175-.38-.275-.8-.475z" />
-                    </svg>
-                    Order on WhatsApp
-                  </a>
-                </div>
-              )}
-            </div>
           </div>
         </div>
 
