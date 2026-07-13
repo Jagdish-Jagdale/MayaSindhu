@@ -9,7 +9,7 @@ export default defineConfig({
   server: {
     proxy: {
       '/backend': {
-        target: 'http://localhost:8000',
+        target: 'https://mayasindu-backend.onrender.com',
         changeOrigin: true,
       }
     }
