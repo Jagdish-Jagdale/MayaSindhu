@@ -254,7 +254,7 @@ function ModalInput({ label, value, onChange, type = 'text' }) {
         required
         value={value}
         onChange={(e) => onChange(e.target.value)}
-        className="w-full bg-white border-2 border-gray-50 rounded-xl px-5 py-3.5 text-sm font-bold text-[#1A1A1A] focus:outline-none focus:border-brand-orange transition-all"
+        className="w-full bg-white border-2 border-gray-200 rounded-xl px-5 py-3.5 text-sm font-bold text-[#1A1A1A] focus:outline-none focus:border-brand-orange transition-all"
       />
     </div>
   );

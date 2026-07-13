@@ -252,6 +252,9 @@ export default function Reports() {
         } else if (getProductCategory(o.productName) !== selectedCategory) return false;
       }
 
+      // 6. Exclude Cancelled Orders
+      if (o.status === 'Cancelled') return false;
+
       return true;
     });
   }, [allOrders, timeRange, startDate, endDate, selectedCustomer, selectedProduct, selectedCategory, products]);

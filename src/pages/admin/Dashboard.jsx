@@ -102,7 +102,7 @@ export default function Dashboard() {
       const orders = snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() }));
       
       // Calculate Total Revenue
-      const totalRev = orders.reduce((sum, order) => sum + parseCurrency(order.total), 0);
+      const totalRev = orders.reduce((sum, order) => order.status !== 'Cancelled' ? sum + parseCurrency(order.total) : sum, 0);
       
       // Calculate New Orders (last 30 days)
       const thirtyDaysAgo = new Date();
@@ -131,7 +131,7 @@ export default function Dashboard() {
         );
         return {
           name: label,
-          revenue: dayOrders.reduce((sum, o) => sum + parseCurrency(o.total), 0)
+          revenue: dayOrders.reduce((sum, o) => o.status !== 'Cancelled' ? sum + parseCurrency(o.total) : sum, 0)
         };
       });
       setSalesData(trend);
