@@ -187,7 +187,7 @@ function AppContent() {
           <Route path="settings/artisan-blooms" element={<ArtisanBlooms />} />
           <Route path="settings/stories" element={<Stories />} />
           <Route path="settings/purpose" element={<Purpose />} />
-          <Route path="settings/testimonials" element={<Testimonial />} />
+          <Route path="settings/testimonial" element={<Testimonial />} />
           <Route path="settings/about-us" element={<AboutUs />} />
           <Route path="settings/blogs" element={<Blogs />} />
           <Route path="settings/workshops" element={<Workshops />} />

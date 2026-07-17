@@ -270,9 +270,12 @@ export default function Home() {
 
   // Load Testimonials from Firestore
   useEffect(() => {
-    const q = query(collection(db, 'testimonials'), orderBy('createdAt', 'desc'));
+    const q = query(collection(db, 'testimonials'));
     const unsubscribe = onSnapshot(q, (snapshot) => {
-      const data = snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() }));
+      let data = snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() }));
+      data = data
+        .filter(t => t.status === 'Active')
+        .sort((a, b) => (a.displayOrder || 0) - (b.displayOrder || 0));
       setTestimonials(data);
       setTestimonialsLoading(false);
     }, (error) => {

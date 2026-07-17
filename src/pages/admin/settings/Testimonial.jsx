@@ -69,7 +69,9 @@ export default function Testimonial() {
     location: '',
     rating: 5,
     text: '',
-    imageUrl: ''
+    imageUrl: '',
+    status: 'Active',
+    displayOrder: 0
   });
   const [selectedFile, setSelectedFile] = useState(null);
   const fileInputRef = useRef(null);
@@ -101,7 +103,9 @@ export default function Testimonial() {
         location: testimonial.location || '',
         rating: testimonial.rating || 5,
         text: testimonial.text || '',
-        imageUrl: testimonial.imageUrl || ''
+        imageUrl: testimonial.imageUrl || '',
+        status: testimonial.status || 'Active',
+        displayOrder: testimonial.displayOrder ?? 0
       });
     } else {
       setEditingTestimonial(null);
@@ -110,7 +114,9 @@ export default function Testimonial() {
         location: '',
         rating: 5,
         text: '',
-        imageUrl: 'https://images.unsplash.com/photo-1594744803329-a584af1cae21?w=400&q=80'
+        imageUrl: '',
+        status: 'Active',
+        displayOrder: 0
       });
     }
     setIsModalOpen(true);
@@ -136,6 +142,8 @@ export default function Testimonial() {
 
       if (selectedFile) {
         finalImageUrl = await uploadToCloudinary(selectedFile, 'Testimonials');
+      } else if (!finalImageUrl) {
+        finalImageUrl = `https://ui-avatars.com/api/?name=${encodeURIComponent(formData.name)}&background=random&color=fff&size=200`;
       }
 
       if (editingTestimonial) {
@@ -147,6 +155,7 @@ export default function Testimonial() {
         await updateDoc(doc(db, 'testimonials', editingTestimonial.id), {
           ...formData,
           imageUrl: finalImageUrl,
+          displayOrder: Number(formData.displayOrder),
           updatedAt: serverTimestamp()
         });
         toast.success("Testimonial updated successfully!");
@@ -154,6 +163,7 @@ export default function Testimonial() {
         await addDoc(collection(db, 'testimonials'), {
           ...formData,
           imageUrl: finalImageUrl,
+          displayOrder: Number(formData.displayOrder),
           createdAt: serverTimestamp(),
           updatedAt: serverTimestamp()
         });
@@ -277,20 +287,21 @@ export default function Testimonial() {
           <table className="w-full text-left">
             <thead>
               <tr className="border-b border-gray-50">
-                <th className="pl-10 pr-4 py-6 text-[14px] font-bold text-[#1BAFAF] whitespace-nowrap">Sr No</th>
+                <th className="pl-10 pr-4 py-6 text-[14px] font-bold text-[#1BAFAF] whitespace-nowrap">Order</th>
                 <th className="px-4 py-6 text-[14px] font-bold text-[#1BAFAF]">Image</th>
                 <th className="px-4 py-6 text-[14px] font-bold text-[#1BAFAF] min-w-[150px]">Name</th>
                 <th className="px-4 py-6 text-[14px] font-bold text-[#1BAFAF]">Location</th>
                 <th className="px-4 py-6 text-[14px] font-bold text-[#1BAFAF]">Rating</th>
                 <th className="px-4 py-6 text-[14px] font-bold text-[#1BAFAF] min-w-[250px]">Message</th>
+                <th className="px-4 py-6 text-[14px] font-bold text-[#1BAFAF]">Status</th>
                 <th className="px-10 py-6 text-[14px] font-bold text-[#1BAFAF] text-right">Action</th>
               </tr>
             </thead>
             <tbody className="divide-y divide-gray-50/50">
               {filteredTestimonials.length > 0 ? filteredTestimonials.slice((currentPage - 1) * rowsPerPage, currentPage * rowsPerPage).map((t, idx) => (
                 <tr key={t.id} className="hover:bg-gray-50/40 transition-colors group cursor-pointer">
-                  <td className="pl-10 pr-4 py-6 text-[14px] font-medium text-gray-400">
-                    {(idx + 1).toString().padStart(2, '0')}
+                  <td className="pl-10 pr-4 py-6 text-[14px] font-bold text-gray-900">
+                    {t.displayOrder ?? 0}
                   </td>
                   <td className="px-4 py-6">
                     <div className="w-12 h-12 rounded-xl bg-gray-50 overflow-hidden border border-gray-100 flex-shrink-0 flex items-center justify-center">
@@ -324,6 +335,13 @@ export default function Testimonial() {
                   <td className="px-4 py-6">
                     <span className="text-[13px] text-gray-500 font-medium line-clamp-2 italic" title={t.text}>
                       "{t.text?.length > 100 ? `${t.text.substring(0, 100)}...` : t.text}"
+                    </span>
+                  </td>
+                  <td className="px-4 py-6">
+                    <span className={`px-3 py-1 rounded-full text-[11px] font-bold uppercase tracking-wider ${
+                      t.status === 'Active' ? 'bg-emerald-50 text-emerald-600' : 'bg-gray-100 text-gray-500'
+                    }`}>
+                      {t.status || 'Active'}
                     </span>
                   </td>
                   <td className="px-10 py-6 text-right">
@@ -436,6 +454,41 @@ export default function Testimonial() {
                             className="w-full bg-gray-50 border-none pl-11 pr-5 py-3.5 text-[14px] font-semibold text-gray-800 rounded-xl focus:ring-2 focus:ring-[#1BAFAF]/10 outline-none transition-all shadow-sm"
                           />
                         </div>
+                      </div>
+                    </div>
+
+                    <div className="grid grid-cols-2 gap-4">
+                      <div className="space-y-1.5">
+                        <label className="text-[11px] font-bold text-gray-500 ml-1">Status</label>
+                        <div className="flex bg-gray-50 rounded-xl p-1 relative h-[48px]">
+                          <div 
+                            className={`absolute top-1 bottom-1 w-[calc(50%-4px)] bg-white rounded-lg shadow-sm transition-transform duration-300 ${formData.status === 'Inactive' ? 'translate-x-[calc(100%+4px)]' : 'translate-x-0'}`}
+                          />
+                          <button
+                            type="button"
+                            onClick={() => setFormData({...formData, status: 'Active'})}
+                            className={`flex-1 text-[13px] font-bold z-10 transition-colors ${formData.status === 'Active' ? 'text-gray-900' : 'text-gray-400'}`}
+                          >
+                            Active
+                          </button>
+                          <button
+                            type="button"
+                            onClick={() => setFormData({...formData, status: 'Inactive'})}
+                            className={`flex-1 text-[13px] font-bold z-10 transition-colors ${formData.status === 'Inactive' ? 'text-gray-900' : 'text-gray-400'}`}
+                          >
+                            Inactive
+                          </button>
+                        </div>
+                      </div>
+
+                      <div className="space-y-1.5">
+                        <label className="text-[11px] font-bold text-gray-500 ml-1">Display Order</label>
+                        <input 
+                          type="number"
+                          value={formData.displayOrder}
+                          onChange={(e) => setFormData({...formData, displayOrder: e.target.value})}
+                          className="w-full bg-gray-50 border-none px-5 py-3.5 text-[14px] font-semibold text-gray-800 rounded-xl focus:ring-2 focus:ring-[#1BAFAF]/10 outline-none transition-all shadow-sm h-[48px]"
+                        />
                       </div>
                     </div>
 
