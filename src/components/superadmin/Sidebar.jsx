@@ -21,7 +21,6 @@ import { useAuth } from '../../context/AuthContext';
 
 const menuItems = [
   { title: 'Dashboard', icon: LayoutDashboard, path: '/superadmin/dashboard' },
-  { title: 'Super Admin', icon: ShieldAlert, path: '/superadmin/superadmins' },
   { title: 'Admins', icon: ShieldAlert, path: '/superadmin/admins' },
   { title: 'Users', icon: Users, path: '/superadmin/users' },
   { title: 'Reports', icon: BarChart3, path: '/superadmin/reports' },
