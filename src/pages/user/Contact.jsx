@@ -44,20 +44,20 @@ export default function Contact() {
               <ContactItem 
                 icon={<Mail size={24} />} 
                 label="Email Us" 
-                value="hello@mayasindhu.com" 
+                value="mayasindhu2124@gmail.com" 
                 sub="We reply within 24 hours" 
               />
               <ContactItem 
                 icon={<Phone size={24} />} 
                 label="Call Us" 
-                value="+91 98765 43210" 
-                sub="Mon-Sat, 9am - 6pm IST" 
+                value="+91 9172020494" 
+                sub="Mon-Sat, 10am - 7pm IST" 
               />
               <ContactItem 
                 icon={<MapPin size={24} />} 
                 label="Our Studio" 
-                value="Artisans Block, Heritage Row" 
-                sub="Jaipur, Rajasthan, India" 
+                value="Shop No. 5, Grandstand Apartment, Survey No. 2945, K/10" 
+                sub="Pratibha Nagar Road, Kolhapur, Maharashtra" 
               />
             </div>
           </div>

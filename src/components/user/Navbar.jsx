@@ -18,7 +18,9 @@ import {
   X,
   Plus,
   Minus,
-  Star
+  Star,
+  LogOut,
+  Package
 } from 'lucide-react';
 import { useAuth } from '../../context/AuthContext';
 import { useCartUI } from '../../context/CartUIContext';
@@ -30,7 +32,7 @@ import { getProductPath } from '../../utils/productUtils';
 
 export default function Navbar() {
   const { categories } = useCategories();
-  const { user, setLoginModalOpen } = useAuth();
+  const { user, setLoginModalOpen, logout } = useAuth();
   const { setCartOpen } = useCartUI();
   const [isScrolled, setIsScrolled] = useState(false);
   const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false);
@@ -39,8 +41,18 @@ export default function Navbar() {
   const [cartCount, setCartCount] = useState(0);
   const [wishlistCount, setWishlistCount] = useState(0);
   const [profileData, setProfileData] = useState(null);
+  const [showLogoutConfirm, setShowLogoutConfirm] = useState(false);
   const location = useLocation();
   const navigate = useNavigate();
+
+  const confirmLogout = async () => {
+    try {
+      await logout();
+      setShowLogoutConfirm(false);
+      navigate('/');
+    } catch (error) {
+    }
+  };
   const [searchQuery, setSearchQuery] = useState('');
 
   const handleSearch = (e) => {
@@ -272,8 +284,8 @@ export default function Navbar() {
               <Link to="/wishlist" className="p-2 text-brand-black hover:text-brand-orange transition-colors relative hidden sm:flex">
                 <Heart size={22} strokeWidth={2} />
                 {wishlistCount > 0 && (
-                  <span className="absolute top-1.5 right-1.5 bg-brand-orange text-white text-[9px] font-bold w-4 h-4 flex items-center justify-center rounded-full shadow-md">
-                    {wishlistCount}
+                  <span className="absolute -top-0.5 -right-0.5 bg-brand-orange text-white text-[9px] font-bold min-w-[18px] h-[18px] px-1 flex items-center justify-center rounded-full shadow-md">
+                    {wishlistCount > 10 ? '10+' : wishlistCount}
                   </span>
                 )}
               </Link>
@@ -281,8 +293,8 @@ export default function Navbar() {
               <button onClick={() => setCartOpen(true)} className="p-2 text-brand-black hover:text-brand-orange transition-colors relative flex">
                 <ShoppingBag size={22} strokeWidth={2} />
                 {cartCount > 0 && (
-                  <span className="absolute top-1.5 right-1.5 bg-brand-orange text-white text-[9px] font-bold w-4 h-4 flex items-center justify-center rounded-full shadow-md">
-                    {cartCount}
+                  <span className="absolute -top-0.5 -right-0.5 bg-brand-orange text-white text-[9px] font-bold min-w-[18px] h-[18px] px-1 flex items-center justify-center rounded-full shadow-md">
+                    {cartCount > 10 ? '10+' : cartCount}
                   </span>
                 )}
               </button>
@@ -317,20 +329,78 @@ export default function Navbar() {
                       transition={{ duration: 0.2, ease: "easeOut" }}
                       className="absolute right-0 top-full pt-2 z-[1100] w-72"
                     >
-                      <div className="bg-white p-8 rounded-xl border border-gray-100 shadow-2xl shadow-black/5 flex flex-col items-center text-center relative overflow-hidden group/card">
-                        <div className="w-16 h-16 rounded-full bg-brand-orange flex items-center justify-center text-white font-bold text-2xl shadow-lg border-2 border-white mb-4">
-                          {user.photoURL ? <img src={user.photoURL} alt="" className="w-full h-full object-cover rounded-full" /> : displayName.charAt(0)}
+                      <div className="bg-white p-5 rounded-2xl border border-gray-100 shadow-2xl shadow-black/10 flex flex-col items-center text-center relative overflow-hidden">
+                        {/* User Header Info */}
+                        <div className="flex flex-col items-center w-full pb-4 mb-3 border-b border-gray-100">
+                          <div className="w-14 h-14 rounded-full bg-brand-orange flex items-center justify-center text-white font-bold text-xl shadow-md border-2 border-white mb-2 overflow-hidden">
+                            {user.photoURL ? <img src={user.photoURL} alt="" className="w-full h-full object-cover" /> : displayName.charAt(0)}
+                          </div>
+                          <h2 className="text-sm font-bold text-[#1A1A1A] leading-tight mb-0.5 uppercase tracking-tight truncate w-full">{displayName}</h2>
+                          <p className="text-gray-400 text-[11px] font-medium lowercase tracking-normal truncate w-full">
+                            {user.email && user.email.toLowerCase().length > 24 ? `${user.email.toLowerCase().slice(0, 24)}...` : user.email?.toLowerCase()}
+                          </p>
                         </div>
-                        <h2 className="text-base font-bold text-[#1A1A1A] leading-tight mb-1 uppercase tracking-tight truncate w-full">{displayName}</h2>
-                        <p className="text-gray-400 text-[9px] font-bold uppercase tracking-widest truncate w-full mb-6">{user.email}</p>
-                        
-                        <Link 
-                          to="/profile"
-                          onClick={() => setIsUserDropdownOpen(false)}
-                          className="w-full py-3 bg-brand-black text-white rounded-xl text-[10px] font-bold uppercase tracking-[0.2em] text-center hover:bg-brand-orange transition-all active:scale-95"
-                        >
-                          Manage Account
-                        </Link>
+
+                        {/* Action Links */}
+                        <div className="w-full space-y-1 text-left">
+                          <button
+                            onClick={() => {
+                              setIsUserDropdownOpen(false);
+                              navigate('/profile?tab=profile');
+                            }}
+                            className="w-full flex items-center justify-between px-3 py-2 rounded-xl text-xs font-bold text-gray-700 hover:text-brand-orange hover:bg-orange-50/60 transition-all group/item text-left"
+                          >
+                            <div className="flex items-center gap-2.5">
+                              <User size={15} className="text-brand-orange" />
+                              <span>Manage Profile</span>
+                            </div>
+                            <ChevronRight size={14} className="text-gray-300 group-hover/item:text-brand-orange group-hover/item:translate-x-0.5 transition-all" />
+                          </button>
+
+                          <button
+                            onClick={() => {
+                              setIsUserDropdownOpen(false);
+                              navigate('/profile?tab=orders');
+                            }}
+                            className="w-full flex items-center justify-between px-3 py-2 rounded-xl text-xs font-bold text-gray-700 hover:text-brand-orange hover:bg-orange-50/60 transition-all group/item text-left"
+                          >
+                            <div className="flex items-center gap-2.5">
+                              <Package size={15} className="text-brand-orange" />
+                              <span>My Orders</span>
+                            </div>
+                            <ChevronRight size={14} className="text-gray-300 group-hover/item:text-brand-orange group-hover/item:translate-x-0.5 transition-all" />
+                          </button>
+
+                          <button
+                            onClick={() => {
+                              setIsUserDropdownOpen(false);
+                              navigate('/profile?tab=wishlist');
+                            }}
+                            className="w-full flex items-center justify-between px-3 py-2 rounded-xl text-xs font-bold text-gray-700 hover:text-brand-orange hover:bg-orange-50/60 transition-all group/item text-left"
+                          >
+                            <div className="flex items-center gap-2.5">
+                              <Heart size={15} className="text-brand-orange" />
+                              <span>My Wishlist</span>
+                            </div>
+                            <ChevronRight size={14} className="text-gray-300 group-hover/item:text-brand-orange group-hover/item:translate-x-0.5 transition-all" />
+                          </button>
+
+                          <div className="pt-2 border-t border-gray-100 mt-2">
+                            <button
+                              onClick={() => {
+                                setIsUserDropdownOpen(false);
+                                setShowLogoutConfirm(true);
+                              }}
+                              className="w-full flex items-center justify-between px-3 py-2 rounded-xl text-xs font-bold text-red-600 hover:bg-red-50 transition-all group/item"
+                            >
+                              <div className="flex items-center gap-2.5">
+                                <LogOut size={15} />
+                                <span>Logout</span>
+                              </div>
+                              <ChevronRight size={14} className="text-red-300 group-hover/item:translate-x-0.5 transition-all" />
+                            </button>
+                          </div>
+                        </div>
                       </div>
                     </motion.div>
                   )}
@@ -438,6 +508,51 @@ export default function Navbar() {
             categories={sortedCategories}
             onClose={() => setIsMobileMenuOpen(false)}
           />
+        )}
+      </AnimatePresence>
+
+      {/* Logout Confirmation Modal */}
+      <AnimatePresence>
+        {showLogoutConfirm && (
+          <>
+            <motion.div
+              initial={{ opacity: 0 }}
+              animate={{ opacity: 1 }}
+              exit={{ opacity: 0 }}
+              onClick={() => setShowLogoutConfirm(false)}
+              className="fixed inset-0 bg-black/60 backdrop-blur-sm z-[3000]"
+            />
+            <div className="fixed inset-0 flex items-center justify-center z-[3001] p-4 pointer-events-none">
+              <motion.div
+                initial={{ opacity: 0, scale: 0.95, y: 10 }}
+                animate={{ opacity: 1, scale: 1, y: 0 }}
+                exit={{ opacity: 0, scale: 0.95, y: 10 }}
+                className="bg-white rounded-3xl p-6 sm:p-8 max-w-sm w-full shadow-2xl border border-gray-100 pointer-events-auto text-center"
+              >
+                <div className="w-16 h-16 bg-red-50 text-red-500 rounded-full flex items-center justify-center mx-auto mb-4 border border-red-100 shadow-sm">
+                  <LogOut size={28} />
+                </div>
+                <h3 className="text-xl font-bold text-[#1A1A1A] mb-2">Confirm Logout</h3>
+                <p className="text-gray-500 text-xs mb-6 leading-relaxed font-medium">
+                  Are you sure you want to log out of your account?
+                </p>
+                <div className="flex gap-3">
+                  <button
+                    onClick={() => setShowLogoutConfirm(false)}
+                    className="flex-1 py-3.5 border border-gray-200 rounded-xl text-xs font-bold text-gray-700 hover:bg-gray-50 transition-colors uppercase tracking-wider"
+                  >
+                    Cancel
+                  </button>
+                  <button
+                    onClick={confirmLogout}
+                    className="flex-1 py-3.5 bg-red-600 hover:bg-red-700 text-white rounded-xl text-xs font-bold transition-all uppercase tracking-wider shadow-lg shadow-red-600/20 active:scale-[0.98]"
+                  >
+                    Logout
+                  </button>
+                </div>
+              </motion.div>
+            </div>
+          </>
         )}
       </AnimatePresence>
     </header>

@@ -1395,7 +1395,7 @@ export default function Checkout() {
 
         total,
 
-        status: finalMethod === 'upi' ? 'Paid' : 'Pending',
+        status: 'Confirmed',
 
         shippingAddress: formData,
 

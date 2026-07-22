@@ -52,7 +52,6 @@ import Returns from './pages/admin/offline/Returns';
 import SuperAdminLayout from './layouts/SuperAdminLayout';
 import SuperAdminDashboard from './pages/superadmin/Dashboard';
 import SuperAdminAdmins from './pages/superadmin/Admins';
-import SuperAdminUsers from './pages/superadmin/Users';
 import SuperAdminActiveSessions from './pages/superadmin/ActiveSessions';
 
 
@@ -222,7 +221,6 @@ function AppContent() {
           <Route index element={<Navigate to="/superadmin/dashboard" replace />} />
           <Route path="dashboard" element={<SuperAdminDashboard />} />
           <Route path="admins" element={<SuperAdminAdmins />} />
-          <Route path="users" element={<SuperAdminUsers />} />
           <Route path="reports" element={<Reports />} />
           <Route path="sessions" element={<SuperAdminActiveSessions />} />
         </Route>
