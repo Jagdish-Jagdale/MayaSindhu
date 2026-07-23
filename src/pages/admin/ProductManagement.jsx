@@ -629,8 +629,7 @@ export default function ProductManagement() {
                       animate="animate"
                       exit="exit"
                       key={product.id} 
-                      onClick={() => openViewModal(product)}
-                      className="hover:bg-gray-50 group transition-colors cursor-pointer"
+                      className="hover:bg-gray-50 group transition-colors"
                     >
                       <td className="px-6 py-4 whitespace-nowrap text-[14px] text-gray-400 font-medium">
                         {((currentPage - 1) * rowsPerPage + idx + 1).toString().padStart(2, '0')}
@@ -882,7 +881,7 @@ function ProductViewModal({ isOpen, onClose, product, categoryMap, hierarchy, st
   return (
     <AnimatePresence>
       {isOpen && (
-        <div className="fixed inset-0 z-[60] flex items-center justify-center p-4" onClick={(e) => { if (e.target === e.currentTarget) { const closeFn = () => setIsOpen(false); closeFn(); } }}>
+        <div className="fixed inset-0 z-[60] flex items-center justify-center p-4" onClick={(e) => { if (e.target === e.currentTarget) onClose(); }}>
           <motion.div
             initial={{ opacity: 0 }}
             animate={{ opacity: 1 }}

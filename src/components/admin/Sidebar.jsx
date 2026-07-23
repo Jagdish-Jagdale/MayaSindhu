@@ -60,7 +60,7 @@ function getMenuItems(pathname) {
     { title: 'Categories', icon: Grid2X2, path: `${base}/categories` },
     { title: 'Orders', icon: ShoppingBag, path: `${base}/orders` },
     { title: 'Reviews', icon: MessageSquare, path: `${base}/reviews` },
-    { title: 'Return', icon: RotateCcw, path: `${base}/return` },
+    { title: 'Return', icon: RotateCcw, path: `${base}/returns` },
     { title: 'Reports', icon: BarChart3, path: `${base}/reports` },
     { title: 'Delivery Charges', icon: Truck, path: `${base}/delivery-charges` },
     {

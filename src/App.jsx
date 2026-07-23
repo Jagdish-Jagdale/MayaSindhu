@@ -221,7 +221,6 @@ function AppContent() {
         }>
           <Route index element={<Navigate to="/superadmin/dashboard" replace />} />
           <Route path="dashboard" element={<SuperAdminDashboard />} />
-          <Route path="superadmins" element={<SuperAdminSuperAdmins />} />
           <Route path="admins" element={<SuperAdminAdmins />} />
           <Route path="reports" element={<Reports />} />
           <Route path="sessions" element={<SuperAdminActiveSessions />} />

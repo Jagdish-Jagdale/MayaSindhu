@@ -155,6 +155,7 @@ const OfflineOrderModal = ({ isOpen, onClose }) => {
       }
     }
   }, [isOpen, fetchCustomers, fetchProducts, fetchGstConfiguration, generateSONumber, orderSettings.mode]);
+
   const handleBulkAdd = (selectedProducts) => {
     const newItems = selectedProducts.map(p => ({
       id: Date.now() + Math.random(),

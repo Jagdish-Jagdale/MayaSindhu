@@ -104,7 +104,19 @@ export default function PaymentMethods({ user }) {
     }
   };
 
-  if (loading) return <div className="flex justify-center p-20"><Loader2 className="animate-spin text-[#f5aa00]" size={40} /></div>;
+  if (loading) return (
+    <div className="flex flex-col items-center justify-center min-h-[400px] w-full py-12 my-auto text-center">
+      <Loader2 className="animate-spin text-brand-orange mb-4" size={48} />
+      <div className="flex items-center gap-2 text-xs font-bold text-gray-500 uppercase tracking-widest">
+        <span>Loading Payment Methods</span>
+        <span className="inline-flex gap-1.5 items-center">
+          <span className="w-2 h-2 rounded-full bg-brand-orange animate-bounce [animation-delay:-0.32s]"></span>
+          <span className="w-2 h-2 rounded-full bg-brand-orange animate-bounce [animation-delay:-0.16s]"></span>
+          <span className="w-2 h-2 rounded-full bg-brand-orange animate-bounce"></span>
+        </span>
+      </div>
+    </div>
+  );
 
   return (
     <div className="bg-white p-6 md:p-10 rounded-xl shadow-xl shadow-gray-200/20 border border-[#f0dda0]/20">

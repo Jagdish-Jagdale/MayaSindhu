@@ -1,11 +1,10 @@
 /**
  * File: SupportTab.jsx
- * Description: Client-facing customer page rendering home banners, blog lists, product details, and profile user sections.
- * Work Done: Integrated baseline UI layouts, state boundaries, CSS theme styling, and routing pathways.
+ * Description: Help & Support section providing direct contact options (WhatsApp, Call, Email) and boutique studio address.
  */
 
 import React from 'react';
-import { HelpCircle, ChevronDown, MessageCircle, PhoneCall, Mail, FileText } from 'lucide-react';
+import { HelpCircle, ChevronDown, MessageCircle, PhoneCall, Mail } from 'lucide-react';
 
 export default function SupportTab() {
   const faqs = [
@@ -46,20 +45,38 @@ export default function SupportTab() {
 
         <div className="space-y-6">
           <h3 className="text-[15px] font-bold text-[#1A1A1A] uppercase tracking-wider mb-4 px-2">Direct Assistance</h3>
-          <div className="grid grid-cols-2 gap-3">
-            <SupportOption icon={<MessageCircle size={18} />} label="WhatsApp" color="text-green-500" />
-            <SupportOption icon={<PhoneCall size={18} />} label="Call Us" color="text-blue-500" />
-            <SupportOption icon={<Mail size={18} />} label="Email" color="text-[#f5aa00]" />
-            <SupportOption icon={<FileText size={18} />} label="Tickets" color="text-indigo-500" />
+          <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
+            <SupportOption
+              href="https://wa.me/919172020494"
+              target="_blank"
+              icon={<MessageCircle size={20} />}
+              label="WhatsApp"
+              value="+91 9172020494"
+              color="text-green-500"
+            />
+            <SupportOption
+              href="tel:+919172020494"
+              icon={<PhoneCall size={20} />}
+              label="Call Us"
+              value="+91 9172020494"
+              color="text-blue-500"
+            />
+            <SupportOption
+              href="mailto:mayasindhu2124@gmail.com"
+              icon={<Mail size={20} />}
+              label="Email"
+              value="mayasindhu2124@gmail.com"
+              color="text-[#f5aa00]"
+            />
           </div>
-          
-          <div className="bg-[#fffbf2]/40 p-8 rounded-xl border border-[#f0dda0]/20 shadow-sm">
-             <h4 className="text-[13px] font-bold text-[#f5aa00] uppercase tracking-widest mb-2">Our Boutique Studio</h4>
-             <p className="text-[11px] text-gray-400 font-bold uppercase tracking-wider leading-relaxed">
-               Heritage Row, Block C-14, <br />
-               Crafts District, Jaipur, Rajasthan.<br />
-               Mon — Sat, 10am — 7pm
-             </p>
+
+          <div className="bg-[#fffbf2]/40 p-6 sm:p-8 rounded-xl border border-[#f0dda0]/20 shadow-sm">
+            <h4 className="text-[13px] font-bold text-[#f5aa00] uppercase tracking-widest mb-2">Our Boutique Studio</h4>
+            <p className="text-[11px] text-gray-600 font-bold uppercase tracking-wider leading-relaxed">
+              Shop No. 5, Grandstand Apartment,<br />
+              Survey No. 2945, K/10, Pratibha Nagar Road,<br />
+              Kolhapur, Maharashtra.<br />
+            </p>
           </div>
         </div>
       </div>
@@ -67,13 +84,19 @@ export default function SupportTab() {
   );
 }
 
-function SupportOption({ icon, label, color }) {
+function SupportOption({ href, target, icon, label, value, color }) {
   return (
-    <div className="p-5 bg-white border border-[#f0dda0]/10 rounded-xl flex flex-col items-center gap-3 hover:shadow-lg hover:border-[#f5aa00]/20 transition-all cursor-pointer active:scale-95 group shadow-sm">
+    <a
+      href={href}
+      target={target}
+      rel={target === '_blank' ? 'noopener noreferrer' : undefined}
+      className="p-4 bg-white border border-[#f0dda0]/10 rounded-xl flex flex-col items-center text-center gap-2 hover:shadow-lg hover:border-[#f5aa00]/30 transition-all active:scale-95 group shadow-sm"
+    >
       <div className={`w-10 h-10 rounded-xl bg-[#fffbf2] flex items-center justify-center ${color} transition-transform group-hover:scale-110 shadow-sm`}>
         {icon}
       </div>
-      <span className="text-[9px] font-bold uppercase tracking-widest text-gray-400">{label}</span>
-    </div>
+      <span className="text-[10px] font-bold uppercase tracking-widest text-[#1A1A1A]">{label}</span>
+      {value && <span className="text-[9px] font-medium text-gray-500 break-all">{value}</span>}
+    </a>
   );
 }

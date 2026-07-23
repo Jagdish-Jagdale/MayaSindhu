@@ -38,7 +38,12 @@ export const addToCart = async (user, product, quantity = 1, selectedVariant = n
   const cartItemId = variantId ? `${productId}_${variantId}${sizeSuffix}` : productId;
   
   const cartItemRef = doc(db, 'users', user.uid, 'cart', cartItemId);
-  const cartItemSnap = await getDoc(cartItemRef);
+  let cartItemSnap = null;
+  try {
+    cartItemSnap = await getDoc(cartItemRef);
+  } catch (err) {
+    console.warn("Could not check existing cart item doc:", err);
+  }
 
   // Fetch fresh product/variant details
   let stockVal = 15;
@@ -48,34 +53,42 @@ export const addToCart = async (user, product, quantity = 1, selectedVariant = n
   let itemSku = product.sku || '';
 
   if (activeVariant) {
-    // If a variant is selected, fetch the latest variant data from Firestore
+    // If a variant is selected, fetch the latest variant data from Firestore if accessible
     try {
       const varSnap = await getDoc(doc(db, 'products', productId, 'variants', variantId));
       if (varSnap.exists()) {
         const varData = varSnap.data();
         stockVal = Number(varData.stock) || 0;
-        itemPrice = varData.price || varData.actualPrice || 0;
+        itemPrice = varData.price || varData.actualPrice || itemPrice;
         itemImage = (varData.images && varData.images[0]) || itemImage;
         itemSku = varData.sku || '';
         isUnique = varData.productType === 'Unique';
       } else {
         stockVal = Number(activeVariant.stock) || 0;
-        itemPrice = activeVariant.price || activeVariant.actualPrice || 0;
+        itemPrice = activeVariant.price || activeVariant.actualPrice || itemPrice;
         itemImage = (activeVariant.images && activeVariant.images[0]) || itemImage;
         itemSku = activeVariant.sku || '';
         isUnique = activeVariant.productType === 'Unique';
       }
     } catch (err) {
       stockVal = Number(activeVariant.stock) || 0;
+      itemPrice = activeVariant.price || activeVariant.actualPrice || itemPrice;
+      itemImage = (activeVariant.images && activeVariant.images[0]) || itemImage;
+      itemSku = activeVariant.sku || '';
       isUnique = activeVariant.productType === 'Unique';
     }
   } else {
-    // Fetch parent product document
-    const productRef = doc(db, 'products', productId);
-    const productSnap = await getDoc(productRef);
-    const productData = productSnap.exists() ? productSnap.data() : product;
-    isUnique = productData.isUniquePiece === true || productData.productType === 'Unique';
-    stockVal = typeof productData.stock !== 'undefined' && productData.stock !== '' && !isNaN(Number(productData.stock)) ? Number(productData.stock) : (isUnique ? 1 : 15);
+    // Fetch parent product document if accessible
+    try {
+      const productRef = doc(db, 'products', productId);
+      const productSnap = await getDoc(productRef);
+      const productData = (productSnap && productSnap.exists()) ? productSnap.data() : product;
+      isUnique = productData.isUniquePiece === true || productData.productType === 'Unique';
+      stockVal = typeof productData.stock !== 'undefined' && productData.stock !== '' && !isNaN(Number(productData.stock)) ? Number(productData.stock) : (isUnique ? 1 : 15);
+    } catch (err) {
+      isUnique = product.isUniquePiece === true || product.productType === 'Unique';
+      stockVal = typeof product.stock !== 'undefined' && product.stock !== '' && !isNaN(Number(product.stock)) ? Number(product.stock) : (isUnique ? 1 : 15);
+    }
   }
 
   if (stockVal === 0) {

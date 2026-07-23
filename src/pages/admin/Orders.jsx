@@ -56,12 +56,24 @@ const formatIndianCurrency = (num) => {
 };
 
 const STATUS_CONFIG = {
-  'Pending': { color: 'text-amber-500 bg-amber-50', icon: Clock },
   'Confirmed': { color: 'text-blue-500 bg-blue-50', icon: PackageCheck },
+  'Processing': { color: 'text-amber-500 bg-amber-50', icon: Clock },
   'Shipped': { color: 'text-indigo-500 bg-indigo-50', icon: Truck },
+  'Out of Delivery': { color: 'text-purple-500 bg-purple-50', icon: Truck },
   'Delivered': { color: 'text-[#1BAFAF] bg-[#eaf6f6]', icon: CheckCircle2 },
   'Cancelled': { color: 'text-red-500 bg-red-50', icon: XCircle },
+  'Pending': { color: 'text-amber-500 bg-amber-50', icon: Clock },
+  'Paid': { color: 'text-blue-500 bg-blue-50', icon: PackageCheck },
 };
+
+const ADMIN_STATUS_OPTIONS = [
+  'Confirmed',
+  'Processing',
+  'Shipped',
+  'Out of Delivery',
+  'Delivered',
+  'Cancelled'
+];
 
 export default function Orders() {
   const [orders, setOrders] = useState([]);
@@ -121,7 +133,8 @@ export default function Orders() {
   const filteredOrders = orders.filter(order => {
     const matchesSearch = order.orderId?.toLowerCase().includes(searchTerm.toLowerCase()) ||
                           order.customerName?.toLowerCase().includes(searchTerm.toLowerCase());
-    const matchesStatus = statusFilter === 'All' || order.status === statusFilter;
+    const displayStatus = (order.status === 'Paid' || order.status === 'paid') ? 'Confirmed' : order.status;
+    const matchesStatus = statusFilter === 'All' || displayStatus === statusFilter || order.status === statusFilter;
     
     let matchesDate = true;
     if (dateRange.start && dateRange.end) {
@@ -222,7 +235,8 @@ export default function Orders() {
     const containerRef = useRef(null);
     const buttonRef = useRef(null);
     const [coords, setCoords] = useState({ top: 0, left: 0, width: 0, openAbove: false });
-    const config = STATUS_CONFIG[currentStatus] || STATUS_CONFIG['Pending'];
+    const displayStatus = (currentStatus === 'Paid' || currentStatus === 'paid') ? 'Confirmed' : (currentStatus || 'Confirmed');
+    const config = STATUS_CONFIG[displayStatus] || STATUS_CONFIG['Confirmed'];
 
     useEffect(() => {
       const handleClickOutside = (event) => {
@@ -282,7 +296,7 @@ export default function Orders() {
           <div className="absolute left-2.5 top-1/2 -translate-y-1/2 opacity-80">
             <config.icon size={11} strokeWidth={2.5} className={config.color.split(' ')[0]} />
           </div>
-          <span>{currentStatus || 'Pending'}</span>
+          <span>{displayStatus}</span>
           <div className="absolute right-2 top-1/2 -translate-y-1/2 opacity-40">
             <ChevronDown size={8} strokeWidth={3} className={`transition-transform duration-200 ${isOpen ? 'rotate-180' : ''}`} />
           </div>
@@ -306,7 +320,7 @@ export default function Orders() {
                 }}
                 className="z-[200] min-w-[120px] bg-white border border-gray-100 rounded-xl shadow-xl py-1 overflow-hidden"
               >
-                {Object.keys(STATUS_CONFIG).map((status) => {
+                {ADMIN_STATUS_OPTIONS.map((status) => {
                   const sCfg = STATUS_CONFIG[status];
                   const Icon = sCfg.icon;
                   return (
@@ -318,7 +332,7 @@ export default function Orders() {
                         setIsOpen(false);
                       }}
                       className={`w-full flex items-center gap-2 px-3 py-2 text-[10px] font-bold uppercase tracking-widest transition-colors text-left
-                        ${currentStatus === status ? 'bg-[#1BAFAF] text-white shadow-sm' : 'text-gray-600 hover:bg-[#1BAFAF]/10 hover:text-[#1BAFAF]'}
+                        ${displayStatus === status ? 'bg-[#1BAFAF] text-white shadow-sm' : 'text-gray-600 hover:bg-[#1BAFAF]/10 hover:text-[#1BAFAF]'}
                       `}
                     >
                       <Icon size={10} strokeWidth={2.5} />
@@ -433,7 +447,7 @@ export default function Orders() {
             onChange={(val) => setStatusFilter(val)}
             options={[
               { value: 'All', label: 'All Statuses' },
-              ...Object.keys(STATUS_CONFIG).map(s => ({ value: s, label: s }))
+              ...ADMIN_STATUS_OPTIONS.map(s => ({ value: s, label: s }))
             ]}
             className="w-[140px]"
             minimal={true}

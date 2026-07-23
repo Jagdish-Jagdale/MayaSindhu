@@ -362,12 +362,14 @@ const StoreCustomers = () => {
                         <button 
                           onClick={(e) => { e.stopPropagation(); handleEdit(c); }}
                           className="w-8 h-8 flex items-center justify-center text-[#1BAFAF] hover:bg-[#1BAFAF]/5 rounded-lg transition-all active:scale-90"
+                          title="Edit Customer"
                         >
                           <Pencil size={14} strokeWidth={2.5} />
                         </button>
                         <button 
                           onClick={(e) => { e.stopPropagation(); handleDelete(c); }}
                           className="w-8 h-8 flex items-center justify-center text-red-600 hover:bg-red-50 rounded-lg transition-all active:scale-90"
+                          title="Delete Customer"
                         >
                           <Trash2 size={14} strokeWidth={2.5} />
                         </button>

@@ -150,10 +150,8 @@ export default function Cart() {
   };
 
   const subtotal = items.reduce((acc, item) => acc + (item.price * item.qty), 0);
-  const shippingFee = 500;
-  const isFreeShipping = subtotal > 25000;
-  const shipping = isFreeShipping ? 0 : shippingFee;
-  const total = subtotal + shipping;
+  const shipping = 0;
+  const total = subtotal;
 
   return (
     <AnimatePresence>
@@ -177,7 +175,7 @@ export default function Cart() {
             <div className="flex items-center justify-between p-6 border-b border-gray-100 flex-shrink-0">
               <div className="flex items-center gap-3">
                 <ShoppingBag className="text-brand-orange" size={24} />
-                <h2 className="text-xl font-bold text-[#1A1A1A]">My Bag ({items.length})</h2>
+                <h2 className="text-xl font-bold text-[#1A1A1A]">My Bag ({items.length > 10 ? '10+' : items.length})</h2>
               </div>
               <button 
                 onClick={() => setCartOpen(false)}
@@ -277,9 +275,7 @@ export default function Cart() {
                   </div>
                   <div className="flex justify-between items-center text-sm">
                     <span className="text-gray-500 font-medium">Shipping</span>
-                    <span className={`font-bold ${isFreeShipping ? 'text-green-600' : 'text-[#1A1A1A]'}`}>
-                      {isFreeShipping ? 'Free' : `₹${shippingFee.toLocaleString()}`}
-                    </span>
+                    <span className="font-bold text-green-600">₹0</span>
                   </div>
                   <div className="pt-3 border-t border-gray-100 flex justify-between items-center">
                     <span className="text-base font-bold text-[#1A1A1A]">Total</span>
@@ -294,11 +290,6 @@ export default function Cart() {
                   Proceed to Checkout <ArrowRight size={18} />
                 </button>
 
-                {!isFreeShipping && (
-                  <p className="text-center text-[10px] text-gray-400 font-bold tracking-tight mt-4">
-                    Add ₹{(25000 - subtotal).toLocaleString()} more to unlock free shipping
-                  </p>
-                )}
               </div>
             )}
           </motion.div>
