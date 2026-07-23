@@ -5,6 +5,7 @@
  */
 
 import React, { useState, useEffect } from 'react';
+import { motion, AnimatePresence } from 'framer-motion';
 import { db } from '../../../../firebase';
 import { collection, query, where, onSnapshot, doc, updateDoc, serverTimestamp, addDoc, getDocs } from 'firebase/firestore';
 import { Package, Clock, Truck, CheckCircle2, ChevronRight, XCircle, RotateCcw, Loader2, Search, Star, X, Download, MapPin, CreditCard, FileText } from 'lucide-react';
@@ -105,16 +106,23 @@ export default function OrderHistory({ user }) {
     return () => unsubscribe();
   }, [user]);
 
-  const handleCancelOrder = async (orderId) => {
-    if (!window.confirm('Are you sure you want to cancel this order?')) return;
+  const [cancelOrderId, setCancelOrderId] = useState(null);
+  const [cancellingOrder, setCancellingOrder] = useState(false);
+
+  const confirmCancelOrder = async () => {
+    if (!cancelOrderId) return;
+    setCancellingOrder(true);
     try {
-      await updateDoc(doc(db, 'orders', orderId), {
+      await updateDoc(doc(db, 'orders', cancelOrderId), {
         status: 'Cancelled',
         updatedAt: serverTimestamp()
       });
       toast.success('Order cancelled successfully');
+      setCancelOrderId(null);
     } catch (error) {
       toast.error('Failed to cancel order');
+    } finally {
+      setCancellingOrder(false);
     }
   };
 
@@ -394,7 +402,14 @@ export default function OrderHistory({ user }) {
     return orderIdStr.includes(term) || itemNameStr.includes(term) || statusStr.includes(term);
   });
 
-  if (loading) return <div className="flex justify-center p-20"><Loader2 className="animate-spin text-[#f5aa00]" size={40} /></div>;
+  if (loading) return (
+    <div className="flex flex-col items-center justify-center min-h-[400px] w-full py-12 my-auto text-center">
+      <Loader2 className="animate-spin text-brand-orange mb-4" size={48} />
+      <div className="flex items-center gap-2 text-xs font-bold text-gray-500 uppercase tracking-widest">
+        <span>Loading Orders</span>
+      </div>
+    </div>
+  );
 
   return (
     <>
@@ -424,7 +439,7 @@ export default function OrderHistory({ user }) {
               const itemImage = item.image || (productDoc?.images && productDoc.images[0]) || (productDoc?.image) || '';
               
               const resolvedProductId = item.id || productDoc?.id;
-              const isEligibleForReview = ['Paid', 'Delivered'].includes(order.status) && resolvedProductId;
+              const isEligibleForReview = (order.status === 'Delivered' || order.status === 'delivered') && resolvedProductId;
               const reviewKey = `${order.id}_${resolvedProductId}`;
               const isReviewed = userReviews[reviewKey];
 
@@ -434,36 +449,45 @@ export default function OrderHistory({ user }) {
               let statusMsg = 'Your order is being processed.';
 
               const dateStr = formatDate(order.updatedAt || order.createdAt);
+              const rawStatus = (order.status || '').toLowerCase();
 
-              if (order.status === 'Delivered') {
+              if (rawStatus === 'delivered') {
                 statusColor = 'bg-green-600';
                 statusText = `Delivered on ${dateStr}`;
                 statusMsg = 'Your item has been delivered';
-              } else if (order.status === 'Cancelled') {
+              } else if (rawStatus === 'cancelled') {
                 statusColor = 'bg-red-500';
                 statusText = `Cancelled on ${dateStr}`;
                 statusMsg = 'Your order was cancelled as per your request.';
-              } else if (order.status === 'Pending') {
+              } else if (rawStatus === 'pending') {
                 statusColor = 'bg-amber-500';
                 statusText = `Ordered on ${dateStr}`;
                 statusMsg = 'Your order is pending confirmation.';
-              } else if (order.status === 'Confirmed') {
+              } else if (rawStatus === 'confirmed' || rawStatus === 'paid') {
                 statusColor = 'bg-blue-600';
                 statusText = `Confirmed on ${dateStr}`;
                 statusMsg = 'Your order has been confirmed.';
-              } else if (order.status === 'Shipped') {
+              } else if (rawStatus === 'processing') {
+                statusColor = 'bg-amber-500';
+                statusText = `Processing`;
+                statusMsg = 'Your order is being processed.';
+              } else if (rawStatus === 'shipped') {
                 statusColor = 'bg-indigo-500';
                 statusText = `Shipped on ${dateStr}`;
                 statusMsg = 'Your item is on the way.';
-              } else if (order.status === 'Exchange Requested') {
+              } else if (rawStatus === 'out of delivery' || rawStatus === 'out for delivery') {
+                statusColor = 'bg-purple-500';
+                statusText = `Out for Delivery`;
+                statusMsg = 'Your item is out for delivery.';
+              } else if (rawStatus === 'exchange requested') {
                 statusColor = 'bg-amber-500';
                 statusText = `Exchange Requested`;
                 statusMsg = 'Your exchange request is under review.';
-              } else if (order.status === 'Exchange Req Accept') {
+              } else if (rawStatus === 'exchange req accept') {
                 statusColor = 'bg-green-600';
                 statusText = `Exchange Approved`;
                 statusMsg = 'Your exchange request has been approved.';
-              } else if (order.status === 'Exchange Req Reject') {
+              } else if (rawStatus === 'exchange req reject') {
                 statusColor = 'bg-red-500';
                 statusText = `Exchange Rejected`;
                 statusMsg = 'Your exchange request was not approved.';
@@ -519,15 +543,24 @@ export default function OrderHistory({ user }) {
                     
                     {/* Cancel / Exchange button in status block */}
                     <div className="flex flex-wrap gap-2.5 mt-1">
-                      {order.status === 'Pending' && (
+                      {['pending', 'confirmed', 'processing', 'paid', 'placed'].includes(rawStatus) && (
                         <button
-                          onClick={() => handleCancelOrder(order.id)}
+                          onClick={() => setCancelOrderId(order.id)}
                           className="text-[10px] font-bold text-red-500 hover:text-red-700 uppercase tracking-widest transition-colors cursor-pointer"
                         >
                           Cancel Order
                         </button>
                       )}
-                      {(order.status === 'Delivered' || order.status === 'Exchange Req Reject') && (
+                      {['shipped', 'out of delivery', 'out for delivery'].includes(rawStatus) && (
+                        <button
+                          disabled
+                          title="Order is shipped and cannot be cancelled"
+                          className="text-[10px] font-bold text-gray-400 uppercase tracking-widest opacity-60 cursor-not-allowed"
+                        >
+                          Cancel Order
+                        </button>
+                      )}
+                      {(rawStatus === 'delivered' || rawStatus === 'exchange req reject') && (
                         <button
                           onClick={() => handleOpenExchangeModal(order)}
                           className="text-[10px] font-bold text-blue-600 hover:text-blue-800 uppercase tracking-widest transition-colors cursor-pointer"
@@ -539,15 +572,15 @@ export default function OrderHistory({ user }) {
 
                     {isEligibleForReview && (
                       <button
-                        disabled={isReviewed}
-                        onClick={() => handleOpenReviewModal(order, item)}
-                        className={`mt-2 flex items-center gap-1.5 text-xs font-bold ${
+                        disabled={!!isReviewed}
+                        onClick={() => !isReviewed && handleOpenReviewModal(order, item)}
+                        className={`mt-2 flex items-center gap-1.5 text-xs font-bold transition-all ${
                           isReviewed 
-                            ? 'text-gray-300 cursor-not-allowed' 
+                            ? 'text-gray-400 opacity-60 cursor-not-allowed' 
                             : 'text-blue-600 hover:text-blue-800 cursor-pointer'
                         }`}
                       >
-                        <Star size={14} fill={isReviewed ? "currentColor" : "none"} className={isReviewed ? "text-gray-300" : "text-blue-600"} />
+                        <Star size={14} fill={isReviewed ? "currentColor" : "none"} className={isReviewed ? "text-gray-400" : "text-blue-600"} />
                         <span>{isReviewed ? 'Product Reviewed' : 'Rate & Review Product'}</span>
                       </button>
                     )}
@@ -610,47 +643,84 @@ export default function OrderHistory({ user }) {
                   <div className="space-y-4">
                     <h4 className="text-sm font-bold text-gray-700 uppercase tracking-wider">Delivery Timeline</h4>
                     <div className="relative pl-6 space-y-6 border-l-2 border-gray-100 ml-3">
-                      {/* Step: Ordered */}
-                      <div className="relative">
-                        <div className="absolute -left-[31px] top-0.5 w-4 h-4 rounded-full bg-green-600 flex items-center justify-center border-4 border-white" />
-                        <div>
-                          <p className="text-xs font-bold text-gray-800">Order Confirmed</p>
-                          <p className="text-[10px] text-gray-400 font-medium">{formatDate(selectedOrderDetail.order.createdAt)}</p>
-                        </div>
-                      </div>
+                      {(() => {
+                        const modalRawStatus = (selectedOrderDetail.order.status || '').toLowerCase();
+                        const isCancelled = modalRawStatus === 'cancelled';
 
-                      {/* Step: Shipped */}
-                      {['Shipped', 'Delivered'].includes(selectedOrderDetail.order.status) && (
-                        <div className="relative">
-                          <div className="absolute -left-[31px] top-0.5 w-4 h-4 rounded-full bg-green-600 flex items-center justify-center border-4 border-white" />
-                          <div>
-                            <p className="text-xs font-bold text-gray-800">Shipped</p>
-                            <p className="text-[10px] text-gray-400 font-medium">Your package has left the boutique.</p>
-                          </div>
-                        </div>
-                      )}
+                        return (
+                          <>
+                            {/* Step: Ordered */}
+                            <div className="relative">
+                              <div className="absolute -left-[31px] top-0.5 w-4 h-4 rounded-full bg-green-600 flex items-center justify-center border-4 border-white" />
+                              <div>
+                                <p className="text-xs font-bold text-gray-800">Order Confirmed</p>
+                                <p className="text-[10px] text-gray-400 font-medium">{formatDate(selectedOrderDetail.order.createdAt)}</p>
+                              </div>
+                            </div>
 
-                      {/* Step: Delivered */}
-                      {selectedOrderDetail.order.status === 'Delivered' && (
-                        <div className="relative">
-                          <div className="absolute -left-[31px] top-0.5 w-4 h-4 rounded-full bg-green-600 flex items-center justify-center border-4 border-white" />
-                          <div>
-                            <p className="text-xs font-bold text-gray-800">Delivered</p>
-                            <p className="text-[10px] text-gray-400 font-medium">{formatDate(selectedOrderDetail.order.updatedAt || selectedOrderDetail.order.createdAt)}</p>
-                          </div>
-                        </div>
-                      )}
+                            {!isCancelled && (
+                              <>
+                                {/* Step: Processing */}
+                                {['processing', 'shipped', 'out of delivery', 'out for delivery', 'delivered'].includes(modalRawStatus) && (
+                                  <div className="relative">
+                                    <div className="absolute -left-[31px] top-0.5 w-4 h-4 rounded-full bg-green-600 flex items-center justify-center border-4 border-white" />
+                                    <div>
+                                      <p className="text-xs font-bold text-gray-800">Processing</p>
+                                      <p className="text-[10px] text-gray-400 font-medium">Order is being prepared for dispatch.</p>
+                                    </div>
+                                  </div>
+                                )}
 
-                      {/* Step: Cancelled */}
-                      {selectedOrderDetail.order.status === 'Cancelled' && (
-                        <div className="relative">
-                          <div className="absolute -left-[31px] top-0.5 w-4 h-4 rounded-full bg-red-500 flex items-center justify-center border-4 border-white" />
-                          <div>
-                            <p className="text-xs font-bold text-red-500">Order Cancelled</p>
-                            <p className="text-[10px] text-gray-400 font-medium">As requested by customer.</p>
-                          </div>
-                        </div>
-                      )}
+                                {/* Step: Shipped */}
+                                {['shipped', 'out of delivery', 'out for delivery', 'delivered'].includes(modalRawStatus) && (
+                                  <div className="relative">
+                                    <div className="absolute -left-[31px] top-0.5 w-4 h-4 rounded-full bg-green-600 flex items-center justify-center border-4 border-white" />
+                                    <div>
+                                      <p className="text-xs font-bold text-gray-800">Shipped</p>
+                                      <p className="text-[10px] text-gray-400 font-medium">Your package has left the boutique.</p>
+                                    </div>
+                                  </div>
+                                )}
+
+                                {/* Step: Out of Delivery */}
+                                {['out of delivery', 'out for delivery', 'delivered'].includes(modalRawStatus) && (
+                                  <div className="relative">
+                                    <div className="absolute -left-[31px] top-0.5 w-4 h-4 rounded-full bg-green-600 flex items-center justify-center border-4 border-white" />
+                                    <div>
+                                      <p className="text-xs font-bold text-gray-800">Out of Delivery</p>
+                                      <p className="text-[10px] text-gray-400 font-medium">Your package is out for delivery.</p>
+                                    </div>
+                                  </div>
+                                )}
+
+                                {/* Step: Delivered */}
+                                {modalRawStatus === 'delivered' && (
+                                  <div className="relative">
+                                    <div className="absolute -left-[31px] top-0.5 w-4 h-4 rounded-full bg-green-600 flex items-center justify-center border-4 border-white" />
+                                    <div>
+                                      <p className="text-xs font-bold text-gray-800">Delivered</p>
+                                      <p className="text-[10px] text-gray-400 font-medium">{formatDate(selectedOrderDetail.order.updatedAt || selectedOrderDetail.order.createdAt)}</p>
+                                    </div>
+                                  </div>
+                                )}
+                              </>
+                            )}
+
+                            {/* Step: Cancelled */}
+                            {isCancelled && (
+                              <div className="relative">
+                                <div className="absolute -left-[31px] top-0.5 w-4 h-4 rounded-full bg-red-500 flex items-center justify-center border-4 border-white" />
+                                <div>
+                                  <p className="text-xs font-bold text-red-500">Order Cancelled</p>
+                                  <p className="text-[10px] text-gray-400 font-medium">
+                                    {selectedOrderDetail.order.updatedAt ? formatDate(selectedOrderDetail.order.updatedAt) : 'As requested by customer.'}
+                                  </p>
+                                </div>
+                              </div>
+                            )}
+                          </>
+                        );
+                      })()}
                     </div>
                   </div>
                 </div>
@@ -727,13 +797,15 @@ export default function OrderHistory({ user }) {
                   </div>
 
                   {/* Download Invoice Button */}
-                  <button
-                    onClick={() => downloadInvoice(selectedOrderDetail.order, selectedOrderDetail.item)}
-                    className="w-full bg-[#f5aa00] hover:bg-[#e09b00] text-white py-3.5 rounded-xl font-bold text-xs uppercase tracking-wider flex items-center justify-center gap-2 transition-all shadow-md active:scale-95 cursor-pointer shrink-0"
-                  >
-                    <Download size={15} />
-                    <span>Download Invoice</span>
-                  </button>
+                  {['processing', 'shipped', 'out of delivery', 'out for delivery', 'delivered', 'cancelled'].includes((selectedOrderDetail.order.status || '').toLowerCase()) && (
+                    <button
+                      onClick={() => downloadInvoice(selectedOrderDetail.order, selectedOrderDetail.item)}
+                      className="w-full bg-[#f5aa00] hover:bg-[#e09b00] text-[#1A1A1A] py-3.5 rounded-xl font-bold text-xs uppercase tracking-wider flex items-center justify-center gap-2 transition-all shadow-md active:scale-95 cursor-pointer shrink-0"
+                    >
+                      <Download size={15} />
+                      <span>Download Invoice</span>
+                    </button>
+                  )}
 
                 </div>
 
@@ -911,6 +983,60 @@ export default function OrderHistory({ user }) {
           </div>
         </div>
       )}
+
+      {/* Cancel Order Confirmation Modal */}
+      <AnimatePresence>
+        {cancelOrderId && (
+          <>
+            <motion.div
+              initial={{ opacity: 0 }}
+              animate={{ opacity: 1 }}
+              exit={{ opacity: 0 }}
+              onClick={() => !cancellingOrder && setCancelOrderId(null)}
+              className="fixed inset-0 bg-black/60 backdrop-blur-sm z-[10000]"
+            />
+            <div className="fixed inset-0 flex items-center justify-center z-[10001] p-4 pointer-events-none">
+              <motion.div
+                initial={{ opacity: 0, scale: 0.95, y: 10 }}
+                animate={{ opacity: 1, scale: 1, y: 0 }}
+                exit={{ opacity: 0, scale: 0.95, y: 10 }}
+                className="bg-white rounded-3xl p-6 sm:p-8 max-w-sm w-full shadow-2xl border border-gray-100 pointer-events-auto text-center"
+              >
+                <div className="w-16 h-16 bg-red-50 text-red-500 rounded-full flex items-center justify-center mx-auto mb-4 border border-red-100 shadow-sm">
+                  <XCircle size={28} />
+                </div>
+                <h3 className="text-xl font-bold text-[#1A1A1A] mb-2">Cancel Order</h3>
+                <p className="text-gray-500 text-xs mb-6 leading-relaxed font-medium">
+                  Are you sure you want to cancel this order? This action cannot be undone.
+                </p>
+                <div className="flex gap-3">
+                  <button
+                    disabled={cancellingOrder}
+                    onClick={() => setCancelOrderId(null)}
+                    className="flex-1 py-3.5 border border-gray-200 rounded-xl text-xs font-bold text-gray-700 hover:bg-gray-50 transition-colors uppercase tracking-wider disabled:opacity-50 cursor-pointer"
+                  >
+                    Back
+                  </button>
+                  <button
+                    disabled={cancellingOrder}
+                    onClick={confirmCancelOrder}
+                    className="flex-1 py-3.5 bg-red-600 hover:bg-red-700 text-white rounded-xl text-xs font-bold transition-all uppercase tracking-wider shadow-lg shadow-red-600/20 active:scale-[0.98] disabled:opacity-50 flex items-center justify-center gap-2 cursor-pointer"
+                  >
+                    {cancellingOrder ? (
+                      <>
+                        <Loader2 size={14} className="animate-spin" />
+                        <span>Cancelling...</span>
+                      </>
+                    ) : (
+                      <span>Confirm Cancel</span>
+                    )}
+                  </button>
+                </div>
+              </motion.div>
+            </div>
+          </>
+        )}
+      </AnimatePresence>
     </>
   );
 }

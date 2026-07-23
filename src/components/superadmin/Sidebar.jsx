@@ -6,7 +6,6 @@
 
 import {
   LayoutDashboard,
-  Users,
   ShieldAlert,
   LogOut,
   ChevronDown,
@@ -22,7 +21,6 @@ import { useAuth } from '../../context/AuthContext';
 const menuItems = [
   { title: 'Dashboard', icon: LayoutDashboard, path: '/superadmin/dashboard' },
   { title: 'Admins', icon: ShieldAlert, path: '/superadmin/admins' },
-  { title: 'Users', icon: Users, path: '/superadmin/users' },
   { title: 'Reports', icon: BarChart3, path: '/superadmin/reports' },
   { title: 'Active Sessions', icon: ShieldAlert, path: '/superadmin/sessions' },
 ];

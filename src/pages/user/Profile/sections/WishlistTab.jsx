@@ -7,7 +7,7 @@
 import React, { useState, useEffect } from 'react';
 import { db } from '../../../../firebase';
 import { collection, query, onSnapshot, doc, deleteDoc } from 'firebase/firestore';
-import { Heart, ShoppingBag, Trash2, ArrowRight } from 'lucide-react';
+import { Heart, ShoppingBag, Trash2, ArrowRight, Loader2 } from 'lucide-react';
 import { Link } from 'react-router-dom';
 import { getProductPath } from '../../../../utils/productUtils';
 import toast from 'react-hot-toast';
@@ -35,7 +35,14 @@ export default function WishlistTab({ user }) {
     }
   };
 
-  if (loading) return null;
+  if (loading) return (
+    <div className="flex flex-col items-center justify-center min-h-[400px] w-full py-12 my-auto text-center">
+      <Loader2 className="animate-spin text-brand-orange mb-4" size={48} />
+      <div className="flex items-center gap-2 text-xs font-bold text-gray-500 uppercase tracking-widest">
+        <span>Loading Wishlist</span>
+      </div>
+    </div>
+  );
 
   return (
     <div className="space-y-8">

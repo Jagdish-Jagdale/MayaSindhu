@@ -161,26 +161,137 @@ export default function Reports() {
     };
   }, [isOffline]);
 
-  // Helper to determine main category of a product
-  const getProductCategory = (prodName) => {
-    const prod = products.find(p => p.name === prodName);
-    if (!prod) return 'Uncategorized';
-    
-    let cat = categories.find(c => c.id === prod.categoryId);
-    
-    // Traverse up to find the root/main category
-    let maxDepth = 10;
-    while (cat && cat.parentId && maxDepth > 0) {
-      const parent = categories.find(c => c.id === cat.parentId);
-      if (parent) {
-        cat = parent;
-      } else {
-        break;
+  // Dynamic Word -> Root Category Map built from existing products
+  const wordCategoryMap = useMemo(() => {
+    const map = {};
+    products.forEach(p => {
+      if (!p.name) return;
+      let catId = p.categoryId;
+      let cat = categories.find(c => c.id === catId || (c.name && p.category && c.name.toLowerCase() === p.category.toLowerCase()));
+      
+      // Traverse to root category
+      let maxDepth = 10;
+      while (cat && cat.parentId && maxDepth > 0) {
+        const parent = categories.find(c => c.id === cat.parentId);
+        if (parent) cat = parent;
+        else break;
+        maxDepth--;
       }
-      maxDepth--;
+      
+      const rootCatName = cat ? cat.name : p.category;
+      if (rootCatName && rootCatName !== 'Uncategorized') {
+        const words = p.name.toLowerCase().split(/[\s\-_,\.\/]+/);
+        words.forEach(w => {
+          if (w.length > 2 && !['with', 'and', 'for', 'the', 'item', 'prd'].includes(w)) {
+            map[w] = rootCatName;
+          }
+        });
+      }
+    });
+    return map;
+  }, [products, categories]);
+
+  // Helper to determine main category of a product or order item
+  const getProductCategory = (itemOrName) => {
+    if (!itemOrName) return 'Uncategorized';
+
+    let itemObj = null;
+    let searchName = '';
+    let searchId = '';
+    let itemCat = '';
+
+    if (typeof itemOrName === 'object') {
+      itemObj = itemOrName;
+      searchName = (itemObj.name || itemObj.productName || itemObj.title || '').trim();
+      searchId = itemObj.id || itemObj.productId || itemObj.docId || '';
+      itemCat = itemObj.categoryId || itemObj.category || itemObj.categoryName || '';
+    } else if (typeof itemOrName === 'string') {
+      searchName = itemOrName.trim();
     }
-    
-    return cat ? (cat.name || 'Uncategorized') : 'Uncategorized';
+
+    // 1. Try to find product in products list by ID or by Name
+    let prod = null;
+    if (searchId) {
+      prod = products.find(p => p.id === searchId || p.productId === searchId);
+    }
+    if (!prod && searchName) {
+      const cleanName = searchName.toLowerCase();
+      prod = products.find(p => {
+        const pName = (p.name || '').trim().toLowerCase();
+        return pName === cleanName || (pName.length > 3 && (cleanName.includes(pName) || pName.includes(cleanName)));
+      });
+    }
+
+    // 2. Identify potential category ID or category name from product or item
+    const targetCatId = prod?.categoryId || (itemCat && categories.some(c => c.id === itemCat) ? itemCat : null);
+    const targetCatName = prod?.category || prod?.categoryName || (itemCat && !categories.some(c => c.id === itemCat) ? itemCat : null);
+
+    // 3. Find category object in categories array
+    let cat = null;
+    if (targetCatId) {
+      cat = categories.find(c => c.id === targetCatId);
+    }
+    if (!cat && targetCatName) {
+      cat = categories.find(c => (c.name || '').trim().toLowerCase() === targetCatName.trim().toLowerCase());
+    }
+
+    // 4. Traverse up to root category if nested under a parent category
+    if (cat) {
+      let maxDepth = 10;
+      while (cat && cat.parentId && maxDepth > 0) {
+        const parent = categories.find(c => c.id === cat.parentId);
+        if (parent) cat = parent;
+        else break;
+        maxDepth--;
+      }
+      return cat.name || 'Uncategorized';
+    }
+
+    if (targetCatName) {
+      return targetCatName;
+    }
+
+    // 5. Match words in searchName against category names
+    if (searchName) {
+      const cleanName = searchName.toLowerCase();
+      for (const c of categories) {
+        if (!c.name) continue;
+        const cName = c.name.toLowerCase();
+        if (cleanName.includes(cName) || cName.includes(cleanName)) {
+          let rootCat = c;
+          let maxDepth = 10;
+          while (rootCat && rootCat.parentId && maxDepth > 0) {
+            const parent = categories.find(p => p.id === rootCat.parentId);
+            if (parent) rootCat = parent;
+            else break;
+            maxDepth--;
+          }
+          return rootCat.name;
+        }
+      }
+
+      // 6. Word-to-category lookup built from existing products
+      const words = cleanName.split(/[\s\-_,\.\/]+/);
+      for (const w of words) {
+        if (wordCategoryMap[w]) {
+          return wordCategoryMap[w];
+        }
+      }
+
+      // 7. Keyword fallback matching
+      if (/saree|kurti|dress|dupatta|fabric|shirt|cloth|apparel|wear|top|bottom/i.test(cleanName)) return 'Apparel';
+      if (/jewel|earring|necklace|ring|bangle|silver|gold|pendant|ornament|terracotta/i.test(cleanName)) return 'Jewellery';
+      if (/bag|sling|purse|tote|pouch|clutch|wallet/i.test(cleanName)) return 'Bags';
+      if (/diya|festive|mar|decor|lamp|candle|gift/i.test(cleanName)) return 'Festive Collection';
+    }
+
+    // 8. Default fallback to first root category if available
+    const rootCategories = categories.filter(c => !c.parentId);
+    if (rootCategories.length > 0) {
+      return rootCategories[0].name;
+    }
+
+    return 'Uncategorized';
   };
 
   // Populate filter selectors dynamically
@@ -248,7 +359,7 @@ export default function Reports() {
       // 5. Category Filter
       if (selectedCategory !== 'All') {
         if (o.items && Array.isArray(o.items)) {
-          if (!o.items.some(item => getProductCategory(item.name) === selectedCategory)) return false;
+          if (!o.items.some(item => getProductCategory(item) === selectedCategory)) return false;
         } else if (getProductCategory(o.productName) !== selectedCategory) return false;
       }
 
@@ -257,7 +368,7 @@ export default function Reports() {
 
       return true;
     });
-  }, [allOrders, timeRange, startDate, endDate, selectedCustomer, selectedProduct, selectedCategory, products]);
+  }, [allOrders, timeRange, startDate, endDate, selectedCustomer, selectedProduct, selectedCategory, products, categories]);
 
   // Aggregate stats based on filtered orders
   const stats = useMemo(() => {
@@ -322,7 +433,7 @@ export default function Reports() {
           const name = item.name || 'Unknown Product';
           const qty = Number(item.quantity) || Number(item.qty) || 1;
           const amt = parseCurrency(item.amount) || (parseCurrency(item.rate || item.price) * qty);
-          const cat = getProductCategory(name);
+          const cat = getProductCategory(item);
           if (!totals[name]) totals[name] = { name, category: cat, qtySold: 0, totalSales: 0 };
           totals[name].qtySold += qty;
           totals[name].totalSales += amt;
@@ -338,7 +449,7 @@ export default function Reports() {
       }
     });
     return Object.values(totals).sort((a, b) => b.totalSales - a.totalSales);
-  }, [filteredOrders, products]);
+  }, [filteredOrders, products, categories]);
 
   // Category-wise aggregated reports
   const categorySalesData = useMemo(() => {
@@ -346,7 +457,7 @@ export default function Reports() {
     filteredOrders.forEach(o => {
       if (o.items && Array.isArray(o.items)) {
         o.items.forEach(item => {
-          const cat = getProductCategory(item.name);
+          const cat = getProductCategory(item);
           const qty = Number(item.quantity) || Number(item.qty) || 1;
           const amt = parseCurrency(item.amount) || (parseCurrency(item.rate || item.price) * qty);
           if (!totals[cat]) totals[cat] = { name: cat, qtySold: 0, totalSales: 0 };

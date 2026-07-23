@@ -5,13 +5,13 @@
  */
 
 import { motion, AnimatePresence } from 'framer-motion';
-import { ShoppingBag, Heart, Star, CheckCircle2 } from 'lucide-react';
+import { ShoppingBag, Heart, Star, CheckCircle2, ShoppingCart } from 'lucide-react';
 import { Link, useNavigate, useLocation } from 'react-router-dom';
 import { useState, useEffect } from 'react';
 import { useAuth } from '../../context/AuthContext';
 import { useCartUI } from '../../context/CartUIContext';
 import { db } from '../../firebase';
-import { doc, getDoc, setDoc, updateDoc, deleteDoc, serverTimestamp, onSnapshot } from 'firebase/firestore';
+import { doc, getDoc, setDoc, updateDoc, deleteDoc, serverTimestamp, onSnapshot, collection } from 'firebase/firestore';
 import { addToCart } from '../../utils/cartUtils';
 import { getProductPath } from '../../utils/productUtils';
 import toast from 'react-hot-toast';
@@ -55,9 +55,10 @@ export default function ProductCard({ id, productId, slug, name, price, discount
       setIsWishlisted(doc.exists());
     });
 
-    const cartItemRef = doc(db, 'users', user.uid, 'cart', docId);
-    const unsubCart = onSnapshot(cartItemRef, (doc) => {
-      setIsInCart(doc.exists());
+    const cartColRef = collection(db, 'users', user.uid, 'cart');
+    const unsubCart = onSnapshot(cartColRef, (snapshot) => {
+      const exists = snapshot.docs.some(d => d.id === docId || d.id.startsWith(`${docId}_`) || d.data().id === docId || d.data().productId === docId);
+      setIsInCart(exists);
     });
 
     return () => {
@@ -83,9 +84,11 @@ export default function ProductCard({ id, productId, slug, name, price, discount
     try {
       await addToCart(user, { id, productId: productId || '', slug, name, price: displayPrice, image, images });
       setIsAdded(true);
+      toast.success("Added to bag!");
       setTimeout(() => setIsAdded(false), 2000);
     } catch (error) {
-      alert(`Database Vault Error: ${getFriendlyErrorMessage(error)}. Please check your Firebase permissions.`);
+      console.error("Cart error:", error);
+      toast.error(getFriendlyErrorMessage(error) || "Failed to add to bag");
     }
   };
 
@@ -191,16 +194,16 @@ export default function ProductCard({ id, productId, slug, name, price, discount
               <button
                 disabled={stockVal === 0 && !isInCart}
                 onClick={isInCart ? (e) => { e.preventDefault(); e.stopPropagation(); setCartOpen(true); } : handleAddToCart}
-                className={`flex-1 flex items-center justify-center space-x-1 md:space-x-2 backdrop-blur-md border text-white py-2.5 md:py-3 rounded-2xl shadow-2xl active:scale-95 transition-all duration-500 ${isInCart
+                className={`flex-1 flex items-center justify-center space-x-1 md:space-x-2 border text-white py-2.5 md:py-3 rounded-2xl shadow-2xl active:scale-95 transition-all duration-500 ${isInCart
                     ? 'bg-brand-orange hover:bg-brand-orange-dark border-brand-orange/30'
                     : (stockVal === 0
                       ? 'bg-gray-400/50 hover:bg-gray-400/50 border-gray-400/20 cursor-not-allowed opacity-50'
-                      : 'bg-black/30 hover:bg-white hover:text-brand-black border-white/30')
+                      : 'bg-black/40 hover:bg-black/65 text-white border-white/30 hover:border-white/50')
                   }`}
               >
                 <ShoppingBag size={12} className="md:w-3.5 md:h-3.5" strokeWidth={2} />
                 <span className="text-[8px] md:text-[10px] font-bold uppercase tracking-[0.1em] whitespace-nowrap">
-                  {stockVal === 0 && !isInCart ? "Sold Out" : (isInCart ? "In Bag" : "Add")}
+                  {stockVal === 0 && !isInCart ? "Sold Out" : (isInCart ? "Bag" : "Add")}
                 </span>
               </button>
               <button
@@ -233,6 +236,7 @@ export default function ProductCard({ id, productId, slug, name, price, discount
                     : 'bg-brand-orange hover:bg-brand-orange-dark text-white border border-brand-orange/30'
                   }`}
               >
+                <ShoppingCart size={12} className="md:w-3.5 md:h-3.5" strokeWidth={2} />
                 <span className="text-[8px] md:text-[10px] font-bold uppercase tracking-[0.1em] whitespace-nowrap">
                   {stockVal === 0 ? "Sold Out" : "Buy Now"}
                 </span>

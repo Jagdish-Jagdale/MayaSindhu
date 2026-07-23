@@ -4,13 +4,14 @@
  * Work Done: Integrated baseline UI layouts, state boundaries, CSS theme styling, and routing pathways.
  */
 
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useRef } from 'react';
 import { useParams, useNavigate, useLocation, Navigate, Link } from 'react-router-dom';
 import { useGoBack } from '../../hooks/useGoBack';
 import { motion, AnimatePresence } from 'framer-motion';
 import {
   ShoppingBag,
   ChevronRight,
+  ChevronLeft,
   ChevronDown,
   Star,
   Heart,
@@ -277,6 +278,14 @@ export default function ProductDetail() {
   const [adding, setAdding] = useState(false);
   const [relatedProducts, setRelatedProducts] = useState([]);
   const [relatedLoading, setRelatedLoading] = useState(true);
+  const similarScrollRef = useRef(null);
+
+  const scrollSimilar = (direction) => {
+    if (similarScrollRef.current) {
+      const scrollAmount = direction === 'left' ? -380 : 380;
+      similarScrollRef.current.scrollBy({ left: scrollAmount, behavior: 'smooth' });
+    }
+  };
   const { categories } = useCategories();
   const categoryObj = product?.categoryId && categories ? findCategoryById(product.categoryId, categories) : null;
   const rootCatId = product?.categoryId && categories ? findRootCategoryId(product.categoryId, categories) : null;
@@ -470,9 +479,16 @@ export default function ProductDetail() {
       setAlreadyInBag(false);
       return;
     }
-    const cartItemRef = doc(db, 'users', user.uid, 'cart', product.id.toString());
-    const unsubscribe = onSnapshot(cartItemRef, (docSnap) => {
-      setAlreadyInBag(docSnap.exists());
+    const pId = product.id.toString();
+    const cartColRef = collection(db, 'users', user.uid, 'cart');
+    const unsubscribe = onSnapshot(cartColRef, (snapshot) => {
+      const exists = snapshot.docs.some(d => 
+        d.id === pId || 
+        d.id.startsWith(`${pId}_`) || 
+        d.data().id === pId || 
+        d.data().productId === pId
+      );
+      setAlreadyInBag(exists);
     });
     return () => unsubscribe();
   }, [user, product]);
@@ -574,10 +590,29 @@ export default function ProductDetail() {
         : null;
       await addToCart(user, product, quantity, variantPayload);
       setIsAdded(true);
-      // Auto-hide success message after 3 seconds
+      toast.success(`"${product.name}" added to bag!`, {
+        position: 'top-right',
+        duration: 3000,
+        style: {
+          borderRadius: '16px',
+          background: 'linear-gradient(135deg, #1BAFAF 0%, #169696 100%)',
+          color: '#ffffff',
+          fontWeight: '700',
+          fontSize: '13px',
+          boxShadow: '0 12px 28px -5px rgba(27, 175, 175, 0.45)',
+          padding: '14px 20px',
+          border: '1px solid rgba(255,255,255,0.2)'
+        },
+        iconTheme: {
+          primary: '#ffffff',
+          secondary: '#1BAFAF',
+        },
+      });
       setTimeout(() => setIsAdded(false), 3000);
     } catch (error) {
-      toast.error(getFriendlyErrorMessage(error) || "Failed to add to cart");
+      toast.error(getFriendlyErrorMessage(error) || "Failed to add to cart", {
+        position: 'top-right'
+      });
     } finally {
       setAdding(false);
     }
@@ -839,7 +874,7 @@ export default function ProductDetail() {
                           }`}
                       >
                         {adding ? <Loader2 className="animate-spin" size={14} /> : alreadyInBag ? <CheckCircle2 size={16} /> : <ShoppingBag size={16} />}
-                        {alreadyInBag ? 'Go to Bag' : 'Add to Bag'}
+                        {alreadyInBag ? 'View Bag' : 'Add to Bag'}
                       </button>
                       <button
                         onClick={handleBuyNow}
@@ -1235,35 +1270,45 @@ export default function ProductDetail() {
               </Link>
             </div>
 
-            <div className="flex overflow-x-auto gap-4 sm:gap-6 lg:gap-8 pb-4 no-scrollbar scroll-smooth">
-              {relatedProducts.map((p) => (
-                <motion.div
-                  key={p.id}
-                  whileHover={{ y: -8, scale: 1.02 }}
-                  transition={{ type: "spring", stiffness: 300, damping: 20 }}
-                  className="w-[calc((100%-16px)/2)] sm:w-[calc((100%-48px)/3)] lg:w-[calc((100%-96px)/4)] flex-shrink-0"
-                >
-                  <ProductCard {...p} />
-                </motion.div>
-              ))}
+            <div className="relative group px-4 md:px-12">
+              {/* Left Arrow - Shows on Hover */}
+              <button
+                onClick={() => scrollSimilar('left')}
+                className="absolute left-0 md:-left-2 top-[40%] -translate-y-1/2 z-20 p-3.5 rounded-full bg-white shadow-xl border border-gray-150 hover:bg-brand-orange hover:text-white text-gray-700 hover:scale-110 transition-all duration-300 opacity-0 group-hover:opacity-100 hidden md:flex items-center justify-center active:scale-95 cursor-pointer"
+                aria-label="Scroll left"
+              >
+                <ArrowLeft size={18} strokeWidth={2} />
+              </button>
+
+              {/* Right Arrow - Shows on Hover */}
+              <button
+                onClick={() => scrollSimilar('right')}
+                className="absolute right-0 md:-right-2 top-[40%] -translate-y-1/2 z-20 p-3.5 rounded-full bg-white shadow-xl border border-gray-150 hover:bg-brand-orange hover:text-white text-gray-700 hover:scale-110 transition-all duration-300 opacity-0 group-hover:opacity-100 hidden md:flex items-center justify-center active:scale-95 cursor-pointer"
+                aria-label="Scroll right"
+              >
+                <ArrowRight size={18} strokeWidth={2} />
+              </button>
+
+              <div 
+                ref={similarScrollRef} 
+                className="flex overflow-x-auto gap-4 sm:gap-6 lg:gap-8 pb-4 no-scrollbar scroll-smooth snap-x"
+              >
+                {relatedProducts.map((p) => (
+                  <motion.div
+                    key={p.id}
+                    whileHover={{ y: -8, scale: 1.02 }}
+                    transition={{ type: "spring", stiffness: 300, damping: 20 }}
+                    className="w-[calc((100%-16px)/2)] sm:w-[calc((100%-48px)/3)] lg:w-[calc((100%-96px)/4)] flex-shrink-0 snap-start"
+                  >
+                    <ProductCard {...p} />
+                  </motion.div>
+                ))}
+              </div>
             </div>
           </div>
         )}
 
-        {/* Success Pop Message - Mobile Optimized */}
-        <AnimatePresence>
-          {isAdded && (
-            <motion.div
-              initial={{ opacity: 0, x: -50 }}
-              animate={{ opacity: 1, x: 0 }}
-              exit={{ opacity: 0, x: -50 }}
-              className="fixed bottom-10 left-10 z-50 px-4 py-2 bg-white text-brand-orange shadow-xl rounded-xl flex items-center gap-2 border border-brand-orange"
-            >
-              <CheckCircle2 size={16} className="text-brand-orange flex-shrink-0" />
-              <p className="text-[9px] font-black uppercase tracking-[0.15em]">Added to Bag</p>
-            </motion.div>
-          )}
-        </AnimatePresence>
+
       </div>
     </div>
   );

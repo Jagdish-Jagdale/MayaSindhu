@@ -196,6 +196,18 @@ export default function TopNav({ sidebarOpen, onToggleSidebar, isMobile }) {
     }
   };
 
+  const clearAllNotifications = async (e) => {
+    if (e) e.stopPropagation();
+    try {
+      const deletePromises = notifications.map(notif => deleteDoc(doc(db, 'notifications', notif.id)));
+      await Promise.all(deletePromises);
+      toast.success("All notifications cleared");
+    } catch (error) {
+      console.error("Failed to clear notifications:", error);
+      toast.error("Failed to clear notifications");
+    }
+  };
+
   const formatTime = (timestamp) => {
     if (!timestamp) return 'Just now';
     const date = timestamp.toDate();
@@ -379,11 +391,20 @@ export default function TopNav({ sidebarOpen, onToggleSidebar, isMobile }) {
                 exit={{ opacity: 0, y: 15, scale: 0.95 }}
                 className="absolute top-[calc(100%+12px)] right-0 w-[300px] sm:w-[340px] bg-white rounded-3xl shadow-[0_20px_50px_rgba(0,0,0,0.2)] border border-gray-100 overflow-hidden z-[100]"
               >
-                <div className="bg-gray-50/50 px-6 py-5 border-b border-gray-100 flex items-center justify-between">
+                <div className="bg-gray-50/50 px-6 py-4 border-b border-gray-100 flex items-center justify-between">
                   <span className="text-[15px] font-semibold text-gray-900">Notifications</span>
                   {notifications.length > 0 && (
-                    <div className="flex items-center gap-1.5 bg-[#1BAFAF]/10 px-2.5 py-1 rounded-full">
-                       <span className="text-[10px] text-[#1BAFAF] font-bold uppercase tracking-widest">{notifications.length} New</span>
+                    <div className="flex items-center gap-2">
+                      <span className="text-[10px] text-[#1BAFAF] font-bold uppercase tracking-widest bg-[#1BAFAF]/10 px-2.5 py-1 rounded-full">
+                        {notifications.length} NEW
+                      </span>
+                      <button
+                        onClick={clearAllNotifications}
+                        className="text-[11px] font-bold text-gray-400 hover:text-red-500 transition-colors cursor-pointer px-2 py-1 rounded-lg hover:bg-red-50"
+                        title="Clear All Notifications"
+                      >
+                        Clear All
+                      </button>
                     </div>
                   )}
                 </div>
@@ -407,7 +428,8 @@ export default function TopNav({ sidebarOpen, onToggleSidebar, isMobile }) {
                         </div>
                         <button 
                           onClick={(e) => deleteNotification(notif.id, e)}
-                          className="absolute right-3 top-4 p-2 text-gray-300 hover:text-red-500 hover:bg-red-50 rounded-xl transition-all opacity-0 group-hover:opacity-100"
+                          className="absolute right-3 top-4 p-1.5 text-gray-300 hover:text-red-500 hover:bg-red-50 rounded-xl transition-all group-hover:text-gray-400"
+                          title="Remove notification"
                         >
                           <X size={14} />
                         </button>
