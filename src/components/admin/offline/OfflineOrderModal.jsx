@@ -81,31 +81,6 @@ const OfflineOrderModal = ({ isOpen, onClose }) => {
     return () => document.removeEventListener('mousedown', handleClickOutside);
   }, []);
 
-  useEffect(() => {
-    if (isOpen) {
-      setFormData({
-        customerId: '',
-        customerName: '',
-        saleOrderNumber: '',
-        saleOrderDate: new Date().toLocaleDateString('en-GB'), // dd/mm/yyyy
-        deliveryDate: new Date().toLocaleDateString('en-GB'),
-        items: [],
-        subTotal: 0,
-        tax: 18,
-        total: 0,
-        customerNotes: ''
-      });
-      setSearchCustomer('');
-      setLoading(false);
-      fetchCustomers();
-      fetchProducts();
-      fetchGstConfiguration();
-      if (orderSettings.mode === 'auto') {
-        generateSONumber();
-      }
-    }
-  }, [isOpen, fetchCustomers, fetchProducts, fetchGstConfiguration, generateSONumber, orderSettings.mode]);
-
   const fetchGstConfiguration = useCallback(async () => {
     try {
       const docRef = doc(db, 'settings', 'gst_configuration');
@@ -156,6 +131,30 @@ const OfflineOrderModal = ({ isOpen, onClose }) => {
     setFormData(prev => ({ ...prev, saleOrderNumber: formattedNum }));
   }, []);
 
+  useEffect(() => {
+    if (isOpen) {
+      setFormData({
+        customerId: '',
+        customerName: '',
+        saleOrderNumber: '',
+        saleOrderDate: new Date().toLocaleDateString('en-GB'), // dd/mm/yyyy
+        deliveryDate: new Date().toLocaleDateString('en-GB'),
+        items: [],
+        subTotal: 0,
+        tax: 18,
+        total: 0,
+        customerNotes: ''
+      });
+      setSearchCustomer('');
+      setLoading(false);
+      fetchCustomers();
+      fetchProducts();
+      fetchGstConfiguration();
+      if (orderSettings.mode === 'auto') {
+        generateSONumber();
+      }
+    }
+  }, [isOpen, fetchCustomers, fetchProducts, fetchGstConfiguration, generateSONumber, orderSettings.mode]);
   const handleBulkAdd = (selectedProducts) => {
     const newItems = selectedProducts.map(p => ({
       id: Date.now() + Math.random(),

@@ -47,7 +47,8 @@ import {
   deleteDoc,
   setDoc,
   updateDoc,
-  serverTimestamp
+  serverTimestamp,
+  getDocs
 } from 'firebase/firestore';
 import useCategories from '../../hooks/useCategories';
 import ProductFormModal from '../../components/admin/ProductFormModal';
@@ -816,15 +817,41 @@ export default function ProductManagement() {
 function ProductViewModal({ isOpen, onClose, product, categoryMap, hierarchy, stockAlertThreshold }) {
   useEscapeKey(onClose, isOpen);
 
-  if (!product) return null;
-
-  const [activeImg, setActiveImg] = useState(product.images?.[0] || '');
+  const [activeImg, setActiveImg] = useState(product?.images?.[0] || '');
+  const [variants, setVariants] = useState([]);
+  const [loadingVariants, setLoadingVariants] = useState(false);
 
   useEffect(() => {
     if (product?.images?.length > 0) {
       setActiveImg(product.images[0]);
+    } else {
+      setActiveImg('');
     }
   }, [product]);
+
+  useEffect(() => {
+    const fetchVariants = async () => {
+      if (!product?.id) return;
+      setLoadingVariants(true);
+      try {
+        const variantsSnap = await getDocs(collection(db, 'products', product.id, 'variants'));
+        const fetchedVariants = variantsSnap.docs.map(doc => ({
+          id: doc.id,
+          ...doc.data()
+        }));
+        setVariants(fetchedVariants);
+      } catch (error) {
+        console.error("Error fetching variants", error);
+      } finally {
+        setLoadingVariants(false);
+      }
+    };
+    if (isOpen) {
+      fetchVariants();
+    }
+  }, [product, isOpen]);
+
+  if (!product) return null;
 
   const getCategoryPath = (targetId, currentHierarchy) => {
     if (!currentHierarchy) return null;
@@ -919,7 +946,7 @@ function ProductViewModal({ isOpen, onClose, product, categoryMap, hierarchy, st
                   {/* Main Large Image (Aligned Height) */}
                   <div className="flex-1 relative rounded-[32px] bg-gray-50 overflow-hidden border border-gray-100 group shadow-inner h-full flex items-center justify-center">
                     <img 
-                      src={activeImg} 
+                      src={activeImg || null} 
                       alt={product.name} 
                       className="max-w-full max-h-full object-contain transition-transform duration-700 group-hover:scale-105 p-4" 
                     />
@@ -974,16 +1001,16 @@ function ProductViewModal({ isOpen, onClose, product, categoryMap, hierarchy, st
                       <p className="text-[13px] font-bold text-gray-800 uppercase">{product.sku || 'N/A'}</p>
                     </div>
                     <div className="space-y-1">
-                      <span className="text-[10px] font-black text-gray-300 uppercase tracking-[0.2em]">Fabric</span>
-                      <p className="text-[13px] font-bold text-gray-800">Pure Silk</p>
+                      <span className="text-[10px] font-black text-gray-300 uppercase tracking-[0.2em]">Brand</span>
+                      <p className="text-[13px] font-bold text-gray-800">{product.brand || 'MayaSindhu'}</p>
                     </div>
                     <div className="space-y-1">
-                      <span className="text-[10px] font-black text-gray-300 uppercase tracking-[0.2em]">Craft</span>
-                      <p className="text-[13px] font-bold text-gray-800">Hand Woven</p>
+                      <span className="text-[10px] font-black text-gray-300 uppercase tracking-[0.2em]">Type</span>
+                      <p className="text-[13px] font-bold text-gray-800">{product.productType || 'N/A'}</p>
                     </div>
                     <div className="space-y-1">
-                      <span className="text-[10px] font-black text-gray-300 uppercase tracking-[0.2em]">Occasion</span>
-                      <p className="text-[13px] font-bold text-gray-800">Festive Wear</p>
+                      <span className="text-[10px] font-black text-gray-300 uppercase tracking-[0.2em]">Care</span>
+                      <p className="text-[13px] font-bold text-gray-800 truncate" title={product.care || 'N/A'}>{product.care || 'N/A'}</p>
                     </div>
                   </div>
                 </div>
@@ -1001,11 +1028,88 @@ function ProductViewModal({ isOpen, onClose, product, categoryMap, hierarchy, st
                   </p>
                 </div>
               </div>
+
+              {/* Variants */}
+              <div className="mt-14 space-y-6 pb-6">
+                <div className="flex items-center justify-between">
+                  <h3 className="text-[11px] font-black text-gray-400 uppercase tracking-[0.2em]">Product Variants</h3>
+                  <div className="h-px flex-1 bg-gray-100 ml-6" />
+                </div>
+                
+                <div className="bg-white rounded-2xl border border-gray-100 overflow-hidden shadow-sm">
+                  {loadingVariants ? (
+                    <div className="flex justify-center p-8">
+                      <Loader2 className="w-6 h-6 animate-spin text-[#1BAFAF]" />
+                    </div>
+                  ) : variants.length > 0 ? (
+                    <div className="overflow-x-auto">
+                      <table className="w-full text-left">
+                        <thead>
+                          <tr className="bg-gray-50/80 border-b border-gray-100">
+                            <th className="px-6 py-4 text-[11px] font-black text-gray-400 uppercase tracking-widest">Variant Details</th>
+                            <th className="px-6 py-4 text-[11px] font-black text-gray-400 uppercase tracking-widest">SKU</th>
+                            <th className="px-6 py-4 text-[11px] font-black text-gray-400 uppercase tracking-widest text-center">Stock</th>
+                            <th className="px-6 py-4 text-[11px] font-black text-gray-400 uppercase tracking-widest text-right">Price</th>
+                          </tr>
+                        </thead>
+                        <tbody className="divide-y divide-gray-50">
+                          {variants.map(variant => (
+                            <tr key={variant.id} className="hover:bg-gray-50/50 transition-colors">
+                              <td className="px-6 py-4">
+                                <div className="flex items-center gap-3">
+                                  {variant.images && variant.images.length > 0 && (
+                                    <div className="w-10 h-10 rounded-lg overflow-hidden border border-gray-100 shrink-0">
+                                      <img src={variant.images[0]} alt="" className="w-full h-full object-cover" />
+                                    </div>
+                                  )}
+                                  <div className="flex flex-col">
+                                    <span className="text-[13px] font-bold text-gray-800">
+                                      {variant.color && `Color: ${variant.color}`}
+                                      {variant.color && variant.size && ' | '}
+                                      {variant.size && `Size: ${variant.size}`}
+                                      {!variant.color && !variant.size && 'Standard Variant'}
+                                    </span>
+                                    {variant.design && (
+                                      <span className="text-[11px] text-gray-400 font-medium mt-0.5">Style: {variant.design}</span>
+                                    )}
+                                  </div>
+                                </div>
+                              </td>
+                              <td className="px-6 py-4 text-[12px] font-semibold text-gray-500">{variant.sku || 'N/A'}</td>
+                              <td className="px-6 py-4 text-center">
+                                <span className={`px-3 py-1 rounded-full text-[11px] font-bold border ${
+                                  variant.stock > 10 ? 'bg-green-50 text-green-600 border-green-100' :
+                                  variant.stock > 0 ? 'bg-amber-50 text-amber-600 border-amber-100' :
+                                  'bg-red-50 text-red-600 border-red-100'
+                                }`}>
+                                  {variant.stock || 0} Units
+                                </span>
+                              </td>
+                              <td className="px-6 py-4 text-right">
+                                <div className="flex flex-col items-end">
+                                  <span className="text-[13px] font-black text-gray-900">₹{variant.price || variant.actualPrice || 0}</span>
+                                  {variant.actualPrice && variant.price && variant.actualPrice > variant.price && (
+                                    <span className="text-[10px] text-gray-400 line-through">₹{variant.actualPrice}</span>
+                                  )}
+                                </div>
+                              </td>
+                            </tr>
+                          ))}
+                        </tbody>
+                      </table>
+                    </div>
+                  ) : (
+                    <div className="p-8 text-center text-[13px] font-medium text-gray-400">
+                      No variants found for this product.
+                    </div>
+                  )}
+                </div>
+              </div>
             </div>
 
             {/* Fixed Footer */}
             <div className="px-10 py-6 bg-gray-50 border-t border-gray-100 flex items-center justify-end shrink-0">
-                <button onClick={onClose} className="px-12 py-3.5 bg-[#1BAFAF] hover:bg-[#17a0a0] text-white text-[13px] font-black uppercase tracking-widest rounded-xl transition-all active:scale-95 shadow-xl shadow-[#1BAFAF]/20">
+                <button onClick={onClose} className="px-12 py-3.5 bg-[#1BAFAF] hover:bg-[#17a0a0] text-black text-[13px] font-black uppercase tracking-widest rounded-xl transition-all active:scale-95 shadow-xl shadow-[#1BAFAF]/20">
                   Done
                 </button>
             </div>

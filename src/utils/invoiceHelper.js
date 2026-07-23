@@ -253,8 +253,8 @@ export const handleDownloadInvoice = (order, isOffline = false, customerObj = {}
             <td class="info-cell" style="border-right: 1.5px solid #000; width: 50%;">
               <table class="info-sub-table">
                 <tr>
-                  <td style="width: 35%;">#</td>
-                  <td style="width: 65%; font-weight: bold;">: ${orderIdText}</td>
+                  <td style="width: 35%;">Invoice No.</td>
+                  <td style="width: 65%; font-weight: bold;">: INV-${orderIdText}</td>
                 </tr>
                 <tr>
                   <td>Invoice Date</td>
@@ -269,7 +269,7 @@ export const handleDownloadInvoice = (order, isOffline = false, customerObj = {}
                   <td style="font-weight: bold;">: ${formatDateVal(order.invoiceDate || order.createdAt)}</td>
                 </tr>
                 <tr>
-                  <td>P.O.#</td>
+                  <td>Order ID</td>
                   <td style="font-weight: bold;">: ${orderIdText}</td>
                 </tr>
               </table>

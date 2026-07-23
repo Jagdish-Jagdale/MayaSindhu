@@ -52,7 +52,6 @@ import Returns from './pages/admin/offline/Returns';
 import SuperAdminLayout from './layouts/SuperAdminLayout';
 import SuperAdminDashboard from './pages/superadmin/Dashboard';
 import SuperAdminAdmins from './pages/superadmin/Admins';
-import SuperAdminUsers from './pages/superadmin/Users';
 import SuperAdminSuperAdmins from './pages/superadmin/SuperAdmins';
 import SuperAdminActiveSessions from './pages/superadmin/ActiveSessions';
 
@@ -179,7 +178,7 @@ function AppContent() {
           <Route path="reports" element={<Reports />} />
           <Route path="delivery-charges" element={<DeliveryCharges />} />
           <Route path="reviews" element={<Reviews />} />
-          <Route path="returns" element={<OnlineReturns />} />
+          <Route path="return" element={<OnlineReturns />} />
           <Route path="settings" element={<Settings />} />
           <Route path="settings/banner" element={<Banner />} />
           <Route path="settings/curated-realms" element={<CuratedRealms />} />
@@ -187,7 +186,7 @@ function AppContent() {
           <Route path="settings/artisan-blooms" element={<ArtisanBlooms />} />
           <Route path="settings/stories" element={<Stories />} />
           <Route path="settings/purpose" element={<Purpose />} />
-          <Route path="settings/testimonials" element={<Testimonial />} />
+          <Route path="settings/testimonial" element={<Testimonial />} />
           <Route path="settings/about-us" element={<AboutUs />} />
           <Route path="settings/blogs" element={<Blogs />} />
           <Route path="settings/workshops" element={<Workshops />} />
@@ -224,7 +223,6 @@ function AppContent() {
           <Route path="dashboard" element={<SuperAdminDashboard />} />
           <Route path="superadmins" element={<SuperAdminSuperAdmins />} />
           <Route path="admins" element={<SuperAdminAdmins />} />
-          <Route path="users" element={<SuperAdminUsers />} />
           <Route path="reports" element={<Reports />} />
           <Route path="sessions" element={<SuperAdminActiveSessions />} />
         </Route>

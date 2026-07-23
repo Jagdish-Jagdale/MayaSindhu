@@ -32,6 +32,7 @@ import toast from 'react-hot-toast';
 import { useAdminUI } from '../../../context/AdminUIContext';
 import DeleteConfirmationModal from '../../../components/admin/DeleteConfirmationModal';
 import StoreCustomerModal from '../../../components/admin/offline/StoreCustomerModal';
+import StoreCustomerViewModal from '../../../components/admin/offline/StoreCustomerViewModal';
 
 const StoreCustomers = () => {
   const { isCollapsed } = useAdminUI();
@@ -51,6 +52,9 @@ const StoreCustomers = () => {
   const [isDeleteModalOpen, setIsDeleteModalOpen] = useState(false);
   const [customerToDelete, setCustomerToDelete] = useState(null);
   const [isDeleting, setIsDeleting] = useState(false);
+
+  const [isViewModalOpen, setIsViewModalOpen] = useState(false);
+  const [customerToView, setCustomerToView] = useState(null);
 
   const filterRef = useRef(null);
   const rowsRef = useRef(null);
@@ -77,6 +81,11 @@ const StoreCustomers = () => {
   const handleAdd = () => {
     setSelectedCustomer(null);
     setIsModalOpen(true);
+  };
+
+  const handleView = (customer) => {
+    setCustomerToView(customer);
+    setIsViewModalOpen(true);
   };
 
   const handleEdit = (customer) => {
@@ -322,7 +331,11 @@ const StoreCustomers = () => {
             <tbody className="divide-y divide-gray-50/50">
               {currentCustomers.length > 0 ? (
                 currentCustomers.map((c, idx) => (
-                  <tr key={c.id} className="hover:bg-gray-50 group transition-colors">
+                  <tr 
+                    key={c.id} 
+                    className="hover:bg-gray-50 group transition-colors cursor-pointer"
+                    onClick={() => handleView(c)}
+                  >
                     <td className="px-6 py-4 whitespace-nowrap text-[14px] text-gray-400 font-medium">{(startIndex + idx + 1).toString().padStart(2, '0')}</td>
                     <td className="px-6 py-4 min-w-[200px]">
                       <span className="text-[14px] font-bold text-gray-900">{c.fullName}</span>
@@ -347,13 +360,13 @@ const StoreCustomers = () => {
                     <td className="px-6 py-4 text-right">
                       <div className="flex items-center justify-end gap-2">
                         <button 
-                          onClick={() => handleEdit(c)}
+                          onClick={(e) => { e.stopPropagation(); handleEdit(c); }}
                           className="w-8 h-8 flex items-center justify-center text-[#1BAFAF] hover:bg-[#1BAFAF]/5 rounded-lg transition-all active:scale-90"
                         >
                           <Pencil size={14} strokeWidth={2.5} />
                         </button>
                         <button 
-                          onClick={() => handleDelete(c)}
+                          onClick={(e) => { e.stopPropagation(); handleDelete(c); }}
                           className="w-8 h-8 flex items-center justify-center text-red-600 hover:bg-red-50 rounded-lg transition-all active:scale-90"
                         >
                           <Trash2 size={14} strokeWidth={2.5} />
@@ -400,6 +413,12 @@ const StoreCustomers = () => {
         isOpen={isModalOpen}
         onClose={() => setIsModalOpen(false)}
         customer={selectedCustomer}
+      />
+
+      <StoreCustomerViewModal
+        isOpen={isViewModalOpen}
+        onClose={() => setIsViewModalOpen(false)}
+        customer={customerToView}
       />
 
       <DeleteConfirmationModal
