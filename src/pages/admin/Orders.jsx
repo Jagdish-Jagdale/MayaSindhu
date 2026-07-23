@@ -592,18 +592,16 @@ export default function Orders() {
                               currentStatus={order.status} 
                               onUpdate={updateStatus} 
                             />
-                            {order.status === 'Confirmed' && (
-                              <button
-                                onClick={(e) => {
-                                  e.stopPropagation();
-                                  handleDownloadInvoice(order);
-                                }}
-                                className="w-8 h-8 inline-flex items-center justify-center text-gray-400 hover:text-[#1BAFAF] hover:bg-[#1BAFAF]/5 rounded-lg transition-all active:scale-90"
-                                title="Download Invoice"
-                              >
-                                <Download size={16} strokeWidth={2.5} />
-                              </button>
-                            )}
+                            <button
+                              onClick={(e) => {
+                                e.stopPropagation();
+                                handleDownloadInvoice(order);
+                              }}
+                              className="w-8 h-8 inline-flex items-center justify-center text-gray-400 hover:text-[#1BAFAF] hover:bg-[#1BAFAF]/5 rounded-lg transition-all active:scale-90"
+                              title="Download Invoice"
+                            >
+                              <Download size={16} strokeWidth={2.5} />
+                            </button>
                           </div>
                         </td>
                       </motion.tr>

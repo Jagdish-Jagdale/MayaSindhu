@@ -52,6 +52,7 @@ import Returns from './pages/admin/offline/Returns';
 import SuperAdminLayout from './layouts/SuperAdminLayout';
 import SuperAdminDashboard from './pages/superadmin/Dashboard';
 import SuperAdminAdmins from './pages/superadmin/Admins';
+import SuperAdminSuperAdmins from './pages/superadmin/SuperAdmins';
 import SuperAdminActiveSessions from './pages/superadmin/ActiveSessions';
 
 
@@ -177,7 +178,7 @@ function AppContent() {
           <Route path="reports" element={<Reports />} />
           <Route path="delivery-charges" element={<DeliveryCharges />} />
           <Route path="reviews" element={<Reviews />} />
-          <Route path="returns" element={<OnlineReturns />} />
+          <Route path="return" element={<OnlineReturns />} />
           <Route path="settings" element={<Settings />} />
           <Route path="settings/banner" element={<Banner />} />
           <Route path="settings/curated-realms" element={<CuratedRealms />} />

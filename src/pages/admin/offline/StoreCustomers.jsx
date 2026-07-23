@@ -32,7 +32,7 @@ import toast from 'react-hot-toast';
 import { useAdminUI } from '../../../context/AdminUIContext';
 import DeleteConfirmationModal from '../../../components/admin/DeleteConfirmationModal';
 import StoreCustomerModal from '../../../components/admin/offline/StoreCustomerModal';
-import UserViewModal from '../../../components/admin/UserViewModal';
+import StoreCustomerViewModal from '../../../components/admin/offline/StoreCustomerViewModal';
 
 const StoreCustomers = () => {
   const { isCollapsed } = useAdminUI();
@@ -53,9 +53,8 @@ const StoreCustomers = () => {
   const [customerToDelete, setCustomerToDelete] = useState(null);
   const [isDeleting, setIsDeleting] = useState(false);
 
-  // View Modal States
   const [isViewModalOpen, setIsViewModalOpen] = useState(false);
-  const [userToView, setUserToView] = useState(null);
+  const [customerToView, setCustomerToView] = useState(null);
 
   const filterRef = useRef(null);
   const rowsRef = useRef(null);
@@ -85,7 +84,7 @@ const StoreCustomers = () => {
   };
 
   const handleView = (customer) => {
-    setUserToView(customer);
+    setCustomerToView(customer);
     setIsViewModalOpen(true);
   };
 
@@ -334,8 +333,8 @@ const StoreCustomers = () => {
                 currentCustomers.map((c, idx) => (
                   <tr 
                     key={c.id} 
-                    onClick={() => handleView(c)}
                     className="hover:bg-gray-50 group transition-colors cursor-pointer"
+                    onClick={() => handleView(c)}
                   >
                     <td className="px-6 py-4 whitespace-nowrap text-[14px] text-gray-400 font-medium">{(startIndex + idx + 1).toString().padStart(2, '0')}</td>
                     <td className="px-6 py-4 min-w-[200px]">
@@ -418,10 +417,10 @@ const StoreCustomers = () => {
         customer={selectedCustomer}
       />
 
-      <UserViewModal
+      <StoreCustomerViewModal
         isOpen={isViewModalOpen}
         onClose={() => setIsViewModalOpen(false)}
-        user={userToView}
+        customer={customerToView}
       />
 
       <DeleteConfirmationModal
