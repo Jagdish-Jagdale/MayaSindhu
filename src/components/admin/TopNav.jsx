@@ -50,7 +50,8 @@ const PAGE_TITLES = {
   '/admin-offline/inventory-logs': { title: 'Inventory Logs' },
   '/admin-offline/customers': { title: 'Customers' },
   '/admin-offline/invoice': { title: 'Invoices' },
-  '/admin-offline/return': { title: 'Returns' },
+  '/admin/returns': { title: 'Returns' },
+  '/admin-offline/returns': { title: 'Returns' },
   '/admin-offline/vendors': { title: 'Vendors' },
   '/admin-offline/purchase-orders': { title: 'Purchase Orders' },
 };
