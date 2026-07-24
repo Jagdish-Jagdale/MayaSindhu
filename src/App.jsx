@@ -178,7 +178,7 @@ function AppContent() {
           <Route path="reports" element={<Reports />} />
           <Route path="delivery-charges" element={<DeliveryCharges />} />
           <Route path="reviews" element={<Reviews />} />
-          <Route path="return" element={<OnlineReturns />} />
+          <Route path="returns" element={<OnlineReturns />} />
           <Route path="settings" element={<Settings />} />
           <Route path="settings/banner" element={<Banner />} />
           <Route path="settings/curated-realms" element={<CuratedRealms />} />
@@ -208,7 +208,7 @@ function AppContent() {
           <Route path="reports" element={<Reports />} />
           <Route path="customers" element={<StoreCustomers />} />
           <Route path="users" element={<Navigate to="/admin-offline/customers" replace />} />
-          <Route path="return" element={<Returns />} />
+          <Route path="returns" element={<Returns />} />
           <Route path="vendors" element={<Vendors />} />
           <Route path="purchase-orders" element={<PurchaseOrdersOffline />} />
         </Route>

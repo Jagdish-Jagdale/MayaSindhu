@@ -90,7 +90,7 @@ export default function Returns() {
     }
   };
 
-  const SortIndicator = ({ field }) => {
+  const renderSortIndicator = (field) => {
     if (sortField !== field) {
       return (
         <ChevronDown size={12} className="text-gray-300 ml-1 inline-block" strokeWidth={2.5} />
@@ -160,9 +160,6 @@ export default function Returns() {
   const startIndex = (currentPage - 1) * rowsPerPage;
   const currentItems = sortedTickets.slice(startIndex, startIndex + rowsPerPage);
 
-  useEffect(() => {
-    setCurrentPage(1);
-  }, [searchTerm, statusFilter, dateRange, rowsPerPage]);
 
   if (loading) {
     return (
@@ -200,7 +197,7 @@ export default function Returns() {
             type="text"
             placeholder="Search by Ticket ID, Order ID or Customer..."
             value={searchTerm}
-            onChange={(e) => setSearchTerm(e.target.value)}
+            onChange={(e) => { setSearchTerm(e.target.value); setCurrentPage(1); }}
             className="w-full bg-gray-50 border-none py-2.5 pl-10 pr-4 text-[13px] rounded-xl outline-none focus:bg-white focus:ring-1 focus:ring-[#1BAFAF]/30 transition-all font-medium"
           />
         </div>
@@ -212,14 +209,14 @@ export default function Returns() {
             <input 
               type="date" 
               value={dateRange.start}
-              onChange={(e) => setDateRange(prev => ({ ...prev, start: e.target.value }))}
+              onChange={(e) => { setDateRange(prev => ({ ...prev, start: e.target.value })); setCurrentPage(1); }}
               className="bg-transparent text-[12px] font-medium px-2 py-1.5 rounded-lg border-none outline-none transition-all cursor-pointer text-gray-600 focus:text-gray-900"
             />
             <span className="text-gray-300">-</span>
             <input 
               type="date" 
               value={dateRange.end}
-              onChange={(e) => setDateRange(prev => ({ ...prev, end: e.target.value }))}
+              onChange={(e) => { setDateRange(prev => ({ ...prev, end: e.target.value })); setCurrentPage(1); }}
               className="bg-transparent text-[12px] font-medium px-2 py-1.5 rounded-lg border-none outline-none transition-all cursor-pointer text-gray-600 focus:text-gray-900"
             />
           </div>
@@ -227,7 +224,7 @@ export default function Returns() {
           {/* Status Dropdown */}
           <CustomSelect
             value={statusFilter}
-            onChange={(val) => setStatusFilter(val)}
+            onChange={(val) => { setStatusFilter(val); setCurrentPage(1); }}
             options={[
               { value: 'All', label: 'All Statuses' },
               { value: 'Pending', label: 'Pending' },
@@ -244,6 +241,7 @@ export default function Returns() {
               onClick={() => {
                 setDateRange({ start: '', end: '' });
                 setStatusFilter('All');
+                setCurrentPage(1);
               }}
               className="p-2 text-gray-400 hover:text-red-500 hover:bg-red-50 rounded-xl transition-all"
               title="Clear Filters"
@@ -257,7 +255,7 @@ export default function Returns() {
           {/* Rows */}
           <CustomSelect
             value={rowsPerPage}
-            onChange={(val) => setRowsPerPage(Number(val))}
+            onChange={(val) => { setRowsPerPage(Number(val)); setCurrentPage(1); }}
             options={[
               { value: 5, label: '5 rows' },
               { value: 10, label: '10 rows' },
@@ -281,31 +279,31 @@ export default function Returns() {
                 <th className="px-6 py-4 text-left text-[14px] font-bold text-[#1BAFAF] cursor-pointer select-none" onClick={() => handleSort('ticketId')}>
                   <div className="flex items-center gap-1">
                     Ticket ID
-                    <SortIndicator field="ticketId" />
+                    {renderSortIndicator('ticketId')}
                   </div>
                 </th>
                 <th className="px-6 py-4 text-left text-[14px] font-bold text-[#1BAFAF] cursor-pointer select-none" onClick={() => handleSort('orderDisplayId')}>
                   <div className="flex items-center gap-1">
                     Order ID
-                    <SortIndicator field="orderDisplayId" />
+                    {renderSortIndicator('orderDisplayId')}
                   </div>
                 </th>
                 <th className="px-6 py-4 text-left text-[14px] font-bold text-[#1BAFAF] cursor-pointer select-none" onClick={() => handleSort('customerName')}>
                   <div className="flex items-center gap-1">
                     Customer Name
-                    <SortIndicator field="customerName" />
+                    {renderSortIndicator('customerName')}
                   </div>
                 </th>
                 <th className="px-6 py-4 text-left text-[14px] font-bold text-[#1BAFAF] cursor-pointer select-none" onClick={() => handleSort('createdAt')}>
                   <div className="flex items-center gap-1">
                     Date Raised
-                    <SortIndicator field="createdAt" />
+                    {renderSortIndicator('createdAt')}
                   </div>
                 </th>
                 <th className="px-6 py-4 text-left text-[14px] font-bold text-[#1BAFAF] cursor-pointer select-none" onClick={() => handleSort('status')}>
                   <div className="flex items-center gap-1">
                     Status
-                    <SortIndicator field="status" />
+                    {renderSortIndicator('status')}
                   </div>
                 </th>
                 <th className="px-6 py-4 text-center text-[14px] font-bold text-[#1BAFAF]">Details</th>

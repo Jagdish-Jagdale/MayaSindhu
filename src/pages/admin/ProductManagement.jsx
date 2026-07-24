@@ -629,7 +629,11 @@ export default function ProductManagement() {
                       animate="animate"
                       exit="exit"
                       key={product.id} 
-                      className="hover:bg-gray-50 group transition-colors"
+                      className="hover:bg-gray-50 group transition-colors cursor-pointer"
+                      onClick={() => {
+                        setSelectedProduct(product);
+                        setIsViewModalOpen(true);
+                      }}
                     >
                       <td className="px-6 py-4 whitespace-nowrap text-[14px] text-gray-400 font-medium">
                         {((currentPage - 1) * rowsPerPage + idx + 1).toString().padStart(2, '0')}
