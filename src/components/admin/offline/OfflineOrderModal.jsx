@@ -44,9 +44,7 @@ const OfflineOrderModal = ({ isOpen, onClose }) => {
   const [isBulkModalOpen, setIsBulkModalOpen] = useState(false);
   const [isProductModalOpen, setIsProductModalOpen] = useState(false);
   const [isSettingsOpen, setIsSettingsOpen] = useState(false);
-  const [isGstSettingsOpen, setIsGstSettingsOpen] = useState(false);
-  const [tempGst, setTempGst] = useState('');
-  
+
   // Order Number Settings
   const [orderSettings, setOrderSettings] = useState({
     mode: 'auto',
@@ -80,33 +78,6 @@ const OfflineOrderModal = ({ isOpen, onClose }) => {
     document.addEventListener('mousedown', handleClickOutside);
     return () => document.removeEventListener('mousedown', handleClickOutside);
   }, []);
-
-  const fetchGstConfiguration = useCallback(async () => {
-    try {
-      const docRef = doc(db, 'settings', 'gst_configuration');
-      const docSnap = await getDoc(docRef);
-      if (docSnap.exists()) {
-        const data = docSnap.data();
-        if (data && data.value !== undefined) {
-           setFormData(prev => ({ ...prev, tax: Number(data.value) }));
-           setTempGst(data.value);
-        }
-      }
-    } catch (error) {
-    }
-  }, []);
-
-  const handleSaveGst = async () => {
-    try {
-      const val = Math.max(0, parseFloat(tempGst) || 0);
-      await setDoc(doc(db, 'settings', 'gst_configuration'), { value: val });
-      setFormData(prev => ({ ...prev, tax: val }));
-      setIsGstSettingsOpen(false);
-      toast.success("GST configuration saved");
-    } catch (error) {
-      toast.error("Failed to save GST");
-    }
-  };
 
   const fetchCustomers = useCallback(async () => {
     try {
@@ -149,22 +120,24 @@ const OfflineOrderModal = ({ isOpen, onClose }) => {
       setLoading(false);
       fetchCustomers();
       fetchProducts();
-      fetchGstConfiguration();
       if (orderSettings.mode === 'auto') {
         generateSONumber();
       }
     }
-  }, [isOpen, fetchCustomers, fetchProducts, fetchGstConfiguration, generateSONumber, orderSettings.mode]);
+  }, [isOpen, fetchCustomers, fetchProducts, generateSONumber, orderSettings.mode]);
 
   const handleBulkAdd = (selectedProducts) => {
-    const newItems = selectedProducts.map(p => ({
-      id: Date.now() + Math.random(),
-      productId: p.id,
-      name: p.name,
-      quantity: 1,
-      rate: p.discountedPrice || p.price || 0,
-      amount: p.discountedPrice || p.price || 0
-    }));
+    const newItems = selectedProducts.map(p => {
+      const taxInclusiveRate = p.discountedPrice || p.price || 0;
+      return {
+        id: Date.now() + Math.random(),
+        productId: p.id,
+        name: p.name,
+        quantity: 1,
+        rate: taxInclusiveRate,
+        amount: taxInclusiveRate * 1
+      };
+    });
 
     setFormData(prev => {
       // Remove empty row if it exists
@@ -191,8 +164,10 @@ const OfflineOrderModal = ({ isOpen, onClose }) => {
         if (field === 'productId') {
           const prod = products.find(p => p.id === value);
           if (prod) {
+            const taxInclusiveRate = prod.discountedPrice || prod.price || 0;
             updatedItem.name = prod.name;
-            updatedItem.rate = prod.discountedPrice || prod.price || 0;
+            updatedItem.rate = taxInclusiveRate;
+            updatedItem.amount = taxInclusiveRate * item.quantity;
             updatedItem.stock = prod.stock ?? Infinity;
           }
         }
@@ -206,8 +181,15 @@ const OfflineOrderModal = ({ isOpen, onClose }) => {
           } else {
             updatedItem.quantity = requestedQty;
           }
+          // Amount = rate × quantity
+          updatedItem.amount = item.rate * updatedItem.quantity;
         }
-        updatedItem.amount = updatedItem.rate * updatedItem.quantity;
+        if (field === 'rate') {
+          // Rate is tax-inclusive, amount = rate × quantity
+          const taxInclusiveRate = Number(value) || 0;
+          updatedItem.rate = taxInclusiveRate;
+          updatedItem.amount = taxInclusiveRate * item.quantity;
+        }
         return updatedItem;
       }
       return item;
@@ -216,8 +198,8 @@ const OfflineOrderModal = ({ isOpen, onClose }) => {
   };
 
   useEffect(() => {
-    const subTotal = formData.items.reduce((acc, item) => acc + item.amount, 0);
-    const total = subTotal + (subTotal * (formData.tax / 100));
+    const total = formData.items.reduce((acc, item) => acc + item.amount, 0);
+    const subTotal = total / (1 + (formData.tax / 100));
     setFormData(prev => ({ ...prev, subTotal, total }));
   }, [formData.items, formData.tax]);
 
@@ -581,47 +563,11 @@ const OfflineOrderModal = ({ isOpen, onClose }) => {
                 <span className="text-[14px] font-black text-gray-900">₹{formData.subTotal.toFixed(2)}</span>
               </div>
               
-              <div className="flex items-center justify-between gap-4 relative">
-                <div className="flex items-center gap-2">
-                   <span className="text-[12px] font-bold text-gray-500 uppercase tracking-widest">GST ({formData.tax}%)</span>
-                   <Settings 
-                     onClick={() => {
-                       setTempGst(formData.tax);
-                       setIsGstSettingsOpen(!isGstSettingsOpen);
-                     }}
-                     className="w-4 h-4 text-[#1BAFAF] cursor-pointer hover:rotate-90 transition-transform" 
-                   />
-                </div>
+              <div className="flex items-center justify-between">
+                <span className="text-[14px] font-bold text-gray-500">GST (18%)</span>
                 <span className="text-[14px] font-black text-gray-900">
-                  ₹{((formData.subTotal * formData.tax) / 100).toFixed(2)}
+                  ₹{(formData.total - formData.subTotal).toFixed(2)}
                 </span>
-                
-                {/* GST Settings Popup */}
-                {isGstSettingsOpen && (
-                  <div className="absolute top-10 left-0 mt-2 w-[260px] bg-white border border-gray-100 rounded-2xl shadow-xl z-[120] p-4 animate-in fade-in zoom-in duration-200">
-                    <div className="flex items-center justify-between mb-3">
-                      <h4 className="text-[13px] font-bold text-gray-900">Configure GST</h4>
-                      <X size={16} className="text-gray-400 cursor-pointer hover:text-gray-900" onClick={() => setIsGstSettingsOpen(false)} />
-                    </div>
-                    <div className="flex items-center gap-2">
-                      <input
-                        type="number"
-                        min="0"
-                        value={tempGst}
-                        onChange={(e) => setTempGst(e.target.value)}
-                        className="w-full bg-gray-50 border border-gray-100 rounded-xl px-3 py-2 text-[13px] outline-none focus:bg-white font-bold"
-                        placeholder="GST %"
-                      />
-                      <button
-                        type="button"
-                        onClick={handleSaveGst}
-                        className="px-4 py-2 bg-[#1BAFAF] text-white text-[12px] font-bold rounded-xl hover:bg-[#158e8e] transition-colors"
-                      >
-                        Save
-                      </button>
-                    </div>
-                  </div>
-                )}
               </div>
 
               <div className="pt-6 border-t border-gray-100 flex items-center justify-between">

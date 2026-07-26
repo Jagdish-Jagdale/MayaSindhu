@@ -146,16 +146,22 @@ const InvoiceModal = ({ isOpen, onClose }) => {
       id: Date.now() + Math.random()
     }));
 
+    // Recalculate total from item amounts (tax-inclusive) - use 18% GST
+    const totalBeforeAdjustment = mappedItems.reduce((acc, item) => acc + (item.amount || 0), 0);
+    const taxPercent = 18; // Always use 18% GST
+    const subTotal = totalBeforeAdjustment / (1 + (taxPercent / 100));
+    const total = totalBeforeAdjustment + (order.adjustment || 0);
+
     setFormData(prev => ({
       ...prev,
       orderNumber: order.saleOrderNumber,
       customerId: order.customerId,
       customerName: order.customerName,
       items: mappedItems,
-      subTotal: order.subTotal || 0,
-      tax: order.tax || 18,
+      subTotal: subTotal,
+      tax: taxPercent,
       adjustment: order.adjustment || 0,
-      total: order.total || 0,
+      total: total,
       customerNotes: order.customerNotes || ''
     }));
     setSearchOrder(order.saleOrderNumber);
@@ -189,15 +195,18 @@ const InvoiceModal = ({ isOpen, onClose }) => {
   }, [invoiceSettings.prefix, invoiceSettings.nextNumber]);
 
   const handleBulkAdd = (selectedProducts) => {
-    const newItems = selectedProducts.map(p => ({
-      id: Date.now() + Math.random(),
-      productId: p.id,
-      name: p.name,
-      quantity: 1,
-      rate: p.price || 0,
-      discount: 0,
-      amount: p.price || 0
-    }));
+    const newItems = selectedProducts.map(p => {
+      const taxInclusiveRate = p.price || 0;
+      return {
+        id: Date.now() + Math.random(),
+        productId: p.id,
+        name: p.name,
+        quantity: 1,
+        rate: taxInclusiveRate,
+        discount: 0,
+        amount: taxInclusiveRate * 1
+      };
+    });
 
     setFormData(prev => {
       const filteredItems = prev.items.filter(item => item.productId !== '');
@@ -223,12 +232,29 @@ const InvoiceModal = ({ isOpen, onClose }) => {
         if (field === 'productId') {
           const prod = products.find(p => p.id === value);
           if (prod) {
+            const taxInclusiveRate = prod.price || 0;
             updatedItem.name = prod.name;
-            updatedItem.rate = prod.price || 0;
+            updatedItem.rate = taxInclusiveRate;
+            updatedItem.amount = taxInclusiveRate * item.quantity;
           }
         }
-        const baseAmount = updatedItem.rate * updatedItem.quantity;
-        updatedItem.amount = baseAmount - (baseAmount * (updatedItem.discount / 100));
+        if (field === 'quantity') {
+          // Amount = rate × quantity, then apply discount
+          const baseAmount = item.rate * updatedItem.quantity;
+          updatedItem.amount = baseAmount - (baseAmount * (updatedItem.discount / 100));
+        }
+        if (field === 'rate') {
+          // Rate is tax-inclusive, amount = rate × quantity, then apply discount
+          const taxInclusiveRate = Number(value) || 0;
+          updatedItem.rate = taxInclusiveRate;
+          const baseAmount = taxInclusiveRate * item.quantity;
+          updatedItem.amount = baseAmount - (baseAmount * (updatedItem.discount / 100));
+        }
+        if (field === 'discount') {
+          // Recalculate amount with new discount
+          const baseAmount = item.rate * item.quantity;
+          updatedItem.amount = baseAmount - (baseAmount * (updatedItem.discount / 100));
+        }
         return updatedItem;
       }
       return item;
@@ -237,8 +263,9 @@ const InvoiceModal = ({ isOpen, onClose }) => {
   };
 
   useEffect(() => {
-    const subTotal = formData.items.reduce((acc, item) => acc + item.amount, 0);
-    const total = subTotal + (subTotal * (formData.tax / 100)) + parseFloat(formData.adjustment || 0);
+    const totalBeforeAdjustment = formData.items.reduce((acc, item) => acc + item.amount, 0);
+    const subTotal = totalBeforeAdjustment / (1 + (formData.tax / 100));
+    const total = totalBeforeAdjustment + parseFloat(formData.adjustment || 0);
     setFormData(prev => ({ ...prev, subTotal, total }));
   }, [formData.items, formData.tax, formData.adjustment]);
 
@@ -635,27 +662,10 @@ const InvoiceModal = ({ isOpen, onClose }) => {
                 <span className="text-[14px] font-bold text-gray-500">Sub Total</span>
                 <span className="text-[14px] font-black text-gray-900">₹{formData.subTotal.toFixed(2)}</span>
               </div>
-              
-              <div className="flex items-center justify-between gap-4">
-                <div className="flex items-center gap-4">
-                   <div className="flex items-center gap-2">
-                     <Circle className="w-4 h-4 fill-[#1BAFAF] text-[#1BAFAF]" />
-                     <span className="text-[12px] font-bold text-gray-500 uppercase tracking-widest">TDS</span>
-                   </div>
-                   <div className="flex items-center gap-2">
-                     <Circle className="w-4 h-4 text-gray-300" />
-                     <span className="text-[12px] font-bold text-gray-500 uppercase tracking-widest">TCS</span>
-                   </div>
-                </div>
-                <CustomSelect
-                   value={formData.tax === 0 ? 'No Tax' : `GST ${formData.tax}%`}
-                   onChange={(val) => {
-                     const num = val === 'No Tax' ? 0 : parseFloat(val.replace('GST ', '').replace('%', '')) || 0;
-                     setFormData({ ...formData, tax: num });
-                   }}
-                   options={['GST 18%', 'GST 5%', 'No Tax']}
-                   className="w-32"
-                 />
+
+              <div className="flex items-center justify-between">
+                <span className="text-[14px] font-bold text-gray-500">GST (18%)</span>
+                <span className="text-[14px] font-black text-gray-900">₹{(formData.total - formData.subTotal).toFixed(2)}</span>
               </div>
 
               <div className="flex items-center justify-between gap-8">
