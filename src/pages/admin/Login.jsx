@@ -7,7 +7,7 @@
 import React, { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { auth } from '../../firebase';
-import { setPersistence, browserSessionPersistence } from 'firebase/auth';
+import { setPersistence, browserSessionPersistence, signOut } from 'firebase/auth';
 import { Mail, Lock, AlertCircle, Loader2, ArrowRight, ShoppingCart, Store, ChevronRight } from 'lucide-react';
 import toast from 'react-hot-toast';
 import { motion, AnimatePresence } from 'framer-motion';
@@ -243,8 +243,12 @@ const AdminLogin = () => {
                 </div>
 
                 <div className="mt-8 text-center">
-                   <button 
-                    onClick={() => signOut(auth)}
+                   <button
+                    onClick={async () => {
+                      await signOut(auth);
+                      localStorage.clear();
+                      setShowPortalSelect(false);
+                    }}
                     className="text-[11px] font-bold text-white/30 hover:text-white uppercase tracking-[0.2em] transition-colors"
                    >
                       Back to Login

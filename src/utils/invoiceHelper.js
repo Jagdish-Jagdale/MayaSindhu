@@ -44,12 +44,6 @@ export const handleDownloadInvoice = (order, isOffline = false, customerObj = {}
   const now = new Date();
   const formattedTimestamp = now.toLocaleDateString('en-GB') + ' ' + now.toLocaleTimeString('en-US', { hour: '2-digit', minute: '2-digit', second: '2-digit', hour12: true });
 
-  const printWindow = window.open('', '_blank');
-  if (!printWindow) {
-    toast.error("Popup blocked! Please allow popups to download/print invoice.");
-    return;
-  }
-
   const items = order.items || [
     {
       name: order.productName || 'Handmade Creation',
@@ -97,11 +91,13 @@ export const handleDownloadInvoice = (order, isOffline = false, customerObj = {}
   };
 
   const orderIdText = order.orderId || order.invoiceNumber || order.saleOrderNumber || order.id || '---';
-  const subTotalAmount = Number(order.pricing?.subtotal || order.subTotal || order.total || 0);
-  const taxPercent = Number(order.pricing?.tax || order.tax || 0);
-  const grandTotalAmount = Number(order.pricing?.grandTotal || order.total || 0);
 
-  printWindow.document.write(`
+  // Calculate total from item amounts (tax-inclusive) - use 18% GST
+  const grandTotalAmount = items.reduce((sum, item) => sum + (item.amount || item.subtotal || item.total || 0), 0);
+  const taxPercent = 18; // Always use 18% GST for display
+  const subTotalAmount = grandTotalAmount / (1 + (taxPercent / 100));
+
+  const invoiceHtml = `
     <html>
       <head>
         <title>Invoice - ${orderIdText}</title>
@@ -312,7 +308,7 @@ export const handleDownloadInvoice = (order, isOffline = false, customerObj = {}
                 ${taxPercent ? `
                 <tr style="border-bottom: 1px solid #ddd;">
                   <td style="text-align: right; color: #333;">Tax (${taxPercent}%)</td>
-                  <td style="text-align: right; font-weight: bold; color: #000;">₹${(grandTotalAmount * (taxPercent / 100)).toFixed(2)}</td>
+                  <td style="text-align: right; font-weight: bold; color: #000;">₹${(grandTotalAmount - subTotalAmount).toFixed(2)}</td>
                 </tr>
                 ` : ''}
                 <tr class="total-row">
@@ -336,15 +332,17 @@ export const handleDownloadInvoice = (order, isOffline = false, customerObj = {}
         <div style="position: fixed; bottom: 15mm; right: 20mm; font-size: 10px; color: #777; font-family: Arial, sans-serif; white-space: nowrap;">
           Downloaded: ${formattedTimestamp}
         </div>
-
-        <script>
-          window.onload = function() {
-            window.print();
-            setTimeout(function() { window.close(); }, 500);
-          }
-        </script>
       </body>
     </html>
-  `);
-  printWindow.document.close();
+  `;
+
+  const blob = new Blob([invoiceHtml], { type: 'text/html' });
+  const link = document.createElement('a');
+  link.href = URL.createObjectURL(blob);
+  link.download = `Invoice-${orderIdText}.html`;
+  document.body.appendChild(link);
+  link.click();
+  document.body.removeChild(link);
+  URL.revokeObjectURL(link.href);
+  toast.success('Invoice downloaded successfully');
 };

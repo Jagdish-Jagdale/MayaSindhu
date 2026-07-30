@@ -530,18 +530,32 @@ export default function SalesOrders() {
 
               {/* Totals Section */}
               <div className="border-t border-gray-100 pt-6 space-y-3 max-w-sm ml-auto">
-                <div className="flex justify-between text-gray-500 font-medium">
-                  <span>Sub Total</span>
-                  <span className="text-gray-900">₹{(selectedOrder.pricing?.subtotal || selectedOrder.subTotal || 0).toFixed(2)}</span>
-                </div>
-                <div className="flex justify-between text-gray-500 font-medium">
-                  <span>Tax (GST)</span>
-                  <span className="text-gray-900">{selectedOrder.pricing?.tax || selectedOrder.tax || 0}%</span>
-                </div>
-                <div className="flex justify-between items-center text-base font-black border-t border-dashed border-gray-200 pt-3">
-                  <span className="text-gray-900">Total ( ₹ )</span>
-                  <span className="text-[#1BAFAF]">₹{(selectedOrder.pricing?.grandTotal || selectedOrder.total || 0).toFixed(2)}</span>
-                </div>
+                {(() => {
+                  // Calculate total from item amounts (tax-inclusive)
+                  const total = selectedOrder.items?.reduce((sum, item) => sum + (item.amount || item.subtotal || 0), 0) || 0;
+                  // Use 18% as default GST rate for display
+                  const taxPercent = 18;
+                  const subTotal = total / (1 + (taxPercent / 100));
+                  const taxAmount = total - subTotal;
+                  return (
+                    <>
+                      <div className="flex justify-between text-gray-500 font-medium">
+                        <span>Sub Total</span>
+                        <span className="text-gray-900">₹{subTotal.toFixed(2)}</span>
+                      </div>
+                      <div className="flex justify-between text-gray-500 font-medium">
+                        <span>Tax (GST)</span>
+                        <span className="text-gray-900">
+                          ₹{taxAmount.toFixed(2)}
+                        </span>
+                      </div>
+                      <div className="flex justify-between items-center text-base font-black border-t border-dashed border-gray-200 pt-3">
+                        <span className="text-gray-900">Total ( ₹ )</span>
+                        <span className="text-[#1BAFAF]">₹{total.toFixed(2)}</span>
+                      </div>
+                    </>
+                  );
+                })()}
               </div>
             </div>
 

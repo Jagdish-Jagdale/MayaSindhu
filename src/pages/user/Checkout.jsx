@@ -739,9 +739,9 @@ export default function Checkout() {
 
   const total = subtotal + deliveryCharges;
 
-  const gstAmount = Math.round(subtotal * 0.08);
+  const gstAmount = Math.round(subtotal - (subtotal / 1.18));
 
-  const actualPrice = subtotal - gstAmount;
+  const actualPrice = Math.round(subtotal / 1.18);
 
   const totalSavings = items.reduce((acc, item) => {
 
@@ -2692,7 +2692,7 @@ export default function Checkout() {
 
               <div className="flex justify-between">
 
-                <span>GST (8%)</span>
+                <span>GST (18%)</span>
 
                 <span>₹{gstAmount.toLocaleString()}</span>
 

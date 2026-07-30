@@ -10,6 +10,8 @@ import { db } from '../../../../firebase';
 import { collection, query, where, onSnapshot, doc, updateDoc, serverTimestamp, addDoc, getDocs } from 'firebase/firestore';
 import { Package, Clock, Truck, CheckCircle2, ChevronRight, XCircle, RotateCcw, Loader2, Search, Star, X, Download, MapPin, CreditCard, FileText } from 'lucide-react';
 import toast from 'react-hot-toast';
+import jsPDF from 'jspdf';
+import mstitleLogo from '../../../../assets/mstitle.png';
 
 const STATUS_STEPS = ['Pending', 'Confirmed', 'Shipped', 'Delivered'];
 
@@ -262,126 +264,184 @@ export default function OrderHistory({ user }) {
     return d.toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' });
   };
 
-  const downloadInvoice = (order, item) => {
-    const invoiceHtml = `
-      <html>
-        <head>
-          <title>Invoice - ${order.orderId || order.id}</title>
-          <style>
-            body { font-family: 'Helvetica Neue', Helvetica, Arial, sans-serif; color: #333; padding: 40px; line-height: 1.6; }
-            .invoice-box { max-width: 800px; margin: auto; border: 1px solid #eee; box-shadow: 0 0 10px rgba(0, 0, 0, 0.05); padding: 30px; border-radius: 8px; }
-            .header { display: flex; justify-content: space-between; border-bottom: 2px solid #eee; padding-bottom: 20px; margin-bottom: 20px; }
-            .header h1 { margin: 0; font-size: 28px; color: #f5aa00; }
-            .details { display: flex; justify-content: space-between; margin-bottom: 30px; gap: 20px; }
-            .details div { flex: 1; }
-            .details h3 { margin-top: 0; margin-bottom: 10px; font-size: 14px; text-transform: uppercase; color: #777; }
-            table { width: 100%; border-collapse: collapse; margin-bottom: 30px; }
-            th { background: #f9f9f9; text-align: left; padding: 12px; font-weight: bold; border-bottom: 2px solid #eee; }
-            td { padding: 12px; border-bottom: 1px solid #eee; }
-            .totals { float: right; width: 300px; }
-            .totals table { margin: 0; }
-            .totals td { border: none; padding: 6px 12px; }
-            .totals tr.grand-total td { font-weight: bold; font-size: 18px; border-top: 2px solid #eee; padding-top: 12px; }
-            .footer { text-align: center; color: #999; font-size: 12px; margin-top: 50px; border-top: 1px solid #eee; padding-top: 20px; }
-            @media print {
-              body { padding: 0; }
-              .invoice-box { border: none; box-shadow: none; padding: 0; }
-            }
-          </style>
-        </head>
-        <body>
-          <div class="invoice-box">
-            <div class="header">
-              <div>
-                <h1>MayaSindhu</h1>
-                <p>Authentic Heritage Saree & Handicrafts Boutique</p>
-              </div>
-              <div style="text-align: right;">
-                <h2>INVOICE</h2>
-                <p><strong>Invoice No:</strong> INV-${order.orderId || order.id}</p>
-                <p><strong>Date:</strong> ${formatDate(order.createdAt)}</p>
-              </div>
-            </div>
-            
-            <div class="details">
-              <div>
-                <h3>Sold By:</h3>
-                <p><strong>MayaSindhu Boutique</strong></p>
-                <p>Kolhapur, Maharashtra, India</p>
-                <p>Contact: +91 91720 20494</p>
-              </div>
-              <div style="text-align: right;">
-                <h3>Billing & Shipping Details:</h3>
-                <p><strong>${order.shippingAddress?.firstName || order.customerName || ''} ${order.shippingAddress?.lastName || ''}</strong></p>
-                <p>${order.shippingAddress?.address || ''}</p>
-                <p>${order.shippingAddress?.city || ''}, ${order.shippingAddress?.state || ''} - ${order.shippingAddress?.zip || ''}</p>
-                <p>Phone: ${order.shippingAddress?.phone || ''}</p>
-              </div>
-            </div>
-            
-            <table>
-              <thead>
-                <tr>
-                  <th>Product Details</th>
-                  <th style="text-align: right;">Price</th>
-                  <th style="text-align: center;">Qty</th>
-                  <th style="text-align: right;">Amount</th>
-                </tr>
-              </thead>
-              <tbody>
-                <tr>
-                  <td>
-                    <strong>${item.name}</strong>
-                    ${item.color ? `<br/><span style="font-size:12px; color:#555;">Color: ${item.color}</span>` : ''}
-                    ${item.design ? `<br/><span style="font-size:12px; color:#555;">Style: ${item.design}</span>` : ''}
-                  </td>
-                  <td style="text-align: right;">₹${item.price?.toLocaleString('en-IN')}</td>
-                  <td style="text-align: center;">${item.qty}</td>
-                  <td style="text-align: right;">₹${(item.price * item.qty)?.toLocaleString('en-IN')}</td>
-                </tr>
-              </tbody>
-            </table>
-            
-            <div class="totals" style="width: 100%; max-width: 350px; margin-left: auto;">
-              <table style="width: 100%;">
-                <tr>
-                  <td>Price (excl. GST)</td>
-                  <td style="text-align: right;">₹${((item.price * item.qty) - Math.round((item.price * item.qty) * 0.08))?.toLocaleString('en-IN')}</td>
-                </tr>
-                <tr>
-                  <td>GST (8%)</td>
-                  <td style="text-align: right;">₹${Math.round((item.price * item.qty) * 0.08)?.toLocaleString('en-IN')}</td>
-                </tr>
-                <tr>
-                  <td>Gross Subtotal</td>
-                  <td style="text-align: right;">₹${(item.price * item.qty)?.toLocaleString('en-IN')}</td>
-                </tr>
-                <tr>
-                  <td>Delivery Charges</td>
-                  <td style="text-align: right;">₹${(order.shipping || 0)?.toLocaleString('en-IN')}</td>
-                </tr>
-                <tr class="grand-total">
-                  <td><strong>Total Paid</strong></td>
-                  <td style="text-align: right;"><strong>₹${((item.price * item.qty) + (order.shipping || 0))?.toLocaleString('en-IN')}</strong></td>
-                </tr>
-              </table>
-              <p style="font-size: 12px; color: #555; text-align: right; margin-top: 10px;">Payment Method: <strong>${order.paymentMethod?.toUpperCase()}</strong></p>
-            </div>
-            
-            <div class="footer">
-              <p>Thank you for choosing MayaSindhu and supporting traditional heritage craftsmanship.</p>
-              <p>This is a computer-generated invoice and requires no signature.</p>
-            </div>
-          </div>
-        </body>
-      </html>
-    `;
+  const downloadInvoice = async (order, item) => {
+    try {
+      const doc = new jsPDF();
+      const pageWidth = doc.internal.pageSize.getWidth();
+      const pageHeight = doc.internal.pageSize.getHeight();
+      let yPos = 20;
 
-    const blob = new Blob([invoiceHtml], { type: 'text/html' });
-    const link = document.createElement('a');
-    link.href = URL.createObjectURL(blob);
-    link.download = `Invoice-${order.orderId || order.id}.html`;
-    link.click();
+      // Add logo
+      const logoImg = new Image();
+      logoImg.src = mstitleLogo;
+      await new Promise((resolve) => {
+        logoImg.onload = resolve;
+        logoImg.onerror = resolve;
+      });
+
+      try {
+        doc.addImage(logoImg, 'PNG', 20, yPos, 30, 20);
+      } catch (e) {
+        doc.setFontSize(24);
+        doc.setTextColor(245, 170, 0);
+        doc.text('MayaSindhu', 20, yPos + 15);
+      }
+
+      // Company name
+      doc.setFontSize(16);
+      doc.setTextColor(0, 0, 0);
+      doc.text('MayaSindhu', 20, yPos + 30);
+
+      // Invoice title on right
+      doc.setFontSize(20);
+      doc.setTextColor(0, 0, 0);
+      doc.text('INVOICE', pageWidth - 20, yPos + 15, { align: 'right' });
+      doc.setFontSize(10);
+      doc.text(`Invoice No: INV-${order.orderId || order.id}`, pageWidth - 20, yPos + 25, { align: 'right' });
+      doc.text(`Date: ${formatDate(order.createdAt)}`, pageWidth - 20, yPos + 32, { align: 'right' });
+
+      yPos += 50;
+
+      // Sold By section
+      doc.setFontSize(12);
+      doc.setTextColor(100, 100, 100);
+      doc.text('Sold By:', 20, yPos);
+      yPos += 8;
+      doc.setFontSize(10);
+      doc.setTextColor(0, 0, 0);
+      doc.text('MayaSindhu', 20, yPos);
+      yPos += 6;
+      doc.text('Shop No. 5, Grandstand Apartment, Survey No. 2945, K/10,', 20, yPos);
+      yPos += 6;
+      doc.text('Pratibha Nagar Road, Kolhapur', 20, yPos);
+      yPos += 6;
+      doc.text('mayasindhu2124@gmail.com', 20, yPos);
+      yPos += 6;
+      doc.text('+91 9172020494', 20, yPos);
+
+      // Billing Details on right
+      const billingX = pageWidth - 80;
+      yPos = 70;
+      doc.setFontSize(12);
+      doc.setTextColor(100, 100, 100);
+      doc.text('Billing & Shipping Details:', billingX, yPos);
+      yPos += 8;
+      doc.setFontSize(10);
+      doc.setTextColor(0, 0, 0);
+      doc.text(`${order.shippingAddress?.firstName || order.customerName || ''} ${order.shippingAddress?.lastName || ''}`, billingX, yPos);
+      yPos += 6;
+      const address = order.shippingAddress?.address || '';
+      const addressLines = doc.splitTextToSize(address, 70);
+      addressLines.forEach(line => {
+        doc.text(line, billingX, yPos);
+        yPos += 6;
+      });
+      doc.text(`${order.shippingAddress?.city || ''}, ${order.shippingAddress?.state || ''} - ${order.shippingAddress?.zip || ''}`, billingX, yPos);
+      yPos += 6;
+      doc.text(`Phone: ${order.shippingAddress?.phone || ''}`, billingX, yPos);
+
+      yPos += 20;
+
+      // Product table
+      doc.setDrawColor(200, 200, 200);
+      doc.setLineWidth(0.1);
+      doc.line(20, yPos, pageWidth - 20, yPos);
+      yPos += 5;
+
+      doc.setFontSize(10);
+      doc.setTextColor(100, 100, 100);
+      doc.text('Product Details', 20, yPos);
+      doc.text('Price', pageWidth - 100, yPos);
+      doc.text('Qty', pageWidth - 60, yPos);
+      doc.text('Amount', pageWidth - 20, yPos, { align: 'right' });
+
+      yPos += 8;
+      doc.line(20, yPos, pageWidth - 20, yPos);
+      yPos += 8;
+
+      doc.setFontSize(10);
+      doc.setTextColor(0, 0, 0);
+      doc.text(item.name, 20, yPos);
+      yPos += 6;
+      if (item.color || item.design) {
+        doc.setFontSize(8);
+        doc.setTextColor(100, 100, 100);
+        const details = [];
+        if (item.color) details.push(`Color: ${item.color}`);
+        if (item.design) details.push(`Style: ${item.design}`);
+        doc.text(details.join(' | '), 20, yPos);
+        yPos += 6;
+      }
+
+      doc.setFontSize(10);
+      doc.setTextColor(0, 0, 0);
+      doc.text(`Rs. ${item.price?.toLocaleString('en-IN')}`, pageWidth - 100, yPos);
+      doc.text(`${item.qty}`, pageWidth - 60, yPos);
+      doc.text(`Rs. ${(item.price * item.qty)?.toLocaleString('en-IN')}`, pageWidth - 20, yPos, { align: 'right' });
+
+      yPos += 15;
+
+      // Totals
+      const itemTotal = item.price * item.qty;
+      const itemGst = Math.round(itemTotal - (itemTotal / 1.18));
+      const itemBasePrice = Math.round(itemTotal / 1.18);
+
+      doc.setFontSize(10);
+      doc.setTextColor(100, 100, 100);
+      doc.text('Price (excl. GST)', pageWidth - 80, yPos);
+      doc.setTextColor(0, 0, 0);
+      doc.text(`Rs. ${itemBasePrice.toLocaleString('en-IN')}`, pageWidth - 20, yPos, { align: 'right' });
+      yPos += 8;
+
+      doc.setTextColor(100, 100, 100);
+      doc.text('GST (18%)', pageWidth - 80, yPos);
+      doc.setTextColor(0, 0, 0);
+      doc.text(`Rs. ${itemGst.toLocaleString('en-IN')}`, pageWidth - 20, yPos, { align: 'right' });
+      yPos += 8;
+
+      doc.setTextColor(100, 100, 100);
+      doc.text('Gross Subtotal', pageWidth - 80, yPos);
+      doc.setTextColor(0, 0, 0);
+      doc.text(`Rs. ${itemTotal.toLocaleString('en-IN')}`, pageWidth - 20, yPos, { align: 'right' });
+      yPos += 8;
+
+      doc.setTextColor(100, 100, 100);
+      doc.text('Delivery Charges', pageWidth - 80, yPos);
+      doc.setTextColor(0, 0, 0);
+      doc.text(order.shipping > 0 ? `Rs. ${order.shipping}` : 'Free', pageWidth - 20, yPos, { align: 'right' });
+      yPos += 12;
+
+      doc.setDrawColor(200, 200, 200);
+      doc.line(pageWidth - 80, yPos, pageWidth - 20, yPos);
+      yPos += 8;
+
+      doc.setFontSize(12);
+      doc.setFont(undefined, 'bold');
+      doc.setTextColor(0, 0, 0);
+      doc.text('Total Paid', pageWidth - 80, yPos);
+      doc.text(`Rs. ${((item.price * item.qty) + (order.shipping || 0)).toLocaleString('en-IN')}`, pageWidth - 20, yPos, { align: 'right' });
+      yPos += 15;
+
+      doc.setFontSize(9);
+      doc.setFont(undefined, 'normal');
+      doc.setTextColor(100, 100, 100);
+      doc.text(`Payment Method: ${order.paymentMethod?.toUpperCase()}`, pageWidth - 20, yPos, { align: 'right' });
+
+      yPos += 30;
+
+      // Footer
+      doc.setFontSize(10);
+      doc.setTextColor(100, 100, 100);
+      doc.text('Thank you for choosing MayaSindhu and supporting traditional heritage craftsmanship.', pageWidth / 2, yPos, { align: 'center' });
+      yPos += 6;
+      doc.text('This is a computer-generated invoice and requires no signature.', pageWidth / 2, yPos, { align: 'center' });
+
+      doc.save(`Invoice-${order.orderId || order.id}.pdf`);
+      toast.success('Invoice downloaded successfully');
+    } catch (error) {
+      toast.error('Failed to download invoice');
+      console.error('Invoice download error:', error);
+    }
   };
 
   const flatItems = [];
@@ -677,7 +737,7 @@ export default function OrderHistory({ user }) {
                                     <div className="absolute -left-[31px] top-0.5 w-4 h-4 rounded-full bg-green-600 flex items-center justify-center border-4 border-white" />
                                     <div>
                                       <p className="text-xs font-bold text-gray-800">Shipped</p>
-                                      <p className="text-[10px] text-gray-400 font-medium">Your package has left the boutique.</p>
+                                      <p className="text-[10px] text-gray-400 font-medium">Your package has left the Shop.</p>
                                     </div>
                                   </div>
                                 )}
@@ -758,8 +818,8 @@ export default function OrderHistory({ user }) {
                     <div className="space-y-2.5 text-xs text-gray-700">
                       {(() => {
                         const itemTotal = selectedOrderDetail.item.price * selectedOrderDetail.item.qty;
-                        const itemGst = Math.round(itemTotal * 0.08);
-                        const itemBasePrice = itemTotal - itemGst;
+                        const itemGst = Math.round(itemTotal - (itemTotal / 1.18));
+                        const itemBasePrice = Math.round(itemTotal / 1.18);
                         return (
                           <>
                             <div className="flex justify-between font-medium">
@@ -767,7 +827,7 @@ export default function OrderHistory({ user }) {
                               <span>₹{itemBasePrice.toLocaleString('en-IN')}</span>
                             </div>
                             <div className="flex justify-between font-medium">
-                              <span className="text-gray-400">GST (8%)</span>
+                              <span className="text-gray-400">GST (18%)</span>
                               <span>₹{itemGst.toLocaleString('en-IN')}</span>
                             </div>
                             <div className="flex justify-between font-medium text-gray-500">
