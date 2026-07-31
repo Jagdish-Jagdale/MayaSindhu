@@ -84,7 +84,7 @@ export default function Login() {
         await login(email, password);
         toast.success("Logged in successfully. Welcome back!");
       } else {
-        const authEmail = email || `${mobile}@mayasindhu.user`;
+        const authEmail = email;
         await signup(authEmail, password, name, mobile);
         toast.success("Account created successfully. Welcome!");
       }
@@ -106,6 +106,10 @@ export default function Login() {
         message = 'Too many failed attempts. Your account has been temporarily disabled.';
       } else if (errorCode === 'auth/weak-password') {
         message = 'Password should be at least 6 characters.';
+      } else if (errorCode === 'auth/user-inactive') {
+        message = 'Your account has been deactivated. Please contact support.';
+      } else if (errorCode === 'auth/admin-use-admin-login') {
+        message = 'This is an admin account. Please use the admin login page.';
       }
 
       setError(message);

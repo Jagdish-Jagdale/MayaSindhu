@@ -225,18 +225,35 @@ export const AuthProvider = ({ children }) => {
     return () => clearInterval(interval);
   }, [user, adminRole]);
 
-  const login = async (email, password) => {
+  const login = async (email, password, isAdminLogin = false) => {
     try {
       setSessionError(null);
       const result = await signInWithEmailAndPassword(auth, email, password);
       const currentUser = result.user;
 
-      // Perform pre-validation for Super Admins
+      // Check if user is an admin
       const q = query(collection(db, 'admins'), where('email', '==', currentUser.email.toLowerCase()));
       const snapshot = await getDocs(q);
 
       if (!snapshot.empty) {
         const adminData = snapshot.docs[0].data();
+        
+        // If logging in through user login page but user is an admin
+        if (!isAdminLogin) {
+          await signOut(auth);
+          const err = new Error("Please use user login for login as user.");
+          err.code = "auth/admin-use-admin-login";
+          throw err;
+        }
+
+        // Admin logging in through admin login page
+        if (adminData.status !== 'Active') {
+          await signOut(auth);
+          const err = new Error("Your admin account is not active. Please contact support.");
+          err.code = "auth/admin-inactive";
+          throw err;
+        }
+
         if (adminData.role === 'Super Admin') {
           const deviceId = getOrCreateDeviceId();
           const sessionDocId = `${currentUser.email.toLowerCase()}_${deviceId}`;
@@ -279,6 +296,28 @@ export const AuthProvider = ({ children }) => {
             await signOut(auth);
             const err = new Error("Maximum 3 devices can be logged in simultaneously.");
             err.code = "auth/max-devices-exceeded";
+            throw err;
+          }
+        }
+      } else {
+        // Not an admin, so check if they're a regular user
+        if (isAdminLogin) {
+          await signOut(auth);
+          const err = new Error("This is not an admin account. Please use the user login page.");
+          err.code = "auth/user-use-user-login";
+          throw err;
+        }
+
+        // Check if user is active in Firestore users collection
+        const userDocRef = doc(db, 'users', currentUser.uid);
+        const userDocSnap = await getDoc(userDocRef);
+        
+        if (userDocSnap.exists()) {
+          const userData = userDocSnap.data();
+          if (userData.status === 'Inactive') {
+            await signOut(auth);
+            const err = new Error("Your account has been deactivated. Please contact support.");
+            err.code = "auth/user-inactive";
             throw err;
           }
         }

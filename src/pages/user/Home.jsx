@@ -21,6 +21,7 @@ import useCategories from '../../hooks/useCategories';
 import { useAuth } from '../../context/AuthContext';
 import toast from 'react-hot-toast';
 import mstitle from '../../assets/mstitle.png';
+import { fetchMultipleProductVariants } from '../../utils/productUtils';
 
 const SplashScreen = () => (
   <motion.div
@@ -136,6 +137,7 @@ export default function Home() {
   const videoRef = useRef(null);
   const testimonialRef = useRef(null);
   const [products, setProducts] = useState([]);
+  const [productVariants, setProductVariants] = useState({});
 
   // Splash Screen Timer
   useEffect(() => {
@@ -149,15 +151,27 @@ export default function Home() {
   }, [showSplash]);
 
   // Load All Products and Featured Treasures
-  // 1. Listen to all products
+  // 1. Listen to all products (excluding archived)
   useEffect(() => {
     const qProd = query(collection(db, 'products'));
     const unsubscribeProd = onSnapshot(qProd, (snapshot) => {
-      const data = snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() }));
+      const data = snapshot.docs
+        .map(doc => ({ id: doc.id, ...doc.data() }))
+        .filter(product => !product.isArchived); // Filter out archived products
       setProducts(data);
     });
     return () => unsubscribeProd();
   }, []);
+
+  // Fetch variants for products
+  useEffect(() => {
+    if (products.length === 0) return;
+    
+    const productIds = products.map(p => p.id);
+    fetchMultipleProductVariants(productIds).then(variantsMap => {
+      setProductVariants(variantsMap);
+    });
+  }, [products]);
 
   // 2. Listen to featured treasures metadata and hydrate
   useEffect(() => {
@@ -574,7 +588,7 @@ export default function Home() {
             >
               {featuredTreasures.map(product => (
                 <div key={product.id} className="flex-shrink-0 w-[200px] md:w-[280px] snap-start">
-                  <ProductCard {...product} />
+                  <ProductCard {...product} variants={productVariants[product.id] || []} />
                 </div>
               ))}
             </div>
@@ -928,6 +942,7 @@ export default function Home() {
         onClose={() => setIsTrendModalOpen(false)}
         trend={selectedTrend}
         products={products}
+        productVariants={productVariants}
       />
     </div>
   );

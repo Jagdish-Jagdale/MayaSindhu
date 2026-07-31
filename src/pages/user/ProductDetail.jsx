@@ -5,7 +5,7 @@
  */
 
 import { useState, useEffect, useRef } from 'react';
-import { useParams, useNavigate, useLocation, Navigate, Link } from 'react-router-dom';
+import { useParams, useNavigate, useLocation, Navigate, Link, useSearchParams } from 'react-router-dom';
 import { useGoBack } from '../../hooks/useGoBack';
 import { motion, AnimatePresence } from 'framer-motion';
 import {
@@ -32,6 +32,7 @@ import ProductCard from '../../components/user/ProductCard';
 import useCategories from '../../hooks/useCategories';
 import toast from 'react-hot-toast';
 import { getFriendlyErrorMessage } from '../../utils/firebaseErrors';
+import { fetchMultipleProductVariants } from '../../utils/productUtils';
 
 const BOUTIQUE_WHATSAPP_NUMBER = "9172020494";
 
@@ -264,6 +265,7 @@ export default function ProductDetail() {
   const navigate = useNavigate();
   const goBack = useGoBack();
   const location = useLocation();
+  const [searchParams] = useSearchParams();
   const { user, setLoginModalOpen } = useAuth();
   const { setCartOpen } = useCartUI();
 
@@ -279,6 +281,7 @@ export default function ProductDetail() {
   const [relatedProducts, setRelatedProducts] = useState([]);
   const [relatedLoading, setRelatedLoading] = useState(true);
   const similarScrollRef = useRef(null);
+  const [productVariants, setProductVariants] = useState({});
 
   const scrollSimilar = (direction) => {
     if (similarScrollRef.current) {
@@ -359,7 +362,16 @@ export default function ProductDetail() {
     const docRef = doc(db, 'products', id);
     unsubDoc = onSnapshot(docRef, (docSnap) => {
       if (docSnap.exists()) {
-        setProduct({ id: docSnap.id, ...docSnap.data() });
+        const productData = { id: docSnap.id, ...docSnap.data() };
+        // Check if product is archived
+        if (productData.isArchived) {
+          setProduct(null);
+          setLoading(false);
+          toast.error("This product is no longer available.");
+          navigate('/collections');
+          return;
+        }
+        setProduct(productData);
         setLoading(false);
       } else {
         // Document ID not found, try looking up by generated productId
@@ -368,7 +380,16 @@ export default function ProductDetail() {
           unsubProductQuery = onSnapshot(qProduct, (querySnapshot) => {
             if (!querySnapshot.empty) {
               const snap = querySnapshot.docs[0];
-              setProduct({ id: snap.id, ...snap.data() });
+              const productData = { id: snap.id, ...snap.data() };
+              // Check if product is archived
+              if (productData.isArchived) {
+                setProduct(null);
+                setLoading(false);
+                toast.error("This product is no longer available.");
+                navigate('/collections');
+                return;
+              }
+              setProduct(productData);
               setLoading(false);
             } else {
               // Not found by generated productId either, try legacy slug
@@ -377,7 +398,16 @@ export default function ProductDetail() {
                 unsubSlugQuery = onSnapshot(qSlug, (slugSnapshot) => {
                   if (!slugSnapshot.empty) {
                     const snap = slugSnapshot.docs[0];
-                    setProduct({ id: snap.id, ...snap.data() });
+                    const productData = { id: snap.id, ...snap.data() };
+                    // Check if product is archived
+                    if (productData.isArchived) {
+                      setProduct(null);
+                      setLoading(false);
+                      toast.error("This product is no longer available.");
+                      navigate('/collections');
+                      return;
+                    }
+                    setProduct(productData);
                   } else {
                     setProduct(null);
                   }
@@ -401,7 +431,7 @@ export default function ProductDetail() {
       if (unsubProductQuery) unsubProductQuery();
       if (unsubSlugQuery) unsubSlugQuery();
     };
-  }, [id]);
+  }, [id, navigate]);
 
   // Redirect to category view or collections if product is not found
   useEffect(() => {
@@ -423,14 +453,24 @@ export default function ProductDetail() {
         const snap = await getDocs(collection(db, 'products', product.id, 'variants'));
         const list = snap.docs.map(doc => ({ id: doc.id, ...doc.data() }));
         setVariants(list);
-        if (list.length > 0) {
+        
+        // Check if there's a variant ID in the URL
+        const variantIdFromUrl = searchParams.get('variant');
+        if (variantIdFromUrl && list.length > 0) {
+          const variantFromUrl = list.find(v => v.id === variantIdFromUrl);
+          if (variantFromUrl) {
+            setSelectedVariant(variantFromUrl);
+          } else {
+            setSelectedVariant(list[0]);
+          }
+        } else if (list.length > 0) {
           setSelectedVariant(list[0]);
         }
       } catch (err) {
       }
     };
     fetchVariants();
-  }, [product]);
+  }, [product, searchParams]);
 
   useEffect(() => {
     setActiveImage(0);
@@ -540,6 +580,16 @@ export default function ProductDetail() {
 
     fetchRelated();
   }, [product, categories]);
+
+  // Fetch variants for related products
+  useEffect(() => {
+    if (relatedProducts.length === 0) return;
+    
+    const productIds = relatedProducts.map(p => p.id);
+    fetchMultipleProductVariants(productIds).then(variantsMap => {
+      setProductVariants(variantsMap);
+    });
+  }, [relatedProducts]);
 
   // Fetch reviews for the current product
   useEffect(() => {
@@ -1300,7 +1350,7 @@ export default function ProductDetail() {
                     transition={{ type: "spring", stiffness: 300, damping: 20 }}
                     className="w-[calc((100%-16px)/2)] sm:w-[calc((100%-48px)/3)] lg:w-[calc((100%-96px)/4)] flex-shrink-0 snap-start"
                   >
-                    <ProductCard {...p} />
+                    <ProductCard {...p} variants={productVariants[p.id] || []} />
                   </motion.div>
                 ))}
               </div>

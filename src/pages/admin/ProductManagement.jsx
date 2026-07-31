@@ -31,7 +31,9 @@ import {
   ChevronLeft,
   ChevronRight,
   Check,
-  TrendingUp
+  TrendingUp,
+  Archive,
+  ArchiveRestore
 } from 'lucide-react';
 import { useAdminUI } from '../../context/AdminUIContext';
 import useEscapeKey from '../../hooks/useEscapeKey';
@@ -111,6 +113,7 @@ export default function ProductManagement() {
   });
   const [stockFilter, setStockFilter] = useState('all');
   const [productTypeFilter, setProductTypeFilter] = useState('all');
+  const [archiveFilter, setArchiveFilter] = useState('active');
 
   // Real-time listener for stockAlertThreshold
   useEffect(() => {
@@ -130,7 +133,7 @@ export default function ProductManagement() {
 
   useEffect(() => {
     setCurrentPage(1);
-  }, [searchTerm, activeFilter, rowsPerPage, stockFilter, productTypeFilter]);
+  }, [searchTerm, activeFilter, rowsPerPage, stockFilter, productTypeFilter, archiveFilter]);
   
   const [isModalOpen, setIsModalOpen] = useState(false);
   const [editingProduct, setEditingProduct] = useState(null);
@@ -282,6 +285,21 @@ export default function ProductManagement() {
     }
   };
 
+  const handleArchive = async (product) => {
+    try {
+      const newStatus = product.isArchived ? false : true;
+      await updateDoc(doc(db, 'products', product.id), {
+        isArchived: newStatus,
+        archivedAt: newStatus ? serverTimestamp() : null
+      });
+      toast.success(newStatus 
+        ? `"${product.name}" archived successfully` 
+        : `"${product.name}" restored successfully`);
+    } catch (error) {
+      toast.error("Failed to update product status");
+    }
+  };
+
   const openAddModal = () => {
     setEditingProduct(null);
     setIsModalOpen(true);
@@ -344,7 +362,14 @@ export default function ProductManagement() {
         matchesProductType = (p.productType || '').toLowerCase() === 'repeat';
       }
 
-      return matchesSearch && matchesFilter && matchesStockFilter && matchesProductType;
+      let matchesArchiveFilter = true;
+      if (archiveFilter === 'active') {
+        matchesArchiveFilter = !p.isArchived;
+      } else if (archiveFilter === 'archived') {
+        matchesArchiveFilter = p.isArchived;
+      }
+
+      return matchesSearch && matchesFilter && matchesStockFilter && matchesProductType && matchesArchiveFilter;
     });
 
     if (sortConfig.key) {
@@ -496,6 +521,21 @@ export default function ProductManagement() {
               className="w-32"
               minimal={true}
               valuePrefix="Type:"
+            />
+          </div>
+
+          {/* Archive Filter */}
+          <div className="flex items-center bg-gray-50 border border-gray-100 hover:border-gray-200 rounded-xl px-1.5 transition-all shrink-0">
+            <CustomSelect
+              value={archiveFilter}
+              onChange={setArchiveFilter}
+              options={[
+                { value: 'active', label: 'Active', prefixLabel: 'Active' },
+                { value: 'archived', label: 'Archived', prefixLabel: 'Archived' }
+              ]}
+              className="w-32"
+              minimal={true}
+              valuePrefix="Status:"
             />
           </div>
         </div>
@@ -727,6 +767,17 @@ export default function ProductManagement() {
                           title="Edit"
                         >
                           <Pencil size={14} strokeWidth={2.5} />
+                        </button>
+                        <button 
+                          onClick={(e) => { e.stopPropagation(); handleArchive(product); }}
+                          className={`w-8 h-8 flex items-center justify-center rounded-lg transition-all active:scale-90 ${
+                            product.isArchived 
+                              ? 'text-amber-600 hover:bg-amber-50' 
+                              : 'text-gray-600 hover:bg-gray-50'
+                          }`}
+                          title={product.isArchived ? "Restore product" : "Archive product"}
+                        >
+                          {product.isArchived ? <ArchiveRestore size={14} strokeWidth={2.5} /> : <Archive size={14} strokeWidth={2.5} />}
                         </button>
                         <button 
                           onClick={(e) => { e.stopPropagation(); handleDelete(product); }}

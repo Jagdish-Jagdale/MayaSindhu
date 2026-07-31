@@ -13,12 +13,14 @@ import { db } from '../../firebase';
 import { collection, query, orderBy, onSnapshot, doc, deleteDoc, getDoc } from 'firebase/firestore';
 import { useAuth } from '../../context/AuthContext';
 import { Loader2 } from 'lucide-react';
+import { fetchMultipleProductVariants } from '../../utils/productUtils';
 
 export default function Wishlist() {
   const { user, setLoginModalOpen, loading: authLoading } = useAuth();
   const [items, setItems] = useState([]);
   const [fullProducts, setFullProducts] = useState([]);
   const [loading, setLoading] = useState(true);
+  const [productVariants, setProductVariants] = useState({});
 
   useEffect(() => {
     if (!user) {
@@ -64,6 +66,16 @@ export default function Wishlist() {
 
     return () => unsubscribe();
   }, [user]);
+
+  // Fetch variants for wishlist products
+  useEffect(() => {
+    if (fullProducts.length === 0) return;
+    
+    const productIds = fullProducts.map(p => p.id);
+    fetchMultipleProductVariants(productIds).then(variantsMap => {
+      setProductVariants(variantsMap);
+    });
+  }, [fullProducts]);
 
   const removeItem = async (docId) => {
     try {
@@ -131,7 +143,7 @@ export default function Wishlist() {
                   <Heart size={18} strokeWidth={2.5} fill="currentColor" className="transition-transform group-hover/remove:scale-110" />
                 </button>
                 <div className="flex flex-col h-full">
-                  <ProductCard {...item} showWishlist={false} />
+                  <ProductCard {...item} showWishlist={false} variants={productVariants[item.id] || []} />
                 </div>
               </motion.div>
             ))}

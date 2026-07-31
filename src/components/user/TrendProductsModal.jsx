@@ -10,7 +10,7 @@ import { X, Sparkles } from 'lucide-react';
 import ProductCard from './ProductCard';
 import useEscapeKey from '../../hooks/useEscapeKey';
 
-export default function TrendProductsModal({ isOpen, onClose, trend, products }) {
+export default function TrendProductsModal({ isOpen, onClose, trend, products, productVariants }) {
   useEscapeKey(onClose, isOpen);
 
   if (!isOpen || !trend) return null;
@@ -81,7 +81,7 @@ export default function TrendProductsModal({ isOpen, onClose, trend, products })
               ) : (
                 <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-x-4 gap-y-10 md:gap-x-6 md:gap-y-12">
                   {trendProducts.map((product) => (
-                    <ProductCard key={product.id} {...product} />
+                    <ProductCard key={product.id} {...product} variants={productVariants?.[product.id] || []} />
                   ))}
                 </div>
               )}
