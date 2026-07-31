@@ -14,11 +14,11 @@ import { db } from '../../firebase';
 import { doc, getDoc, setDoc, updateDoc, deleteDoc, serverTimestamp, onSnapshot, collection } from 'firebase/firestore';
 import { addToCart } from '../../utils/cartUtils';
 import { getProductPath } from '../../utils/productUtils';
+import { getColorValue, parseMultiColor, isMultiColor } from '../../utils/colorUtils';
 import toast from 'react-hot-toast';
 import { getFriendlyErrorMessage } from '../../utils/firebaseErrors';
 
-
-export default function ProductCard({ id, productId, slug, name, price, discountedPrice, image, imageUrl, images, rating, showWishlist = true, stock, isUniquePiece, productType, reviewCount }) {
+export default function ProductCard({ id, productId, slug, name, price, discountedPrice, image, imageUrl, images, rating, showWishlist = true, stock, isUniquePiece, productType, reviewCount, variants }) {
   const displayPrice = discountedPrice || price || 0;
   const displayImage = image || imageUrl || (images && images.length > 0 ? images[0] : '');
   const [isAdded, setIsAdded] = useState(false);
@@ -186,6 +186,66 @@ export default function ProductCard({ id, productId, slug, name, price, discount
             <Heart size={16} strokeWidth={2.5} fill={isWishlisted ? "currentColor" : "none"} className="transition-transform group-hover/wishlist:scale-110" />
           </button>
         )}
+
+        {/* Color Dots - Above Buy Now Button */}
+        {variants && variants.length > 0 && (() => {
+          const uniqueColors = Array.from(new Set(variants.map(v => v.color).filter(c => c && c !== 'Default')));
+          if (uniqueColors.length <= 1) return null;
+          const displayColors = uniqueColors.slice(0, 4);
+          const showMore = uniqueColors.length > 4;
+          return (
+            <div className="absolute bottom-16 md:bottom-20 left-0 right-0 md:translate-y-10 md:opacity-0 group-hover:translate-y-0 group-hover:opacity-100 transition-all duration-700 ease-out z-10 px-2 md:px-3">
+              <div className="flex items-center justify-center gap-2">
+                {displayColors.map((color, idx) => {
+                  const variantWithColor = variants.find(v => (v.color || '') === (color || ''));
+                  const colors = parseMultiColor(color);
+                  const isMulti = isMultiColor(color);
+                  
+                  let backgroundStyle;
+                  if (isMulti && colors.length >= 2) {
+                    // Create gradient for multi-color
+                    if (colors.length === 2) {
+                      // Half and half split
+                      backgroundStyle = {
+                        background: `linear-gradient(90deg, ${colors[0]} 50%, ${colors[1]} 50%)`
+                      };
+                    } else if (colors.length === 3) {
+                      // Three-way split
+                      backgroundStyle = {
+                        background: `linear-gradient(90deg, ${colors[0]} 33.33%, ${colors[1]} 33.33%, ${colors[1]} 66.66%, ${colors[2]} 66.66%)`
+                      };
+                    } else {
+                      // Four-way split
+                      backgroundStyle = {
+                        background: `linear-gradient(90deg, ${colors[0]} 25%, ${colors[1]} 25%, ${colors[1]} 50%, ${colors[2]} 50%, ${colors[2]} 75%, ${colors[3]} 75%)`
+                      };
+                    }
+                  } else {
+                    // Single color
+                    backgroundStyle = {
+                      backgroundColor: getColorValue(color)
+                    };
+                  }
+                  
+                  return (
+                    <Link
+                      key={idx}
+                      to={`${getProductPath(productId || id, name, slug)}?variant=${variantWithColor?.id}`}
+                      onClick={(e) => e.stopPropagation()}
+                      className="w-5 h-5 md:w-6 md:h-6 rounded-full border-2 border-white shadow-md overflow-hidden flex-shrink-0 hover:scale-110 transition-transform"
+                      style={backgroundStyle}
+                    />
+                  );
+                })}
+                {showMore && (
+                  <span className="text-[10px] md:text-xs font-bold text-white bg-black/50 backdrop-blur-sm px-1.5 py-0.5 rounded-full shadow-md">
+                    4+
+                  </span>
+                )}
+              </div>
+            </div>
+          );
+        })()}
 
         {/* Actions - Buy Now & Add to Cart */}
         {stockVal > 0 && (

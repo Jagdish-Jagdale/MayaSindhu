@@ -16,6 +16,7 @@ import useCategories from '../../hooks/useCategories';
 import { useGoBack } from '../../hooks/useGoBack';
 import { db } from '../../firebase';
 import { collection, onSnapshot, query, orderBy } from 'firebase/firestore';
+import { fetchMultipleProductVariants } from '../../utils/productUtils';
 
 export default function CategoryView() {
   const location = useLocation();
@@ -28,16 +29,19 @@ export default function CategoryView() {
   const [productsLoading, setProductsLoading] = useState(true);
   const [isMobileFiltersOpen, setIsMobileFiltersOpen] = useState(false);
   const [activeFilters, setActiveFilters] = useState({});
+  const [productVariants, setProductVariants] = useState({});
 
   const handleFilterChange = (filters) => {
     setActiveFilters(filters);
   };
 
-  // 1. Fetch ALL products from Firestore
+  // 1. Fetch ALL products from Firestore (excluding archived)
   useEffect(() => {
     const q = query(collection(db, 'products'), orderBy('createdAt', 'desc'));
     const unsubscribe = onSnapshot(q, (snapshot) => {
-      const data = snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() }));
+      const data = snapshot.docs
+        .map(doc => ({ id: doc.id, ...doc.data() }))
+        .filter(product => !product.isArchived); // Filter out archived products
       setProducts(data);
       setProductsLoading(false);
     }, (error) => {
@@ -45,6 +49,16 @@ export default function CategoryView() {
     });
     return () => unsubscribe();
   }, []);
+
+  // Fetch variants for products
+  useEffect(() => {
+    if (products.length === 0) return;
+    
+    const productIds = products.map(p => p.id);
+    fetchMultipleProductVariants(productIds).then(variantsMap => {
+      setProductVariants(variantsMap);
+    });
+  }, [products]);
 
   // 2. Resolve the current category and breadcrumbs from the URL
   const { currentCategory, breadcrumbs } = useMemo(() => {
@@ -227,7 +241,11 @@ export default function CategoryView() {
                 <div className="grid grid-cols-2 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-x-3 gap-y-8 md:gap-x-5 md:gap-y-10">
                   {filteredProducts.length > 0 ? (
                     filteredProducts.map((product) => (
-                      <ProductCard key={product.id} {...product} />
+                      <ProductCard 
+                        key={product.id} 
+                        {...product} 
+                        variants={productVariants[product.id] || []} 
+                      />
                     ))
                   ) : (
                     <div className="col-span-full py-20 text-center bg-gray-50 rounded-xl">

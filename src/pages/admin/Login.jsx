@@ -76,7 +76,7 @@ const AdminLogin = () => {
     setLoginLoading(true);
     try {
       await setPersistence(auth, browserSessionPersistence);
-      await login(email, password);
+      await login(email, password, true); // Pass true for admin login
       // Logic for redirection is handled by AdminProtectedRoute or the useEffect above
       toast.success("Logged in successfully. Welcome back!");
     } catch (err) {
