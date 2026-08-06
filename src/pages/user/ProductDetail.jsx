@@ -1018,34 +1018,84 @@ export default function ProductDetail() {
               {variants.length > 0 && (
                 <div className="mb-6 pb-4 border-b border-gray-100 space-y-4">
                   <div>
-                    <span className="text-[10px] font-black uppercase tracking-wider text-gray-400 block mb-2">
-                      Selected: <span className="text-gray-900 font-bold normal-case ml-1">
-                        {(() => {
-                          if (!selectedVariant) return 'Default';
-                          const colorText = selectedVariant.color && selectedVariant.color !== 'Default' ? selectedVariant.color : '';
-                          const designText = selectedVariant.design && selectedVariant.design !== 'Default' ? selectedVariant.design : '';
-                          const sizeText = selectedVariant.size && selectedVariant.size !== 'Default' ? selectedVariant.size : '';
-                          const detailText = isApparelReadymade ? sizeText : designText;
-                          if (colorText && detailText) return `${colorText} - ${detailText}`;
-                          return colorText || detailText || 'Default';
-                        })()}
-                      </span>
-                    </span>
                     {(() => {
-                      const uniqueColors = Array.from(new Set(variants.map(v => v.color)));
+                      // Only show "Selected" if there are multiple variants with different colors/designs
+                      const uniqueCombinations = Array.from(new Set(
+                        variants.map(v => {
+                          const color = v.color || '';
+                          const design = v.design || '';
+                          return color && design ? `${color}|${design}` : (color || design || '');
+                        }).filter(c => c && c !== 'Default' && c !== 'Default|Default')
+                      ));
+                      
+                      if (uniqueCombinations.length <= 1) return null;
+                      
                       return (
-                        <div className={`flex gap-2.5 py-1 ${uniqueColors.length > 5 ? 'overflow-x-auto pb-2 custom-scrollbar' : 'flex-wrap'}`}>
-                          {uniqueColors.map(color => {
-                            const variantWithColor = variants.find(v => (v.color || '') === (color || ''));
-                            const isSelected = (selectedVariant?.color || '') === (color || '');
-                            const thumbnail = variantWithColor?.images?.[0] || product.image || (product.images && product.images[0]);
+                        <span className="text-[10px] font-black uppercase tracking-wider text-gray-400 block mb-2">
+                          Selected: <span className="text-gray-900 font-bold normal-case ml-1">
+                            {(() => {
+                              if (!selectedVariant) return '';
+                              const colorText = selectedVariant.color && selectedVariant.color !== 'Default' ? selectedVariant.color : '';
+                              const designText = selectedVariant.design && selectedVariant.design !== 'Default' ? selectedVariant.design : '';
+                              const sizeText = selectedVariant.size && selectedVariant.size !== 'Default' ? selectedVariant.size : '';
+                              // For apparel/readymade, prefer size, but fall back to design if no size
+                              const detailText = isApparelReadymade ? (sizeText || designText) : designText;
+                              if (colorText && detailText) return `${colorText} - ${detailText}`;
+                              if (colorText) return colorText;
+                              if (detailText) return detailText;
+                              return '';
+                            })()}
+                          </span>
+                        </span>
+                      );
+                    })()}
+                    {(() => {
+                      // Group variants by unique color+design combinations, excluding "Default" values
+                      const uniqueCombinations = Array.from(new Set(
+                        variants.map(v => {
+                          const color = v.color || '';
+                          const design = v.design || '';
+                          // Skip if both color and design are "Default" or both are empty
+                          if ((color === 'Default' && design === 'Default') || (!color && !design)) {
+                            return null;
+                          }
+                          return color && design ? `${color}|${design}` : (color || design || '');
+                        }).filter(c => c)
+                      ));
+                      
+                      if (uniqueCombinations.length === 0) return null;
+                      
+                      return (
+                        <div className={`flex gap-2.5 py-1 ${uniqueCombinations.length > 5 ? 'overflow-x-auto pb-2 custom-scrollbar' : 'flex-wrap'}`}>
+                          {uniqueCombinations.map(combination => {
+                            const [color, design] = combination.split('|');
+                            const variantWithCombo = variants.find(v => {
+                              const vColor = v.color || '';
+                              const vDesign = v.design || '';
+                              if (color && design) {
+                                return vColor === color && vDesign === design;
+                              }
+                              return vColor === combination || vDesign === combination;
+                            });
+                            
+                            const isSelected = (() => {
+                              if (!selectedVariant) return false;
+                              const sColor = selectedVariant.color || '';
+                              const sDesign = selectedVariant.design || '';
+                              if (color && design) {
+                                return sColor === color && sDesign === design;
+                              }
+                              return sColor === combination || sDesign === combination;
+                            })();
+                            
+                            const thumbnail = variantWithCombo?.images?.[0] || product.image || (product.images && product.images[0]);
+                            const label = design ? `${color} - ${design}` : color;
 
                             return (
                               <button
-                                key={color || 'default'}
+                                key={combination}
                                 onClick={() => {
-                                  const match = variants.find(v => (v.color || '') === (color || ''));
-                                  if (match) setSelectedVariant(match);
+                                  if (variantWithCombo) setSelectedVariant(variantWithCombo);
                                 }}
                                 className={`flex items-center p-0.5 rounded-lg border transition-all flex-shrink-0 ${isSelected
                                     ? 'border-[#1BAFAF] bg-[#1BAFAF]/5 ring-2 ring-[#1BAFAF]'

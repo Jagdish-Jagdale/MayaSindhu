@@ -20,7 +20,8 @@ import { getFriendlyErrorMessage } from '../../utils/firebaseErrors';
 
 export default function ProductCard({ id, productId, slug, name, price, discountedPrice, image, imageUrl, images, rating, showWishlist = true, stock, isUniquePiece, productType, reviewCount, variants }) {
   const displayPrice = discountedPrice || price || 0;
-  const displayImage = image || imageUrl || (images && images.length > 0 ? images[0] : '');
+  const allImages = images && images.length > 0 ? images : (image || imageUrl ? [image || imageUrl] : []);
+  const [currentImageIndex, setCurrentImageIndex] = useState(0);
   const [isAdded, setIsAdded] = useState(false);
   const { user, setLoginModalOpen } = useAuth();
   const { setCartOpen } = useCartUI();
@@ -31,6 +32,22 @@ export default function ProductCard({ id, productId, slug, name, price, discount
 
   const isUnique = isUniquePiece === true || productType === 'Unique';
   const stockVal = typeof stock === 'number' ? stock : (isUnique ? 1 : 15);
+
+  // Image sliding on hover
+  const [isHovered, setIsHovered] = useState(false);
+
+  useEffect(() => {
+    if (allImages.length <= 1 || !isHovered) {
+      setCurrentImageIndex(0);
+      return;
+    }
+
+    const interval = setInterval(() => {
+      setCurrentImageIndex((prev) => (prev + 1) % allImages.length);
+    }, 1500); // Change image every 1.5 seconds on hover
+
+    return () => clearInterval(interval);
+  }, [allImages, isHovered]);
 
   const [prevUser, setPrevUser] = useState(user);
   if (user !== prevUser) {
@@ -145,11 +162,13 @@ export default function ProductCard({ id, productId, slug, name, price, discount
       whileInView={{ opacity: 1, y: 0 }}
       viewport={{ once: true }}
       className="group relative"
+      onMouseEnter={() => setIsHovered(true)}
+      onMouseLeave={() => setIsHovered(false)}
     >
       <div className="relative aspect-[3/4] overflow-hidden bg-[#F9F8F6] rounded-2xl shadow-sm hover:shadow-xl transition-shadow duration-500 flex items-center justify-center p-2">
         <Link to={getProductPath(productId || id, name, slug)} className="w-full h-full">
           <img
-            src={displayImage || null}
+            src={allImages[currentImageIndex] || null}
             alt={name}
             className="w-full h-full object-contain transition-transform duration-[2000ms] ease-out group-hover:scale-105"
           />
@@ -186,66 +205,6 @@ export default function ProductCard({ id, productId, slug, name, price, discount
             <Heart size={16} strokeWidth={2.5} fill={isWishlisted ? "currentColor" : "none"} className="transition-transform group-hover/wishlist:scale-110" />
           </button>
         )}
-
-        {/* Color Dots - Above Buy Now Button */}
-        {variants && variants.length > 0 && (() => {
-          const uniqueColors = Array.from(new Set(variants.map(v => v.color).filter(c => c && c !== 'Default')));
-          if (uniqueColors.length <= 1) return null;
-          const displayColors = uniqueColors.slice(0, 4);
-          const showMore = uniqueColors.length > 4;
-          return (
-            <div className="absolute bottom-16 md:bottom-20 left-0 right-0 md:translate-y-10 md:opacity-0 group-hover:translate-y-0 group-hover:opacity-100 transition-all duration-700 ease-out z-10 px-2 md:px-3">
-              <div className="flex items-center justify-center gap-2">
-                {displayColors.map((color, idx) => {
-                  const variantWithColor = variants.find(v => (v.color || '') === (color || ''));
-                  const colors = parseMultiColor(color);
-                  const isMulti = isMultiColor(color);
-                  
-                  let backgroundStyle;
-                  if (isMulti && colors.length >= 2) {
-                    // Create gradient for multi-color
-                    if (colors.length === 2) {
-                      // Half and half split
-                      backgroundStyle = {
-                        background: `linear-gradient(90deg, ${colors[0]} 50%, ${colors[1]} 50%)`
-                      };
-                    } else if (colors.length === 3) {
-                      // Three-way split
-                      backgroundStyle = {
-                        background: `linear-gradient(90deg, ${colors[0]} 33.33%, ${colors[1]} 33.33%, ${colors[1]} 66.66%, ${colors[2]} 66.66%)`
-                      };
-                    } else {
-                      // Four-way split
-                      backgroundStyle = {
-                        background: `linear-gradient(90deg, ${colors[0]} 25%, ${colors[1]} 25%, ${colors[1]} 50%, ${colors[2]} 50%, ${colors[2]} 75%, ${colors[3]} 75%)`
-                      };
-                    }
-                  } else {
-                    // Single color
-                    backgroundStyle = {
-                      backgroundColor: getColorValue(color)
-                    };
-                  }
-                  
-                  return (
-                    <Link
-                      key={idx}
-                      to={`${getProductPath(productId || id, name, slug)}?variant=${variantWithColor?.id}`}
-                      onClick={(e) => e.stopPropagation()}
-                      className="w-5 h-5 md:w-6 md:h-6 rounded-full border-2 border-white shadow-md overflow-hidden flex-shrink-0 hover:scale-110 transition-transform"
-                      style={backgroundStyle}
-                    />
-                  );
-                })}
-                {showMore && (
-                  <span className="text-[10px] md:text-xs font-bold text-white bg-black/50 backdrop-blur-sm px-1.5 py-0.5 rounded-full shadow-md">
-                    4+
-                  </span>
-                )}
-              </div>
-            </div>
-          );
-        })()}
 
         {/* Actions - Buy Now & Add to Cart */}
         {stockVal > 0 && (
@@ -343,6 +302,84 @@ export default function ProductCard({ id, productId, slug, name, price, discount
       </div>
 
       <div className="mt-5 px-1">
+        {/* Color Dots - Always visible above product name */}
+        <div className="flex items-center justify-center gap-2 mb-3 min-h-[26px]">
+          {variants && variants.length > 0 && (() => {
+            // Group variants by unique color+design combinations
+            const uniqueCombinations = Array.from(new Set(
+              variants.map(v => {
+                const color = v.color || '';
+                const design = v.design || '';
+                // Skip if both color and design are "Default" or both are empty
+                if ((color === 'Default' && design === 'Default') || (!color && !design)) {
+                  return null;
+                }
+                return color && design ? `${color}|${design}` : (color || design || '');
+              }).filter(c => c)
+            ));
+            
+            if (uniqueCombinations.length === 0) return null;
+            const displayCombinations = uniqueCombinations.slice(0, 4);
+            const showMore = uniqueCombinations.length > 4;
+            return (
+              <>
+                {displayCombinations.map((combination, idx) => {
+                  const [color, design] = combination.split('|');
+                  const variantWithCombo = variants.find(v => {
+                    const vColor = v.color || '';
+                    const vDesign = v.design || '';
+                    if (color && design) {
+                      return vColor === color && vDesign === design;
+                    }
+                    return vColor === combination || vDesign === combination;
+                  });
+                  
+                  const displayColor = color || design || '';
+                  const colors = parseMultiColor(displayColor);
+                  const isMulti = isMultiColor(displayColor);
+                  
+                  let backgroundStyle;
+                  if (isMulti && colors.length >= 2) {
+                    if (colors.length === 2) {
+                      backgroundStyle = {
+                        background: `linear-gradient(90deg, ${colors[0]} 50%, ${colors[1]} 50%)`
+                      };
+                    } else if (colors.length === 3) {
+                      backgroundStyle = {
+                        background: `linear-gradient(90deg, ${colors[0]} 33.33%, ${colors[1]} 33.33%, ${colors[1]} 66.66%, ${colors[2]} 66.66%)`
+                      };
+                    } else {
+                      backgroundStyle = {
+                        background: `linear-gradient(90deg, ${colors[0]} 25%, ${colors[1]} 25%, ${colors[1]} 50%, ${colors[2]} 50%, ${colors[2]} 75%, ${colors[3]} 75%)`
+                      };
+                    }
+                  } else {
+                    backgroundStyle = {
+                      backgroundColor: getColorValue(displayColor)
+                    };
+                  }
+                  
+                  return (
+                    <Link
+                      key={idx}
+                      to={`${getProductPath(productId || id, name, slug)}?variant=${variantWithCombo?.id}`}
+                      onClick={(e) => e.stopPropagation()}
+                      className="w-5 h-5 md:w-6 md:h-6 rounded-full border-2 border-white shadow-md overflow-hidden flex-shrink-0 hover:scale-110 transition-transform"
+                      style={backgroundStyle}
+                      title={design ? `${color} - ${design}` : color}
+                    />
+                  );
+                })}
+                {showMore && (
+                  <span className="text-[10px] md:text-xs font-bold text-gray-600 bg-gray-100 px-1.5 py-0.5 rounded-full shadow-sm">
+                    4+
+                  </span>
+                )}
+              </>
+            );
+          })()}
+        </div>
+
         <Link to={getProductPath(productId || id, name, slug)}>
           <h3 className="text-sm md:text-[15px] tracking-wide font-sans text-text-main hover:text-brand-orange transition-colors line-clamp-1 mb-1.5">{name}</h3>
         </Link>

@@ -5,7 +5,7 @@
  */
 
 import React, { useState, useEffect } from 'react';
-import { X, Upload, Plus, Trash2, Loader2, Image as ImageIcon, Settings, Info } from 'lucide-react';
+import { X, Upload, Plus, Trash2, Loader2, Image as ImageIcon, Settings, Info, Pencil } from 'lucide-react';
 import { db } from '../../firebase';
 import { collection, addDoc, updateDoc, doc, deleteDoc, serverTimestamp, getDocs, query, orderBy, limit, where } from 'firebase/firestore';
 import useCategories from '../../hooks/useCategories';
@@ -136,6 +136,7 @@ export default function ProductFormModal({ isOpen, onClose, product = null, init
               actualPrice: actual || '',
               discountPercent: initialDiscount,
               stock: data.stock || 0,
+              sizeStock: data.sizeStock || {},
               images: data.images || [],
               previews: data.images || [],
               newImageFiles: [],
@@ -160,6 +161,7 @@ export default function ProductFormModal({ isOpen, onClose, product = null, init
                 actualPrice: product.actualPrice || product.price || '',
                 discountPercent: 0,
                 stock: product.stock || 0,
+                sizeStock: product.sizeStock || {},
                 images: product.images || [],
                 previews: product.images || [],
                 newImageFiles: [],
@@ -203,15 +205,16 @@ export default function ProductFormModal({ isOpen, onClose, product = null, init
         setVariants([
           {
             id: 'temp_' + Date.now(),
-            color: 'Default',
-            design: 'Default',
+            color: '',
+            design: '',
             size: '',
             sizes: [],
-            sku: generateSKU('Default', 'Default'),
+            sku: generateSKU('', ''),
             price: '',
             actualPrice: '',
             discountPercent: 0,
             stock: '',
+            sizeStock: {},
             images: [],
             previews: [],
             newImageFiles: [],
@@ -547,6 +550,7 @@ export default function ProductFormModal({ isOpen, onClose, product = null, init
             price: Number(v.price || 0),
             actualPrice: Number(v.actualPrice || 0),
             stock: Number(v.stock || 0),
+            sizeStock: v.sizeStock || {},
             images: v.images || [],
             productType: v.productType || 'Repeat',
             stockAlertThreshold: Number(v.stockAlertThreshold !== undefined ? v.stockAlertThreshold : 5)
@@ -577,6 +581,7 @@ export default function ProductFormModal({ isOpen, onClose, product = null, init
             price: Number(v.price || 0),
             actualPrice: Number(v.actualPrice || 0),
             stock: Number(v.stock || 0),
+            sizeStock: v.sizeStock || {},
             images: v.images || [],
             productType: v.productType || 'Repeat',
             stockAlertThreshold: Number(v.stockAlertThreshold !== undefined ? v.stockAlertThreshold : 5)
@@ -650,22 +655,6 @@ export default function ProductFormModal({ isOpen, onClose, product = null, init
                 <div className="bg-white p-6 rounded-2xl border border-gray-100 shadow-sm space-y-5 flex flex-col">
                   <div className="flex items-center justify-between">
                     <h3 className="text-[14px] font-bold text-[#1BAFAF] uppercase tracking-wider">Basic Information</h3>
-                    <label className="flex items-center gap-3 cursor-pointer group">
-                      <div className="relative">
-                        <input
-                          type="checkbox"
-                          name="isAvailable"
-                          checked={formData.isAvailable}
-                          onChange={handleInputChange}
-                          className="sr-only"
-                        />
-                        <div className={`w-11 h-6 rounded-full transition-colors ${formData.isAvailable ? 'bg-[#1BAFAF]' : 'bg-gray-200'}`} />
-                        <div className={`absolute top-1 left-1 bg-white w-4 h-4 rounded-full transition-transform duration-200 ${formData.isAvailable ? 'translate-x-5' : ''}`} />
-                      </div>
-                      <span className={`text-[13px] font-bold transition-colors ${formData.isAvailable ? 'text-[#1BAFAF]' : 'text-gray-400'}`}>
-                        {formData.isAvailable ? 'Available' : 'Hidden'}
-                      </span>
-                    </label>
                   </div>
                   <hr className="border-gray-200 -mt-2 mb-3" />
 
@@ -687,7 +676,7 @@ export default function ProductFormModal({ isOpen, onClose, product = null, init
                         value={formData.brand}
                         onChange={handleInputChange}
                         placeholder="e.g. Nike, MayaSindhu"
-                        className="w-full bg-gray-50 border-none px-4 py-3 rounded-xl text-[14px] outline-none focus:ring-2 focus:ring-[#1BAFAF]/20 focus:bg-white transition-all font-medium"
+                                                className="w-full bg-gray-50 border border-gray-200 px-4 py-3 rounded-xl text-[14px] outline-none focus:ring-2 focus:ring-[#1BAFAF]/20 focus:bg-white transition-all font-medium"
                       />
                     </div>
                   </div>
@@ -701,7 +690,7 @@ export default function ProductFormModal({ isOpen, onClose, product = null, init
                       value={formData.name}
                       onChange={handleInputChange}
                       placeholder="e.g. Men's Cotton T-Shirt"
-                      className="w-full bg-gray-50 border-none px-4 py-3 rounded-xl text-[14px] outline-none focus:ring-2 focus:ring-[#1BAFAF]/20 focus:bg-white transition-all font-medium"
+                                              className="w-full bg-gray-50 border border-gray-200 px-4 py-3 rounded-xl text-[14px] outline-none focus:ring-2 focus:ring-[#1BAFAF]/20 focus:bg-white transition-all font-medium"
                     />
                   </div>
 
@@ -713,7 +702,7 @@ export default function ProductFormModal({ isOpen, onClose, product = null, init
                       value={formData.tagline}
                       onChange={handleInputChange}
                       placeholder="Short catchy phrase"
-                      className="w-full bg-gray-50 border-none px-4 py-3 rounded-xl text-[14px] outline-none focus:ring-2 focus:ring-[#1BAFAF]/20 focus:bg-white transition-all font-medium"
+                                              className="w-full bg-gray-50 border border-gray-200 px-4 py-3 rounded-xl text-[14px] outline-none focus:ring-2 focus:ring-[#1BAFAF]/20 focus:bg-white transition-all font-medium"
                     />
                   </div>
 
@@ -795,7 +784,7 @@ export default function ProductFormModal({ isOpen, onClose, product = null, init
                       onChange={handleInputChange}
                       placeholder="e.g. Dry clean only"
                       rows={3}
-                      className="w-full bg-gray-50 border-none px-4 py-3 rounded-xl text-[14px] outline-none focus:ring-2 focus:ring-[#1BAFAF]/20 focus:bg-white transition-all font-medium resize-none"
+                      className="w-full bg-gray-50 border border-gray-200 px-4 py-3 rounded-xl text-[14px] outline-none focus:ring-2 focus:ring-[#1BAFAF]/20 focus:bg-white transition-all font-medium resize-none"
                     ></textarea>
                   </div>
 
@@ -807,7 +796,7 @@ export default function ProductFormModal({ isOpen, onClose, product = null, init
                       onChange={handleInputChange}
                       placeholder="Product specific disclaimer. Leave blank to use the global disclaimer."
                       rows={3}
-                      className="w-full bg-gray-50 border-none px-4 py-3 rounded-xl text-[14px] outline-none focus:ring-2 focus:ring-[#1BAFAF]/20 focus:bg-white transition-all font-medium resize-none"
+                      className="w-full bg-gray-50 border border-gray-200 px-4 py-3 rounded-xl text-[14px] outline-none focus:ring-2 focus:ring-[#1BAFAF]/20 focus:bg-white transition-all font-medium resize-none"
                     ></textarea>
                   </div>
 
@@ -819,7 +808,7 @@ export default function ProductFormModal({ isOpen, onClose, product = null, init
                       onChange={handleInputChange}
                       placeholder="Material, fit, styling tips, etc."
                       rows={3}
-                      className="w-full bg-gray-50 border-none px-4 py-3 rounded-xl text-[14px] outline-none focus:ring-2 focus:ring-[#1BAFAF]/20 focus:bg-white transition-all font-medium resize-none"
+                      className="w-full bg-gray-50 border border-gray-200 px-4 py-3 rounded-xl text-[14px] outline-none focus:ring-2 focus:ring-[#1BAFAF]/20 focus:bg-white transition-all font-medium resize-none"
                     ></textarea>
                   </div>
 
@@ -831,7 +820,7 @@ export default function ProductFormModal({ isOpen, onClose, product = null, init
                       onChange={handleInputChange}
                       placeholder="Tell the story of this product..."
                       rows={5}
-                      className="w-full bg-gray-50 border-none px-4 py-3 rounded-xl text-[14px] outline-none focus:ring-2 focus:ring-[#1BAFAF]/20 focus:bg-white transition-all font-medium resize-none"
+                      className="w-full bg-gray-50 border border-gray-200 px-4 py-3 rounded-xl text-[14px] outline-none focus:ring-2 focus:ring-[#1BAFAF]/20 focus:bg-white transition-all font-medium resize-none"
                     ></textarea>
                   </div>
                 </div>
@@ -873,14 +862,13 @@ export default function ProductFormModal({ isOpen, onClose, product = null, init
                          {/* Color & Design */}
                         <div className="grid grid-cols-2 gap-3">
                           <div className="space-y-1">
-                            <label className="text-[11px] font-bold text-gray-500 ml-1">Color *</label>
+                            <label className="text-[11px] font-bold text-gray-500 ml-1">Color</label>
                             <input
                               type="text"
-                              required
                               placeholder="e.g. Red, Blue"
                               value={variant.color}
                               onChange={(e) => handleVariantChange(variant.id, 'color', e.target.value)}
-                              className="w-full bg-gray-50 border-none px-3 py-2 rounded-lg text-[13px] outline-none focus:ring-2 focus:ring-[#1BAFAF]/20 transition-all font-medium"
+                              className="w-full bg-gray-50 border border-gray-200 px-3 py-2 rounded-lg text-[13px] outline-none focus:ring-2 focus:ring-[#1BAFAF]/20 transition-all font-medium"
                             />
                           </div>
                           <div className="space-y-1">
@@ -890,21 +878,28 @@ export default function ProductFormModal({ isOpen, onClose, product = null, init
                               placeholder="e.g. Plain, Printed"
                               value={variant.design}
                               onChange={(e) => handleVariantChange(variant.id, 'design', e.target.value)}
-                              className="w-full bg-gray-50 border-none px-3 py-2 rounded-lg text-[13px] outline-none focus:ring-2 focus:ring-[#1BAFAF]/20 transition-all font-medium"
+                              className="w-full bg-gray-50 border border-gray-200 px-3 py-2 rounded-lg text-[13px] outline-none focus:ring-2 focus:ring-[#1BAFAF]/20 transition-all font-medium"
                             />
                           </div>
                         </div>
 
-                        {/* Sizes Selection Checkboxes */}
-                        {isApparelReadymade && (
-                          <div className="space-y-1.5 bg-white border border-gray-200/60 p-3.5 rounded-xl">
-                            <label className="text-[11px] font-bold text-[#1BAFAF] uppercase tracking-wider block mb-1">Available Sizes *</label>
-                            <div className="flex flex-wrap gap-2">
-                              {['XS', 'S', 'M', 'L', 'XL', 'XXL'].map((sz) => {
-                                const sizesArray = variant.sizes || [];
-                                const isChecked = sizesArray.includes(sz);
-                                return (
-                                  <label key={sz} className={`flex items-center gap-1.5 px-3 py-2 rounded-xl text-xs font-black cursor-pointer border select-none transition-all ${
+                        {/* Sizes Selection Checkboxes with Stock */}
+                        <div className="space-y-1.5 bg-white border border-gray-200/60 p-3.5 rounded-xl">
+                          <label className="text-[11px] font-bold text-[#1BAFAF] uppercase tracking-wider block mb-1">Sizes *</label>
+                          <div className="grid grid-cols-[auto_1fr_1fr] gap-2 mb-2">
+                            <div className="text-[10px] font-bold text-gray-500 text-center">Size</div>
+                            <div className="text-[10px] font-bold text-gray-500 text-center">Stock Qty</div>
+                            <div className="text-[10px] font-bold text-gray-500 text-center">Stock Alert</div>
+                          </div>
+                          <div className="space-y-3">
+                            {['XS', 'S', 'M', 'L', 'XL', 'XXL'].map((sz) => {
+                              const sizesArray = variant.sizes || [];
+                              const isChecked = sizesArray.includes(sz);
+                              const sizeStock = variant.sizeStock?.[sz]?.stock || 0;
+                              const sizeAlert = variant.sizeStock?.[sz]?.alert || 5;
+                              return (
+                                <div key={sz} className="grid grid-cols-[auto_1fr_1fr] gap-2 items-center mt-2">
+                                  <label className={`flex items-center justify-center gap-1.5 px-3 py-2 rounded-xl text-xs font-black cursor-pointer border select-none transition-all w-16 ${
                                     isChecked
                                       ? 'bg-[#1BAFAF]/5 border-[#1BAFAF] text-[#1BAFAF] ring-1 ring-[#1BAFAF]/20'
                                       : 'bg-gray-50/50 border-gray-200 text-gray-500 hover:bg-gray-50'
@@ -922,11 +917,47 @@ export default function ProductFormModal({ isOpen, onClose, product = null, init
                                     />
                                     <span>{sz}</span>
                                   </label>
-                                );
-                              })}
-                            </div>
+                                  <input
+                                    type="number"
+                                    min="0"
+                                    placeholder="0"
+                                    value={sizeStock}
+                                    disabled={!isChecked}
+                                    onChange={(e) => {
+                                      const newSizeStock = { ...(variant.sizeStock || {}) };
+                                      if (!newSizeStock[sz]) newSizeStock[sz] = { stock: 0, alert: 5 };
+                                      newSizeStock[sz].stock = Number(e.target.value);
+                                      handleVariantChange(variant.id, 'sizeStock', newSizeStock);
+                                    }}
+                                    className={`w-full border border-gray-200 px-2 py-1.5 rounded-lg text-[12px] outline-none transition-all font-medium text-center ${
+                                      !isChecked
+                                        ? 'bg-gray-100 text-gray-400 cursor-not-allowed'
+                                        : 'bg-white text-gray-700 focus:ring-2 focus:ring-[#1BAFAF]/20'
+                                    }`}
+                                  />
+                                  <input
+                                    type="number"
+                                    min="1"
+                                    placeholder="5"
+                                    value={sizeAlert}
+                                    disabled={!isChecked}
+                                    onChange={(e) => {
+                                      const newSizeStock = { ...(variant.sizeStock || {}) };
+                                      if (!newSizeStock[sz]) newSizeStock[sz] = { stock: 0, alert: 5 };
+                                      newSizeStock[sz].alert = Number(e.target.value);
+                                      handleVariantChange(variant.id, 'sizeStock', newSizeStock);
+                                    }}
+                                    className={`w-full border border-gray-200 px-2 py-1.5 rounded-lg text-[12px] outline-none transition-all font-medium text-center ${
+                                      !isChecked
+                                        ? 'bg-gray-100 text-gray-400 cursor-not-allowed'
+                                        : 'bg-white text-gray-700 focus:ring-2 focus:ring-[#1BAFAF]/20'
+                                    }`}
+                                  />
+                                </div>
+                              );
+                            })}
                           </div>
-                        )}
+                        </div>
 
                         {/* Product Type & Stock Alert Threshold */}
                         <div className="grid grid-cols-2 gap-3">
@@ -948,16 +979,20 @@ export default function ProductFormModal({ isOpen, onClose, product = null, init
                             <input
                               type="number"
                               min="1"
-                              disabled={variant.productType === 'Unique'}
+                              disabled={variant.productType === 'Unique' || (variant.sizes && variant.sizes.length > 0)}
+                              readOnly={variant.sizes && variant.sizes.length > 0}
                               value={variant.productType === 'Unique' ? '' : (variant.stockAlertThreshold !== undefined ? variant.stockAlertThreshold : 5)}
                               onChange={(e) => handleVariantChange(variant.id, 'stockAlertThreshold', Number(e.target.value))}
                               onKeyDown={handleKeyPress}
-                              className={`w-full border px-3 py-2 rounded-lg text-[13px] outline-none transition-all font-medium ${
-                                variant.productType === 'Unique'
-                                  ? 'bg-gray-100 text-gray-400 border-gray-200 cursor-not-allowed'
-                                  : 'bg-white text-gray-700 border-gray-200 focus:ring-2 focus:ring-[#1BAFAF]/20'
+                              className={`w-full border border-gray-200 px-3 py-2 rounded-lg text-[13px] outline-none transition-all font-medium ${
+                                variant.productType === 'Unique' || (variant.sizes && variant.sizes.length > 0)
+                                  ? 'bg-gray-100 text-gray-400 cursor-not-allowed'
+                                  : 'bg-white text-gray-700 focus:ring-2 focus:ring-[#1BAFAF]/20'
                               }`}
                             />
+                            {(variant.sizes && variant.sizes.length > 0) && (
+                              <p className="text-[10px] text-gray-400 mt-1">Use size-wise alerts above</p>
+                            )}
                           </div>
                         </div>
 
@@ -965,14 +1000,29 @@ export default function ProductFormModal({ isOpen, onClose, product = null, init
                         <div className="grid grid-cols-2 gap-3">
                           <div className="space-y-1">
                             <label className="text-[11px] font-bold text-gray-500 ml-1">SKU *</label>
-                            <input
-                              type="text"
-                              required
-                              placeholder="SKU"
-                              value={variant.sku}
-                              onChange={(e) => handleVariantChange(variant.id, 'sku', e.target.value)}
-                              className="w-full bg-gray-50 border-none px-3 py-2 rounded-lg text-[13px] outline-none focus:ring-2 focus:ring-[#1BAFAF]/20 transition-all font-medium uppercase"
-                            />
+                            <div className="relative">
+                              <input
+                                type="text"
+                                required
+                                placeholder="SKU"
+                                value={variant.sku}
+                                readOnly
+                                className="w-full bg-gray-100 border border-gray-200 px-3 py-2 pr-8 rounded-lg text-[13px] outline-none text-gray-500 font-bold cursor-not-allowed uppercase"
+                              />
+                              <button
+                                type="button"
+                                onClick={() => {
+                                  const newSku = prompt('Enter new SKU:', variant.sku);
+                                  if (newSku !== null && newSku.trim() !== '') {
+                                    handleVariantChange(variant.id, 'sku', newSku.trim().toUpperCase());
+                                  }
+                                }}
+                                className="absolute right-2 top-1/2 -translate-y-1/2 text-gray-400 hover:text-[#1BAFAF] transition-colors p-1"
+                                title="Edit SKU"
+                              >
+                                <Pencil size={14} strokeWidth={2.5} />
+                              </button>
+                            </div>
                           </div>
                           <div className="space-y-1">
                             <label className="text-[11px] font-bold text-gray-500 ml-1">Stock Qty *</label>
@@ -981,16 +1031,19 @@ export default function ProductFormModal({ isOpen, onClose, product = null, init
                               required
                               placeholder="0"
                               min="0"
-                              disabled={variant.productType === 'Unique'}
+                              disabled={variant.productType === 'Unique' || (variant.sizes && variant.sizes.length > 0)}
                               value={variant.productType === 'Unique' ? 1 : variant.stock}
                               onChange={(e) => handleVariantChange(variant.id, 'stock', Number(e.target.value))}
                               onKeyDown={handleKeyPress}
-                              className={`w-full border px-3 py-2 rounded-lg text-[13px] outline-none transition-all font-medium ${
-                                variant.productType === 'Unique'
-                                  ? 'bg-gray-100 text-gray-400 border-gray-200 cursor-not-allowed'
-                                  : 'bg-white text-gray-700 border-gray-200 focus:ring-2 focus:ring-[#1BAFAF]/20'
+                              className={`w-full border border-gray-200 px-3 py-2 rounded-lg text-[13px] outline-none transition-all font-medium ${
+                                variant.productType === 'Unique' || (variant.sizes && variant.sizes.length > 0)
+                                  ? 'bg-gray-100 text-gray-400 cursor-not-allowed'
+                                  : 'bg-white text-gray-700 focus:ring-2 focus:ring-[#1BAFAF]/20'
                               }`}
                             />
+                            {(variant.sizes && variant.sizes.length > 0) && (
+                              <p className="text-[10px] text-gray-400 mt-1">Use size-wise stock above</p>
+                            )}
                           </div>
                         </div>
 
@@ -1005,7 +1058,7 @@ export default function ProductFormModal({ isOpen, onClose, product = null, init
                               value={variant.actualPrice}
                               onChange={(e) => handleVariantChange(variant.id, 'actualPrice', e.target.value)}
                               onKeyDown={handleKeyPress}
-                              className="w-full bg-gray-50 border-none px-3 py-2 rounded-lg text-[13px] outline-none focus:ring-2 focus:ring-[#1BAFAF]/20 transition-all font-medium text-gray-900"
+                              className="w-full bg-gray-50 border border-gray-200 px-3 py-2 rounded-lg text-[13px] outline-none focus:ring-2 focus:ring-[#1BAFAF]/20 transition-all font-medium text-gray-900"
                             />
                           </div>
                           <div className="space-y-1">
@@ -1018,7 +1071,7 @@ export default function ProductFormModal({ isOpen, onClose, product = null, init
                               value={variant.discountPercent}
                               onChange={(e) => handleVariantChange(variant.id, 'discountPercent', e.target.value)}
                               onKeyDown={handleKeyPress}
-                              className="w-full bg-gray-50 border-none px-3 py-2 rounded-lg text-[13px] outline-none focus:ring-2 focus:ring-[#1BAFAF]/20 transition-all font-medium text-gray-750"
+                              className="w-full bg-gray-50 border border-gray-200 px-3 py-2 rounded-lg text-[13px] outline-none focus:ring-2 focus:ring-[#1BAFAF]/20 transition-all font-medium text-gray-750"
                             />
                           </div>
                           <div className="space-y-1">
